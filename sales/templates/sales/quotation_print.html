@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Print Quotation - {{ quotation.quotation_number }}</title>
+    <style>
+        @page { size: A4; margin: 15mm; }
+        body { font-family: 'Courier New', Courier, monospace; font-size: 11pt; color: #000; background: #fff; margin: 0; padding: 0; }
+        .container { width: 100%; max-width: 190mm; margin: 0 auto; }
+        h1 { text-align: center; font-size: 16pt; border: 2px solid #000; padding: 5px; display: inline-block; margin: 0 auto 20px auto; text-transform: uppercase; }
+        table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+        th, td { border: 1px solid #000; padding: 6px; vertical-align: top; }
+        .flex-row { display: flex; justify-content: space-between; margin-bottom: 10px; }
+        .box { border: 1px solid #000; padding: 10px; width: 49%; box-sizing: border-box; }
+        .full-box { border: 1px solid #000; padding: 10px; margin-bottom: 15px; }
+        .text-right { text-align: right; }
+        .text-center { text-align: center; }
+        .items-table th { text-align: center; }
+        
+        .no-print { display: block; margin: 20px 0; text-align: center; }
+        .no-print button { padding: 10px 20px; font-size: 16px; cursor: pointer; margin: 0 10px; border-radius: 5px; border: 1px solid #ccc; background: #eee; }
+        .no-print button.primary { background: #4f46e5; color: white; border-color: #4338ca; }
+        
+        @media print { .no-print { display: none !important; } body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
+    </style>
+</head>
+<body>
+    <div class="no-print">
+        <button class="primary" onclick="window.print()">🖨️ Print Quotation</button>
+        <button onclick="if(window.history.length > 1 && document.referrer !== '') { window.history.back(); } else { window.close(); }">&larr; Go Back (Close)</button>
+    </div>
+
+    <div class="container">
+        <div style="text-align: center;"><h1>Quotation</h1></div>
+        
+        <div class="flex-row">
+             <div class="box">
+                <table style="border:none; margin:0;" width="100%">
+                    <tr><td style="border:none; padding:2px; font-weight:bold; width:140px;">Date of Quote:</td><td style="border:none; padding:2px;">{{ quotation.creation_date|date:"Y-m-d" }}</td></tr>
+                    <tr><td style="border:none; padding:2px; font-weight:bold; width:140px;">Valid Until:</td><td style="border:none; padding:2px;">{{ quotation.valid_until|date:"Y-m-d" }}</td></tr>
+                </table>
+            </div>
+            <div class="box">
+                <table style="border:none; margin:0;" width="100%">
+                    <tr><td style="border:none; padding:2px; font-weight:bold; width:130px;">Quotation No.:</td><td style="border:none; padding:2px;">{{ quotation.quotation_number }}</td></tr>
+                </table>
+            </div>
+        </div>
+
+        <div class="flex-row">
+            <div class="box" style="min-height: 120px;">
+                <div style="font-weight:bold; margin-bottom: 5px;">Supplier's TIN: <span style="font-weight:normal;">[YOUR_TIN_HERE]</span></div>
+                <div style="font-weight:bold; margin-bottom: 5px;">Supplier's Name: <span style="font-weight:normal;">Everbolt Food Products (Pvt) Ltd</span></div>
+                <div style="font-weight:bold; margin-bottom: 5px;">Address: <br><span style="font-weight:normal;">[YOUR_ADDRESS_HERE]</span></div>
+                <div style="font-weight:bold; margin-top: 15px;">Telephone No: <span style="font-weight:normal;">[YOUR_PHONE_HERE]</span></div>
+            </div>
+            <div class="box" style="min-height: 120px;">
+                <div style="font-weight:bold; margin-bottom: 5px;">Customer's TIN: <span style="font-weight:normal;">{{ quotation.customer.vat_number|default:"N/A" }}</span></div>
+                <div style="font-weight:bold; margin-bottom: 5px;">Customer's Name: <span style="font-weight:normal;">{{ quotation.customer.company_name|default:quotation.customer.customer_name }}</span></div>
+                <div style="font-weight:bold; margin-bottom: 5px;">Address: <br><span style="font-weight:normal;">{{ quotation.customer.billing_address|linebreaksbr }}</span></div>
+                <div style="font-weight:bold; margin-top: 15px;">Telephone No: <span style="font-weight:normal;">{{ quotation.customer.phone }}</span></div>
+            </div>
+        </div>
+
+        <div class="full-box">
+            <strong>Notes / Terms:</strong><br>
+            {{ quotation.notes|default:"-" }}
+        </div>
+
+        <table class="items-table">
+            <thead>
+                <tr>
+                    <th width="15%">Reference</th>
+                    <th width="40%">Description of Goods or Services</th>
+                    <th width="10%">Quantity</th>
+                    <th width="15%">Unit Price</th>
+                    <th width="20%">Amount Excluding VAT (Rs.)</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in quotation.items.all %}
+                <tr>
+                    <td>{{ item.product.sku }}</td>
+                    <td>{{ item.product.name }}</td>
+                    <td class="text-center">{{ item.quantity }}</td>
+                    <td class="text-right">{{ item.unit_price|floatformat:2 }}</td>
+                    <td class="text-right">
+                        {% widthratio item.quantity 1 item.unit_price as line_ex_vat %}
+                        {{ line_ex_vat|floatformat:2 }}
+                    </td>
+                </tr>
+                {% endfor %}
+                
+                {% for i in "123"|make_list %}
+                <tr>
+                    <td style="color:transparent; border-bottom-color:transparent; border-top-color:transparent;">-</td>
+                    <td style="border-bottom-color:transparent; border-top-color:transparent;"></td>
+                    <td style="border-bottom-color:transparent; border-top-color:transparent;"></td>
+                    <td style="border-bottom-color:transparent; border-top-color:transparent;"></td>
+                    <td style="border-bottom-color:transparent; border-top-color:transparent;"></td>
+                </tr>
+                {% endfor %}
+
+                <tr>
+                    <td colspan="4" class="text-right" style="font-weight: bold;">Total Value of Supply:</td>
+                    <td class="text-right" style="font-weight: bold;">{{ total_value_supply|floatformat:2 }}</td>
+                </tr>
+                <tr>
+                    <td colspan="4" class="text-right" style="font-weight: bold;">VAT Amount (Total Value of Supply @ 18%):</td>
+                    <td class="text-right" style="font-weight: bold;">{{ quotation.tax_amount|floatformat:2 }}</td>
+                </tr>
+                <tr>
+                    <td colspan="4" class="text-right" style="font-weight: bold; font-size: 1.1em;">Total Amount including VAT:</td>
+                    <td class="text-right" style="font-weight: bold; font-size: 1.1em;">{{ quotation.total_amount|floatformat:2 }}</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <div class="full-box">
+            <strong>Total Amount in words:</strong> {{ amount_in_words }}<br><br>
+            <strong>Payment Terms:</strong> {{ quotation.customer.get_payment_terms_display }}
+        </div>
+        
+        <table style="border:none; margin-top: 40px;">
+            <tr>
+                <td style="border:none; text-align:center;">
+                    ____________________________<br>
+                    Prepared By<br>
+                    ({{ quotation.salesperson.username|title }})
+                </td>
+                <td style="border:none; text-align:center;">
+                    ____________________________<br>
+                    Customer Acceptance
+                </td>
+            </tr>
+        </table>
+    </div>
+</body>
+</html>

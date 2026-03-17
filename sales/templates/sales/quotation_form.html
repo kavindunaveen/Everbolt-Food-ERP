@@ -1,0 +1,160 @@
+{% extends 'layouts/base.html' %}
+
+{% block title %}Create Quotation | Sales ERP{% endblock %}
+
+<!-- Adding Alpine.js for lightweight frontend formset duplication without heavy JS frameworks -->
+{% block content %}
+<link href="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/css/tom-select.default.min.css" rel="stylesheet">
+<script defer src="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/js/tom-select.complete.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+
+<div class="max-w-4xl mx-auto px-4 py-6 sm:px-0">
+    <div class="mb-6 flex justify-between items-center">
+        <h1 class="text-2xl font-bold text-gray-900 border-b-4 border-indigo-500 inline-block pb-1">{% if form.instance.pk %}Edit Quotation: {{ form.instance.quotation_number }}{% else %}Create New Quotation{% endif %}</h1>
+        {% if form.instance.pk %}
+        <a href="{% url 'quotation_print' form.instance.pk %}" target="_blank" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700">
+            🖨️ Print Quotation
+        </a>
+        {% endif %}
+    </div>
+
+    <form method="post" class="space-y-6">
+        {% csrf_token %}
+        
+        <!-- Header Info -->
+        <div class="bg-white shadow px-4 py-5 sm:rounded-lg sm:p-6 border border-gray-200">
+            <h3 class="text-lg leading-6 font-medium text-gray-900 mb-4">Customer Details</h3>
+            <div class="grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-2">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Customer *</label>
+                    {{ form.customer }}
+                    {% if form.customer.errors %}<p class="text-red-500 text-xs mt-1">{{ form.customer.errors.0 }}</p>{% endif %}
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Valid Until *</label>
+                    {{ form.valid_until }}
+                    {% if form.valid_until.errors %}<p class="text-red-500 text-xs mt-1">{{ form.valid_until.errors.0 }}</p>{% endif %}
+                </div>
+                <div class="sm:col-span-2">
+                    <label class="block text-sm font-medium text-gray-700">Notes</label>
+                    {{ form.notes }}
+                </div>
+            </div>
+        </div>
+
+        <!-- Line Items Formset -->
+        <div class="bg-white shadow sm:rounded-lg border border-gray-200 overflow-hidden">
+            <div class="px-4 py-5 sm:px-6 bg-gray-50 border-b border-gray-200 flex justify-between items-center">
+                <h3 class="text-lg leading-6 font-medium text-gray-900">Line Items</h3>
+            </div>
+            
+            <div class="p-4 overflow-x-auto">
+                {{ items.management_form }}
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Product</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Quantity</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Unit Price</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="formset-container" class="bg-white divide-y divide-gray-200">
+                        {% for item_form in items %}
+                        <tr class="formset-row">
+                            {{ item_form.id }}
+                            <td class="px-4 py-2">{{ item_form.product }}</td>
+                            <td class="px-4 py-2">{{ item_form.quantity }}</td>
+                            <td class="px-4 py-2">{{ item_form.unit_price }}</td>
+                            <td class="px-4 py-2 text-center text-sm">
+                                {% if items.can_delete %}
+                                    <div class="hidden">{{ item_form.DELETE }}</div> <!-- Hidden Django delete checkbox -->
+                                    <button type="button" class="remove-row text-red-600 hover:text-red-900 font-medium">Remove</button>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                <div class="mt-4">
+                    <button type="button" id="add-row-btn" class="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-indigo-700 bg-indigo-100 hover:bg-indigo-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                        + Add Product Line
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="flex justify-end space-x-3">
+            <a href="{% url 'quotation_list' %}" class="bg-white py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50">
+                Cancel
+            </a>
+            <button type="submit" class="bg-indigo-600 border border-transparent rounded-md shadow-sm py-2 px-4 inline-flex justify-center text-sm font-medium text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                Save Quotation
+            </button>
+        </div>
+    </form>
+</div>
+
+<!-- Invisible template row for Alpine.js to copy -->
+<table style="display:none;">
+    <tbody id="empty-row">
+        <tr class="formset-row">
+            {{ items.empty_form.id }}
+            <td class="px-4 py-2">{{ items.empty_form.product }}</td>
+            <td class="px-4 py-2">{{ items.empty_form.quantity }}</td>
+            <td class="px-4 py-2">{{ items.empty_form.unit_price }}</td>
+            <td class="px-4 py-2 text-center text-sm">
+                <div class="hidden">{{ items.empty_form.DELETE }}</div>
+                <button type="button" class="remove-row text-red-600 hover:text-red-900 font-medium">Remove</button>
+            </td>
+        </tr>
+    </tbody>
+</table>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        function initSelects(container) {
+            container.querySelectorAll('select').forEach((el)=>{
+                if(el.tomselect) return;
+                new TomSelect(el, {create: false});
+            });
+        }
+        
+        // Initial setup for the form inputs
+        initSelects(document.querySelector('form'));
+
+        const container = document.getElementById('formset-container');
+        const prefix = '{{ items.prefix }}';
+        const totalFormsInput = document.getElementById('id_' + prefix + '-TOTAL_FORMS');
+        
+        document.getElementById('add-row-btn').addEventListener('click', function() {
+            let totalForms = parseInt(totalFormsInput.value);
+            const emptyRow = document.getElementById('empty-row').firstElementChild.cloneNode(true);
+            const regex = new RegExp('__prefix__', 'g');
+            
+            emptyRow.innerHTML = emptyRow.innerHTML.replace(regex, totalForms);
+            
+            const appended = container.appendChild(emptyRow);
+            
+            // Reinitialize the new selects
+            initSelects(appended);
+            
+            totalForms++;
+            totalFormsInput.value = totalForms;
+        });
+
+        container.addEventListener('click', function(e) {
+            if (e.target.classList.contains('remove-row')) {
+                const row = e.target.closest('tr');
+                const deleteCheckbox = row.querySelector('input[type="checkbox"][id$="-DELETE"]');
+                if (deleteCheckbox) {
+                    deleteCheckbox.checked = true;
+                    row.style.display = 'none';
+                } else {
+                    row.remove();
+                }
+            }
+        });
+    });
+</script>
+{% endblock %}

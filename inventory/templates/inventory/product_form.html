@@ -1,0 +1,133 @@
+{% extends 'layouts/base.html' %}
+
+{% block title %}
+    {% if form.instance.pk %}Edit Product{% else %}Add Product{% endif %} | ERP System
+{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto px-4 py-8">
+    <div class="mb-6 flex justify-between items-center">
+        <h1 class="text-2xl font-bold text-gray-900 border-b-4 border-blue-500 inline-block pb-1">
+            {% if form.instance.pk %}Edit Product: {{ form.instance.name }}{% else %}Add New Product{% endif %}
+        </h1>
+        <a href="{% url 'product_list' %}" class="text-gray-500 hover:text-gray-700 font-medium">&larr; Back to Inventory</a>
+    </div>
+
+    <div class="bg-white shadow-sm border border-gray-200 rounded-lg p-6">
+        <form method="post" class="space-y-6">
+            {% csrf_token %}
+            
+            {% if form.errors %}
+                <div class="bg-red-50 border-l-4 border-red-400 p-4 mb-4">
+                    <div class="flex">
+                        <div class="ml-3 text-sm text-red-700">
+                            <h3 class="font-medium">Please correct the following errors:</h3>
+                            <ul class="list-disc leading-tight mt-1 ml-4">
+                                {% for field in form %}
+                                    {% for error in field.errors %}
+                                        <li>{{ field.label }}: {{ error }}</li>
+                                    {% endfor %}
+                                {% endfor %}
+                                {% for error in form.non_field_errors %}
+                                    <li>{{ error }}</li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Group 1: Identifiers & Hierarchy -->
+                <div class="space-y-4 md:col-span-2">
+                    <h2 class="text-lg font-medium text-gray-900 border-b pb-2">Product Identity</h2>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">{{ form.product_id.label }}</label>
+                    {{ form.product_id }}
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">{{ form.sku.label }}</label>
+                    {{ form.sku }}
+                </div>
+                <div class="md:col-span-2">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">{{ form.name.label }}</label>
+                    {{ form.name }}
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">{{ form.brand.label }}</label>
+                    {{ form.brand }}
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">{{ form.category.label }}</label>
+                    {{ form.category }}
+                </div>
+
+                <!-- Group 2: Sizing & Type -->
+                <div class="space-y-4 md:col-span-2 mt-4">
+                    <h2 class="text-lg font-medium text-gray-900 border-b pb-2">Attributes</h2>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">{{ form.packet_size.label }}</label>
+                    {{ form.packet_size }}
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">{{ form.selling_unit.label }}</label>
+                    {{ form.selling_unit }}
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">{{ form.product_type.label }}</label>
+                    {{ form.product_type }}
+                </div>
+
+                <!-- Group 3: Pricing & Stock -->
+                <div class="space-y-4 md:col-span-2 mt-4">
+                    <h2 class="text-lg font-medium text-gray-900 border-b pb-2">Financials & Inventory</h2>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">{{ form.selling_price.label }}</label>
+                    {{ form.selling_price }}
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">{{ form.custom_load_price.label }}</label>
+                    {{ form.custom_load_price }}
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">{{ form.special_price.label }}</label>
+                    {{ form.special_price }}
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">{{ form.tax_rate.label }}</label>
+                    {{ form.tax_rate }}
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">{{ form.current_stock.label }}</label>
+                    {{ form.current_stock }}
+                    <p class="text-xs text-gray-500 mt-1">Live stock count.</p>
+                </div>
+                <div class="flex items-center mt-6">
+                    <div class="flex items-center h-5">
+                        {{ form.status }}
+                    </div>
+                    <div class="ml-3 text-sm">
+                        <label class="font-medium text-gray-700">{{ form.status.label }}</label>
+                        <p class="text-gray-500">{{ form.status.help_text }}</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-8 pt-5 border-t border-gray-200 flex justify-end">
+                <a href="{% url 'product_list' %}" class="bg-white py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none transition-colors">
+                    Cancel
+                </a>
+                <button type="submit" class="ml-3 inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none transition-colors">
+                    Save Product
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

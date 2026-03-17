@@ -1,0 +1,22 @@
+from django.urls import path
+from django.contrib.auth import views as auth_views
+from . import views
+
+urlpatterns = [
+    path('login/', auth_views.LoginView.as_view(template_name='sales/login.html'), name='login'),
+    path('logout/', auth_views.LogoutView.as_view(next_page='login'), name='logout'),
+    
+    path('', views.MainDashboardView.as_view(), name='main_dashboard'),
+    path('sales/', views.SalesDashboardView.as_view(), name='sales_dashboard'),
+    path('sales/quotations/', views.QuotationListView.as_view(), name='quotation_list'),
+    path('sales/quotations/new/', views.QuotationCreateView.as_view(), name='quotation_create'),
+    path('sales/quotations/<int:pk>/edit/', views.QuotationUpdateView.as_view(), name='quotation_edit'),
+    path('sales/quotations/export/', views.QuotationExportView.as_view(), name='quotation_export'),
+    path('sales/invoices/', views.InvoiceListView.as_view(), name='invoice_list'),
+    path('sales/invoices/new/', views.InvoiceCreateView.as_view(), name='invoice_create'),
+    path('sales/invoices/<int:pk>/edit/', views.InvoiceUpdateView.as_view(), name='invoice_edit'),
+    path('sales/invoices/export/', views.InvoiceExportView.as_view(), name='invoice_export'),
+    
+    path('sales/quotations/<int:pk>/print/', views.QuotationPrintView.as_view(), name='quotation_print'),
+    path('sales/invoices/<int:pk>/print/', views.InvoicePrintView.as_view(), name='invoice_print'),
+]

@@ -1,0 +1,352 @@
+from django.shortcuts import render
+from django.views.generic import TemplateView, ListView, CreateView, UpdateView, View, DetailView
+from django.http import HttpResponse
+from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
+from django.urls import reverse_lazy
+from django.db import transaction
+from django.utils import timezone
+from django.db.models import Sum
+from decimal import Decimal
+from .models import Quotation, Invoice
+from .forms import QuotationForm, QuotationItemFormSet, InvoiceForm, InvoiceItemFormSet
+import csv
+from num2words import num2words
+
+class AdminRequiredMixin(UserPassesTestMixin):
+    def test_func(self):
+        return self.request.user.is_admin()
+
+class SalesOfficerRequiredMixin(UserPassesTestMixin):
+    def test_func(self):
+        return self.request.user.is_sales_officer()
+
+class MainDashboardView(LoginRequiredMixin, AdminRequiredMixin, TemplateView):
+    template_name = 'sales/main_dashboard.html'
+
+class SalesDashboardView(LoginRequiredMixin, SalesOfficerRequiredMixin, TemplateView):
+    template_name = 'sales/dashboard.html'
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        # Limit strictly to the logged-in officer's records
+        q = self.request.GET.get('q')
+        
+        quotations = Quotation.objects.filter(salesperson=self.request.user).order_by('-creation_date')
+        invoices = Invoice.objects.filter(salesperson=self.request.user).order_by('-creation_date')
+        
+        if q:
+            quotations = quotations.filter(quotation_number__icontains=q)
+            invoices = invoices.filter(invoice_number__icontains=q)
+            
+        context['recent_quotations'] = quotations[:15]
+        context['recent_invoices'] = invoices[:15]
+        
+        context['total_invoice_amount'] = invoices.aggregate(Sum('total_amount'))['total_amount__sum'] or Decimal('0.00')
+        return context
+
+class QuotationListView(LoginRequiredMixin, SalesOfficerRequiredMixin, ListView):
+    model = Quotation
+    template_name = 'sales/quotation_list.html'
+    context_object_name = 'quotations'
+    
+    def get_queryset(self):
+        qs = super().get_queryset().filter(salesperson=self.request.user).order_by('-creation_date')
+        q = self.request.GET.get('q')
+        if q:
+            qs = qs.filter(quotation_number__icontains=q)
+        return qs
+
+class InvoiceListView(LoginRequiredMixin, SalesOfficerRequiredMixin, ListView):
+    model = Invoice
+    template_name = 'sales/invoice_list.html'
+    context_object_name = 'invoices'
+    
+    def get_queryset(self):
+        qs = super().get_queryset().filter(salesperson=self.request.user).order_by('-creation_date')
+        q = self.request.GET.get('q')
+        if q:
+            qs = qs.filter(invoice_number__icontains=q)
+        return qs
+
+class QuotationCreateView(LoginRequiredMixin, SalesOfficerRequiredMixin, CreateView):
+    model = Quotation
+    form_class = QuotationForm
+    template_name = 'sales/quotation_form.html'
+    success_url = reverse_lazy('quotation_list')
+
+    def get_context_data(self, **kwargs):
+        data = super().get_context_data(**kwargs)
+        if self.request.POST:
+            data['items'] = QuotationItemFormSet(self.request.POST)
+        else:
+            data['items'] = QuotationItemFormSet()
+        return data
+
+    def form_valid(self, form):
+        context = self.get_context_data()
+        items = context['items']
+        with transaction.atomic():
+            self.object = form.save(commit=False)
+            self.object.salesperson = self.request.user
+            # Generate temporary number, can be finalized via signals or DB sequences
+            self.object.quotation_number = f"Q-{timezone.now().strftime('%Y%m%d%H%M%S')}"
+            
+            if items.is_valid():
+                self.object.save()
+                items.instance = self.object
+                
+                saved_items = items.save(commit=False)
+                
+                total = 0
+                tax = 0
+                for item in saved_items:
+                    item.quotation = self.object
+                    if self.object.customer.vat_enabled:
+                        item.tax_amount = (item.quantity * item.unit_price) * Decimal('0.18')
+                    else:
+                        item.tax_amount = Decimal('0.00')
+                        
+                    item.line_total = (item.quantity * item.unit_price) + item.tax_amount
+                    item.save()
+                    
+                    total += item.line_total
+                    tax += item.tax_amount
+                
+                for obj in items.deleted_objects:
+                    obj.delete()
+                
+                self.object.tax_amount = tax
+                self.object.total_amount = total
+                self.object.save()
+            else:
+                return super().form_invalid(form)
+            
+        return super().form_valid(form)
+
+class QuotationUpdateView(LoginRequiredMixin, SalesOfficerRequiredMixin, UpdateView):
+    model = Quotation
+    form_class = QuotationForm
+    template_name = 'sales/quotation_form.html'
+    success_url = reverse_lazy('quotation_list')
+
+    def get_context_data(self, **kwargs):
+        data = super().get_context_data(**kwargs)
+        if self.request.POST:
+            data['items'] = QuotationItemFormSet(self.request.POST, instance=self.object)
+        else:
+            data['items'] = QuotationItemFormSet(instance=self.object)
+        return data
+
+    def form_valid(self, form):
+        context = self.get_context_data()
+        items = context['items']
+        with transaction.atomic():
+            self.object = form.save()
+            if items.is_valid():
+                items.instance = self.object
+                saved_items = items.save(commit=False)
+                
+                total = 0
+                tax = 0
+                for item in saved_items:
+                    item.quotation = self.object
+                    if self.object.customer.vat_enabled:
+                        item.tax_amount = (item.quantity * item.unit_price) * Decimal('0.18')
+                    else:
+                        item.tax_amount = Decimal('0.00')
+                        
+                    item.line_total = (item.quantity * item.unit_price) + item.tax_amount
+                    item.save()
+                    
+                # Re-calculate totals from ALL items associated with this quotation
+                for item in self.object.items.all():
+                    total += item.line_total
+                    tax += item.tax_amount
+                
+                for obj in items.deleted_objects:
+                    obj.delete()
+                    total -= obj.line_total
+                    tax -= obj.tax_amount
+                
+                self.object.tax_amount = tax
+                self.object.total_amount = total
+                self.object.save()
+            else:
+                return super().form_invalid(form)
+            
+        return super().form_valid(form)
+
+
+class InvoiceCreateView(LoginRequiredMixin, SalesOfficerRequiredMixin, CreateView):
+    model = Invoice
+    form_class = InvoiceForm
+    template_name = 'sales/invoice_form.html'
+    success_url = reverse_lazy('invoice_list')
+
+    def get_context_data(self, **kwargs):
+        data = super().get_context_data(**kwargs)
+        if self.request.POST:
+            data['items'] = InvoiceItemFormSet(self.request.POST)
+        else:
+            data['items'] = InvoiceItemFormSet()
+        return data
+
+    def form_valid(self, form):
+        context = self.get_context_data()
+        items = context['items']
+        with transaction.atomic():
+            self.object = form.save(commit=False)
+            self.object.salesperson = self.request.user
+            self.object.invoice_number = f"INV-{timezone.now().strftime('%Y%m%d%H%M%S')}"
+            
+            if items.is_valid():
+                self.object.save()
+                items.instance = self.object
+                
+                saved_items = items.save(commit=False)
+                
+                total = 0
+                tax = 0
+                for item in saved_items:
+                    item.invoice = self.object
+                    if self.object.customer.vat_enabled:
+                        item.tax_amount = (item.quantity * item.unit_price) * Decimal('0.18')
+                    else:
+                        item.tax_amount = Decimal('0.00')
+                        
+                    item.line_total = (item.quantity * item.unit_price) + item.tax_amount
+                    item.save()
+                    
+                    total += item.line_total
+                    tax += item.tax_amount
+                
+                for obj in items.deleted_objects:
+                    obj.delete()
+                
+                self.object.tax_amount = tax
+                self.object.total_amount = total
+                self.object.save()
+            else:
+                return super().form_invalid(form)
+            
+        return super().form_valid(form)
+
+class InvoiceUpdateView(LoginRequiredMixin, SalesOfficerRequiredMixin, UpdateView):
+    model = Invoice
+    form_class = InvoiceForm
+    template_name = 'sales/invoice_form.html'
+    success_url = reverse_lazy('invoice_list')
+
+    def get_context_data(self, **kwargs):
+        data = super().get_context_data(**kwargs)
+        if self.request.POST:
+            data['items'] = InvoiceItemFormSet(self.request.POST, instance=self.object)
+        else:
+            data['items'] = InvoiceItemFormSet(instance=self.object)
+        return data
+
+    def form_valid(self, form):
+        context = self.get_context_data()
+        items = context['items']
+        with transaction.atomic():
+            self.object = form.save()
+            
+            if items.is_valid():
+                items.instance = self.object
+                saved_items = items.save(commit=False)
+                
+                total = 0
+                tax = 0
+                for item in saved_items:
+                    item.invoice = self.object
+                    if self.object.customer.vat_enabled:
+                        item.tax_amount = (item.quantity * item.unit_price) * Decimal('0.18')
+                    else:
+                        item.tax_amount = Decimal('0.00')
+                        
+                    item.line_total = (item.quantity * item.unit_price) + item.tax_amount
+                    item.save()
+                    
+                # Re-calculate totals from ALL items
+                for item in self.object.items.all():
+                    total += item.line_total
+                    tax += item.tax_amount
+                
+                for obj in items.deleted_objects:
+                    obj.delete()
+                    total -= obj.line_total
+                    tax -= obj.tax_amount
+                
+                self.object.tax_amount = tax
+                self.object.total_amount = total
+                self.object.save()
+            else:
+                return super().form_invalid(form)
+            
+        return super().form_valid(form)
+
+class QuotationExportView(LoginRequiredMixin, SalesOfficerRequiredMixin, View):
+    def get(self, request, *args, **kwargs):
+        response = HttpResponse(content_type='text/csv')
+        response['Content-Disposition'] = 'attachment; filename="quotations.csv"'
+        
+        writer = csv.writer(response)
+        writer.writerow(['Quotation Number', 'Customer', 'Creation Date', 'Salesperson', 'Valid Until', 'Total Amount'])
+        
+        quotations = Quotation.objects.filter(salesperson=self.request.user)
+        q = request.GET.get('q')
+        if q:
+            quotations = quotations.filter(quotation_number__icontains=q)
+            
+        for q_obj in quotations:
+            writer.writerow([q_obj.quotation_number, q_obj.customer.customer_name, q_obj.creation_date, q_obj.salesperson.username.title(), q_obj.valid_until, q_obj.total_amount])
+            
+        return response
+
+class InvoiceExportView(LoginRequiredMixin, SalesOfficerRequiredMixin, View):
+    def get(self, request, *args, **kwargs):
+        response = HttpResponse(content_type='text/csv')
+        response['Content-Disposition'] = 'attachment; filename="invoices.csv"'
+        
+        writer = csv.writer(response)
+        writer.writerow(['Invoice Number', 'Type', 'Customer', 'Salesperson', 'Status', 'Delivery Date', 'Total Amount'])
+        
+        invoices = Invoice.objects.filter(salesperson=self.request.user)
+        q = request.GET.get('q')
+        if q:
+            invoices = invoices.filter(invoice_number__icontains=q)
+            
+        for inv in invoices:
+            writer.writerow([inv.invoice_number, inv.get_invoice_type_display(), inv.customer.customer_name, inv.salesperson.username.title(), inv.get_status_display(), inv.delivery_date, inv.total_amount])
+            
+        return response
+
+class InvoicePrintView(LoginRequiredMixin, SalesOfficerRequiredMixin, DetailView):
+    model = Invoice
+    template_name = 'sales/invoice_print.html'
+    context_object_name = 'invoice'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        # Total Value of Supply = total_amount - tax_amount 
+        context['total_value_supply'] = self.object.total_amount - self.object.tax_amount
+        try:
+            context['amount_in_words'] = num2words(self.object.total_amount, lang='en').title() + " Rupees Only"
+        except:
+            context['amount_in_words'] = ""
+        return context
+
+class QuotationPrintView(LoginRequiredMixin, SalesOfficerRequiredMixin, DetailView):
+    model = Quotation
+    template_name = 'sales/quotation_print.html'
+    context_object_name = 'quotation'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        # Total Value of Supply = total_amount - tax_amount
+        context['total_value_supply'] = self.object.total_amount - self.object.tax_amount
+        try:
+            context['amount_in_words'] = num2words(self.object.total_amount, lang='en').title() + " Rupees Only"
+        except:
+            context['amount_in_words'] = ""
+        return context
