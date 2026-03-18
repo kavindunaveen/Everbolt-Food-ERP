@@ -11,38 +11,38 @@
         body { font-family: 'Inter', sans-serif; }
     </style>
 </head>
-<body class="bg-gray-50 text-gray-900">
+<body class="bg-gray-50 text-gray-900 min-h-screen flex flex-col">
 
     <!-- Top Navigation -->
-    <nav class="bg-indigo-600 text-white shadow-lg">
+    <nav class="bg-red-600 text-white shadow-lg">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex items-center justify-between h-16">
                 <div class="flex items-center">
                     <div class="flex-shrink-0">
-                        <span class="font-bold text-xl tracking-tight">Sales ERP</span>
+                        <span class="font-bold text-xl tracking-tight">Everbolt Food</span>
                     </div>
                     <div class="hidden md:block">
                         <div class="ml-10 flex items-baseline space-x-4">
                             {% if user.is_authenticated %}
                                 {% if user.is_admin %}
-                                    <a href="{% url 'main_dashboard' %}" class="hover:bg-indigo-500 px-3 py-2 rounded-md font-medium transition-colors">Home</a>
-                                    <a href="{% url 'user_list' %}" class="hover:bg-indigo-500 px-3 py-2 rounded-md font-medium transition-colors">Users</a>
+                                    <a href="{% url 'main_dashboard' %}" class="hover:bg-red-500 px-3 py-2 rounded-md font-medium transition-colors">Home</a>
+                                    <a href="{% url 'user_list' %}" class="hover:bg-red-500 px-3 py-2 rounded-md font-medium transition-colors">Users</a>
                                 {% endif %}
                                 {% if perms.sales.view_quotation or perms.sales.view_invoice %}
-                                    <a href="{% url 'sales_dashboard' %}" class="hover:bg-indigo-500 px-3 py-2 rounded-md font-medium transition-colors">Sales Dashboard</a>
+                                    <a href="{% url 'sales_dashboard' %}" class="hover:bg-red-500 px-3 py-2 rounded-md font-medium transition-colors">Sales Dashboard</a>
                                 {% endif %}
                                 {% if perms.sales.view_quotation %}
-                                    <a href="{% url 'quotation_list' %}" class="hover:bg-indigo-500 px-3 py-2 rounded-md font-medium transition-colors">Quotations</a>
+                                    <a href="{% url 'quotation_list' %}" class="hover:bg-red-500 px-3 py-2 rounded-md font-medium transition-colors">Quotations</a>
                                 {% endif %}
                                 {% if perms.sales.view_invoice %}
-                                    <a href="{% url 'invoice_list' %}" class="hover:bg-indigo-500 px-3 py-2 rounded-md font-medium transition-colors">Invoices</a>
+                                    <a href="{% url 'invoice_list' %}" class="hover:bg-red-500 px-3 py-2 rounded-md font-medium transition-colors">Invoices</a>
                                 {% endif %}
                             {% endif %}
                         </div>
                     </div>
                 </div>
                 <div class="flex items-center space-x-4">
-                    <span class="text-indigo-100 text-sm">Welcome, {{ user.username }}</span>
+                    <span class="text-red-100 text-sm">Welcome, {{ user.username }}</span>
                     {% if user.is_authenticated %}
                         <form method="post" action="{% url 'logout' %}">
                             {% csrf_token %}
@@ -55,7 +55,7 @@
     </nav>
 
     <!-- Main Content -->
-    <main class="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+    <main class="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8 flex-grow w-full">
         {% if messages %}
             <div class="mb-4">
                 {% for message in messages %}
@@ -69,6 +69,12 @@
         {% block content %}
         {% endblock %}
     </main>
+
+    <footer class="bg-white border-t border-gray-200 mt-auto">
+        <div class="max-w-7xl mx-auto py-4 px-4 sm:px-6 lg:px-8 box-border">
+            <p class="text-center text-sm text-gray-500 font-medium">Developed by IT Department at Everbolt</p>
+        </div>
+    </footer>
 
 </body>
 </html>

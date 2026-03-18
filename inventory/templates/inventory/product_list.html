@@ -69,7 +69,7 @@
                         {% if perms.inventory.change_product or perms.inventory.delete_product %}
                         <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                             {% if perms.inventory.change_product %}
-                            <a href="{% url 'product_edit' product.pk %}" class="text-indigo-600 hover:text-indigo-900 mr-3">Edit</a>
+                            <a href="{% url 'product_edit' product.pk %}" class="text-red-600 hover:text-red-900 mr-3">Edit</a>
                             {% endif %}
                             {% if perms.inventory.delete_product %}
                             <a href="{% url 'product_delete' product.pk %}" class="text-red-600 hover:text-red-900">Delete</a>
