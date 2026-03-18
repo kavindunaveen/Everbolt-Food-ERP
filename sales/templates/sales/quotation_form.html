@@ -54,22 +54,30 @@
                     <thead class="bg-gray-50">
                         <tr>
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Product</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Quantity</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Unit Price</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Action</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase w-32">Quantity</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase w-40">Unit Price</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase w-40">Line Total</th>
+                            <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase w-24">Action</th>
                         </tr>
                     </thead>
                     <tbody id="formset-container" class="bg-white divide-y divide-gray-200">
                         {% for item_form in items %}
                         <tr class="formset-row">
                             {{ item_form.id }}
-                            <td class="px-4 py-2">{{ item_form.product }}</td>
+                            <td class="px-4 py-2">{{ item_form.product }}
+                                {% if item_form.quantity.errors %}
+                                    <p class="text-red-500 text-xs mt-1">{{ item_form.quantity.errors.0 }}</p>
+                                {% endif %}
+                            </td>
                             <td class="px-4 py-2">{{ item_form.quantity }}</td>
                             <td class="px-4 py-2">{{ item_form.unit_price }}</td>
+                            <td class="px-4 py-2">
+                                <input type="text" readonly class="line-total-display w-full px-3 py-2 border border-gray-200 bg-gray-50 text-gray-600 rounded-md" value="0.00">
+                            </td>
                             <td class="px-4 py-2 text-center text-sm">
                                 {% if items.can_delete %}
                                     <div class="hidden">{{ item_form.DELETE }}</div> <!-- Hidden Django delete checkbox -->
-                                    <button type="button" class="remove-row text-red-600 hover:text-red-900 font-medium">Remove</button>
+                                    <button type="button" class="remove-row px-2 py-1 text-red-600 hover:bg-red-50 rounded font-medium transition-colors">🗑️</button>
                                 {% endif %}
                             </td>
                         </tr>
@@ -103,9 +111,12 @@
             <td class="px-4 py-2">{{ items.empty_form.product }}</td>
             <td class="px-4 py-2">{{ items.empty_form.quantity }}</td>
             <td class="px-4 py-2">{{ items.empty_form.unit_price }}</td>
+            <td class="px-4 py-2">
+                <input type="text" readonly class="line-total-display w-full px-3 py-2 border border-gray-200 bg-gray-50 text-gray-600 rounded-md" value="0.00">
+            </td>
             <td class="px-4 py-2 text-center text-sm">
                 <div class="hidden">{{ items.empty_form.DELETE }}</div>
-                <button type="button" class="remove-row text-red-600 hover:text-red-900 font-medium">Remove</button>
+                <button type="button" class="remove-row px-2 py-1 text-red-600 hover:bg-red-50 rounded font-medium transition-colors">🗑️</button>
             </td>
         </tr>
     </tbody>
@@ -113,10 +124,82 @@
 
 <script>
     document.addEventListener("DOMContentLoaded", function() {
+        // Function to calculate Line Total for a specific row
+        function calculateRowTotal(row) {
+            const qtyInput = row.querySelector('input[name$="-quantity"]');
+            const priceInput = row.querySelector('input[name$="-unit_price"]');
+            const totalDisplay = row.querySelector('.line-total-display');
+            
+            if (qtyInput && priceInput && totalDisplay) {
+                const qty = parseFloat(qtyInput.value) || 0;
+                const price = parseFloat(priceInput.value) || 0;
+                totalDisplay.value = (qty * price).toFixed(2);
+            }
+        }
+
+        // Initialize calculations for existing rows on load
+        document.querySelectorAll('.formset-row').forEach(row => {
+            const qtyInput = row.querySelector('input[name$="-quantity"]');
+            const priceInput = row.querySelector('input[name$="-unit_price"]');
+            const productSelect = row.querySelector('select[name$="-product"]');
+            
+            // If we have a product selected but NO unit price (e.g. old record), fetch it
+            if (productSelect && productSelect.value && priceInput && !priceInput.value) {
+                fetch(`/inventory/api/${productSelect.value}/`)
+                    .then(response => response.json())
+                    .then(data => {
+                        if (!data.error) {
+                            priceInput.value = data.selling_price;
+                            calculateRowTotal(row);
+                        }
+                    })
+                    .catch(e => console.error(e));
+            } else {
+                calculateRowTotal(row);
+            }
+        });
+
         function initSelects(container) {
             container.querySelectorAll('select').forEach((el)=>{
                 if(el.tomselect) return;
-                new TomSelect(el, {create: false});
+                
+                // If this is a product select, we want custom behaviors
+                if(el.name && el.name.includes('-product')) {
+                    new TomSelect(el, {
+                        create: false,
+                        onChange: function(value) {
+                            if (!value) return;
+                            const row = el.closest('tr');
+                            // Fetch Product Price
+                            fetch(`/inventory/api/${value}/`)
+                                .then(response => response.json())
+                                .then(data => {
+                                    if (data.error) return;
+                                    
+                                    // Set the unit price
+                                    const priceInput = row.querySelector('input[name$="-unit_price"]');
+                                    if(priceInput) {
+                                        priceInput.value = data.selling_price;
+                                    }
+
+                                    // Optionally inform user it's out of stock, but quotation allows it
+                                    if (data.current_stock === 0) {
+                                        console.warn("Product is out of stock, but permitted for quotation estimates.");
+                                    }
+
+                                    // Default quantity to 1 if empty
+                                    const qtyInput = row.querySelector('input[name$="-quantity"]');
+                                    if(qtyInput && !qtyInput.value) {
+                                        qtyInput.value = 1;
+                                    }
+                                    calculateRowTotal(row);
+                                })
+                                .catch(err => console.error("Error fetching product data:", err));
+                        }
+                    });
+                } else {
+                    new TomSelect(el, {create: false});
+                }
             });
         }
         
@@ -143,8 +226,16 @@
             totalFormsInput.value = totalForms;
         });
 
+        // Event delegation for dynamically added remove buttons AND input changes
+        container.addEventListener('input', function(e) {
+            // Listen for changes to qty or price fields to update totals live
+            if (e.target.matches('input[name$="-quantity"], input[name$="-unit_price"]')) {
+                calculateRowTotal(e.target.closest('tr'));
+            }
+        });
+
         container.addEventListener('click', function(e) {
-            if (e.target.classList.contains('remove-row')) {
+            if (e.target.closest('.remove-row')) {
                 const row = e.target.closest('tr');
                 const deleteCheckbox = row.querySelector('input[type="checkbox"][id$="-DELETE"]');
                 if (deleteCheckbox) {

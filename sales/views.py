@@ -1,7 +1,7 @@
 from django.shortcuts import render
 from django.views.generic import TemplateView, ListView, CreateView, UpdateView, View, DetailView
 from django.http import HttpResponse
-from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
+from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin, PermissionRequiredMixin
 from django.urls import reverse_lazy
 from django.db import transaction
 from django.utils import timezone
@@ -12,18 +12,42 @@ from .forms import QuotationForm, QuotationItemFormSet, InvoiceForm, InvoiceItem
 import csv
 from num2words import num2words
 
+def get_next_invoice_number():
+    prefix = timezone.now().strftime('%y%b').upper() + "_EBFR_"
+    existing = Invoice.objects.filter(invoice_number__startswith=prefix).values_list('invoice_number', flat=True)
+    used = []
+    for num in existing:
+        try:
+            used.append(int(num.split('_')[-1]))
+        except ValueError:
+            pass
+    next_num = 1
+    while next_num in used:
+        next_num += 1
+    return f"{prefix}{next_num:05d}"
+    
+def get_next_quotation_number():
+    prefix = timezone.now().strftime('%y%b').upper() + "_EBFR_QUO_"
+    existing = Quotation.objects.filter(quotation_number__startswith=prefix).values_list('quotation_number', flat=True)
+    used = []
+    for num in existing:
+        try:
+            used.append(int(num.split('_')[-1]))
+        except ValueError:
+            pass
+    next_num = 1
+    while next_num in used:
+        next_num += 1
+    return f"{prefix}{next_num:05d}"
+
 class AdminRequiredMixin(UserPassesTestMixin):
     def test_func(self):
         return self.request.user.is_admin()
 
-class SalesOfficerRequiredMixin(UserPassesTestMixin):
-    def test_func(self):
-        return self.request.user.is_sales_officer()
-
-class MainDashboardView(LoginRequiredMixin, AdminRequiredMixin, TemplateView):
+class MainDashboardView(LoginRequiredMixin, TemplateView):
     template_name = 'sales/main_dashboard.html'
 
-class SalesDashboardView(LoginRequiredMixin, SalesOfficerRequiredMixin, TemplateView):
+class SalesDashboardView(LoginRequiredMixin, TemplateView):
     template_name = 'sales/dashboard.html'
     
     def get_context_data(self, **kwargs):
@@ -44,10 +68,11 @@ class SalesDashboardView(LoginRequiredMixin, SalesOfficerRequiredMixin, Template
         context['total_invoice_amount'] = invoices.aggregate(Sum('total_amount'))['total_amount__sum'] or Decimal('0.00')
         return context
 
-class QuotationListView(LoginRequiredMixin, SalesOfficerRequiredMixin, ListView):
+class QuotationListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
     model = Quotation
     template_name = 'sales/quotation_list.html'
     context_object_name = 'quotations'
+    permission_required = 'sales.view_quotation'
     
     def get_queryset(self):
         qs = super().get_queryset().filter(salesperson=self.request.user).order_by('-creation_date')
@@ -56,10 +81,11 @@ class QuotationListView(LoginRequiredMixin, SalesOfficerRequiredMixin, ListView)
             qs = qs.filter(quotation_number__icontains=q)
         return qs
 
-class InvoiceListView(LoginRequiredMixin, SalesOfficerRequiredMixin, ListView):
+class InvoiceListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
     model = Invoice
     template_name = 'sales/invoice_list.html'
     context_object_name = 'invoices'
+    permission_required = 'sales.view_invoice'
     
     def get_queryset(self):
         qs = super().get_queryset().filter(salesperson=self.request.user).order_by('-creation_date')
@@ -68,11 +94,12 @@ class InvoiceListView(LoginRequiredMixin, SalesOfficerRequiredMixin, ListView):
             qs = qs.filter(invoice_number__icontains=q)
         return qs
 
-class QuotationCreateView(LoginRequiredMixin, SalesOfficerRequiredMixin, CreateView):
+class QuotationCreateView(LoginRequiredMixin, PermissionRequiredMixin, CreateView):
     model = Quotation
     form_class = QuotationForm
     template_name = 'sales/quotation_form.html'
     success_url = reverse_lazy('quotation_list')
+    permission_required = 'sales.add_quotation'
 
     def get_context_data(self, **kwargs):
         data = super().get_context_data(**kwargs)
@@ -88,8 +115,8 @@ class QuotationCreateView(LoginRequiredMixin, SalesOfficerRequiredMixin, CreateV
         with transaction.atomic():
             self.object = form.save(commit=False)
             self.object.salesperson = self.request.user
-            # Generate temporary number, can be finalized via signals or DB sequences
-            self.object.quotation_number = f"Q-{timezone.now().strftime('%Y%m%d%H%M%S')}"
+            # Generate sequential gap-filling number
+            self.object.quotation_number = get_next_quotation_number()
             
             if items.is_valid():
                 self.object.save()
@@ -123,11 +150,12 @@ class QuotationCreateView(LoginRequiredMixin, SalesOfficerRequiredMixin, CreateV
             
         return super().form_valid(form)
 
-class QuotationUpdateView(LoginRequiredMixin, SalesOfficerRequiredMixin, UpdateView):
+class QuotationUpdateView(LoginRequiredMixin, PermissionRequiredMixin, UpdateView):
     model = Quotation
     form_class = QuotationForm
     template_name = 'sales/quotation_form.html'
     success_url = reverse_lazy('quotation_list')
+    permission_required = 'sales.change_quotation'
 
     def get_context_data(self, **kwargs):
         data = super().get_context_data(**kwargs)
@@ -177,11 +205,12 @@ class QuotationUpdateView(LoginRequiredMixin, SalesOfficerRequiredMixin, UpdateV
         return super().form_valid(form)
 
 
-class InvoiceCreateView(LoginRequiredMixin, SalesOfficerRequiredMixin, CreateView):
+class InvoiceCreateView(LoginRequiredMixin, PermissionRequiredMixin, CreateView):
     model = Invoice
     form_class = InvoiceForm
     template_name = 'sales/invoice_form.html'
     success_url = reverse_lazy('invoice_list')
+    permission_required = 'sales.add_invoice'
 
     def get_context_data(self, **kwargs):
         data = super().get_context_data(**kwargs)
@@ -197,7 +226,7 @@ class InvoiceCreateView(LoginRequiredMixin, SalesOfficerRequiredMixin, CreateVie
         with transaction.atomic():
             self.object = form.save(commit=False)
             self.object.salesperson = self.request.user
-            self.object.invoice_number = f"INV-{timezone.now().strftime('%Y%m%d%H%M%S')}"
+            self.object.invoice_number = get_next_invoice_number()
             
             if items.is_valid():
                 self.object.save()
@@ -231,11 +260,12 @@ class InvoiceCreateView(LoginRequiredMixin, SalesOfficerRequiredMixin, CreateVie
             
         return super().form_valid(form)
 
-class InvoiceUpdateView(LoginRequiredMixin, SalesOfficerRequiredMixin, UpdateView):
+class InvoiceUpdateView(LoginRequiredMixin, PermissionRequiredMixin, UpdateView):
     model = Invoice
     form_class = InvoiceForm
     template_name = 'sales/invoice_form.html'
     success_url = reverse_lazy('invoice_list')
+    permission_required = 'sales.change_invoice'
 
     def get_context_data(self, **kwargs):
         data = super().get_context_data(**kwargs)
@@ -285,7 +315,9 @@ class InvoiceUpdateView(LoginRequiredMixin, SalesOfficerRequiredMixin, UpdateVie
             
         return super().form_valid(form)
 
-class QuotationExportView(LoginRequiredMixin, SalesOfficerRequiredMixin, View):
+class QuotationExportView(LoginRequiredMixin, PermissionRequiredMixin, View):
+    permission_required = 'sales.view_quotation'
+    
     def get(self, request, *args, **kwargs):
         response = HttpResponse(content_type='text/csv')
         response['Content-Disposition'] = 'attachment; filename="quotations.csv"'
@@ -303,7 +335,9 @@ class QuotationExportView(LoginRequiredMixin, SalesOfficerRequiredMixin, View):
             
         return response
 
-class InvoiceExportView(LoginRequiredMixin, SalesOfficerRequiredMixin, View):
+class InvoiceExportView(LoginRequiredMixin, PermissionRequiredMixin, View):
+    permission_required = 'sales.view_invoice'
+    
     def get(self, request, *args, **kwargs):
         response = HttpResponse(content_type='text/csv')
         response['Content-Disposition'] = 'attachment; filename="invoices.csv"'
@@ -321,32 +355,42 @@ class InvoiceExportView(LoginRequiredMixin, SalesOfficerRequiredMixin, View):
             
         return response
 
-class InvoicePrintView(LoginRequiredMixin, SalesOfficerRequiredMixin, DetailView):
+import math
+
+class InvoicePrintView(LoginRequiredMixin, PermissionRequiredMixin, DetailView):
     model = Invoice
     template_name = 'sales/invoice_print.html'
     context_object_name = 'invoice'
+    permission_required = 'sales.view_invoice'
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         # Total Value of Supply = total_amount - tax_amount 
-        context['total_value_supply'] = self.object.total_amount - self.object.tax_amount
+        subtotal = self.object.total_amount - self.object.tax_amount
+        context['total_value_supply'] = math.ceil(subtotal)
+        context['tax_amount'] = math.ceil(self.object.tax_amount)
+        context['total_amount'] = math.ceil(self.object.total_amount)
         try:
-            context['amount_in_words'] = num2words(self.object.total_amount, lang='en').title() + " Rupees Only"
+            context['amount_in_words'] = num2words(context['total_amount'], lang='en').title() + " Rupees Only"
         except:
             context['amount_in_words'] = ""
         return context
 
-class QuotationPrintView(LoginRequiredMixin, SalesOfficerRequiredMixin, DetailView):
+class QuotationPrintView(LoginRequiredMixin, PermissionRequiredMixin, DetailView):
     model = Quotation
     template_name = 'sales/quotation_print.html'
     context_object_name = 'quotation'
+    permission_required = 'sales.view_quotation'
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         # Total Value of Supply = total_amount - tax_amount
-        context['total_value_supply'] = self.object.total_amount - self.object.tax_amount
+        subtotal = self.object.total_amount - self.object.tax_amount
+        context['total_value_supply'] = math.ceil(subtotal)
+        context['tax_amount'] = math.ceil(self.object.tax_amount)
+        context['total_amount'] = math.ceil(self.object.total_amount)
         try:
-            context['amount_in_words'] = num2words(self.object.total_amount, lang='en').title() + " Rupees Only"
+            context['amount_in_words'] = num2words(context['total_amount'], lang='en').title() + " Rupees Only"
         except:
             context['amount_in_words'] = ""
         return context

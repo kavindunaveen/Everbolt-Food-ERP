@@ -9,13 +9,13 @@ class User(AbstractUser):
     role = models.CharField(max_length=50, choices=Roles.choices, default=Roles.SALES_OFFICER)
     contact_number = models.CharField(max_length=20, blank=True, null=True)
     assigned_area = models.CharField(max_length=100, blank=True, null=True)
-
+    
     def is_admin(self):
         return self.role == self.Roles.ADMIN or self.is_superuser
         
     def is_sales_officer(self):
         return self.role == self.Roles.SALES_OFFICER
-        
+
     # Prevent normal sales officers from accessing the main Django Admin completely
     # They should use our custom dashboard frontend instead.
     @property

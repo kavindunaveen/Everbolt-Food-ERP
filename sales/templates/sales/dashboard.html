@@ -8,12 +8,14 @@
         <h1 class="text-3xl font-bold text-gray-900 border-b-4 border-indigo-500 inline-block pb-1">Sales Dashboard</h1>
         
         <div class="space-x-3">
+            {% if user.is_admin %}
             <a href="{% url 'quotation_create' %}" class="bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2 px-4 rounded-lg shadow transition duration-150 ease-in-out">
                 + New Quotation
             </a>
             <a href="{% url 'invoice_create' %}" class="bg-emerald-600 hover:bg-emerald-700 text-white font-medium py-2 px-4 rounded-lg shadow transition duration-150 ease-in-out">
                 + New Invoice
             </a>
+            {% endif %}
         </div>
         </div>
     </div>
@@ -48,7 +50,7 @@
         <!-- Stats Card 3 -->
         <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
             <div class="text-sm font-medium text-gray-500 uppercase tracking-wider mb-1">Total Invoice Amounts</div>
-            <div class="text-2xl font-bold text-gray-900 pr-2 overflow-hidden truncate">Rs {{ total_invoice_amount|default:"0.00" }}</div>
+            <div class="text-2xl font-bold text-gray-900 pr-2 overflow-hidden truncate">Rs {{ total_invoice_amount|floatformat:2|default:"0.00" }}</div>
         </div>
     </div>
 

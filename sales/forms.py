@@ -18,8 +18,8 @@ class QuotationItemForm(forms.ModelForm):
         fields = ['product', 'quantity', 'unit_price']
         widgets = {
             'product': forms.Select(attrs={'class': 'w-full px-3 py-2 border border-gray-300 rounded-md'}),
-            'quantity': forms.NumberInput(attrs={'class': 'w-full px-3 py-2 border border-gray-300 rounded-md'}),
-            'unit_price': forms.NumberInput(attrs={'class': 'w-full px-3 py-2 border border-gray-300 rounded-md step-any'}),
+            'quantity': forms.NumberInput(attrs={'class': 'w-full px-3 py-2 border border-gray-300 rounded-md', 'step': '0.01'}),
+            'unit_price': forms.NumberInput(attrs={'class': 'w-full px-3 py-2 border border-gray-300 rounded-md', 'step': '0.01'}),
         }
 
 QuotationItemFormSet = inlineformset_factory(
@@ -47,6 +47,16 @@ class InvoiceItemForm(forms.ModelForm):
             'quantity': forms.NumberInput(attrs={'class': 'w-full px-3 py-2 border border-gray-300 rounded-md'}),
             'unit_price': forms.NumberInput(attrs={'class': 'w-full px-3 py-2 border border-gray-300 rounded-md step-any'}),
         }
+
+    def clean(self):
+        cleaned_data = super().clean()
+        product = cleaned_data.get('product')
+        quantity = cleaned_data.get('quantity')
+        
+        if product and quantity:
+            if quantity > product.current_stock:
+                self.add_error('quantity', f"Only {product.current_stock} currently in stock.")
+        return cleaned_data
 
 InvoiceItemFormSet = inlineformset_factory(
     Invoice, InvoiceItem, form=InvoiceItemForm,

@@ -114,10 +114,10 @@
 
         <div class="flex-row">
             <div class="box" style="min-height: 120px;">
-                <div style="font-weight:bold; margin-bottom: 5px;">Supplier's TIN: <span style="font-weight:normal;">[YOUR_TIN_HERE]</span></div>
+                <div style="font-weight:bold; margin-bottom: 5px;">Supplier's TIN: <span style="font-weight:normal;">108438134</span></div>
                 <div style="font-weight:bold; margin-bottom: 5px;">Supplier's Name: <span style="font-weight:normal;">Everbolt Food Products (Pvt) Ltd</span></div>
-                <div style="font-weight:bold; margin-bottom: 5px;">Address: <br><span style="font-weight:normal;">[YOUR_ADDRESS_HERE]</span></div>
-                <div style="font-weight:bold; margin-top: 15px;">Telephone No: <span style="font-weight:normal;">[YOUR_PHONE_HERE]</span></div>
+                <div style="font-weight:bold; margin-bottom: 5px;">Address: <br><span style="font-weight:normal;">No.548/B Nawala Rd,<br>Sri Jayawardenepura Kotte 10100.</span></div>
+                <div style="font-weight:bold; margin-top: 15px;">Telephone No: <span style="font-weight:normal;">076 540 0084</span></div>
             </div>
             <div class="box" style="min-height: 120px;">
                 <div style="font-weight:bold; margin-bottom: 5px;">Purchaser's TIN: <span style="font-weight:normal;">{{ invoice.customer.vat_number|default:"N/A" }}</span></div>
@@ -179,15 +179,15 @@
 
                 <tr>
                     <td colspan="4" class="text-right" style="font-weight: bold;">Total Value of Supply:</td>
-                    <td class="text-right" style="font-weight: bold;">{{ total_value_supply|floatformat:2 }}</td>
+                    <td class="text-right" style="font-weight: bold;">{{ total_value_supply|floatformat:0 }}</td>
                 </tr>
                 <tr>
                     <td colspan="4" class="text-right" style="font-weight: bold;">VAT Amount (Total Value of Supply @ 18%):</td>
-                    <td class="text-right" style="font-weight: bold;">{{ invoice.tax_amount|floatformat:2 }}</td>
+                    <td class="text-right" style="font-weight: bold;">{{ tax_amount|floatformat:0 }}</td>
                 </tr>
                 <tr>
                     <td colspan="4" class="text-right" style="font-weight: bold; font-size: 1.1em;">Total Amount including VAT:</td>
-                    <td class="text-right" style="font-weight: bold; font-size: 1.1em;">{{ invoice.total_amount|floatformat:2 }}</td>
+                    <td class="text-right" style="font-weight: bold; font-size: 1.1em;">{{ total_amount|floatformat:0 }}</td>
                 </tr>
             </tbody>
         </table>

@@ -12,6 +12,7 @@
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         
         <!-- Products Map -->
+        {% if perms.inventory.view_product %}
         <a href="{% url 'product_list' %}" class="block group">
             <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 h-full hover:shadow-md hover:border-blue-300 transition-all duration-200">
                 <div class="w-12 h-12 bg-blue-100 text-blue-600 rounded-lg flex items-center justify-center mb-4 group-hover:bg-blue-600 group-hover:text-white transition-colors">
@@ -21,8 +22,10 @@
                 <p class="text-sm text-gray-500">Manage inventory, brands, categories, and stock limits.</p>
             </div>
         </a>
+        {% endif %}
 
         <!-- Customers Map -->
+        {% if perms.crm.view_customer %}
         <a href="{% url 'customer_list' %}" class="block group">
             <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 h-full hover:shadow-md hover:border-purple-300 transition-all duration-200">
                 <div class="w-12 h-12 bg-purple-100 text-purple-600 rounded-lg flex items-center justify-center mb-4 group-hover:bg-purple-600 group-hover:text-white transition-colors">
@@ -32,8 +35,10 @@
                 <p class="text-sm text-gray-500">Manage client data, CRM properties, and regions.</p>
             </div>
         </a>
+        {% endif %}
 
         <!-- Sales Module Map -->
+        {% if perms.sales.view_invoice or perms.sales.view_quotation %}
         <a href="{% url 'sales_dashboard' %}" class="block group">
             <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 h-full hover:shadow-md hover:border-emerald-300 transition-all duration-200">
                 <div class="w-12 h-12 bg-emerald-100 text-emerald-600 rounded-lg flex items-center justify-center mb-4 group-hover:bg-emerald-600 group-hover:text-white transition-colors">
@@ -43,9 +48,11 @@
                 <p class="text-sm text-gray-500">Create quotes, generate invoices, and log returns.</p>
             </div>
         </a>
+        {% endif %}
 
         <!-- Users Map -->
-        <a href="/admin/users/user/" class="block group">
+        {% if user.is_admin %}
+        <a href="{% url 'user_list' %}" class="block group">
             <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 h-full hover:shadow-md hover:border-rose-300 transition-all duration-200">
                 <div class="w-12 h-12 bg-rose-100 text-rose-600 rounded-lg flex items-center justify-center mb-4 group-hover:bg-rose-600 group-hover:text-white transition-colors">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
@@ -54,6 +61,7 @@
                 <p class="text-sm text-gray-500">Manage officers, Admin accounts, and permissions.</p>
             </div>
         </a>
+        {% endif %}
 
     </div>
 </div>

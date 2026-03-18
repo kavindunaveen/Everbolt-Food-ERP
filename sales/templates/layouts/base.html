@@ -26,10 +26,15 @@
                             {% if user.is_authenticated %}
                                 {% if user.is_admin %}
                                     <a href="{% url 'main_dashboard' %}" class="hover:bg-indigo-500 px-3 py-2 rounded-md font-medium transition-colors">Home</a>
+                                    <a href="{% url 'user_list' %}" class="hover:bg-indigo-500 px-3 py-2 rounded-md font-medium transition-colors">Users</a>
                                 {% endif %}
-                                {% if user.is_sales_officer %}
+                                {% if perms.sales.view_quotation or perms.sales.view_invoice %}
                                     <a href="{% url 'sales_dashboard' %}" class="hover:bg-indigo-500 px-3 py-2 rounded-md font-medium transition-colors">Sales Dashboard</a>
+                                {% endif %}
+                                {% if perms.sales.view_quotation %}
                                     <a href="{% url 'quotation_list' %}" class="hover:bg-indigo-500 px-3 py-2 rounded-md font-medium transition-colors">Quotations</a>
+                                {% endif %}
+                                {% if perms.sales.view_invoice %}
                                     <a href="{% url 'invoice_list' %}" class="hover:bg-indigo-500 px-3 py-2 rounded-md font-medium transition-colors">Invoices</a>
                                 {% endif %}
                             {% endif %}
