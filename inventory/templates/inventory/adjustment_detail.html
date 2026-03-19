@@ -1,0 +1,65 @@
+{% extends 'layouts/base.html' %}
+
+{% block title %}Adjustment Detail | ERP System{% endblock %}
+
+{% block content %}
+<div class="px-4 py-6 sm:px-0">
+    <div class="flex justify-between items-center mb-6">
+        <h1 class="text-2xl font-bold text-gray-900 border-b-4 border-blue-500 inline-block pb-1">Adjustment: {{ adjustment.adjustment_number }}</h1>
+        <div class="flex space-x-3">
+            <a href="{% url 'adjustment_list' %}" class="bg-gray-100 hover:bg-gray-200 border border-gray-300 rounded-md px-4 py-2 text-gray-700">Back</a>
+            {% if adjustment.status == 'DRAFT' %}
+            <form action="{% url 'adjustment_confirm' adjustment.pk %}" method="post" class="inline">
+                {% csrf_token %}
+                <button type="submit" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md shadow" onclick="return confirm('Confirm Adjustment?');">Confirm Adjustment</button>
+            </form>
+            {% elif adjustment.status == 'CONFIRMED' %}
+            <form action="{% url 'adjustment_cancel' adjustment.pk %}" method="post" class="inline">
+                {% csrf_token %}
+                <button type="submit" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md shadow" onclick="return confirm('Cancel Adjustment? This will reverse the stock entries.');">Cancel Adjustment</button>
+            </form>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="bg-white shadow-sm rounded-lg border border-gray-200 overflow-hidden">
+        <div class="p-6">
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <p class="text-sm font-medium text-gray-500">Product</p>
+                    <p class="mt-1 text-lg text-gray-900 font-semibold">{{ adjustment.product.name }}</p>
+                </div>
+                <div>
+                    <p class="text-sm font-medium text-gray-500">Status</p>
+                    <p class="mt-1 text-lg font-semibold {% if adjustment.status == 'CONFIRMED' %}text-green-600{% elif adjustment.status == 'CANCELLED' %}text-red-600{% else %}text-yellow-600{% endif %}">
+                        {{ adjustment.get_status_display }}
+                    </p>
+                </div>
+                <div>
+                    <p class="text-sm font-medium text-gray-500">Adjustment Type</p>
+                    <p class="mt-1 text-gray-900">{{ adjustment.get_adjustment_type_display }}</p>
+                </div>
+                <div>
+                    <p class="text-sm font-medium text-gray-500">Quantity</p>
+                    <p class="mt-1 text-gray-900 font-mono">{{ adjustment.quantity }} {{ adjustment.product.get_stock_unit_display }}</p>
+                </div>
+                <div>
+                    <p class="text-sm font-medium text-gray-500">Date</p>
+                    <p class="mt-1 text-gray-900">{{ adjustment.date }}</p>
+                </div>
+                <div>
+                    <p class="text-sm font-medium text-gray-500">Reason</p>
+                    <p class="mt-1 text-gray-900">{{ adjustment.reason }}</p>
+                </div>
+                <div class="col-span-2">
+                    <p class="text-sm font-medium text-gray-500">Remarks</p>
+                    <p class="mt-1 text-gray-900 italic font-serif text-sm">{{ adjustment.remarks|default:"- No additional remarks -" }}</p>
+                </div>
+                <div class="mt-4 pt-4 border-t col-span-2 text-xs text-gray-400">
+                    Created by {{ adjustment.created_by.username|default:"System" }} on {{ adjustment.created_at }}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,303 @@
+{% extends 'layouts/base.html' %}
+
+{% block title %}{% if form.instance.pk %}Edit Production{% else %}New Production{% endif %} | ERP System{% endblock %}
+
+{% block breadcrumbs %}
+    <li class="flex items-center space-x-2">
+        <svg class="w-4 h-4 text-gray-300" fill="currentColor" viewBox="0 0 20 20">
+            <path d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" />
+        </svg>
+        <a href="{% url 'production_list' %}" class="hover:text-red-600 transition-colors">Manufacturing</a>
+    </li>
+    <li class="flex items-center space-x-2">
+        <svg class="w-4 h-4 text-gray-300" fill="currentColor" viewBox="0 0 20 20">
+            <path d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" />
+        </svg>
+        <span class="text-gray-900 font-bold">{% if form.instance.pk %}Edit{% else %}New{% endif %} Production</span>
+    </li>
+{% endblock %}
+
+{% block content %}
+<div class="px-4 py-6 sm:px-0">
+    <div class="flex justify-between items-center mb-6">
+        <h1 class="text-3xl font-bold text-gray-900 border-b-4 border-red-500 inline-block pb-1">
+            {% if form.instance.pk %}Edit Production: {{ form.instance.production_number }}{% else %}New Production Order{% endif %}
+        </h1>
+        <a href="{% url 'production_list' %}" class="btn-premium btn-secondary">Back</a>
+    </div>
+
+    <form method="post" class="space-y-6" id="production-form">
+        {% csrf_token %}
+        
+        {% if form.errors or materials.errors or outputs.errors %}
+        <div class="bg-red-50 border-l-4 border-red-400 p-4 mb-6">
+            <div class="flex">
+                <div class="flex-shrink-0">
+                    <svg class="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
+                    </svg>
+                </div>
+                <div class="ml-3">
+                    <p class="text-sm text-red-700 font-bold">Please correct the following errors:</p>
+                    <ul class="list-disc list-inside text-xs text-red-600 mt-1">
+                        {% for error in form.non_field_errors %}<li>{{ error }}</li>{% endfor %}
+                        {% for error in materials.non_form_errors %}<li>Materials: {{ error }}</li>{% endfor %}
+                        {% for error in outputs.non_form_errors %}<li>Outputs: {{ error }}</li>{% endfor %}
+                    </ul>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <div class="card-premium p-8">
+            <h3 class="text-xl font-bold text-gray-900 mb-6 border-b pb-4">Production Header</h3>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <div>
+                    <label>Date</label>
+                    {{ form.date }}
+                    {% for error in form.date.errors %}<p class="text-red-500 text-xs mt-1">{{ error }}</p>{% endfor %}
+                </div>
+                <div>
+                    <label>Conversion Type</label>
+                    {{ form.conversion_type }}
+                </div>
+                <div>
+                    <label class="text-blue-600">Quick Load: Finished Product (BOM)</label>
+                    {{ form.finished_product_select }}
+                </div>
+                <div class="md:col-span-3">
+                    <label>Notes & Observations</label>
+                    {{ form.notes }}
+                </div>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 xl:grid-cols-2 gap-8">
+            <!-- Materials Used -->
+            <div class="card-premium p-8">
+                <div class="flex justify-between items-center mb-6 border-b border-amber-100 pb-4">
+                    <h3 class="text-xl font-bold text-amber-900">Materials Consumed (Inputs)</h3>
+                    <button type="button" id="add-material" class="text-amber-600 font-bold text-sm hover:text-amber-800 transition-colors">+ Add Material</button>
+                </div>
+                {{ materials.management_form }}
+                <div id="materials-container" class="space-y-6">
+                    {% for mat_form in materials %}
+                    <div class="mat-row p-6 border border-gray-100 rounded-2xl bg-amber-50/30 relative transition-all hover:border-amber-200">
+                        {{ mat_form.id }}
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div class="md:col-span-2">
+                                <label>Component Product</label>
+                                {{ mat_form.component_product }}
+                                {% for error in mat_form.component_product.errors %}<p class="text-red-500 text-xs mt-1">{{ error }}</p>{% endfor %}
+                            </div>
+                            <div>
+                                <label>BOM Qty</label>
+                                {{ mat_form.required_qty }}
+                                {% for error in mat_form.required_qty.errors %}<p class="text-red-500 text-xs mt-1">{{ error }}</p>{% endfor %}
+                            </div>
+                            <div>
+                                <label>Actual Used</label>
+                                {{ mat_form.actual_used_qty }}
+                                {% for error in mat_form.actual_used_qty.errors %}<p class="text-red-500 text-xs mt-1">{{ error }}</p>{% endfor %}
+                            </div>
+                            <div class="md:col-span-2">
+                                <label>Wastage</label>
+                                {{ mat_form.wastage_qty }}
+                                {% for error in mat_form.wastage_qty.errors %}<p class="text-red-500 text-xs mt-1">{{ error }}</p>{% endfor %}
+                            </div>
+                        </div>
+                        <div class="mt-4 flex justify-end">
+                             {% if materials.can_delete %}
+                                <label class="inline-flex items-center cursor-pointer group">
+                                    {{ mat_form.DELETE }}
+                                    <span class="ml-2 text-xs font-bold text-red-400 group-hover:text-red-600 transition-colors">REMOVE ITEM</span>
+                                </label>
+                             {% endif %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Produced Products -->
+            <div class="card-premium p-8">
+                <div class="flex justify-between items-center mb-6 border-b border-green-100 pb-4">
+                    <h3 class="text-xl font-bold text-green-900">Produced Products (Outputs)</h3>
+                    <button type="button" id="add-output" class="text-green-600 font-bold text-sm hover:text-green-800 transition-colors">+ Add Output</button>
+                </div>
+                {{ outputs.management_form }}
+                <div id="outputs-container" class="space-y-6">
+                    {% for out_form in outputs %}
+                    <div class="out-row p-6 border border-gray-100 rounded-2xl bg-green-50/30 relative transition-all hover:border-green-200">
+                        {{ out_form.id }}
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div class="md:col-span-2">
+                                <label>Output Product</label>
+                                {{ out_form.output_product }}
+                                {% for error in out_form.output_product.errors %}<p class="text-red-500 text-xs mt-1">{{ error }}</p>{% endfor %}
+                            </div>
+                            <div>
+                                <label>Produced Qty</label>
+                                {{ out_form.produced_qty }}
+                                {% for error in out_form.produced_qty.errors %}<p class="text-red-500 text-xs mt-1">{{ error }}</p>{% endfor %}
+                            </div>
+                        </div>
+                        <div class="mt-4 flex justify-end">
+                            {% if outputs.can_delete %}
+                               <label class="inline-flex items-center cursor-pointer group">
+                                   {{ out_form.DELETE }}
+                                   <span class="ml-2 text-xs font-bold text-red-400 group-hover:text-red-600 transition-colors">REMOVE ITEM</span>
+                               </label>
+                            {% endif %}
+                       </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <div class="flex justify-between items-center pt-6 border-t">
+            <a href="{% url 'production_list' %}" class="btn-premium btn-secondary">Cancel</a>
+            <button type="submit" class="btn-premium btn-primary shadow-xl shadow-red-600/20">
+                Save Production Order
+            </button>
+        </div>
+    </form>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const bomSelect = document.getElementById('id_finished_product_select');
+    
+    // Quick Load BOM Logic
+    bomSelect.addEventListener('change', async function() {
+        const bomId = this.value;
+        if (!bomId) return;
+
+        if (!confirm('This will load components from the selected BOM. Continue?')) return;
+
+        try {
+            const response = await fetch(`/manufacturing/api/bom/${bomId}/`);
+            const data = await response.json();
+            
+            // 1. Set the first output row to the finished product
+            const outputProductSelect = document.querySelector('[name="outputs-0-output_product"]');
+            if (outputProductSelect) {
+                outputProductSelect.value = data.finished_product_id;
+            }
+
+            // 2. Clear existing material rows
+            const container = document.getElementById('materials-container');
+            const totalForms = document.getElementById('id_materials-TOTAL_FORMS');
+            
+            container.innerHTML = ''; 
+            totalForms.value = 0;
+
+            // 3. Add rows from BOM
+            data.items.forEach((item, index) => {
+                const newRow = addRow('materials');
+                const productSelect = newRow.querySelector(`[name$="-component_product"]`);
+                const reqQtyInput = newRow.querySelector(`[name$="-required_qty"]`);
+                const actQtyInput = newRow.querySelector(`[name$="-actual_used_qty"]`);
+                const wastQtyInput = newRow.querySelector(`[name$="-wastage_qty"]`);
+                
+                if (productSelect) productSelect.value = item.product_id;
+                if (reqQtyInput) reqQtyInput.value = item.qty;
+                if (actQtyInput) actQtyInput.value = item.qty;
+                if (wastQtyInput) wastQtyInput.value = "0.000";
+            });
+
+        } catch (error) {
+            console.error('Error fetching BOM:', error);
+            alert('Failed to load BOM details.');
+        }
+    });
+
+    // Auto-fill Actual Used when BOM Qty is entered
+    const matsContainer = document.getElementById('materials-container');
+    matsContainer.addEventListener('input', function(e) {
+        if (e.target.name && e.target.name.endsWith('-required_qty')) {
+            const prefix = e.target.name.split('-required_qty')[0];
+            const actualInput = document.querySelector(`[name="${prefix}-actual_used_qty"]`);
+            if (actualInput && (actualInput.value === '' || actualInput.value === '0')) {
+                actualInput.value = e.target.value;
+            }
+        }
+    });
+
+    // Universal Add Row Function
+    function addRow(prefix) {
+        const container = document.getElementById(`${prefix}-container`);
+        const totalForms = document.getElementById(`id_${prefix}-TOTAL_FORMS`);
+        const currentCount = parseInt(totalForms.value);
+        
+        const templateHtml = document.getElementById(`${prefix}-template`).innerHTML;
+        const newRowHtml = templateHtml.replace(/__prefix__/g, currentCount);
+        
+        container.insertAdjacentHTML('beforeend', newRowHtml);
+        totalForms.value = currentCount + 1;
+        
+        return container.lastElementChild;
+    }
+
+    document.getElementById('add-material').addEventListener('click', () => addRow('materials'));
+    document.getElementById('add-output').addEventListener('click', () => addRow('outputs'));
+});
+</script>
+
+<!-- Hidden Templates for JavaScript -->
+<script type="text/template" id="materials-template">
+    <div class="mat-row p-6 border border-gray-100 rounded-2xl bg-amber-50/30 relative transition-all hover:border-amber-200">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div class="md:col-span-2">
+                <label>Component Product</label>
+                <select name="materials-__prefix__-component_product">
+                    {% for p in all_products %}
+                        <option value="{{ p.id }}">{{ p.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label>BOM Qty</label>
+                <input type="number" name="materials-__prefix__-required_qty" step="0.001">
+            </div>
+            <div>
+                <label>Actual Used</label>
+                <input type="number" name="materials-__prefix__-actual_used_qty" step="0.001">
+            </div>
+            <div class="md:col-span-2">
+                <label>Wastage</label>
+                <input type="number" name="materials-__prefix__-wastage_qty" step="0.001" value="0.000">
+            </div>
+        </div>
+        <button type="button" class="absolute top-4 right-4 text-red-400 hover:text-red-600 font-bold text-xl" onclick="this.closest('.mat-row').remove();">&times;</button>
+    </div>
+</script>
+
+<script type="text/template" id="outputs-template">
+    <div class="out-row p-6 border border-gray-100 rounded-2xl bg-green-50/30 relative transition-all hover:border-green-200">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div class="md:col-span-2">
+                <label>Output Product</label>
+                <select name="outputs-__prefix__-output_product">
+                    {% for p in all_products %}
+                        <option value="{{ p.id }}">{{ p.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label>Produced Qty</label>
+                <input type="number" name="outputs-__prefix__-produced_qty" step="0.001">
+            </div>
+        </div>
+        <button type="button" class="absolute top-4 right-4 text-red-400 hover:text-red-600 font-bold text-xl" onclick="this.closest('.out-row').remove();">&times;</button>
+    </div>
+</script>
+
+<style>
+    /* Additional overrides for the production form specifically */
+    .mat-row, .out-row {
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.02), 0 2px 4px -1px rgba(0, 0, 0, 0.01);
+    }
+</style>
+{% endblock %}

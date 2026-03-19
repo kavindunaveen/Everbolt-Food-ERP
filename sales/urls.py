@@ -19,4 +19,6 @@ urlpatterns = [
     
     path('sales/quotations/<int:pk>/print/', views.QuotationPrintView.as_view(), name='quotation_print'),
     path('sales/invoices/<int:pk>/print/', views.InvoicePrintView.as_view(), name='invoice_print'),
+    path('sales/invoices/<int:pk>/confirm/', views.confirm_invoice_view, name='invoice_confirm'),
+    path('sales/invoices/<int:pk>/cancel/', views.cancel_invoice_view, name='invoice_cancel'),
 ]

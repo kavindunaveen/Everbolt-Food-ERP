@@ -1,0 +1,83 @@
+{% extends 'layouts/base.html' %}
+
+{% block title %}GRN Detail | ERP System{% endblock %}
+
+{% block content %}
+<div class="px-4 py-6 sm:px-0">
+    <div class="flex justify-between items-center mb-6">
+        <h1 class="text-2xl font-bold text-gray-900 border-b-4 border-blue-500 inline-block pb-1">GRN: {{ grn.grn_number }}</h1>
+        <div class="flex space-x-3">
+            <a href="{% url 'grn_list' %}" class="bg-gray-100 hover:bg-gray-200 border border-gray-300 rounded-md px-4 py-2 text-gray-700">Back</a>
+            {% if grn.status == 'DRAFT' %}
+            <a href="{% url 'grn_update' grn.pk %}" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-md shadow">Edit</a>
+            <form action="{% url 'grn_confirm' grn.pk %}" method="post" class="inline">
+                {% csrf_token %}
+                <button type="submit" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md shadow" onclick="return confirm('Confirm GRN? This will update stock levels.');">Confirm</button>
+            </form>
+            {% elif grn.status == 'CONFIRMED' %}
+            <form action="{% url 'grn_cancel' grn.pk %}" method="post" class="inline">
+                {% csrf_token %}
+                <button type="submit" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md shadow" onclick="return confirm('Cancel GRN? This will reverse the stock entries.');">Cancel GRN</button>
+            </form>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="bg-white shadow-sm rounded-lg border border-gray-200 overflow-hidden mb-6">
+        <div class="p-6">
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <p class="text-sm font-medium text-gray-500">Supplier</p>
+                    <p class="mt-1 text-lg text-gray-900">{{ grn.supplier }}</p>
+                </div>
+                <div>
+                    <p class="text-sm font-medium text-gray-500">Status</p>
+                    <p class="mt-1 text-lg font-semibold {% if grn.status == 'CONFIRMED' %}text-green-600{% elif grn.status == 'CANCELLED' %}text-red-600{% else %}text-yellow-600{% endif %}">
+                        {{ grn.get_status_display }}
+                    </p>
+                </div>
+                <div>
+                    <p class="text-sm font-medium text-gray-500">Date</p>
+                    <p class="mt-1 text-gray-900">{{ grn.date }}</p>
+                </div>
+                <div>
+                    <p class="text-sm font-medium text-gray-500">Reference Number</p>
+                    <p class="mt-1 text-gray-900">{{ grn.ref_number|default:"-" }}</p>
+                </div>
+                <div class="col-span-2">
+                    <p class="text-sm font-medium text-gray-500">Remarks</p>
+                    <p class="mt-1 text-gray-900">{{ grn.remarks|default:"-" }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <h3 class="text-lg font-medium text-gray-900 mb-4 border-b pb-2">Received Items</h3>
+    <div class="bg-white shadow-sm rounded-lg border border-gray-200 overflow-hidden">
+        <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-gray-50">
+                <tr>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Product</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Qty</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Unit Cost</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Batch</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Expiry</th>
+                </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-gray-200">
+                {% for item in grn.items.all %}
+                <tr class="hover:bg-gray-50">
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{{ item.product.name }}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ item.qty }}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">Rs. {{ item.unit_cost }}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ item.batch|default:"-" }}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ item.expiry|default:"-" }}</td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="5" class="px-6 py-4 text-center text-gray-500">No items found.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

@@ -1,6 +1,13 @@
 {% extends 'layouts/base.html' %}
 
-{% block title %}Sales Dashboard | ERP{% endblock %}
+{% block breadcrumbs %}
+    <li class="flex items-center space-x-2">
+        <svg class="w-4 h-4 text-gray-300" fill="currentColor" viewBox="0 0 20 20">
+            <path d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" />
+        </svg>
+        <span class="text-gray-900 font-bold">Sales</span>
+    </li>
+{% endblock %}
 
 {% block content %}
 <div class="px-4 py-6 sm:px-0">
@@ -9,10 +16,10 @@
         
         <div class="space-x-3">
             {% if user.is_admin %}
-            <a href="{% url 'quotation_create' %}" class="bg-red-600 hover:bg-red-700 text-white font-medium py-2 px-4 rounded-lg shadow transition duration-150 ease-in-out">
+            <a href="{% url 'quotation_create' %}" class="btn-premium btn-secondary">
                 + New Quotation
             </a>
-            <a href="{% url 'invoice_create' %}" class="bg-emerald-600 hover:bg-emerald-700 text-white font-medium py-2 px-4 rounded-lg shadow transition duration-150 ease-in-out">
+            <a href="{% url 'invoice_create' %}" class="btn-premium btn-primary">
                 + New Invoice
             </a>
             {% endif %}
@@ -36,7 +43,7 @@
         </a>
     </div>
 
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8 border-t pt-8">
         <!-- Stats Card 1 -->
         <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
             <div class="text-sm font-medium text-gray-500 uppercase tracking-wider mb-1">Total Invoices</div>
@@ -73,7 +80,7 @@
                     </thead>
                     <tbody class="bg-white divide-y divide-gray-200">
                         {% for quote in recent_quotations %}
-                        <tr class="hover:bg-gray-100 transition-colors cursor-pointer" onclick="window.location.href='{% url 'quotation_edit' quote.pk %}'">
+                        <tr class="hover:bg-gray-100 transition-colors cursor-pointer" onclick="window.location.href='{% url 'quotation_edit' quote.pk %}';">
                             <td class="px-4 py-3 whitespace-nowrap text-sm font-medium text-red-600">{{ quote.quotation_number }}</td>
                             <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-500">{{ quote.valid_until }}</td>
                             <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">Rs {{ quote.total_amount }}</td>
@@ -105,7 +112,7 @@
                     </thead>
                     <tbody class="bg-white divide-y divide-gray-200">
                         {% for invoice in recent_invoices %}
-                        <tr class="hover:bg-gray-100 transition-colors cursor-pointer" onclick="window.location.href='{% url 'invoice_edit' invoice.pk %}'">
+                        <tr class="hover:bg-gray-100 transition-colors cursor-pointer" onclick="window.location.href='{% url 'invoice_edit' invoice.pk %}';">
                             <td class="px-4 py-3 whitespace-nowrap text-sm font-medium text-emerald-600">{{ invoice.invoice_number }}</td>
                             <td class="px-4 py-3 whitespace-nowrap text-sm">
                                 <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full 

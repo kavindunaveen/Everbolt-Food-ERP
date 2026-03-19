@@ -1,7 +1,9 @@
-from django.shortcuts import render
+from django.shortcuts import render, redirect, get_object_or_404
 from django.views.generic import TemplateView, ListView, CreateView, UpdateView, View, DetailView
 from django.http import HttpResponse
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin, PermissionRequiredMixin
+from django.contrib.auth.decorators import login_required
+from django.contrib import messages
 from django.urls import reverse_lazy
 from django.db import transaction
 from django.utils import timezone
@@ -9,6 +11,7 @@ from django.db.models import Sum
 from decimal import Decimal
 from .models import Quotation, Invoice
 from .forms import QuotationForm, QuotationItemFormSet, InvoiceForm, InvoiceItemFormSet
+from .services import issue_invoice, cancel_invoice
 import csv
 from num2words import num2words
 
@@ -394,3 +397,25 @@ class QuotationPrintView(LoginRequiredMixin, PermissionRequiredMixin, DetailView
         except:
             context['amount_in_words'] = ""
         return context
+
+@login_required
+def confirm_invoice_view(request, pk):
+    invoice = get_object_or_404(Invoice, pk=pk)
+    if request.method == 'POST':
+        try:
+            issue_invoice(invoice, request.user)
+            messages.success(request, f"Invoice {invoice.invoice_number} issued. Stock deducted.")
+        except Exception as e:
+            messages.error(request, f"Error: {str(e)}")
+    return redirect('invoice_list')
+
+@login_required
+def cancel_invoice_view(request, pk):
+    invoice = get_object_or_404(Invoice, pk=pk)
+    if request.method == 'POST':
+        try:
+            cancel_invoice(invoice, request.user)
+            messages.success(request, f"Invoice {invoice.invoice_number} cancelled. Stock restored.")
+        except Exception as e:
+            messages.error(request, f"Error: {str(e)}")
+    return redirect('invoice_list')

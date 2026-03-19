@@ -1,0 +1,65 @@
+{% extends 'layouts/base.html' %}
+
+{% block title %}BOM Detail | ERP System{% endblock %}
+
+{% block content %}
+<div class="px-4 py-6 sm:px-0">
+    <div class="flex justify-between items-center mb-6">
+        <h1 class="text-2xl font-bold text-gray-900 border-b-4 border-blue-500 inline-block pb-1">BOM: {{ bom.bom_code }}</h1>
+        <div class="flex space-x-3">
+            <a href="{% url 'bom_list' %}" class="bg-gray-100 hover:bg-gray-200 border border-gray-300 rounded-md px-4 py-2 text-gray-700">Back</a>
+            <a href="{% url 'bom_edit' bom.pk %}" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-md shadow">Edit BOM</a>
+        </div>
+    </div>
+
+    <div class="bg-white shadow-sm rounded-lg border border-gray-200 overflow-hidden mb-8">
+        <div class="p-6">
+            <div class="grid grid-cols-2 lg:grid-cols-4 gap-6">
+                <div class="col-span-2">
+                    <p class="text-sm font-medium text-gray-500">Finished Product</p>
+                    <p class="mt-1 text-lg text-gray-900 font-bold">{{ bom.finished_product.name }}</p>
+                    <p class="text-xs text-gray-400">{{ bom.finished_product.sku }}</p>
+                </div>
+                <div>
+                    <p class="text-sm font-medium text-gray-500">Version</p>
+                    <p class="mt-1 text-gray-900">{{ bom.version }}</p>
+                </div>
+                <div>
+                    <p class="text-sm font-medium text-gray-500">Status</p>
+                    {% if bom.is_active %}
+                        <span class="mt-1 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">Active</span>
+                    {% else %}
+                        <span class="mt-1 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">Inactive</span>
+                    {% endif %}
+                </div>
+                <div class="col-span-full">
+                    <p class="text-sm font-medium text-gray-500">Notes</p>
+                    <p class="mt-1 text-gray-700 italic text-sm">{{ bom.notes|default:"No notes provided." }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <h3 class="text-lg font-medium text-gray-900 mb-4 border-b pb-2">Component List</h3>
+    <div class="bg-white shadow-sm rounded-lg border border-gray-200 overflow-hidden">
+        <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-gray-50">
+                <tr>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Component Product</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Required Qty (per unit)</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Unit</th>
+                </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-gray-200">
+                {% for item in bom.items.all %}
+                <tr class="hover:bg-gray-50">
+                    <td class="px-6 py-4 text-sm font-medium text-gray-900">{{ item.component_product.name }}</td>
+                    <td class="px-6 py-4 text-sm text-gray-900 font-mono">{{ item.qty_required }}</td>
+                    <td class="px-6 py-4 text-sm text-gray-500 uppercase">{{ item.component_product.get_stock_unit_display }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

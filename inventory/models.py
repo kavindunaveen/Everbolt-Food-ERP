@@ -1,4 +1,5 @@
 from django.db import models
+from django.conf import settings
 
 class Brand(models.Model):
     name = models.CharField(max_length=100, unique=True)
@@ -18,13 +19,23 @@ class Product(models.Model):
         BOX = 'BOX', 'box'
         PACK = 'PACK', 'pack'
         KG = 'KG', 'kg'
+        G = 'G', 'g'
+        L = 'L', 'l'
+        ML = 'ML', 'ml'
 
     class ProductTypes(models.TextChoices):
         MANUFACTURED = 'MANUFACTURED', 'Manufactured'
-        BLENDED = 'BLENDED', 'Blended'
         REPACKED = 'REPACKED', 'Repacked'
-        CONTRACTED = 'CONTRACTED', 'Contracted Packing'
+        BLENDED = 'BLENDED', 'Blended'
         TRADING = 'TRADING', 'Trading'
+        CONTRACTED = 'CONTRACTED', 'Contract Packed'
+
+    class InventoryClasses(models.TextChoices):
+        RAW = 'RAW', 'Raw Material'
+        PACKAGING = 'PACKAGING', 'Packaging Material'
+        FINISHED = 'FINISHED', 'Finished Good'
+        SEMI_FINISHED = 'SEMI_FINISHED', 'Semi-Finished Good'
+        CONSUMABLE = 'CONSUMABLE', 'Consumable'
 
     product_id = models.CharField(max_length=50, unique=True, blank=True)
     sku = models.CharField(max_length=50, unique=True, blank=True)
@@ -33,16 +44,25 @@ class Product(models.Model):
     category = models.ForeignKey(Category, on_delete=models.SET_NULL, null=True, blank=True)
     
     packet_size = models.CharField(max_length=100, blank=True, null=True)
+    stock_unit = models.CharField(max_length=20, choices=UnitTypes.choices, default=UnitTypes.PCS)
     selling_unit = models.CharField(max_length=20, choices=UnitTypes.choices, default=UnitTypes.PCS)
+    
+    inventory_class = models.CharField(max_length=50, choices=InventoryClasses.choices, default=InventoryClasses.FINISHED)
     product_type = models.CharField(max_length=50, choices=ProductTypes.choices, default=ProductTypes.MANUFACTURED)
+    
+    track_stock = models.BooleanField(default=True)
+    allow_negative_stock = models.BooleanField(default=False)
+    reorder_level = models.DecimalField(max_digits=12, decimal_places=3, default=0.000)
     
     selling_price = models.DecimalField(max_digits=12, decimal_places=2)
     custom_load_price = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
     special_price = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
     tax_rate = models.DecimalField(max_digits=5, decimal_places=2, default=18.00) # Fixed 18% generic tax
     
-    status = models.BooleanField(default=True, help_text="True if active/in stock")
-    current_stock = models.IntegerField(default=0)
+    status = models.BooleanField(default=True, help_text="True if active")
+    
+    # This is a cache field derived from StockLedger, it should not be manually maintained.
+    current_stock = models.DecimalField(max_digits=12, decimal_places=3, default=0.000, help_text="Cached balance from StockLedger")
 
     def save(self, *args, **kwargs):
         from django.utils.text import slugify
@@ -97,3 +117,66 @@ class Product(models.Model):
     def __str__(self):
         return f"[{self.sku}] {self.name}"
 
+class StockLedger(models.Model):
+    class TransactionTypes(models.TextChoices):
+        OPENING = 'OPENING', 'Opening Stock'
+        GRN = 'GRN', 'GRN'
+        PROD_CONS = 'PROD_CONS', 'Production Consumption'
+        PROD_OUT = 'PROD_OUT', 'Production Output'
+        SALES_ISS = 'SALES_ISS', 'Sales Issue'
+        SALES_RET = 'SALES_RET', 'Sales Return'
+        PURC_RET = 'PURC_RET', 'Purchase Return'
+        ADJ_POS = 'ADJ_POS', 'Stock Adjustment Positive'
+        ADJ_NEG = 'ADJ_NEG', 'Stock Adjustment Negative'
+
+    product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='ledger_entries')
+    date = models.DateTimeField(auto_now_add=True)
+    tx_type = models.CharField(max_length=20, choices=TransactionTypes.choices)
+    qty_in = models.DecimalField(max_digits=12, decimal_places=3, default=0.000)
+    qty_out = models.DecimalField(max_digits=12, decimal_places=3, default=0.000)
+    reference_type = models.CharField(max_length=50) # e.g. 'GRN', 'PROD', 'INV', 'SYS'
+    reference_id = models.IntegerField(null=True, blank=True)
+    reference_number = models.CharField(max_length=100)
+    remarks = models.CharField(max_length=255, blank=True, null=True)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True)
+
+    def __str__(self):
+        return f"{self.product.name} | {self.tx_type} | IN: {self.qty_in} | OUT: {self.qty_out}"
+
+class StockAdjustment(models.Model):
+    class AdjustmentTypes(models.TextChoices):
+        POSITIVE = 'POSITIVE', 'Positive Adjustment'
+        NEGATIVE = 'NEGATIVE', 'Negative Adjustment'
+
+    class StatusChoices(models.TextChoices):
+        DRAFT = 'DRAFT', 'Draft'
+        CONFIRMED = 'CONFIRMED', 'Confirmed'
+        CANCELLED = 'CANCELLED', 'Cancelled'
+
+    adjustment_number = models.CharField(max_length=50, unique=True, blank=True)
+    date = models.DateField()
+    product = models.ForeignKey(Product, on_delete=models.PROTECT)
+    adjustment_type = models.CharField(max_length=20, choices=AdjustmentTypes.choices)
+    quantity = models.DecimalField(max_digits=12, decimal_places=3)
+    reason = models.CharField(max_length=255)
+    remarks = models.TextField(blank=True, null=True)
+    status = models.CharField(max_length=20, choices=StatusChoices.choices, default=StatusChoices.DRAFT)
+    
+    created_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def save(self, *args, **kwargs):
+        if not self.adjustment_number:
+            last_adj = StockAdjustment.objects.order_by('-id').first()
+            if last_adj and last_adj.adjustment_number.startswith('ADJ-'):
+                try:
+                    seq = int(last_adj.adjustment_number.split('-')[1]) + 1
+                except ValueError:
+                    seq = 1
+            else:
+                seq = 1
+            self.adjustment_number = f"ADJ-{seq:04d}"
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return f"{self.adjustment_number} - {self.product.name}"

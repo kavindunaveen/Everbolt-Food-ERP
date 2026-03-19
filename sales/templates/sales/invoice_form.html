@@ -2,19 +2,39 @@
 
 {% block title %}Create Invoice | Sales ERP{% endblock %}
 
+{% block breadcrumbs %}
+    <li class="flex items-center space-x-2">
+        <svg class="w-4 h-4 text-gray-300" fill="currentColor" viewBox="0 0 20 20">
+            <path d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" />
+        </svg>
+        <a href="{% url 'sales_dashboard' %}" class="hover:text-red-600 transition-colors">Sales</a>
+    </li>
+    <li class="flex items-center space-x-2">
+        <svg class="w-4 h-4 text-gray-300" fill="currentColor" viewBox="0 0 20 20">
+            <path d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" />
+        </svg>
+        <span class="text-gray-900 font-bold">{% if form.instance.pk %}Edit{% else %}New{% endif %} Invoice</span>
+    </li>
+{% endblock %}
+
 {% block content %}
 <link href="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/css/tom-select.default.min.css" rel="stylesheet">
 <script defer src="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/js/tom-select.complete.min.js"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
 
-<div class="max-w-4xl mx-auto px-4 py-6 sm:px-0">
+<div class="max-w-7xl mx-auto px-4 py-6 sm:px-0">
     <div class="mb-6 flex justify-between items-center">
-        <h1 class="text-2xl font-bold text-gray-900 border-b-4 border-emerald-500 inline-block pb-1">{% if form.instance.pk %}Edit Invoice: {{ form.instance.invoice_number }}{% else %}Create New Invoice{% endif %}</h1>
-        {% if form.instance.pk %}
-        <a href="{% url 'invoice_print' form.instance.pk %}" target="_blank" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-red-600 hover:bg-red-700">
-            🖨️ Print Invoice
-        </a>
-        {% endif %}
+        <h1 class="text-3xl font-bold text-gray-900 border-b-4 border-red-500 inline-block pb-1">
+            {% if form.instance.pk %}Edit Invoice: {{ form.instance.invoice_number }}{% else %}Create New Invoice{% endif %}
+        </h1>
+        <div class="flex items-center space-x-3">
+            {% if form.instance.pk %}
+            <a href="{% url 'invoice_print' form.instance.pk %}" target="_blank" class="btn-premium btn-secondary">
+                🖨️ Print
+            </a>
+            {% endif %}
+            <a href="{% url 'invoice_list' %}" class="btn-premium btn-secondary">Back</a>
+        </div>
     </div>
 
     <form method="post" class="space-y-6">

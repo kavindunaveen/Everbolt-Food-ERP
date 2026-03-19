@@ -1,0 +1,62 @@
+{% extends 'layouts/base.html' %}
+
+{% block title %}Stock Ledger | ERP System{% endblock %}
+
+{% block content %}
+<div class="px-4 py-6 sm:px-0">
+    <div class="flex justify-between items-center mb-6">
+        <h1 class="text-2xl font-bold text-gray-900 border-b-4 border-blue-500 inline-block pb-1">Stock Ledger (Transaction History)</h1>
+        <div class="flex space-x-2">
+             <a href="{% url 'stock_summary' %}" class="bg-gray-100 hover:bg-gray-200 border border-gray-300 rounded-md px-4 py-2 text-gray-700 text-sm font-medium">Back to Summary</a>
+        </div>
+    </div>
+
+    <!-- Filter (Simulated) -->
+    <div class="bg-gray-50 p-4 rounded-lg mb-4 border border-gray-200">
+        <form method="get" class="flex gap-4 items-end">
+            <div class="flex-grow">
+                <label class="block text-xs font-semibold text-gray-500 uppercase mb-1">Filter by Product ID</label>
+                <input type="text" name="product" value="{{ request.GET.product }}" placeholder="e.g. EFPR-0001" class="w-full px-3 py-2 border border-gray-300 rounded focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+            </div>
+            <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded text-sm font-medium">Filter</button>
+            <a href="{% url 'stock_ledger' %}" class="px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-900">Clear</a>
+        </form>
+    </div>
+
+    <div class="bg-white shadow-sm rounded-lg border border-gray-200 overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date / Time</th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Product</th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Reference</th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tx Type</th>
+                        <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider text-green-600">IN (+)</th>
+                        <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider text-red-600">OUT (-)</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    {% for entry in entries %}
+                    <tr class="hover:bg-gray-50 transition-colors">
+                        <td class="px-6 py-4 whitespace-nowrap text-xs text-gray-500">{{ entry.date|date:"Y-m-d H:i" }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{{ entry.product.name }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-blue-600">
+                            <span class="font-bold">[{{ entry.reference_type }}]</span> {{ entry.reference_number }}
+                            {% if entry.remarks %}<div class="text-[10px] text-gray-400 mt-1">{{ entry.remarks }}</div>{% endif %}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-xs text-gray-500">{{ entry.get_tx_type_display }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-green-600 text-right font-bold">{% if entry.qty_in > 0 %}+{{ entry.qty_in }}{% else %}-{% endif %}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-red-600 text-right font-bold">{% if entry.qty_out > 0 %}-{{ entry.qty_out }}{% else %}-{% endif %}</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="6" class="px-6 py-10 text-center text-gray-500">No ledger entries found.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
