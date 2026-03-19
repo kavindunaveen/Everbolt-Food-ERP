@@ -4,10 +4,55 @@
 
 {% block content %}
 <div class="px-4 py-6 sm:px-0">
-    <div class="mb-8">
-        <h1 class="text-3xl font-bold text-gray-900 border-b-4 border-red-500 inline-block pb-1">ERP Command Center</h1>
-        <p class="mt-2 text-gray-600">Welcome to the Sales Management System. What would you like to manage?</p>
+    <div class="mb-8 flex flex-col md:flex-row md:items-end md:justify-between gap-4">
+        <div>
+            <h1 class="text-4xl font-extrabold text-gray-900 tracking-tight">
+                <span id="greeting">Good day</span>, <span class="text-red-600">{{ user.get_full_name|default:user.username }}</span>
+            </h1>
+            <p class="mt-2 text-lg text-gray-600 font-medium">
+                Welcome back! Here's what's happening today in the system.
+            </p>
+        </div>
+        <div class="bg-white px-6 py-3 rounded-2xl shadow-sm border border-gray-100 flex items-center space-x-6">
+            <div class="flex items-center space-x-2">
+                <svg class="w-5 h-5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                <span class="text-gray-900 font-bold uppercase tracking-wider text-sm">{% now "l, jS F Y" %}</span>
+            </div>
+            <div class="w-px h-8 bg-gray-100"></div>
+            <div class="flex items-center space-x-2">
+                <svg class="w-5 h-5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                <span class="text-gray-900 font-bold text-lg" id="current-time">{% now "H:i" %}</span>
+            </div>
+        </div>
     </div>
+
+    <!-- Live clock & greeting script -->
+    <script>
+        function updateDashboard() {
+            const now = new Date();
+            
+            // Update Clock
+            const hoursStr = String(now.getHours()).padStart(2, '0');
+            const minutesStr = String(now.getMinutes()).padStart(2, '0');
+            const timeEl = document.getElementById('current-time');
+            if(timeEl) timeEl.textContent = `${hoursStr}:${minutesStr}`;
+            
+            // Update Greeting
+            const hours = now.getHours();
+            let greet = "Good day";
+            if (hours < 12) greet = "Good morning";
+            else if (hours < 17) greet = "Good afternoon";
+            else greet = "Good evening";
+            
+            const greetEl = document.getElementById('greeting');
+            if(greetEl) greetEl.textContent = greet;
+        }
+        
+        // Initial run
+        updateDashboard();
+        // Update every minute
+        setInterval(updateDashboard, 60000);
+    </script>
 
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         

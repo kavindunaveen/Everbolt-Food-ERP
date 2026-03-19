@@ -1,3 +1,4 @@
+{% load static %}
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -75,10 +76,8 @@
                 <!-- Brand & Breadcrumbs -->
                 <div class="flex items-center">
                     <a href="{% url 'main_dashboard' %}" class="flex items-center group transition-all">
-                        <div class="w-10 h-10 bg-red-600 rounded-lg flex items-center justify-center shadow-lg shadow-red-600/20 group-hover:bg-red-700 transition-colors">
-                            <span class="text-white font-bold text-xl">E</span>
-                        </div>
-                        <span class="ml-3 font-bold text-xl tracking-tight text-gray-900 group-hover:text-red-600 transition-colors">Everbolt Food</span>
+                        <img src="{% static 'sales/img/logo.png' %}" alt="Everbolt Logo" class="h-10 w-auto object-contain transition-transform group-hover:scale-105">
+                        <span class="ml-3 font-bold text-xl tracking-tight text-gray-900 group-hover:text-red-600 transition-colors border-l border-gray-100 pl-3">Everbolt Food</span>
                     </a>
                     
                     <div class="hidden md:ml-8 md:flex md:items-center md:space-x-4 border-l border-gray-100 pl-8">
