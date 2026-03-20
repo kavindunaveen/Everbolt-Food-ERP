@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <meta charset="UTF-8">
     <title>Print Tax Invoice - {{ invoice.invoice_number }}</title>
     <style>
@@ -81,6 +82,11 @@
             color: white;
             border-color: #059669;
         }
+        .no-print button.whatsapp {
+            background: #25D366;
+            color: white;
+            border-color: #1ebe5d;
+        }
         
         @media print {
             .no-print { display: none !important; }
@@ -91,8 +97,48 @@
 <body>
     <div class="no-print">
         <button class="primary" onclick="window.print()">🖨️ Print Invoice</button>
+        <button class="whatsapp" onclick="shareOnWhatsApp()">💬 Share via WhatsApp</button>
         <button onclick="if(window.history.length > 1 && document.referrer !== '') { window.history.back(); } else { window.close(); }">&larr; Go Back (Close)</button>
     </div>
+
+    <script>
+        function shareOnWhatsApp() {
+            var invoiceNo   = '{{ invoice.invoice_number }}';
+            var customer    = '{{ invoice.customer.company_name|default:invoice.customer.customer_name }}';
+            var totalAmount = '{{ total_amount|floatformat:0 }}';
+            var msg = 'Dear ' + customer + ',\n\nPlease find your Tax Invoice attached below:\n\n'
+                    + '\ud83e\uddfe Invoice No: ' + invoiceNo + '\n'
+                    + '\ud83d\udcb0 Total Amount (incl. VAT): Rs. ' + totalAmount + '\n\n'
+                    + 'Thank you for your business!\n\nEverbolt Food Products (Pvt) Ltd\nTel: 076 540 0084';
+
+            // Generate and download the PDF first, then open WhatsApp
+            var element = document.querySelector('.container');
+            var filename = 'Invoice_' + invoiceNo + '.pdf';
+            var opt = {
+                margin:       [15, 15, 15, 15],
+                filename:     filename,
+                image:        { type: 'jpeg', quality: 0.98 },
+                html2canvas:  { scale: 2, useCORS: true },
+                jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+            };
+
+            html2pdf().set(opt).from(element).save().then(function() {
+                // After PDF downloads, open WhatsApp with the message
+                var url = 'https://wa.me/?text=' + encodeURIComponent(msg);
+                window.open(url, '_blank');
+                // Show reminder to attach the PDF
+                showAttachReminder(filename);
+            });
+        }
+
+        function showAttachReminder(filename) {
+            var toast = document.createElement('div');
+            toast.innerHTML = '\ud83d\udcce PDF <strong>' + filename + '</strong> downloaded! Please attach it to the WhatsApp message.';
+            toast.style.cssText = 'position:fixed;bottom:30px;left:50%;transform:translateX(-50%);background:#1f2937;color:#fff;padding:14px 22px;border-radius:10px;font-size:14px;font-family:sans-serif;box-shadow:0 4px 20px rgba(0,0,0,0.3);z-index:9999;text-align:center;max-width:420px;';
+            document.body.appendChild(toast);
+            setTimeout(function() { toast.remove(); }, 6000);
+        }
+    </script>
 
     <div class="container">
         <div style="text-align: center;">
