@@ -11,6 +11,7 @@ class UserListView(LoginRequiredMixin, AdminRequiredMixin, ListView):
     model = User
     template_name = 'users/user_list.html'
     context_object_name = 'users'
+    paginate_by = 20
 
     def get_queryset(self):
         qs = super().get_queryset()

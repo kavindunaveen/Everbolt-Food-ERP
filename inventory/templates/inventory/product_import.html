@@ -1,0 +1,98 @@
+{% extends 'layouts/base.html' %}
+
+{% block title %}Import Products | ERP System{% endblock %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto px-4 py-8 sm:px-0">
+    <div class="mb-6 flex justify-between items-center">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-900 border-b-4 border-blue-500 inline-block pb-1">Import Products</h1>
+            <p class="mt-2 text-sm text-gray-600">Upload a CSV file to bulk create or update products.</p>
+        </div>
+        <a href="{% url 'product_list' %}" class="text-blue-600 hover:text-blue-800 text-sm font-medium">&larr; Back to Products</a>
+    </div>
+
+    <!-- Instructions Card -->
+    <div class="bg-blue-50 border-l-4 border-blue-500 p-4 mb-8 rounded-r shadow-sm">
+        <div class="flex">
+            <div class="flex-shrink-0">
+                <svg class="h-5 w-5 text-blue-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
+                </svg>
+            </div>
+            <div class="ml-3">
+                <h3 class="text-sm font-medium text-blue-800">Formatting Instructions</h3>
+                <div class="mt-2 text-sm text-blue-700">
+                    <ul class="list-disc pl-5 space-y-1">
+                        <li>The file must be in <strong>.csv</strong> format.</li>
+                        <li>Required columns for new products: <strong>Name</strong>, <strong>Selling Price</strong>.</li>
+                        <li>To update existing products, include the <strong>System ID</strong>, <strong>Product ID</strong>, or <strong>SKU</strong>. The system will match and update the existing record.</li>
+                        <li>Using the "Export Selected" feature from the products list gives you a perfect template to edit and re-upload!</li>
+                    </ul>
+                    <div class="mt-4">
+                        <a href="{% url 'product_import_template' %}" class="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors">
+                            <svg class="-ml-0.5 mr-2 h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                            </svg>
+                            Download CSV Template
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Upload Form -->
+    <div class="bg-white shadow sm:rounded-lg">
+        <div class="px-4 py-5 sm:p-6">
+            <h3 class="text-lg leading-6 font-medium text-gray-900">Upload Data File</h3>
+            
+            <form action="{% url 'product_import' %}" method="post" enctype="multipart/form-data" class="mt-5">
+                {% csrf_token %}
+                
+                <div class="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md hover:border-blue-400 transition-colors">
+                    <div class="space-y-1 text-center">
+                        <svg class="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48">
+                            <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4-4m4-24h8m-4-4v8m-12 4h.02" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                        </svg>
+                        <div class="flex text-sm text-gray-600 justify-center">
+                            <label for="file-upload" class="relative cursor-pointer bg-white rounded-md font-medium text-blue-600 hover:text-blue-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-blue-500">
+                                <span>Upload a file</span>
+                                <input id="file-upload" name="import_file" type="file" class="sr-only" accept=".csv" required>
+                            </label>
+                            <p class="pl-1">or drag and drop</p>
+                        </div>
+                        <p class="text-xs text-gray-500">
+                            CSV files up to 10MB
+                        </p>
+                    </div>
+                </div>
+
+                <div class="mt-6 flex items-center justify-end">
+                    <a href="{% url 'product_list' %}" class="bg-white border border-gray-300 rounded-md shadow-sm py-2 px-4 inline-flex justify-center text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 mr-3">
+                        Cancel
+                    </a>
+                    <button type="submit" class="bg-blue-600 border border-transparent rounded-md shadow-sm py-2 px-4 inline-flex justify-center text-sm font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                        Import Data
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Simple script to update file label when selected
+    document.getElementById('file-upload').addEventListener('change', function(e) {
+        var fileName = e.target.files[0] ? e.target.files[0].name : 'No file chosen';
+        var label = document.querySelector('label[for="file-upload"] span');
+        if (fileName !== 'No file chosen') {
+            label.textContent = fileName;
+            label.classList.add('text-green-600');
+        } else {
+            label.textContent = 'Upload a file';
+            label.classList.remove('text-green-600');
+        }
+    });
+</script>
+{% endblock %}

@@ -21,6 +21,7 @@ class BOMListView(LoginRequiredMixin, ListView):
     model = BOM
     template_name = 'manufacturing/bom_list.html'
     context_object_name = 'boms'
+    paginate_by = 20
     ordering = ['-id']
 
 class BOMCreateView(LoginRequiredMixin, CreateView):
@@ -82,6 +83,7 @@ class ProductionListView(LoginRequiredMixin, ListView):
     model = Production
     template_name = 'manufacturing/production_list.html'
     context_object_name = 'productions'
+    paginate_by = 20
     ordering = ['-id']
 
 class ProductionCreateView(LoginRequiredMixin, CreateView):

@@ -75,6 +75,7 @@ class QuotationListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
     model = Quotation
     template_name = 'sales/quotation_list.html'
     context_object_name = 'quotations'
+    paginate_by = 20
     permission_required = 'sales.view_quotation'
     
     def get_queryset(self):
@@ -88,6 +89,7 @@ class InvoiceListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
     model = Invoice
     template_name = 'sales/invoice_list.html'
     context_object_name = 'invoices'
+    paginate_by = 20
     permission_required = 'sales.view_invoice'
     
     def get_queryset(self):

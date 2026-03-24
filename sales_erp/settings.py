@@ -59,6 +59,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'sales_erp.middleware.ProtectedErrorMiddleware',
 ]
 
 ROOT_URLCONF = 'sales_erp.urls'

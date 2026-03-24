@@ -12,6 +12,12 @@
                 <button type="submit" class="bg-gray-100 hover:bg-gray-200 border border-l-0 border-gray-300 rounded-r-md px-3 py-2 text-gray-700">Search</button>
             </form>
             {% if perms.inventory.add_product %}
+            <a href="{% url 'product_import' %}" class="bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2 px-4 rounded-lg shadow-sm transition duration-150 mr-2 flex items-center">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                </svg>
+                Import
+            </a>
             <a href="{% url 'product_create' %}" class="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg shadow transition duration-150">
                 + Add Product
             </a>
@@ -20,23 +26,52 @@
     </div>
 
     <div class="bg-white shadow-sm rounded-lg border border-gray-200 overflow-hidden">
-        <div class="overflow-x-auto">
-            <table class="min-w-full divide-y divide-gray-200">
+        <form id="bulkForm" method="POST" action="">
+            {% csrf_token %}
+            
+            <!-- Bulk Actions Bar -->
+            <div id="bulkActions" class="hidden bg-blue-50 px-4 py-3 border-b border-blue-200 flex justify-between items-center transition-all duration-300">
+                <div class="text-sm font-medium text-blue-800">
+                    <span id="selectedCount">0</span> products selected
+                </div>
+                <div class="flex space-x-3">
+                    <button type="button" onclick="submitBulkAction('{% url 'product_bulk_export' %}')" class="bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 px-3 py-1.5 rounded text-sm font-medium shadow-sm flex items-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1.5 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                        </svg>
+                        Export Selected
+                    </button>
+                    {% if perms.inventory.delete_product %}
+                    <button type="button" onclick="if(confirm('Are you sure you want to delete the selected products? This action cannot be undone.')) submitBulkAction('{% url 'product_bulk_delete' %}')" class="bg-red-600 hover:bg-red-700 text-white px-3 py-1.5 rounded text-sm font-medium shadow-sm flex items-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                        Delete Selected
+                    </button>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200">
                 <thead class="bg-gray-50">
                     <tr>
+                        <th scope="col" class="px-6 py-3 text-left w-12 text-xs font-medium text-gray-500 tracking-wider">
+                            <input type="checkbox" id="selectAll" class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded cursor-pointer">
+                        </th>
                         <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">SKU / ID</th>
                         <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Product Name</th>
                         <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Category / Brand</th>
                         <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Pricing</th>
                         <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Stock</th>
-                        {% if perms.inventory.change_product or perms.inventory.delete_product %}
-                        <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-                        {% endif %}
                     </tr>
                 </thead>
                 <tbody class="bg-white divide-y divide-gray-200">
                     {% for product in products %}
-                    <tr class="hover:bg-gray-50 transition-colors">
+                    <tr class="hover:bg-gray-50 transition-colors cursor-pointer" onclick="window.location.href='{% url 'product_edit' product.pk %}'">
+                        <td class="px-6 py-4 whitespace-nowrap" onclick="event.stopPropagation()">
+                            <input type="checkbox" name="selected_products" value="{{ product.pk }}" class="row-checkbox h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded cursor-pointer">
+                        </td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-blue-600">
                             {{ product.sku }}
                             <div class="text-xs text-gray-400">ID: {{ product.product_id }}</div>
@@ -66,20 +101,10 @@
                             </span>
                             <div class="mt-1 text-xs text-gray-500 font-mono">{{ product.current_stock }} available</div>
                         </td>
-                        {% if perms.inventory.change_product or perms.inventory.delete_product %}
-                        <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                            {% if perms.inventory.change_product %}
-                            <a href="{% url 'product_edit' product.pk %}" class="text-red-600 hover:text-red-900 mr-3">Edit</a>
-                            {% endif %}
-                            {% if perms.inventory.delete_product %}
-                            <a href="{% url 'product_delete' product.pk %}" class="text-red-600 hover:text-red-900">Delete</a>
-                            {% endif %}
-                        </td>
-                        {% endif %}
                     </tr>
                     {% empty %}
                     <tr>
-                        <td colspan="6" class="px-6 py-10 text-center text-gray-500">
+                        <td colspan="7" class="px-6 py-10 text-center text-gray-500">
                             No products found. Click "Add Product" to add one.
                         </td>
                     </tr>
@@ -87,6 +112,57 @@
                 </tbody>
             </table>
         </div>
+        {% include 'partials/pagination.html' %}
+        </form>
     </div>
 </div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const selectAll = document.getElementById('selectAll');
+        const rowCheckboxes = document.querySelectorAll('.row-checkbox');
+        const bulkActions = document.getElementById('bulkActions');
+        const selectedCountSpan = document.getElementById('selectedCount');
+        const bulkForm = document.getElementById('bulkForm');
+
+        function updateBulkActionsVisibility() {
+            const checkedCount = document.querySelectorAll('.row-checkbox:checked').length;
+            if(selectedCountSpan) selectedCountSpan.textContent = checkedCount;
+            
+            if (checkedCount > 0) {
+                if(bulkActions) bulkActions.classList.remove('hidden');
+            } else {
+                if(bulkActions) bulkActions.classList.add('hidden');
+                if(selectAll) selectAll.checked = false;
+            }
+        }
+
+        if (selectAll) {
+            selectAll.addEventListener('change', function(e) {
+                rowCheckboxes.forEach(cb => {
+                    cb.checked = e.target.checked;
+                });
+                updateBulkActionsVisibility();
+            });
+        }
+
+        rowCheckboxes.forEach(cb => {
+            cb.addEventListener('change', function() {
+                updateBulkActionsVisibility();
+                // Handle master checkbox state
+                if(selectAll) {
+                    const allChecked = document.querySelectorAll('.row-checkbox:checked').length === rowCheckboxes.length;
+                    selectAll.checked = allChecked;
+                }
+            });
+        });
+        
+        window.submitBulkAction = function(url) {
+            if(bulkForm) {
+                bulkForm.action = url;
+                bulkForm.submit();
+            }
+        };
+    });
+</script>
 {% endblock %}

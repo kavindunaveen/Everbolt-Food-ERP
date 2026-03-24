@@ -10,6 +10,7 @@ class CustomerListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
     model = Customer
     template_name = 'crm/customer_list.html'
     context_object_name = 'customers'
+    paginate_by = 20
     permission_required = 'crm.view_customer'
 
     def get_queryset(self):

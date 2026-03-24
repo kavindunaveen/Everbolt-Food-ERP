@@ -12,6 +12,7 @@ class GRNListView(LoginRequiredMixin, ListView):
     model = GRN
     template_name = 'purchases/grn_list.html'
     context_object_name = 'grns'
+    paginate_by = 20
     ordering = ['-id']
 
 class GRNDetailView(LoginRequiredMixin, DetailView):
