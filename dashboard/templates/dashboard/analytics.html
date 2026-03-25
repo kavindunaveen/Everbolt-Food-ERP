@@ -1,0 +1,302 @@
+{% extends 'layouts/base.html' %}
+
+{% block title %}Analytics Dashboard | ERP System{% endblock %}
+
+{% block content %}
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<div class="px-4 py-6 sm:px-0">
+    <div class="mb-8 flex flex-col md:flex-row md:items-end md:justify-between gap-4">
+        <div>
+            <h1 class="text-4xl font-extrabold text-gray-900 tracking-tight">Analytics Dashboard</h1>
+            <p class="mt-2 text-lg text-gray-600 font-medium">Live updating sales metrics, targets, and KPIs.</p>
+        </div>
+        <div class="bg-white px-4 py-2 rounded-xl shadow-sm border border-gray-100 flex items-center space-x-4">
+            <label for="yearSelect" class="font-bold text-sm text-gray-700">Year:</label>
+            <select id="yearSelect" class="form-select border-0 shadow-none text-red-600 font-bold focus:ring-0">
+                <option value="2026" selected>2026</option>
+                <option value="2025">2025</option>
+                <option value="2024">2024</option>
+            </select>
+            <div class="w-px h-6 bg-gray-200"></div>
+            <div class="flex items-center space-x-2 text-sm text-gray-500">
+                <span id="lastUpdated">Updating...</span>
+                <span class="relative flex h-3 w-3">
+                  <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                  <span class="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
+                </span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Overview KPIs -->
+    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 mb-8">
+        <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex flex-col">
+            <h3 class="text-sm font-bold text-gray-500 uppercase tracking-wider mb-2">Total Sales</h3>
+            <p class="text-3xl font-extrabold text-gray-900 mb-1" id="kpi-sales">0.00</p>
+            <p class="text-xs text-gray-400 font-medium">Overall value of issued invoices</p>
+        </div>
+        <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex flex-col">
+            <h3 class="text-sm font-bold text-gray-500 uppercase tracking-wider mb-2">Total Packs</h3>
+            <p class="text-3xl font-extrabold text-gray-900 mb-1" id="kpi-packs">0</p>
+            <p class="text-xs text-gray-400 font-medium">Sum of PACK quantities sold</p>
+        </div>
+        <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex flex-col">
+            <h3 class="text-sm font-bold text-gray-500 uppercase tracking-wider mb-2">Total Invoices</h3>
+            <p class="text-3xl font-extrabold text-gray-900 mb-1" id="kpi-invoices">0</p>
+            <p class="text-xs text-gray-400 font-medium">Issued or Paid</p>
+        </div>
+        <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex flex-col">
+            <h3 class="text-sm font-bold text-gray-500 uppercase tracking-wider mb-2">Customers Reached</h3>
+            <p class="text-3xl font-extrabold text-gray-900 mb-1" id="kpi-customers">0</p>
+            <p class="text-xs text-gray-400 font-medium">Total registered customers</p>
+        </div>
+    </div>
+
+    <!-- Charts Row 1: Overalls & Chasing Chart -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+        <div class="lg:col-span-2 bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+            <h3 class="text-lg font-bold text-gray-800 mb-4">Overall Sales Trend</h3>
+            <div class="relative h-72">
+                <canvas id="overallSalesChart"></canvas>
+            </div>
+        </div>
+        <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex flex-col">
+            <h3 class="text-lg font-bold text-gray-800 mb-4 text-center">Overall Target Achievement</h3>
+            <div class="relative flex-grow flex items-center justify-center">
+                <canvas id="gaugeOverallChart"></canvas>
+                <div class="absolute flex flex-col items-center top-[60%]">
+                    <span class="text-2xl font-extrabold text-gray-900" id="gauge-overall-val">0%</span>
+                    <span class="text-xs text-gray-500" id="gauge-overall-sub">Target: 0</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Category Breakdowns -->
+    <h2 class="text-2xl font-bold text-gray-800 mb-4 px-1">Category Analysis</h2>
+    <div class="grid grid-cols-1 xl:grid-cols-3 gap-6 mb-8">
+        <!-- Sugar Analysis -->
+        <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 border-t-4 border-t-blue-500">
+            <h3 class="text-lg font-bold text-gray-800 mb-4">Sugar Analysis</h3>
+            <div class="relative h-48 mb-6">
+                <canvas id="sugarTrendChart"></canvas>
+            </div>
+            <h4 class="text-sm font-bold text-gray-500 text-center uppercase tracking-wider mb-2">Yearly Target</h4>
+            <div class="relative h-40 flex items-center justify-center">
+                <canvas id="gaugeSugarChart"></canvas>
+                <div class="absolute flex flex-col items-center top-[60%]">
+                    <span class="text-xl font-bold text-gray-900" id="gauge-sugar-val">0%</span>
+                </div>
+            </div>
+            <div class="flex justify-between text-sm mt-2 text-gray-600 font-medium">
+                <span>Sold: <span id="sugar-sold" class="text-gray-900">0</span></span>
+                <span>Target: <span id="sugar-target" class="text-gray-900">0</span></span>
+            </div>
+        </div>
+
+        <!-- Creamer Analysis -->
+        <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 border-t-4 border-t-amber-500">
+            <h3 class="text-lg font-bold text-gray-800 mb-4">Creamer Analysis</h3>
+            <div class="relative h-48 mb-6">
+                <canvas id="creamerTrendChart"></canvas>
+            </div>
+            <h4 class="text-sm font-bold text-gray-500 text-center uppercase tracking-wider mb-2">Yearly Target</h4>
+            <div class="relative h-40 flex items-center justify-center">
+                <canvas id="gaugeCreamerChart"></canvas>
+                <div class="absolute flex flex-col items-center top-[60%]">
+                    <span class="text-xl font-bold text-gray-900" id="gauge-creamer-val">0%</span>
+                </div>
+            </div>
+            <div class="flex justify-between text-sm mt-2 text-gray-600 font-medium">
+                <span>Sold: <span id="creamer-sold" class="text-gray-900">0</span></span>
+                <span>Target: <span id="creamer-target" class="text-gray-900">0</span></span>
+            </div>
+        </div>
+
+        <!-- Tea Analysis -->
+        <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 border-t-4 border-t-emerald-500">
+            <h3 class="text-lg font-bold text-gray-800 mb-4">Tea Analysis</h3>
+            <div class="relative h-48 mb-6">
+                <canvas id="teaTrendChart"></canvas>
+            </div>
+            <h4 class="text-sm font-bold text-gray-500 text-center uppercase tracking-wider mb-2">Yearly Target</h4>
+            <div class="relative h-40 flex items-center justify-center">
+                <canvas id="gaugeTeaChart"></canvas>
+                <div class="absolute flex flex-col items-center top-[60%]">
+                    <span class="text-xl font-bold text-gray-900" id="gauge-tea-val">0%</span>
+                </div>
+            </div>
+            <div class="flex justify-between text-sm mt-2 text-gray-600 font-medium">
+                <span>Sold: <span id="tea-sold" class="text-gray-900">0</span></span>
+                <span>Target: <span id="tea-target" class="text-gray-900">0</span></span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Utils
+    const formatCurrency = (val) => new Intl.NumberFormat('en-LK', { notation: "compact", compactDisplay: "short" }).format(val);
+    const formatNumber = (val) => new Intl.NumberFormat('en-US').format(val);
+    
+    // Chart References
+    let overallChart, gaugeOverall, sugarChart, gaugeSugar, creamerChart, gaugeCreamer, teaChart, gaugeTea;
+
+    function initCharts() {
+        Chart.defaults.font.family = "'Inter', sans-serif";
+        Chart.defaults.color = '#64748b'; // Tailwind slate-500
+        
+        // 1. Overall Trend Chart
+        const ctxOverall = document.getElementById('overallSalesChart').getContext('2d');
+        overallChart = new Chart(ctxOverall, {
+            type: 'line',
+            data: { labels: [], datasets: [] },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: {
+                    y: { beginAtZero: true, grid: { borderDash: [5, 5] } },
+                    x: { grid: { display: false } }
+                },
+                elements: { line: { tension: 0.4 }, point: { radius: 4, hoverRadius: 6 } }
+            }
+        });
+
+        // 2. Trend Charts (Sugar, Creamer, Tea) - Combo Bar + Line
+        const createTrendConfig = (color) => ({
+            type: 'bar',
+            data: { labels: [], datasets: [] },
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: {
+                    y: { beginAtZero: true, grid: { borderDash: [5, 5] }, ticks: { callback: function(value) { return formatCurrency(value); } } },
+                    x: { grid: { display: false } }
+                }
+            }
+        });
+
+        sugarChart = new Chart(document.getElementById('sugarTrendChart').getContext('2d'), createTrendConfig());
+        creamerChart = new Chart(document.getElementById('creamerTrendChart').getContext('2d'), createTrendConfig());
+        teaChart = new Chart(document.getElementById('teaTrendChart').getContext('2d'), createTrendConfig());
+
+        // 3. Gauge Charts (Half Doughnuts)
+        const createGaugeConfig = () => ({
+            type: 'doughnut',
+            data: { labels: ['Achieved', 'Remaining'], datasets: [{ data: [0, 100], backgroundColor: ['#ef4444', '#f1f5f9'], borderWidth: 0 }] },
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                rotation: -90, circumference: 180, cutout: '75%',
+                plugins: { legend: { display: false }, tooltip: { enabled: false } },
+                animation: { duration: 1000 }
+            }
+        });
+
+        gaugeOverall = new Chart(document.getElementById('gaugeOverallChart').getContext('2d'), createGaugeConfig());
+        gaugeSugar = new Chart(document.getElementById('gaugeSugarChart').getContext('2d'), createGaugeConfig());
+        gaugeCreamer = new Chart(document.getElementById('gaugeCreamerChart').getContext('2d'), createGaugeConfig());
+        gaugeTea = new Chart(document.getElementById('gaugeTeaChart').getContext('2d'), createGaugeConfig());
+    }
+
+    function updateGauge(chart, valEl, subEl, achieved, target, color) {
+        achieved = parseFloat(achieved) || 0;
+        target = parseFloat(target) || 0;
+        let p = 0;
+        let rem = target;
+        if (target > 0) {
+            p = Math.min((achieved / target) * 100, 100);
+            rem = Math.max(target - achieved, 0);
+        } else {
+            // No target set, show full gray
+            achieved = 0; rem = 100;
+        }
+
+        chart.data.datasets[0].data = [achieved, rem];
+        chart.data.datasets[0].backgroundColor[0] = color;
+        chart.update();
+
+        document.getElementById(valEl).innerText = target > 0 ? `${p.toFixed(1)}%` : 'No Target';
+        if(subEl) {
+            document.getElementById(subEl).innerText = `Target: ${formatCurrency(target)}`;
+        }
+    }
+
+    async function fetchData() {
+        const year = document.getElementById('yearSelect').value;
+        document.getElementById('lastUpdated').innerText = 'Fetching...';
+        
+        try {
+            const resp = await fetch(`/dashboard/api/data/?year=${year}`);
+            if(!resp.ok) throw new Error("Failed to fetch");
+            const data = await resp.json();
+            
+            // Overviews
+            document.getElementById('kpi-sales').innerText = formatCurrency(data.overview.overall_sales_total);
+            document.getElementById('kpi-packs').innerText = formatCurrency(data.overview.total_packs);
+            document.getElementById('kpi-invoices').innerText = formatNumber(data.overview.total_invoices);
+            document.getElementById('kpi-customers').innerText = formatNumber(data.overview.total_customers);
+
+            // Overall Trend Line
+            overallChart.data.labels = data.trends.months;
+            overallChart.data.datasets = [{
+                label: 'Overall Sales',
+                data: data.trends.overall_sales,
+                borderColor: '#ef4444',
+                backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                fill: true
+            }];
+            overallChart.update();
+
+            // Category Trends (Combo)
+            const updateTrend = (c, saleData, qtyData, colorLine, colorBar) => {
+                c.data.labels = data.trends.months;
+                c.data.datasets = [
+                    { type: 'line', label: 'Sales Val', data: saleData, borderColor: colorLine, borderWidth: 2, fill: false, tension: 0.3 },
+                    { type: 'bar', label: 'Qty', data: qtyData, backgroundColor: colorBar, borderRadius: 4 }
+                ];
+                c.update();
+            }
+
+            updateTrend(sugarChart, data.trends.sugar_sales, data.trends.sugar_qty, '#2563eb', 'rgba(37, 99, 235, 0.4)');
+            updateTrend(creamerChart, data.trends.creamer_sales, data.trends.creamer_qty, '#d97706', 'rgba(217, 119, 6, 0.4)');
+            updateTrend(teaChart, data.trends.tea_sales, data.trends.tea_qty, '#059669', 'rgba(5, 150, 105, 0.4)');
+
+            // Gauges
+            updateGauge(gaugeOverall, 'gauge-overall-val', 'gauge-overall-sub', data.overview.overall_sales_total, data.targets.overall, '#ef4444');
+            
+            updateGauge(gaugeSugar, 'gauge-sugar-val', null, data.overview.sugar_sales, data.targets.sugar, '#3b82f6');
+            document.getElementById('sugar-sold').innerText = formatCurrency(data.overview.sugar_sales);
+            document.getElementById('sugar-target').innerText = formatCurrency(data.targets.sugar);
+
+            updateGauge(gaugeCreamer, 'gauge-creamer-val', null, data.overview.creamer_sales, data.targets.creamer, '#f59e0b');
+            document.getElementById('creamer-sold').innerText = formatCurrency(data.overview.creamer_sales);
+            document.getElementById('creamer-target').innerText = formatCurrency(data.targets.creamer);
+
+            updateGauge(gaugeTea, 'gauge-tea-val', null, data.overview.tea_sales, data.targets.tea, '#10b981');
+            document.getElementById('tea-sold').innerText = formatCurrency(data.overview.tea_sales);
+            document.getElementById('tea-target').innerText = formatCurrency(data.targets.tea);
+
+            const now = new Date();
+            document.getElementById('lastUpdated').innerText = `Live (Last update: ${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')})`;
+
+        } catch (e) {
+            console.error(e);
+            document.getElementById('lastUpdated').innerText = 'Error loading data';
+        }
+    }
+
+    // Init
+    document.addEventListener("DOMContentLoaded", () => {
+        initCharts();
+        fetchData();
+        
+        document.getElementById('yearSelect').addEventListener('change', fetchData);
+
+        // Polling every 60 seconds
+        setInterval(fetchData, 60000);
+    });
+</script>
+{% endblock %}
