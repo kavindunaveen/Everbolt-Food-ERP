@@ -5,10 +5,11 @@ from .models import Quotation, QuotationItem, Invoice, InvoiceItem
 class QuotationForm(forms.ModelForm):
     class Meta:
         model = Quotation
-        fields = ['customer', 'valid_until', 'notes']
+        fields = ['customer', 'valid_until', 'customer_po_number', 'notes']
         widgets = {
             'valid_until': forms.DateInput(attrs={'type': 'date', 'class': 'w-full px-3 py-2 border border-gray-300 rounded-md'}),
             'customer': forms.Select(attrs={'class': 'w-full px-3 py-2 border border-gray-300 rounded-md'}),
+            'customer_po_number': forms.TextInput(attrs={'class': 'w-full px-3 py-2 border border-gray-300 rounded-md'}),
             'notes': forms.Textarea(attrs={'class': 'w-full px-3 py-2 border border-gray-300 rounded-md', 'rows': 3}),
         }
 
@@ -30,11 +31,13 @@ QuotationItemFormSet = inlineformset_factory(
 class InvoiceForm(forms.ModelForm):
     class Meta:
         model = Invoice
-        fields = ['customer', 'invoice_type', 'delivery_date', 'notes']
+        fields = ['customer', 'invoice_type', 'delivery_date', 'due_date', 'customer_po_number', 'notes']
         widgets = {
             'customer': forms.Select(attrs={'class': 'w-full px-3 py-2 border border-gray-300 rounded-md'}),
             'invoice_type': forms.Select(attrs={'class': 'w-full px-3 py-2 border border-gray-300 rounded-md'}),
             'delivery_date': forms.DateInput(attrs={'type': 'date', 'class': 'w-full px-3 py-2 border border-gray-300 rounded-md'}),
+            'due_date': forms.DateInput(attrs={'type': 'date', 'class': 'w-full px-3 py-2 border border-gray-300 rounded-md'}),
+            'customer_po_number': forms.TextInput(attrs={'class': 'w-full px-3 py-2 border border-gray-300 rounded-md'}),
             'notes': forms.Textarea(attrs={'class': 'w-full px-3 py-2 border border-gray-300 rounded-md', 'rows': 3}),
         }
 

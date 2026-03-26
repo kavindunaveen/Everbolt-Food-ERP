@@ -1,14 +1,15 @@
 <!DOCTYPE html>
+{% load static %}
 <html lang="en">
 <head>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <meta charset="UTF-8">
     <title>Print Quotation - {{ quotation.quotation_number }}</title>
     <style>
-        @page { size: A4; margin: 15mm; }
-        body { font-family: 'Courier New', Courier, monospace; font-size: 11pt; color: #000; background: #fff; margin: 0; padding: 0; }
-        .container { width: 100%; max-width: 190mm; margin: 0 auto; }
-        h1 { text-align: center; font-size: 16pt; border: 2px solid #000; padding: 5px; display: inline-block; margin: 0 auto 20px auto; text-transform: uppercase; }
+        @page { size: 24.13cm 30.48cm; margin: 10mm; }
+        body { font-family: 'Courier New', Courier, monospace; font-size: 12pt; color: #000; background: #fff; margin: 0; padding: 0; }
+        .container { width: 100%; margin: 0 auto; }
+        h1 { text-align: center; font-size: 18pt; border: 2px solid #000; padding: 5px; display: inline-block; margin: 0; text-transform: uppercase; }
         table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
         th, td { border: 1px solid #000; padding: 6px; vertical-align: top; }
         .flex-row { display: flex; justify-content: space-between; margin-bottom: 10px; }
@@ -53,7 +54,7 @@
                 filename:     filename,
                 image:        { type: 'jpeg', quality: 0.98 },
                 html2canvas:  { scale: 2, useCORS: true },
-                jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+                jsPDF:        { unit: 'mm', format: [241.3, 304.8], orientation: 'portrait' }
             };
 
             html2pdf().set(opt).from(element).save().then(function() {
@@ -75,7 +76,14 @@
     </script>
 
     <div class="container">
-        <div style="text-align: center;"><h1>Quotation</h1></div>
+        <div class="flex-row" style="align-items: center; margin-bottom: 10px;">
+            <div>
+                <img src="{% static 'sales/img/logo.png' %}" alt="Company Logo" style="max-height: 50px; width: auto;" onerror="this.onerror=null; this.src='https://via.placeholder.com/150x50?text=LOGO';">
+            </div>
+            <div style="text-align: right;">
+                <h1 style="margin: 0;">Quotation</h1>
+            </div>
+        </div>
         
         <div class="flex-row">
              <div class="box">
@@ -103,6 +111,25 @@
                 <div style="font-weight:bold; margin-bottom: 5px;">Customer's Name: <span style="font-weight:normal;">{{ quotation.customer.company_name|default:quotation.customer.customer_name }}</span></div>
                 <div style="font-weight:bold; margin-bottom: 5px;">Address: <br><span style="font-weight:normal;">{{ quotation.customer.billing_address|linebreaksbr }}</span></div>
                 <div style="font-weight:bold; margin-top: 15px;">Telephone No: <span style="font-weight:normal;">{{ quotation.customer.phone }}</span></div>
+            </div>
+        </div>
+
+        <div class="flex-row" style="margin-bottom: 15px;">
+            <div class="box" style="width: 24%;">
+                <strong>Sales Officer:</strong><br>
+                {{ quotation.salesperson.get_full_name|default:quotation.salesperson.username|title }}
+            </div>
+            <div class="box" style="width: 24%;">
+                <strong>Payment Term:</strong><br>
+                {{ quotation.customer.get_payment_terms_display }}
+            </div>
+            <div class="box" style="width: 24%;">
+                <strong>Customer PO Number:</strong><br>
+                {{ quotation.customer_po_number|default:"-" }}
+            </div>
+            <div class="box" style="width: 24%;">
+                <strong>Due Date:</strong><br>
+                {{ quotation.valid_until|date:"Y-m-d"|default:"-" }}
             </div>
         </div>
 
@@ -160,21 +187,44 @@
             </tbody>
         </table>
 
-        <div class="full-box">
-            <strong>Total Amount in words:</strong> {{ amount_in_words }}<br><br>
-            <strong>Payment Terms:</strong> {{ quotation.customer.get_payment_terms_display }}
+        <div class="full-box" style="margin-bottom: 5px; padding: 5px;">
+            <strong>Total Amount in words:</strong> {{ amount_in_words }}<br>
+            <strong>Mode of Payment:</strong> Cash / Online / Direct Deposit / Cheque
         </div>
         
-        <table style="border:none; margin-top: 40px;">
+        <!-- Terms and Conditions -->
+        <div style="margin-top: 15px; margin-bottom: 20px; font-size: 0.85em; line-height: 1.3;">
+            <strong>Terms and Conditions</strong><br>
+            Everbolt Food Products will accept returns only within five (5) days of order receipt, and solely for items that remain unused and in their original packaging.<br>
+            Cheque is in favor of Everbolt Food Products (Pvt) Ltd and crossed A/C PAYEE ONLY with invoice numbers written overleaf.<br>
+            Use the account details for the direct deposit: Account Name – Everbolt Food Products (Pvt) Ltd, Number - 92497445 (BOC) Branch - Rajagiriya 746.
+        </div>
+
+        <!-- Standard signatures footers -->
+        <table style="border:none; margin-top: 30px; width: 100%; table-layout: fixed;">
             <tr>
-                <td style="border:none; text-align:center;">
-                    ____________________________<br>
-                    Prepared By<br>
-                    ({{ quotation.salesperson.username|title }})
+                <td style="border:none; text-align:center; vertical-align: top; padding: 0 5px;">
+                    <div style="border-top: 1px solid #000; padding-top: 5px;">
+                        Prepared By<br>
+                        <span style="font-size: 0.9em;">({{ quotation.salesperson.get_full_name|default:quotation.salesperson.username|title }})</span>
+                    </div>
                 </td>
-                <td style="border:none; text-align:center;">
-                    ____________________________<br>
-                    Customer Acceptance
+                <td style="border:none; text-align:center; vertical-align: top; padding: 0 5px;">
+                    <div style="border-top: 1px solid #000; padding-top: 5px;">
+                        Customer NIC<br>
+                        <span style="font-size: 0.9em;">({{ quotation.customer.nic|default:"...................." }})</span>
+                    </div>
+                </td>
+                <td style="border:none; text-align:center; vertical-align: top; padding: 0 5px;">
+                    <div style="border-top: 1px solid #000; padding-top: 5px;">
+                        Customer Name<br>
+                        <span style="font-size: 0.9em;">({{ quotation.customer.company_name|default:quotation.customer.customer_name|truncatechars:18 }})</span>
+                    </div>
+                </td>
+                <td style="border:none; text-align:center; vertical-align: top; padding: 0 5px;">
+                    <div style="border-top: 1px solid #000; padding-top: 5px;">
+                        Customer Signature
+                    </div>
                 </td>
             </tr>
         </table>

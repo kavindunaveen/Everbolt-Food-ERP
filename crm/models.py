@@ -44,6 +44,7 @@ class Customer(models.Model):
     registration_date = models.DateField(auto_now_add=True)
     vat_enabled = models.BooleanField(default=True, help_text="Always compute 18% VAT")
     vat_number = models.CharField(max_length=50, blank=True, null=True)
+    nic = models.CharField(max_length=20, blank=True, null=True)
 
     def __str__(self):
         return f"{self.company_name or self.customer_name}"

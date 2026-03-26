@@ -18,9 +18,28 @@
 {% endblock %}
 
 {% block content %}
-<link href="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/css/tom-select.default.min.css" rel="stylesheet">
-<script defer src="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/js/tom-select.complete.min.js"></script>
-<script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+<style>
+    /* Tailwind compatibility for Select2 */
+    .select2-container .select2-selection--single {
+        height: 42px;
+        border-color: #d1d5db;
+        border-radius: 0.375rem;
+        display: flex;
+        align-items: center;
+    }
+    .select2-container--default .select2-selection--single .select2-selection__rendered {
+        color: #374151;
+        line-height: normal;
+        padding-left: 0.75rem;
+    }
+    .select2-container--default .select2-selection--single .select2-selection__arrow {
+        height: 40px;
+        right: 8px;
+    }
+</style>
 
 <div class="max-w-7xl mx-auto px-4 py-6 sm:px-0">
     <div class="mb-6 flex justify-between items-center">
@@ -128,7 +147,7 @@
             </div>
             
             <div class="px-6 py-4 border-t border-gray-200 bg-gray-50 flex justify-between items-center">
-                <button type="button" id="add-row-btn" class="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-emerald-700 bg-emerald-100 hover:bg-emerald-200 transition-colors">
+                <button type="button" id="add-row" class="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-emerald-700 bg-emerald-100 hover:bg-emerald-200 transition-colors">
                     + Add Product Line
                 </button>
                 <div class="flex space-x-3">
@@ -162,131 +181,91 @@
 </table>
 
 <script>
-    document.addEventListener("DOMContentLoaded", function() {
-        // Function to calculate Line Total for a specific row
+    $(document).ready(function() {
+        // Initialize Select2 on all selects
+        function initSelects(scope) {
+            $(scope).find('select').not('#empty-row select').each(function() {
+                if (!$(this).hasClass('select2-hidden-accessible')) {
+                    $(this).select2({ width: '100%' });
+                }
+            });
+        }
+        initSelects(document.body);
+
+        // Calculate Line Total
         function calculateRowTotal(row) {
-            const qtyInput = row.querySelector('input[name$="-quantity"]');
-            const priceInput = row.querySelector('input[name$="-unit_price"]');
-            const totalDisplay = row.querySelector('.line-total');
-            
-            if (qtyInput && priceInput && totalDisplay) {
-                const qty = parseFloat(qtyInput.value) || 0;
-                const price = parseFloat(priceInput.value) || 0;
-                totalDisplay.value = (qty * price).toFixed(2);
-            }
+            const qty = parseFloat($(row).find('input[name$="-quantity"]').val()) || 0;
+            const price = parseFloat($(row).find('input[name$="-unit_price"]').val()) || 0;
+            $(row).find('.line-total').val((qty * price).toFixed(2));
         }
 
-        // Initialize calculations for existing rows on load
-        document.querySelectorAll('.formset-row').forEach(row => {
-            const qtyInput = row.querySelector('input[name$="-quantity"]');
-            const priceInput = row.querySelector('input[name$="-unit_price"]');
-            const productSelect = row.querySelector('select[name$="-product"]');
-            
-            // If we have a product selected but NO unit price (e.g. old record), fetch it
-            if (productSelect && productSelect.value && priceInput && !priceInput.value) {
-                fetch(`/products/api/${productSelect.value}/`)
-                    .then(response => response.json())
-                    .then(data => {
-                        if (!data.error) {
-                            priceInput.value = data.selling_price;
-                            calculateRowTotal(row);
-                        }
-                    })
-                    .catch(e => console.error(e));
-            } else {
-                calculateRowTotal(row);
-            }
+        // Run calculations on load for existing items
+        $('.formset-row').each(function() {
+            calculateRowTotal(this);
         });
 
-        function initSelects(container) {
-            container.querySelectorAll('select').forEach((el)=>{
-                if(el.tomselect) return;
-                
-                // If this is a product select, we want custom behaviors
-                if(el.name && el.name.includes('-product')) {
-                    new TomSelect(el, {
-                        create: false,
-                        onChange: function(value) {
-                            if (!value) return;
-                            const row = el.closest('tr');
-                            // Fetch Product Price
-                            fetch(`/products/api/${value}/`)
-                                .then(response => response.json())
-                                .then(data => {
-                                    if (data.error) return;
-                                    
-                                    // Set the unit price
-                                    const priceInput = row.querySelector('input[name$="-unit_price"]');
-                                    if(priceInput) {
-                                        priceInput.value = data.selling_price;
-                                    }
-
-                                    // Check stock (For Invoices ONLY)
-                                    if (data.current_stock === 0) {
-                                        alert("Warning: This product is completely out of stock!");
-                                        this.clear(true); // Clear the selection
-                                        if(priceInput) priceInput.value = '';
-                                    }
-
-                                    // Default quantity to 1 if empty
-                                    const qtyInput = row.querySelector('input[name$="-quantity"]');
-                                    if(qtyInput && !qtyInput.value) {
-                                        qtyInput.value = 1;
-                                    }
-                                    calculateRowTotal(row);
-                                })
-                                .catch(err => console.error("Error fetching product data:", err));
-                        }
-                    });
-                } else {
-                    new TomSelect(el, {create: false});
-                }
-            });
-        }
-        
-        // Initial setup for the form inputs
-        initSelects(document.querySelector('form'));
-
-        const container = document.getElementById('formset-container');
+        // Add Product Line cloning logic
+        const container = $('#formset-container');
         const prefix = '{{ items.prefix }}';
-        const totalFormsInput = document.getElementById('id_' + prefix + '-TOTAL_FORMS');
-        
-        document.getElementById('add-row').addEventListener('click', function() {
-            let totalForms = parseInt(totalFormsInput.value);
-            const emptyRow = document.getElementById('empty-row').firstElementChild.cloneNode(true);
-            const regex = new RegExp('__prefix__', 'g');
+        const totalFormsInput = $('#id_' + prefix + '-TOTAL_FORMS');
+
+        $('#add-row').on('click', function() {
+            let totalForms = parseInt(totalFormsInput.val());
+            const emptyRowHTML = $('#empty-row').html();
+            const compiledRowHTML = emptyRowHTML.replace(/__prefix__/g, totalForms);
             
-            emptyRow.innerHTML = emptyRow.innerHTML.replace(regex, totalForms);
+            const newRow = $(compiledRowHTML);
+            container.append(newRow);
             
-            const appended = container.appendChild(emptyRow);
+            // Re-bind selects in the new row
+            initSelects(newRow);
             
-            // Reinitialize the new selects
-            initSelects(appended);
-            
-            totalForms++;
-            totalFormsInput.value = totalForms;
+            totalFormsInput.val(totalForms + 1);
         });
 
-        // Event delegation for dynamically added remove buttons AND input changes
-        ['input', 'change', 'keyup'].forEach(function(evt) {
-            container.addEventListener(evt, function(e) {
-                // Listen for changes to qty or price fields to update totals live
-                if (e.target.matches('input[name$="-quantity"], input[name$="-unit_price"]')) {
-                    calculateRowTotal(e.target.closest('tr'));
-                }
-            });
+        // Event delegation for Product Selection changes
+        $(document).on('change', 'select[name$="-product"]', function() {
+            const value = $(this).val();
+            if (!value) return;
+            const row = $(this).closest('tr');
+            
+            fetch(`/inventory/api/${value}/`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.error) return;
+                    
+                    const priceInput = row.find('input[name$="-unit_price"]');
+                    if (priceInput.length && !priceInput.val()) {
+                        priceInput.val(data.selling_price);
+                    }
+                    
+                    const qtyInput = row.find('input[name$="-quantity"]');
+                    if (qtyInput.length && !qtyInput.val()) {
+                        qtyInput.val(1);
+                    }
+                    
+                    if (data.current_stock === 0) {
+                        alert("Warning: This product is completely out of stock!");
+                    }
+                    calculateRowTotal(row[0]);
+                })
+                .catch(err => console.error("Error fetching product data:", err));
         });
 
-        container.addEventListener('click', function(e) {
-            if (e.target.closest('.remove-row')) {
-                const row = e.target.closest('tr');
-                const deleteCheckbox = row.querySelector('input[type="checkbox"][id$="-DELETE"]');
-                if (deleteCheckbox) {
-                    deleteCheckbox.checked = true;
-                    row.style.display = 'none';
-                } else {
-                    row.remove();
-                }
+        // Live calculation triggers on input changes
+        $(document).on('input', 'input[name$="-quantity"], input[name$="-unit_price"]', function() {
+            calculateRowTotal($(this).closest('tr')[0]);
+        });
+
+        // Remove row logic
+        $(document).on('click', '.remove-row', function() {
+            const row = $(this).closest('tr');
+            const deleteCheckbox = row.find('input[type="checkbox"][id$="-DELETE"]');
+            if (deleteCheckbox.length > 0) {
+                deleteCheckbox.prop('checked', true);
+                row.hide();
+            } else {
+                row.remove();
             }
         });
     });
