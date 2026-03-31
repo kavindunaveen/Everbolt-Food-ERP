@@ -1,13 +1,30 @@
+import re
 from django import forms
+from django.core.exceptions import ValidationError
 from .models import Customer
 
 class CustomerForm(forms.ModelForm):
     class Meta:
         model = Customer
-        fields = '__all__'
+        exclude = ['customer_code']
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         for field_name, field in self.fields.items():
             if not getattr(field.widget, 'input_type', '') == 'checkbox':
                 field.widget.attrs['class'] = 'w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm'
+        
+        # Enforce exact numeric entry on the frontend for Phone
+        if 'phone' in self.fields:
+            self.fields['phone'].widget.attrs.update({
+                'pattern': '[0-9]{10}',
+                'title': '10 digit numeric phone number',
+                'oninput': "this.value = this.value.replace(/[^0-9]/g, '').slice(0, 10);"
+            })
+
+    def clean_phone(self):
+        phone = self.cleaned_data.get('phone', '')
+        phone = re.sub(r'[^0-9]', '', phone)
+        if len(phone) != 10:
+            raise ValidationError("Phone number must contain exactly 10 digits.")
+        return phone

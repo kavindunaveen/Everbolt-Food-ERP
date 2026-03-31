@@ -66,6 +66,7 @@
             }
         }
     </style>
+    {% block extra_head %}{% endblock %}
 </head>
 <body class="bg-gray-50 text-gray-900 min-h-screen flex flex-col">
 
@@ -136,6 +137,7 @@
             <p class="text-center text-sm text-gray-500 font-medium">Developed by IT Department at Everbolt</p>
         </div>
     </footer>
-
+    
+    {% block extra_js %}{% endblock %}
 </body>
 </html>

@@ -44,10 +44,6 @@
                 </div>
                 
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">{{ form.customer_code.label }}</label>
-                    {{ form.customer_code }}
-                </div>
-                <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">{{ form.customer_name.label }}</label>
                     {{ form.customer_name }}
                 </div>
@@ -56,8 +52,20 @@
                     {{ form.company_name }}
                 </div>
                 <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">{{ form.customer_status.label }}</label>
+                    {{ form.customer_status }}
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">{{ form.nic.label }}</label>
+                    {{ form.nic }}
+                </div>
+                <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">{{ form.customer_type.label }}</label>
                     {{ form.customer_type }}
+                </div>
+                <div id="custom-type-container" style="display: none;">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">{{ form.custom_customer_type.label }}</label>
+                    {{ form.custom_customer_type }}
                 </div>
 
                 <!-- Group 2: Contact Info -->
@@ -77,13 +85,65 @@
                     <label class="block text-sm font-medium text-gray-700 mb-1">{{ form.email.label }}</label>
                     {{ form.email }}
                 </div>
-                <div class="md:col-span-1">
-                    <label class="block text-sm font-medium text-gray-700 mb-1">{{ form.billing_address.label }}</label>
-                    {{ form.billing_address }}
-                </div>
-                <div class="md:col-span-1">
-                    <label class="block text-sm font-medium text-gray-700 mb-1">{{ form.delivery_address.label }}</label>
-                    {{ form.delivery_address }}
+                <div class="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-6 mt-2">
+                    <!-- Billing Address Box -->
+                    <div class="space-y-3 bg-gray-50 p-4 rounded-md border border-gray-200">
+                        <h3 class="text-sm font-bold text-gray-800 border-b pb-1">Billing Address</h3>
+                        <div>
+                            <label class="block text-xs font-medium text-gray-700 mb-1">{{ form.billing_address_line1.label }}</label>
+                            {{ form.billing_address_line1 }}
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-gray-700 mb-1">{{ form.billing_address_line2.label }}</label>
+                            {{ form.billing_address_line2 }}
+                        </div>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-xs font-medium text-gray-700 mb-1">{{ form.billing_city.label }}</label>
+                                {{ form.billing_city }}
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-gray-700 mb-1">{{ form.billing_province.label }}</label>
+                                {{ form.billing_province }}
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-gray-700 mb-1">{{ form.billing_zip_code.label }}</label>
+                            {{ form.billing_zip_code }}
+                        </div>
+                    </div>
+
+                    <!-- Delivery Address Box -->
+                    <div class="space-y-3 bg-gray-50 p-4 rounded-md border border-gray-200">
+                        <div class="flex justify-between items-center border-b pb-1">
+                            <h3 class="text-sm font-bold text-gray-800">Delivery Address</h3>
+                            <label class="flex items-center text-xs font-medium text-gray-600 cursor-pointer">
+                                <input type="checkbox" id="copy_billing" class="mr-1.5 h-3.5 w-3.5 text-purple-600 rounded"> Same as Billing
+                            </label>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-gray-700 mb-1">{{ form.delivery_address_line1.label }}</label>
+                            {{ form.delivery_address_line1 }}
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-gray-700 mb-1">{{ form.delivery_address_line2.label }}</label>
+                            {{ form.delivery_address_line2 }}
+                        </div>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-xs font-medium text-gray-700 mb-1">{{ form.delivery_city.label }}</label>
+                                {{ form.delivery_city }}
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-gray-700 mb-1">{{ form.delivery_province.label }}</label>
+                                {{ form.delivery_province }}
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-gray-700 mb-1">{{ form.delivery_zip_code.label }}</label>
+                            {{ form.delivery_zip_code }}
+                        </div>
+                    </div>
                 </div>
 
                 <!-- Group 3: Sales & Accounting -->
@@ -96,22 +156,38 @@
                     {{ form.assigned_sales_officer }}
                 </div>
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">{{ form.area_route.label }}</label>
-                    {{ form.area_route }}
+                    <label class="block text-sm font-medium text-gray-700 mb-1">{{ form.order_type.label }}</label>
+                    {{ form.order_type }}
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">{{ form.payment_terms.label }}</label>
                     {{ form.payment_terms }}
                 </div>
                 <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">{{ form.payment_method.label }}</label>
+                    {{ form.payment_method }}
+                </div>
+                <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">{{ form.credit_limit.label }}</label>
                     {{ form.credit_limit }}
                 </div>
+                <div class="flex items-center mt-6">
+                    <div class="flex items-center h-5">
+                        {{ form.special_price_customer }}
+                    </div>
+                    <div class="ml-3 text-sm">
+                        <label class="font-medium text-gray-700">{{ form.special_price_customer.label }}</label>
+                    </div>
+                </div>
                 
-                <div class="md:col-span-2 grid grid-cols-2 gap-6">
+                <div class="md:col-span-2 grid grid-cols-2 lg:grid-cols-3 gap-6 mt-4">
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">{{ form.vat_number.label }}</label>
                         {{ form.vat_number }}
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">{{ form.tin_number.label }}</label>
+                        {{ form.tin_number }}
                     </div>
                     <div class="flex items-center mt-6">
                         <div class="flex items-center h-5">
@@ -119,7 +195,7 @@
                         </div>
                         <div class="ml-3 text-sm">
                             <label class="font-medium text-gray-700">{{ form.vat_enabled.label }}</label>
-                            <p class="text-gray-500">{{ form.vat_enabled.help_text }}</p>
+                            <p class="text-gray-500 text-xs">{{ form.vat_enabled.help_text }}</p>
                         </div>
                     </div>
                 </div>
@@ -136,4 +212,68 @@
         </form>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Safe getter helper
+        function getEl(name) { return document.querySelector('[name="' + name + '"]'); }
+
+        // --- Custom Customer Type Logic ---
+        function toggleCustomType() {
+            var typeSelect = getEl('customer_type');
+            if(!typeSelect) return;
+            var val = typeSelect.value;
+            var container = document.getElementById('custom-type-container');
+            if(container) {
+                if(val === 'OTHER') {
+                    container.style.display = 'block';
+                } else {
+                    container.style.display = 'none';
+                }
+            }
+        }
+        
+        const typeSelectEl = getEl('customer_type');
+        if(typeSelectEl) { typeSelectEl.addEventListener('change', toggleCustomType); }
+        
+        // jQuery fallback for Select2 plugins replacing standard selects
+        if(window.jQuery) {
+            jQuery('[name="customer_type"]').on('change select2:select', toggleCustomType);
+        }
+        toggleCustomType();
+
+        // --- Same as Billing Logic ---
+        const copyBillingBtn = document.getElementById('copy_billing');
+        if(copyBillingBtn) {
+            copyBillingBtn.addEventListener('change', function() {
+                if(this.checked) {
+                    var b1 = getEl('billing_address_line1');
+                    var b2 = getEl('billing_address_line2');
+                    var bCity = getEl('billing_city');
+                    var bProv = getEl('billing_province');
+                    var bZip = getEl('billing_zip_code');
+
+                    var d1 = getEl('delivery_address_line1');
+                    var d2 = getEl('delivery_address_line2');
+                    var dCity = getEl('delivery_city');
+                    var dProv = getEl('delivery_province');
+                    var dZip = getEl('delivery_zip_code');
+
+                    if(d1 && b1) d1.value = b1.value;
+                    if(d2 && b2) d2.value = b2.value;
+                    if(dCity && bCity) dCity.value = bCity.value;
+                    if(dProv && bProv) dProv.value = bProv.value;
+                    if(dZip && bZip) dZip.value = bZip.value;
+                    
+                    // Trigger change in case Select2 is bound to province dropdown
+                    if(window.jQuery && dProv) {
+                        jQuery(dProv).trigger('change');
+                    }
+                }
+            });
+        }
+    });
+</script>
 {% endblock %}

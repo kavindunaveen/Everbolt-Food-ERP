@@ -1,0 +1,313 @@
+{% extends 'layouts/base.html' %}
+
+{% block title %}Customer Profile: {{ customer.customer_name }} | ERP System{% endblock %}
+
+{% block extra_head %}
+<!-- Chart.js for visualizations -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 py-8">
+    
+    <!-- Top Actions & Smart Buttons -->
+    <div class="flex flex-col md:flex-row justify-between items-start md:items-center bg-white p-4 rounded-t-lg border-b border-gray-200">
+        <div class="flex items-center gap-2 mb-4 md:mb-0">
+            <a href="{% url 'customer_list' %}" class="bg-white py-1.5 px-3 border border-gray-300 rounded shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none transition-colors">
+                List
+            </a>
+            <a href="{% url 'customer_edit' customer.pk %}" class="bg-purple-600 text-white py-1.5 px-4 rounded shadow-sm text-sm font-medium hover:bg-purple-700 focus:outline-none transition-colors">
+                Edit
+            </a>
+            {% if customer.customer_status == 'ACTIVE' %}
+                 <span class="inline-flex items-center px-2.5 py-1.5 rounded-full text-xs font-medium bg-green-100 text-green-800 ml-2 border border-green-200">Active</span>
+            {% else %}
+                 <span class="inline-flex items-center px-2.5 py-1.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800 ml-2 border border-gray-200">{{ customer.get_customer_status_display }}</span>
+            {% endif %}
+        </div>
+        
+        <div class="flex gap-2">
+            <!-- Smart Button: Invoiced -->
+            <a href="{% url 'invoice_list' %}?q={{ customer.customer_code }}" class="flex items-center border border-gray-200 rounded px-3 py-1.5 hover:bg-gray-50 transition-colors">
+                <svg class="w-5 h-5 text-gray-400 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                <div class="text-xs text-right">
+                    <div class="text-gray-500 font-medium whitespace-nowrap">Invoiced Rs</div>
+                    <div class="font-bold text-gray-900">{{ total_invoiced|floatformat:2 }}</div>
+                </div>
+            </a>
+            
+            <!-- Smart Button: Sales Count -->
+            <a href="{% url 'invoice_list' %}?q={{ customer.customer_code }}" class="flex items-center border border-gray-200 rounded px-3 py-1.5 hover:bg-gray-50 transition-colors">
+                <svg class="w-5 h-5 text-gray-400 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                <div class="text-xs text-right">
+                    <div class="text-gray-500 font-medium">Sales</div>
+                    <div class="font-bold text-gray-900">{{ invoice_count }}</div>
+                </div>
+            </a>
+        </div>
+    </div>
+
+    <!-- Main Profile Card -->
+    <div class="bg-white shadow-sm border-x border-b border-gray-200 rounded-b-lg p-6 mb-6">
+        <h1 class="text-3xl font-bold text-gray-900 mb-6">
+            {{ customer.customer_name }}
+            {% if customer.company_name %}
+                <span class="text-xl text-gray-500 font-normal ml-2">({{ customer.company_name }})</span>
+            {% endif %}
+        </h1>
+        
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <!-- Left Side Data -->
+            <div class="space-y-4">
+                <div class="grid grid-cols-3 gap-4">
+                    <div class="text-sm font-medium text-gray-500">Customer Type</div>
+                    <div class="col-span-2 text-sm text-gray-900">
+                        {% if customer.customer_type == 'OTHER' %}
+                            {{ customer.custom_customer_type|default:"Other" }}
+                        {% else %}
+                            {{ customer.get_customer_type_display }}
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <div class="grid grid-cols-3 gap-4">
+                    <div class="text-sm font-medium text-gray-500">Address</div>
+                    <div class="col-span-2 text-sm text-gray-900 leading-relaxed">
+                        {% if customer.billing_address_line1 %}{{ customer.billing_address_line1 }}<br>{% endif %}
+                        {% if customer.billing_address_line2 %}{{ customer.billing_address_line2 }}<br>{% endif %}
+                        {% if customer.billing_city %}{{ customer.billing_city }} {% if customer.billing_zip_code %}({{ customer.billing_zip_code }}){% endif %}<br>{% endif %}
+                        {% if customer.billing_province %}{{ customer.billing_province }}<br>{% endif %}
+                    </div>
+                </div>
+                
+                <div class="grid grid-cols-3 gap-4">
+                    <div class="text-sm font-medium text-gray-500">TIN Number</div>
+                    <div class="col-span-2 text-sm text-gray-900">{{ customer.tin_number|default:"-" }}</div>
+                </div>
+                <div class="grid grid-cols-3 gap-4">
+                    <div class="text-sm font-medium text-gray-500">VAT Number</div>
+                    <div class="col-span-2 text-sm text-gray-900">{{ customer.vat_number|default:"-" }}</div>
+                </div>
+            </div>
+
+            <!-- Right Side Data -->
+            <div class="space-y-4">
+                <div class="grid grid-cols-3 gap-4">
+                    <div class="text-sm font-medium text-gray-500">Phone</div>
+                    <div class="col-span-2 text-sm text-gray-900">{{ customer.phone|default:"-" }}</div>
+                </div>
+                <div class="grid grid-cols-3 gap-4">
+                    <div class="text-sm font-medium text-gray-500">Contact Person</div>
+                    <div class="col-span-2 text-sm text-gray-900">{{ customer.contact_person|default:"-" }}</div>
+                </div>
+                <div class="grid grid-cols-3 gap-4">
+                    <div class="text-sm font-medium text-gray-500">Email</div>
+                    <div class="col-span-2 text-sm text-purple-600 hover:underline">
+                        {% if customer.email %}<a href="mailto:{{ customer.email }}">{{ customer.email }}</a>{% else %}-{% endif %}
+                    </div>
+                </div>
+                <div class="grid grid-cols-3 gap-4">
+                    <div class="text-sm font-medium text-gray-500">Tags</div>
+                    <div class="col-span-2 flex flex-wrap gap-2">
+                        {% if customer.special_price_customer %}
+                            <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-800">Special Price</span>
+                        {% endif %}
+                        {% if outstanding_balance > customer.credit_limit %}
+                            <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800">Over Credit Limit</span>
+                        {% endif %}
+                        <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">{{ customer.customer_code }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Odoo Style Tabs Structure -->
+    <div class="bg-white shadow-sm border border-gray-200 rounded-lg overflow-hidden">
+        <!-- Tab Headers -->
+        <div class="border-b border-gray-200 bg-gray-50">
+            <nav class="flex px-4" aria-label="Tabs">
+                <button onclick="switchTab('sales-tab')" class="tab-btn py-4 px-6 text-center border-b-2 border-purple-500 font-medium text-sm text-purple-600 focus:outline-none" id="btn-sales-tab">
+                    Sales & Purchases
+                </button>
+                <button onclick="switchTab('accounting-tab')" class="tab-btn py-4 px-6 text-center border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700 hover:border-gray-300 focus:outline-none" id="btn-accounting-tab">
+                    Accounting Details
+                </button>
+                <button onclick="switchTab('audit-tab')" class="tab-btn py-4 px-6 text-center border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700 hover:border-gray-300 focus:outline-none" id="btn-audit-tab">
+                    Change Log / Activity
+                </button>
+            </nav>
+        </div>
+
+        <!-- Tab Contents -->
+        <div class="p-6 bg-gray-50/50">
+            <!-- Sales Tab -->
+            <div id="sales-tab" class="tab-content block">
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    <!-- Chart -->
+                    <div class="bg-white border border-gray-200 shadow-sm rounded p-4">
+                        <h3 class="text-sm font-bold text-gray-700 mb-4 uppercase">Trailing 6 Months Sales</h3>
+                        {% if chart_data %}
+                        <canvas id="salesChart" height="200"></canvas>
+                        {% else %}
+                        <div class="flex items-center justify-center h-48 text-gray-400">Not enough data to graph</div>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Purchase History Grid -->
+                    <div class="bg-white border border-gray-200 shadow-sm rounded flex flex-col overflow-hidden">
+                        <div class="bg-gray-100 px-4 py-3 border-b border-gray-200 text-sm font-bold text-gray-700 uppercase flex justify-between">
+                            Recent Invoices
+                            <a href="{% url 'invoice_list' %}?q={{ customer.customer_code }}" class="text-xs text-purple-600 hover:underline">View All &rarr;</a>
+                        </div>
+                        <div class="overflow-y-auto w-full p-0" style="max-height: 250px;">
+                            <table class="min-w-full divide-y divide-gray-200">
+                                <tbody class="bg-white divide-y divide-gray-200">
+                                    {% for invoice in purchase_history|slice:":10" %}
+                                    <tr class="hover:bg-gray-50">
+                                        <td class="px-4 py-3 whitespace-nowrap text-sm font-medium">
+                                            <a href="{% url 'invoice_print' invoice.pk %}" class="text-purple-600 hover:underline">{{ invoice.invoice_number }}</a>
+                                        </td>
+                                        <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-500">{{ invoice.creation_date|date:"M d, Y" }}</td>
+                                        <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900 text-right font-medium">Rs {{ invoice.total_amount|floatformat:2 }}</td>
+                                    </tr>
+                                    {% empty %}
+                                    <tr>
+                                        <td colspan="3" class="px-4 py-8 text-center text-sm text-gray-500">No invoices on record.</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Accounting Tab -->
+            <div id="accounting-tab" class="tab-content hidden">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-5xl mx-auto bg-white p-6 shadow-sm border border-gray-200 rounded">
+                    <div>
+                        <h3 class="text-md font-bold text-gray-800 border-b pb-2 mb-4">Credit Configuration</h3>
+                        <div class="grid grid-cols-2 gap-y-4">
+                            <div class="text-sm text-gray-500">Credit Limit</div>
+                            <div class="text-sm font-bold text-gray-900">Rs {{ customer.credit_limit|floatformat:2 }}</div>
+                            
+                            <div class="text-sm text-gray-500">Outstanding Limit</div>
+                            <div class="text-sm font-bold {% if outstanding_balance > customer.credit_limit %}text-red-600{% else %}text-orange-600{% endif %}">Rs {{ outstanding_balance|floatformat:2 }}</div>
+                            
+                            <div class="text-sm text-gray-500">Payment Terms</div>
+                            <div class="text-sm font-medium text-gray-900">{{ customer.get_payment_terms_display }}</div>
+                        </div>
+                    </div>
+                    <div>
+                        <h3 class="text-md font-bold text-gray-800 border-b pb-2 mb-4">Receivables Configuration</h3>
+                        <div class="grid grid-cols-2 gap-y-4">
+                            <div class="text-sm text-gray-500">Payment Method</div>
+                            <div class="text-sm font-medium text-gray-900">{{ customer.get_payment_method_display }}</div>
+                            
+                            <div class="text-sm text-gray-500">Order Route Type</div>
+                            <div class="text-sm font-medium text-gray-900">{{ customer.get_order_type_display|default:"-" }}</div>
+                            
+                            <div class="text-sm text-gray-500">Assigned Officer</div>
+                            <div class="text-sm font-medium text-gray-900">{{ customer.assigned_sales_officer.get_full_name|default:"-" }}</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Audit Tab -->
+            <div id="audit-tab" class="tab-content hidden">
+                 <div class="w-full max-w-4xl mx-auto bg-white p-6 shadow-sm border border-gray-200 rounded">
+                    <h3 class="text-md font-bold text-gray-800 border-b pb-2 mb-6">Activity & Adjustments</h3>
+                    <div class="flow-root">
+                        <ul role="list" class="-mb-8 text-sm">
+                            {% for log in change_logs %}
+                            <li>
+                                <div class="relative pb-8">
+                                    {% if not forloop.last %}
+                                    <span class="absolute top-4 left-4 -ml-px h-full w-0.5 bg-gray-200" aria-hidden="true"></span>
+                                    {% endif %}
+                                    <div class="relative flex space-x-3">
+                                        <div>
+                                            <span class="h-8 w-8 rounded-full bg-purple-100 flex items-center justify-center ring-8 ring-white">
+                                                <svg class="h-4 w-4 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+                                            </span>
+                                        </div>
+                                        <div class="min-w-0 flex-1 pt-1.5 flex justify-between space-x-4">
+                                            <div>
+                                                <p class="text-gray-900">Recorded Activity: <span class="font-medium text-gray-600">{{ log.details }}</span></p>
+                                            </div>
+                                            <div class="text-right text-xs whitespace-nowrap text-gray-500">
+                                                <time datetime="{{ log.timestamp.isoformat }}">{{ log.timestamp|date:"M j, Y H:i" }}</time>
+                                                <div class="mt-1 font-medium text-purple-600">by {{ log.changed_by.username|default:"System" }}</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </li>
+                            {% empty %}
+                            <li class="py-4 text-gray-500 text-center border border-dashed rounded bg-gray-50">No activity logged yet. Modifications will appear here dynamically.</li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                 </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block extra_js %}
+<script>
+    // Tab Switching Logic
+    function switchTab(tabId) {
+        document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+        document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('block'));
+        
+        document.querySelectorAll('.tab-btn').forEach(el => {
+            el.classList.remove('border-purple-500', 'text-purple-600');
+            el.classList.add('border-transparent', 'text-gray-500');
+        });
+
+        document.getElementById(tabId).classList.remove('hidden');
+        document.getElementById(tabId).classList.add('block');
+        
+        const activeBtn = document.getElementById('btn-' + tabId);
+        activeBtn.classList.remove('border-transparent', 'text-gray-500');
+        activeBtn.classList.add('border-purple-500', 'text-purple-600');
+    }
+
+    // Chart.js rendering
+    document.addEventListener('DOMContentLoaded', function() {
+        const ctx = document.getElementById('salesChart');
+        if (ctx) {
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: {{ chart_labels|safe|default:"[]" }},
+                    datasets: [{
+                        label: 'Invoiced Amt (Rs)',
+                        data: {{ chart_data|safe|default:"[]" }},
+                        backgroundColor: 'rgba(147, 51, 234, 0.7)',
+                        borderColor: 'rgb(147, 51, 234)',
+                        borderWidth: 1,
+                        borderRadius: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    },
+                    plugins: {
+                        legend: { display: false }
+                    }
+                }
+            });
+        }
+    });
+</script>
+{% endblock %}
+{% endblock %}
