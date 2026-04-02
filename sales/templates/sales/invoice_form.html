@@ -78,6 +78,16 @@
                     {{ form.delivery_date }}
                     {% if form.delivery_date.errors %}<p class="text-red-500 text-xs mt-1">{{ form.delivery_date.errors.0 }}</p>{% endif %}
                 </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Due Date</label>
+                    {{ form.due_date }}
+                    {% if form.due_date.errors %}<p class="text-red-500 text-xs mt-1">{{ form.due_date.errors.0 }}</p>{% endif %}
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Customer PO Number</label>
+                    {{ form.customer_po_number }}
+                    {% if form.customer_po_number.errors %}<p class="text-red-500 text-xs mt-1">{{ form.customer_po_number.errors.0 }}</p>{% endif %}
+                </div>
                 <div class="sm:col-span-3">
                     <label class="block text-sm font-medium text-gray-700">Notes / Remarks</label>
                     {{ form.notes }}
@@ -180,8 +190,62 @@
     </tbody>
 </table>
 
+<script id="customer-terms-data" type="application/json">
+{
+{% for customer in form.fields.customer.queryset %}
+    "{{ customer.pk }}": "{{ customer.payment_terms }}"{% if not forloop.last %},{% endif %}
+{% endfor %}
+}
+</script>
+
 <script>
     $(document).ready(function() {
+        // Due Date logic
+        var customerTerms = {};
+        try {
+            var rawData = document.getElementById('customer-terms-data').textContent.trim();
+            customerTerms = JSON.parse(rawData);
+        } catch(e) {
+            console.error("Error parsing customer terms", e);
+        }
+        
+        function calculateDueDate() {
+            var customerId = $('#id_customer').val();
+            var invoiceType = $('#id_invoice_type').val(); // COD or CREDIT
+            if(!customerId) return;
+            
+            var terms = customerTerms[customerId];
+            var days = 0;
+            
+            if(invoiceType === 'COD') {
+                days = 14;
+            } else if (invoiceType === 'CREDIT') {
+                if (terms === 'COD') {
+                    days = 14;
+                } else if (terms && terms.indexOf('CREDIT_') === 0) {
+                    days = parseInt(terms.split('_')[1]) || 30;
+                } else if (terms === 'CASH') {
+                    days = 0;
+                } else {
+                    days = 30; // default for credit
+                }
+            }
+            
+            var date = new Date();
+            date.setDate(date.getDate() + days);
+            var yyyy = date.getFullYear();
+            var mm = String(date.getMonth() + 1).padStart(2, '0');
+            var dd = String(date.getDate()).padStart(2, '0');
+            $('#id_due_date').val(yyyy + '-' + mm + '-' + dd);
+        }
+
+        $('#id_customer, #id_invoice_type').on('change', function() {
+            // Only auto-calc if creating a new one or if due date is empty
+            var dueDate = $('#id_due_date').val();
+            if (!dueDate || !'{{ form.instance.pk|default:"" }}') {
+                calculateDueDate();
+            }
+        });
         // Initialize Select2 on all selects
         function initSelects(scope) {
             $(scope).find('select').not('#empty-row select').each(function() {
