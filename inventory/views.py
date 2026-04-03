@@ -9,7 +9,7 @@ import csv
 import io
 from decimal import Decimal
 from sales.views import AdminRequiredMixin
-from .models import Product, StockAdjustment, StockLedger, Category, Brand
+from .models import Product, StockAdjustment, StockLedger
 from .forms import ProductForm, StockAdjustmentForm
 from .services import confirm_stock_adjustment, cancel_stock_adjustment
 
@@ -36,7 +36,7 @@ class ProductListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
         qs = super().get_queryset()
         q = self.request.GET.get('q')
         if q:
-            qs = qs.filter(name__icontains=q) | qs.filter(sku__icontains=q) | qs.filter(product_id__icontains=q)
+            qs = qs.filter(name__icontains=q) | qs.filter(product_id__icontains=q)
         return qs
 
 class ProductCreateView(LoginRequiredMixin, PermissionRequiredMixin, CreateView):
@@ -70,22 +70,23 @@ def bulk_export_products(request):
         
         writer = csv.writer(response)
         writer.writerow([
-            'System ID', 'Product ID', 'SKU', 'Name', 
-            'Category', 'Brand', 'Packet Size', 'Stock Unit', 'Selling Unit',
+            'System ID', 'Product ID', 'Name', 
+            'Category', 'Brand', 'Tea Type', 'Packet Size', 'Stock Unit', 'Selling Unit',
             'Inventory Class', 'Product Type',
-            'Selling Price', 'Special Price', 'Custom Load Price',
+            'Selling Price', 'Custom Load Price',
             'Reorder Level', 'Track Stock', 'Allow Negative Stock', 'Tax Rate', 'Status',
             'Current Stock'
         ])
         
         for p in products:
             writer.writerow([
-                p.id, p.product_id, p.sku, p.name,
-                p.category.name if p.category else '',
-                p.brand.name if p.brand else '',
+                p.id, p.product_id, p.name,
+                p.category,
+                p.brand,
+                p.tea_type or '',
                 p.packet_size or '', p.stock_unit, p.selling_unit,
                 p.inventory_class, p.product_type,
-                p.selling_price, p.special_price or '', p.custom_load_price or '',
+                p.selling_price, p.custom_load_price or '',
                 p.reorder_level, p.track_stock, p.allow_negative_stock, p.tax_rate, p.status,
                 p.current_stock
             ])
@@ -129,7 +130,6 @@ class ProductImportView(LoginRequiredMixin, PermissionRequiredMixin, View):
             for row in reader:
                 sys_id = row.get('System ID')
                 prod_id = row.get('Product ID')
-                sku = row.get('SKU')
                 name = row.get('Name')
                 
                 if not name:
@@ -137,6 +137,7 @@ class ProductImportView(LoginRequiredMixin, PermissionRequiredMixin, View):
                     
                 cat_name = row.get('Category')
                 brand_name = row.get('Brand')
+                tea_type = row.get('Tea Type')
                 packet_size = row.get('Packet Size')
                 stock_unit = row.get('Stock Unit')
                 selling_unit = row.get('Selling Unit')
@@ -144,7 +145,6 @@ class ProductImportView(LoginRequiredMixin, PermissionRequiredMixin, View):
                 prod_type = row.get('Product Type')
                 
                 selling_price = row.get('Selling Price')
-                special_price = row.get('Special Price')
                 custom_price = row.get('Custom Load Price')
                 reorder_lvl = row.get('Reorder Level')
                 tax_rate = row.get('Tax Rate')
@@ -158,21 +158,13 @@ class ProductImportView(LoginRequiredMixin, PermissionRequiredMixin, View):
                 allow_neg = parse_bool(row.get('Allow Negative Stock'), False)
                 status = parse_bool(row.get('Status'), True)
                 
-                cat_obj = None
-                if cat_name and cat_name.strip():
-                    cat_obj, _ = Category.objects.get_or_create(name=cat_name.strip())
-                    
-                brand_obj = None
-                if brand_name and brand_name.strip():
-                    brand_obj, _ = Brand.objects.get_or_create(name=brand_name.strip())
-                    
                 defaults = {
                     'name': name,
-                    'category': cat_obj,
-                    'brand': brand_obj,
+                    'category': cat_name.strip() if cat_name else 'Confectionery',
+                    'brand': brand_name.strip() if brand_name else 'Everbolt',
+                    'tea_type': tea_type.strip() if tea_type else None,
                     'packet_size': packet_size if packet_size else None,
                     'selling_price': Decimal(selling_price.replace(',', '')) if selling_price else Decimal('0.00'),
-                    'special_price': Decimal(special_price.replace(',', '')) if special_price else None,
                     'custom_load_price': Decimal(custom_price.replace(',', '')) if custom_price else None,
                     'reorder_level': Decimal(reorder_lvl.replace(',', '')) if reorder_lvl else Decimal('0.000'),
                     'tax_rate': Decimal(tax_rate.replace(',', '')) if tax_rate else Decimal('18.00'),
@@ -187,7 +179,6 @@ class ProductImportView(LoginRequiredMixin, PermissionRequiredMixin, View):
                 if prod_type: defaults['product_type'] = prod_type
                 
                 if prod_id: defaults['product_id'] = prod_id
-                if sku: defaults['sku'] = sku
                 
                 product = None
                 is_new = False
@@ -196,8 +187,6 @@ class ProductImportView(LoginRequiredMixin, PermissionRequiredMixin, View):
                     product = Product.objects.filter(id=sys_id).first()
                 if not product and prod_id:
                     product = Product.objects.filter(product_id=prod_id).first()
-                if not product and sku:
-                    product = Product.objects.filter(sku=sku).first()
                     
                 if product:
                     for k, v in defaults.items():
@@ -248,19 +237,19 @@ def download_import_template(request):
     response['Content-Disposition'] = 'attachment; filename="product_import_template.csv"'
     writer = csv.writer(response)
     writer.writerow([
-        'System ID', 'Product ID', 'SKU', 'Name', 
-        'Category', 'Brand', 'Packet Size', 'Stock Unit', 'Selling Unit',
+        'System ID', 'Product ID', 'Name', 
+        'Category', 'Brand', 'Tea Type', 'Packet Size', 'Stock Unit', 'Selling Unit',
         'Inventory Class', 'Product Type',
-        'Selling Price', 'Special Price', 'Custom Load Price',
+        'Selling Price', 'Custom Load Price',
         'Reorder Level', 'Track Stock', 'Allow Negative Stock', 'Tax Rate', 'Status',
         'Current Stock'
     ])
     # Give an example row to help the user understand
     writer.writerow([
-        '', '', 'SAMPLE-SKU-001', 'Sample Product Name', 
-        'Sample Category', 'Sample Brand', '500g', 'PCS', 'PCS',
+        '', '', 'Sample Product Name', 
+        'Tea', 'Everbolt', 'Herbal Tea', '500g', 'pcs', 'pcs',
         'FINISHED', 'MANUFACTURED',
-        '1500.00', '', '', 
+        '1500.00', '', 
         '10.00', 'TRUE', 'FALSE', '18.00', 'TRUE',
         '100'
     ])

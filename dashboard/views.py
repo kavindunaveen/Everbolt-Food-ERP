@@ -8,7 +8,7 @@ from django.utils import timezone
 
 from sales.models import Invoice, InvoiceItem
 from crm.models import Customer
-from inventory.models import Category, Product
+from inventory.models import Product
 from .models import SalesTarget
 
 class AnalyticsDashboardView(LoginRequiredMixin, TemplateView):
@@ -34,21 +34,21 @@ class DashboardDataAPI(LoginRequiredMixin, View):
         total_customers = Customer.objects.count()
         
         # Consider Product.stock_unit == 'PACK' for total packs
-        total_packs = invoice_items.filter(product__stock_unit='PACK').aggregate(Sum('quantity'))['quantity__sum'] or 0
+        total_packs = invoice_items.filter(product__stock_unit='pack').aggregate(Sum('quantity'))['quantity__sum'] or 0
         
         # Confectioneries Categories
-        confectionery_sales = invoice_items.filter(product__category__name__icontains='CONFECTIONARIES').aggregate(Sum('line_total'))['line_total__sum'] or 0
+        confectionery_sales = invoice_items.filter(product__category__icontains='Confectionery').aggregate(Sum('line_total'))['line_total__sum'] or 0
         overall_sales_total = invoice_items.aggregate(Sum('line_total'))['line_total__sum'] or 0
 
         # Category Specific
-        sugar_qty = invoice_items.filter(product__category__name__icontains='Sugar').aggregate(Sum('quantity'))['quantity__sum'] or 0
-        sugar_sales = invoice_items.filter(product__category__name__icontains='Sugar').aggregate(Sum('line_total'))['line_total__sum'] or 0
+        sugar_qty = invoice_items.filter(product__category__icontains='Sugar').aggregate(Sum('quantity'))['quantity__sum'] or 0
+        sugar_sales = invoice_items.filter(product__category__icontains='Sugar').aggregate(Sum('line_total'))['line_total__sum'] or 0
 
-        creamer_qty = invoice_items.filter(product__category__name__icontains='Creamer').aggregate(Sum('quantity'))['quantity__sum'] or 0
-        creamer_sales = invoice_items.filter(product__category__name__icontains='Creamer').aggregate(Sum('line_total'))['line_total__sum'] or 0
+        creamer_qty = invoice_items.filter(product__category__icontains='Creamer').aggregate(Sum('quantity'))['quantity__sum'] or 0
+        creamer_sales = invoice_items.filter(product__category__icontains='Creamer').aggregate(Sum('line_total'))['line_total__sum'] or 0
 
-        tea_qty = invoice_items.filter(product__category__name__icontains='Tea').aggregate(Sum('quantity'))['quantity__sum'] or 0
-        tea_sales = invoice_items.filter(product__category__name__icontains='Tea').aggregate(Sum('line_total'))['line_total__sum'] or 0
+        tea_qty = invoice_items.filter(product__category__icontains='Tea').aggregate(Sum('quantity'))['quantity__sum'] or 0
+        tea_sales = invoice_items.filter(product__category__icontains='Tea').aggregate(Sum('line_total'))['line_total__sum'] or 0
 
         # Monthly Trends
         months_names = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"]
@@ -64,14 +64,14 @@ class DashboardDataAPI(LoginRequiredMixin, View):
             'overall_sales': [0] * 12,
         }
 
-        monthly_items = invoice_items.values('invoice__creation_date__month', 'product__category__name').annotate(
+        monthly_items = invoice_items.values('invoice__creation_date__month', 'product__category').annotate(
             t_sales=Sum('line_total'),
             t_qty=Sum('quantity')
         )
 
         for item in monthly_items:
             m_idx = item['invoice__creation_date__month'] - 1  # 0-indexed
-            c_name = (item['product__category__name'] or '').lower()
+            c_name = (item['product__category'] or '').lower()
             val_sales = float(item['t_sales'] or 0)
             val_qty = float(item['t_qty'] or 0)
 
@@ -88,7 +88,7 @@ class DashboardDataAPI(LoginRequiredMixin, View):
                 trend_data['tea_qty'][m_idx] += val_qty
 
         # Targets
-        targets = SalesTarget.objects.filter(year=year).values('target_type', 'category__name', 'target_value')
+        targets = SalesTarget.objects.filter(year=year).values('target_type', 'category', 'target_value')
         target_dict = {
             "overall": 0,
             "sugar": 0,
@@ -100,7 +100,7 @@ class DashboardDataAPI(LoginRequiredMixin, View):
             if t['target_type'] == 'OVERALL_SALES':
                 target_dict['overall'] += val
             elif t['target_type'] == 'CATEGORY_SALES':
-                cat = (t['category__name'] or '').lower()
+                cat = (t['category'] or '').lower()
                 if 'sugar' in cat: target_dict['sugar'] += val
                 if 'creamer' in cat: target_dict['creamer'] += val
                 if 'tea' in cat: target_dict['tea'] += val

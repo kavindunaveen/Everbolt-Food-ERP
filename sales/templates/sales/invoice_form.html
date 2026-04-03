@@ -190,6 +190,14 @@
     </tbody>
 </table>
 
+<script id="customer-special-data" type="application/json">
+{
+{% for customer in form.fields.customer.queryset %}
+    "{{ customer.pk }}": {{ customer.special_price_customer|yesno:"true,false" }}{% if not forloop.last %},{% endif %}
+{% endfor %}
+}
+</script>
+
 <script id="customer-terms-data" type="application/json">
 {
 {% for customer in form.fields.customer.queryset %}
@@ -200,6 +208,24 @@
 
 <script>
     $(document).ready(function() {
+        // Special Customer Alert logic
+        var customerSpecial = {};
+        try {
+            var rawSpecialData = document.getElementById('customer-special-data').textContent.trim();
+            if(rawSpecialData) {
+                customerSpecial = JSON.parse(rawSpecialData);
+            }
+        } catch(e) {
+            console.error("Error parsing customer special data", e);
+        }
+
+        $('#id_customer').on('change', function() {
+            var customerId = $(this).val();
+            if (customerId && customerSpecial[customerId] === true) {
+                alert("Special Customer Selected!\n\nPlease remember to manually adjust the prices for this customer if required.");
+            }
+        });
+
         // Due Date logic
         var customerTerms = {};
         try {

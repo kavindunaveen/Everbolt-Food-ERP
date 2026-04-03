@@ -1,34 +1,42 @@
 from django.db import models
 from django.conf import settings
 
-class Brand(models.Model):
-    name = models.CharField(max_length=100, unique=True)
-    
-    def __str__(self):
-        return self.name
-
-class Category(models.Model):
-    name = models.CharField(max_length=100, unique=True)
-    
-    def __str__(self):
-        return self.name
-
 class Product(models.Model):
+    class BrandChoices(models.TextChoices):
+        EVERBOLT = 'Everbolt', 'Everbolt'
+        EVERLEAF = 'Everleaf', 'Everleaf'
+
+    class CategoryChoices(models.TextChoices):
+        CONFECTIONERY = 'Confectionery', 'Confectionery'
+        DRIED_FRUITS = 'Dried Fruits', 'Dried Fruits'
+        DRIED_VEGETABLES = 'Dried Vegetables', 'Dried Vegetables'
+        SPICES = 'Spices', 'Spices'
+        TEA = 'Tea', 'Tea'
+        KITHUL = 'Kithul', 'Kithul'
+
+    class TeaTypeChoices(models.TextChoices):
+        HERBAL_TEA = 'Herbal Tea', 'Herbal Tea'
+        ARTISAN_TEA = 'Artisan Tea', 'Artisan Tea'
+        FLAVORED_TEA = 'Flavored Tea', 'Flavored Tea'
+        BLACK_TEA = 'Black Tea', 'Black Tea'
+        GREEN_TEA = 'Green Tea', 'Green Tea'
+        CATERING_TEA = 'Catering Tea', 'Catering Tea'
+
     class UnitTypes(models.TextChoices):
-        PCS = 'PCS', 'pcs'
-        BOX = 'BOX', 'box'
-        PACK = 'PACK', 'pack'
-        KG = 'KG', 'kg'
-        G = 'G', 'g'
-        L = 'L', 'l'
-        ML = 'ML', 'ml'
+        PCS = 'pcs', 'pcs'
+        BOX = 'box', 'box'
+        PACK = 'pack', 'pack'
+        KG = 'Kg', 'Kg'
+        G = 'g', 'g'
+        ML = 'ml', 'ml'
+        L = 'l', 'l'
 
     class ProductTypes(models.TextChoices):
-        MANUFACTURED = 'MANUFACTURED', 'Manufactured'
-        REPACKED = 'REPACKED', 'Repacked'
-        BLENDED = 'BLENDED', 'Blended'
-        TRADING = 'TRADING', 'Trading'
-        CONTRACTED = 'CONTRACTED', 'Contract Packed'
+        DIRECT_PACKING = 'Direct Packing', 'Direct Packing'
+        BLENDED_TEA = 'Blended Tea Products', 'Blended Tea Products'
+        CONFECTIONERY_PACKING = 'Confectionery Packing', 'Confectionery Packing'
+        REPACKING = 'Repacking', 'Repacking'
+        TRADING = 'Trading Products', 'Trading Products'
 
     class InventoryClasses(models.TextChoices):
         RAW = 'RAW', 'Raw Material'
@@ -38,17 +46,17 @@ class Product(models.Model):
         CONSUMABLE = 'CONSUMABLE', 'Consumable'
 
     product_id = models.CharField(max_length=50, unique=True, blank=True)
-    sku = models.CharField(max_length=50, unique=True, blank=True)
     name = models.CharField(max_length=200)
-    brand = models.ForeignKey(Brand, on_delete=models.SET_NULL, null=True, blank=True)
-    category = models.ForeignKey(Category, on_delete=models.SET_NULL, null=True, blank=True)
+    brand = models.CharField(max_length=50, choices=BrandChoices.choices, default=BrandChoices.EVERBOLT)
+    category = models.CharField(max_length=50, choices=CategoryChoices.choices, default=CategoryChoices.CONFECTIONERY)
+    tea_type = models.CharField(max_length=50, choices=TeaTypeChoices.choices, blank=True, null=True)
     
     packet_size = models.CharField(max_length=100, blank=True, null=True)
     stock_unit = models.CharField(max_length=20, choices=UnitTypes.choices, default=UnitTypes.PCS)
     selling_unit = models.CharField(max_length=20, choices=UnitTypes.choices, default=UnitTypes.PCS)
     
     inventory_class = models.CharField(max_length=50, choices=InventoryClasses.choices, default=InventoryClasses.FINISHED)
-    product_type = models.CharField(max_length=50, choices=ProductTypes.choices, default=ProductTypes.MANUFACTURED)
+    product_type = models.CharField(max_length=50, choices=ProductTypes.choices, default=ProductTypes.DIRECT_PACKING)
     
     track_stock = models.BooleanField(default=True)
     allow_negative_stock = models.BooleanField(default=False)
@@ -56,7 +64,6 @@ class Product(models.Model):
     
     selling_price = models.DecimalField(max_digits=12, decimal_places=2)
     custom_load_price = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
-    special_price = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
     tax_rate = models.DecimalField(max_digits=5, decimal_places=2, default=18.00) # Fixed 18% generic tax
     
     status = models.BooleanField(default=True, help_text="True if active")
@@ -67,19 +74,18 @@ class Product(models.Model):
     def save(self, *args, **kwargs):
         from django.utils.text import slugify
         
-        is_new_id = False
         # Generate Product ID if not exists or if it's a temporary one
         if not self.product_id or self.product_id.startswith('PRD_'):
-            prefix = 'EFPR'
-            if self.category and self.category.name:
-                cat_name = self.category.name.upper()
+            prefix = 'EF'
+            if self.category:
+                cat_name = self.category.upper()
                 CATEGORY_PREFIX_MAP = {
                     'SPICES': 'EFSP',
-                    'HERBAL TEA': 'EFHT',
-                    'FLAVORED TEA': 'EFFT',
-                    'TEA': 'EFST',
+                    'TEA': 'EFTE',
                     'KITHUL': 'EFKT',
-                    'CONFECTIONARIES': 'EFCP',
+                    'CONFECTIONERY': 'EFCN',
+                    'DRIED FRUITS': 'EFDF',
+                    'DRIED VEGETABLES': 'EFDV',
                 }
                 prefix = CATEGORY_PREFIX_MAP.get(cat_name, f"EF{cat_name[:2].upper()}")
             
@@ -95,27 +101,11 @@ class Product(models.Model):
                 next_seq = 1
                 
             self.product_id = f"{prefix}-{next_seq:04d}"
-            is_new_id = True
-            
-        # Generate SKU if not exists or if we originated a temp ID earlier (so we also fix the old SKUs)
-        if not self.sku or '_' in self.sku or is_new_id:
-            base_sku = slugify(self.name).upper()
-            if self.packet_size:
-                packet_slug = slugify(self.packet_size).upper()
-                if not base_sku.endswith(packet_slug) and packet_slug not in base_sku:
-                    base_sku += f"-{packet_slug}"
-                
-            sku = base_sku
-            counter = 1
-            while Product.objects.filter(sku=sku).exclude(pk=self.pk).exists():
-                sku = f"{base_sku}-{counter}"
-                counter += 1
-            self.sku = sku
             
         super().save(*args, **kwargs)
 
     def __str__(self):
-        return f"[{self.sku}] {self.name}"
+        return f"[{self.product_id}] {self.name}"
 
 class StockLedger(models.Model):
     class TransactionTypes(models.TextChoices):

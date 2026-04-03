@@ -151,7 +151,7 @@
             <tbody>
                 {% for item in quotation.items.all %}
                 <tr>
-                    <td>{{ item.product.sku }}</td>
+                    <td>{{ item.product.product_id }}</td>
                     <td>{{ item.product.name }}</td>
                     <td class="text-center">{{ item.quantity }}</td>
                     <td class="text-right">{{ item.unit_price|floatformat:2 }}</td>

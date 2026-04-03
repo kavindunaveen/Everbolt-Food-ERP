@@ -73,10 +73,6 @@
                             {{ form.product_id }}
                             <p class="text-xs text-gray-400 mt-1">Auto-generated if empty.</p>
                         </div>
-                        <div>
-                            <label>SKU (Stock Keeping Unit)</label>
-                            {{ form.sku }}
-                        </div>
                         <div class="md:col-span-2">
                             <label>Product Name *</label>
                             {{ form.name }}
@@ -88,6 +84,10 @@
                         <div>
                             <label>Category *</label>
                             {{ form.category }}
+                        </div>
+                        <div id="tea-type-container" style="display: none;">
+                            <label>Tea Type</label>
+                            {{ form.tea_type }}
                         </div>
                     </div>
                 </div>
@@ -138,10 +138,7 @@
                             <label>Selling Price (Rs.) *</label>
                             {{ form.selling_price }}
                         </div>
-                        <div>
-                            <label>Special Price (Rs.)</label>
-                            {{ form.special_price }}
-                        </div>
+
                         <div>
                             <label>Tax Rate (%)</label>
                             {{ form.tax_rate }}
@@ -194,4 +191,24 @@
         </div>
     </form>
 </div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const categoryField = document.getElementById('id_category');
+        const teaTypeContainer = document.getElementById('tea-type-container');
+        
+        function toggleTeaType() {
+            if (categoryField && categoryField.value.toLowerCase() === 'tea') {
+                teaTypeContainer.style.display = 'block';
+            } else {
+                teaTypeContainer.style.display = 'none';
+            }
+        }
+        
+        if (categoryField) {
+            categoryField.addEventListener('change', toggleTeaType);
+            toggleTeaType();
+        }
+    });
+</script>
 {% endblock %}

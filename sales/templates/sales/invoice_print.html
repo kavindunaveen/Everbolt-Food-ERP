@@ -238,7 +238,7 @@
             <tbody>
                 {% for item in invoice.items.all %}
                 <tr>
-                    <td>{{ item.product.sku }}</td>
+                    <td>{{ item.product.product_id }}</td>
                     <td>{{ item.product.name }}</td>
                     <td class="text-center">{{ item.quantity }}</td>
                     <td class="text-center">{{ item.product.get_selling_unit_display }}</td>

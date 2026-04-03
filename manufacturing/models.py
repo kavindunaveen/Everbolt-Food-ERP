@@ -13,7 +13,7 @@ class BOM(models.Model):
 
     def save(self, *args, **kwargs):
         if not self.bom_code:
-            self.bom_code = f"BOM-{self.finished_product.sku}-{self.version}"
+            self.bom_code = f"BOM-{self.finished_product.product_id}-{self.version}"
         
         # Ensure only one active BOM per product
         if self.is_active:
