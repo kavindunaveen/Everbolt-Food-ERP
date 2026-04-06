@@ -7,6 +7,8 @@
     <title>{% block title %}ERP Dashboard{% endblock %}</title>
     <!-- Tailwind CSS (CDN for rapid prototyping as requested) -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Alpine JS for interactions -->
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.13.3/dist/cdn.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style type="text/tailwindcss">
         @layer base {
@@ -99,9 +101,42 @@
                 <div class="flex items-center space-x-6">
                     <div class="hidden sm:flex flex-col items-end">
                         <span class="text-gray-900 font-bold text-xs ring-offset-2">{{ user.get_full_name|default:user.username }}</span>
-                        <span class="text-gray-400 text-[10px] font-bold uppercase tracking-tighter">System Administrator</span>
+                        <span class="text-gray-400 text-[10px] font-bold uppercase tracking-tighter">{{ user.get_role_display|default:"Staff" }}</span>
                     </div>
                     {% if user.is_authenticated %}
+                        <!-- Notifications Wrapper -->
+                        <div class="relative" x-data="{ open: false }">
+                            <button @click="open = !open" class="relative p-2 text-gray-400 hover:text-gray-600 focus:outline-none transition-colors">
+                                <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path></svg>
+                                {% if user.unread_notifications %}
+                                <span class="absolute top-0 right-0 block h-4 w-4 transform -translate-y-1/2 translate-x-1/4 rounded-full bg-red-500 text-[10px] text-white flex items-center justify-center ring-2 ring-white">
+                                    {{ user.unread_notifications|length }}
+                                </span>
+                                {% endif %}
+                            </button>
+                            
+                            <!-- Dropdown Menu -->
+                            <div x-show="open" @click.away="open = false" style="display: none;" class="origin-top-right absolute right-0 mt-2 w-80 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-50 overflow-hidden divide-y divide-gray-100">
+                                <div class="px-4 py-3 bg-gray-50 flex justify-between items-center">
+                                    <h3 class="text-xs font-bold text-gray-900 uppercase tracking-wider">Notifications</h3>
+                                </div>
+                                <div class="max-h-80 overflow-y-auto">
+                                {% for notif in user.unread_notifications %}
+                                    <a href="{% url 'notification_read' notif.pk %}" class="block px-4 py-3 hover:bg-red-50 transition duration-150 ease-in-out {% if not notif.is_read %}bg-white{% endif %}">
+                                        <p class="text-sm font-medium text-gray-900">{{ notif.title }}</p>
+                                        <p class="text-xs text-gray-500 mt-1 line-clamp-2">{{ notif.message }}</p>
+                                        <p class="text-[10px] text-gray-400 mt-2 font-medium">{{ notif.created_at|timesince }} ago</p>
+                                    </a>
+                                {% empty %}
+                                    <div class="px-4 py-8 text-sm text-gray-500 text-center flex flex-col items-center">
+                                        <svg class="h-8 w-8 text-gray-300 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"></path></svg>
+                                        You're all caught up!
+                                    </div>
+                                {% endfor %}
+                                </div>
+                            </div>
+                        </div>
+
                         <form method="post" action="{% url 'logout' %}">
                             {% csrf_token %}
                             <button type="submit" class="bg-gray-50 hover:bg-red-50 text-gray-600 hover:text-red-700 p-2 rounded-xl transition-all border border-gray-100 hover:border-red-100">

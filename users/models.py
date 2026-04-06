@@ -24,6 +24,11 @@ class User(AbstractUser):
             return True
         return False
 
+    @property
+    def unread_notifications(self):
+        # We handle notifications from the related name 'notifications'
+        return getattr(self, 'notifications', None) and self.notifications.filter(is_read=False).order_by('-created_at') or []
+
     def has_perm(self, perm, obj=None):
         if self.is_admin():
             return True
@@ -36,3 +41,15 @@ class User(AbstractUser):
 
     def __str__(self):
         return f"{self.username} - {self.get_role_display()}"
+
+
+class Notification(models.Model):
+    recipient = models.ForeignKey(User, on_delete=models.CASCADE, related_name='notifications')
+    title = models.CharField(max_length=255)
+    message = models.TextField()
+    link = models.CharField(max_length=255, blank=True, null=True)
+    is_read = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Notification for {self.recipient.username}: {self.title}"

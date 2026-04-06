@@ -68,18 +68,28 @@
                     {% endfor %}
                 </div>
 
-                <!-- Custom Odoo-Style Permissions UI -->
+                <!-- Categorical Permissions UI -->
                 <div class="mt-10 border-t border-gray-200 pt-8">
-                    <h3 class="text-xs font-bold text-gray-900 mb-6 uppercase tracking-wider">Access Rights</h3>
+                    <h3 class="text-sm font-bold text-gray-900 mb-6 uppercase tracking-wider">Access Rights Categories</h3>
                     
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-2">
-                        {% for checkbox in form.user_permissions %}
-                        <div class="flex items-center justify-between py-2 border-b border-gray-50 hover:bg-gray-50 transition-colors">
-                            <label for="{{ checkbox.id_for_label }}" class="text-sm font-medium text-gray-700 flex-1 cursor-pointer">
-                                {{ checkbox.choice_label }}
-                            </label>
-                            <div class="ml-4 flex-shrink-0 flex items-center h-5">
-                                {{ checkbox.tag }}
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        {% for category, perms in form.get_grouped_permissions.items %}
+                        <div class="bg-gray-50/50 rounded-lg p-5 border border-gray-200 perm-category">
+                            <div class="flex justify-between items-center mb-4">
+                                <h4 class="font-bold text-red-700 bg-red-50 border border-red-100 rounded px-3 py-1.5 text-xs uppercase tracking-wide">{{ category }}</h4>
+                                <button type="button" class="text-xs text-emerald-600 hover:text-emerald-800 font-medium select-all-btn transition-colors">Select All</button>
+                            </div>
+                            <div class="space-y-3 perm-list">
+                                {% for perm in perms %}
+                                <div class="flex items-center justify-between hover:bg-gray-100 p-2 rounded -mx-2 transition-colors">
+                                    <label for="id_user_permissions_{{ perm.pk }}" class="text-sm font-medium text-gray-700 flex-1 cursor-pointer">
+                                        {{ perm.label }}
+                                    </label>
+                                    <div class="ml-4 flex-shrink-0 flex items-center h-5">
+                                        <input type="checkbox" name="user_permissions" value="{{ perm.pk }}" id="id_user_permissions_{{ perm.pk }}" class="focus:ring-red-500 h-4 w-4 text-red-600 border-gray-300 rounded" {% if perm.checked %}checked{% endif %}>
+                                    </div>
+                                </div>
+                                {% endfor %}
                             </div>
                         </div>
                         {% endfor %}
@@ -99,4 +109,40 @@
         </form>
     </div>
 </div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        document.querySelectorAll('.select-all-btn').forEach(function(btn) {
+            btn.addEventListener('click', function() {
+                const container = this.closest('.perm-category');
+                const checkboxes = container.querySelectorAll('.perm-list input[type="checkbox"]');
+                const allChecked = Array.from(checkboxes).every(cb => cb.checked);
+                
+                checkboxes.forEach(function(cb) {
+                    cb.checked = !allChecked;
+                });
+                
+                this.textContent = allChecked ? 'Select All' : 'Deselect All';
+            });
+        });
+        
+        // Initial state setup for 'Edit' views where checkboxes may already be ticked
+        document.querySelectorAll('.perm-category').forEach(function(container) {
+            const checkboxes = container.querySelectorAll('.perm-list input[type="checkbox"]');
+            const allChecked = Array.from(checkboxes).every(cb => cb.checked);
+            const btn = container.querySelector('.select-all-btn');
+            if (allChecked && checkboxes.length > 0) {
+                btn.textContent = 'Deselect All';
+            }
+            
+            // Listen for manual checkbox toggles to update the button text appropriately
+            checkboxes.forEach(function(cb) {
+                cb.addEventListener('change', function() {
+                    const currentAllChecked = Array.from(checkboxes).every(c => c.checked);
+                    btn.textContent = currentAllChecked ? 'Deselect All' : 'Select All';
+                });
+            });
+        });
+    });
+</script>
 {% endblock %}

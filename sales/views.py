@@ -11,7 +11,7 @@ from django.db.models import Sum
 from decimal import Decimal
 from .models import Quotation, Invoice
 from .forms import QuotationForm, QuotationItemFormSet, InvoiceForm, InvoiceItemFormSet
-from .services import issue_invoice, cancel_invoice
+from .services import issue_invoice, cancel_invoice, send_invoice_approval_email
 import csv
 from num2words import num2words
 
@@ -58,8 +58,12 @@ class SalesDashboardView(LoginRequiredMixin, TemplateView):
         # Limit strictly to the logged-in officer's records
         q = self.request.GET.get('q')
         
-        quotations = Quotation.objects.filter(salesperson=self.request.user).order_by('-creation_date')
-        invoices = Invoice.objects.filter(salesperson=self.request.user).order_by('-creation_date')
+        if not self.request.user.has_perm('sales.approve_invoice'):
+            quotations = Quotation.objects.filter(salesperson=self.request.user).order_by('-creation_date')
+            invoices = Invoice.objects.filter(salesperson=self.request.user).order_by('-creation_date')
+        else:
+            quotations = Quotation.objects.all().order_by('-creation_date')
+            invoices = Invoice.objects.all().order_by('-creation_date')
         
         if q:
             quotations = quotations.filter(quotation_number__icontains=q)
@@ -79,7 +83,9 @@ class QuotationListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
     permission_required = 'sales.view_quotation'
     
     def get_queryset(self):
-        qs = super().get_queryset().filter(salesperson=self.request.user).order_by('-creation_date')
+        qs = super().get_queryset().order_by('-creation_date')
+        if not self.request.user.has_perm('sales.approve_invoice'):
+            qs = qs.filter(salesperson=self.request.user)
         q = self.request.GET.get('q')
         if q:
             qs = qs.filter(quotation_number__icontains=q)
@@ -93,7 +99,9 @@ class InvoiceListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
     permission_required = 'sales.view_invoice'
     
     def get_queryset(self):
-        qs = super().get_queryset().filter(salesperson=self.request.user).order_by('-creation_date')
+        qs = super().get_queryset().order_by('-creation_date')
+        if not self.request.user.has_perm('sales.approve_invoice'):
+            qs = qs.filter(salesperson=self.request.user)
         q = self.request.GET.get('q')
         if q:
             qs = qs.filter(invoice_number__icontains=q)
@@ -223,6 +231,11 @@ class InvoiceCreateView(LoginRequiredMixin, PermissionRequiredMixin, CreateView)
             data['items'] = InvoiceItemFormSet(self.request.POST)
         else:
             data['items'] = InvoiceItemFormSet()
+            
+        from users.models import User
+        # Retrieve all active users who legitimately have permission to approve invoices.
+        approving_users = [u for u in User.objects.filter(is_active=True) if u.has_perm('sales.approve_invoice') and u != self.request.user]
+        data['approvers'] = approving_users
         return data
 
     def form_valid(self, form):
@@ -232,6 +245,22 @@ class InvoiceCreateView(LoginRequiredMixin, PermissionRequiredMixin, CreateView)
             self.object = form.save(commit=False)
             self.object.salesperson = self.request.user
             self.object.invoice_number = get_next_invoice_number()
+            
+            # Block or Mark for approval based on customer status
+            if self.object.customer.customer_status in ['BLACKLIST', 'ONHOLD'] and not getattr(self.object, 'is_approved', False):
+                if self.request.POST.get('is_approval_request') == 'true':
+                    self.object.status = 'APPROVAL_PENDING'
+                    approver_id = self.request.POST.get('designated_approver')
+                    if approver_id:
+                        from users.models import User
+                        try:
+                            self.object.designated_approver = User.objects.get(pk=approver_id)
+                        except User.DoesNotExist:
+                            pass
+                else:
+                    from django.core.exceptions import ValidationError
+                    form.add_error(None, ValidationError(f"Invoice cannot be saved because customer is {self.object.customer.customer_status}."))
+                    return super().form_invalid(form)
             
             if items.is_valid():
                 self.object.save()
@@ -260,6 +289,9 @@ class InvoiceCreateView(LoginRequiredMixin, PermissionRequiredMixin, CreateView)
                 self.object.tax_amount = tax
                 self.object.total_amount = total
                 self.object.save()
+                
+                if getattr(self.object, 'status', None) == 'APPROVAL_PENDING':
+                    send_invoice_approval_email(self.object, self.request)
             else:
                 return super().form_invalid(form)
             
@@ -278,14 +310,36 @@ class InvoiceUpdateView(LoginRequiredMixin, PermissionRequiredMixin, UpdateView)
             data['items'] = InvoiceItemFormSet(self.request.POST, instance=self.object)
         else:
             data['items'] = InvoiceItemFormSet(instance=self.object)
+            
+        from users.models import User
+        approving_users = [u for u in User.objects.filter(is_active=True) if u.has_perm('sales.approve_invoice') and u != self.request.user]
+        data['approvers'] = approving_users
         return data
 
     def form_valid(self, form):
         context = self.get_context_data()
         items = context['items']
         with transaction.atomic():
-            self.object = form.save()
+            self.object = form.save(commit=False)
             
+            # Block or Mark for approval based on customer status
+            if self.object.customer.customer_status in ['BLACKLIST', 'ONHOLD'] and self.object.status == 'DRAFT' and not getattr(self.object, 'is_approved', False):
+                if self.request.POST.get('is_approval_request') == 'true':
+                    self.object.status = 'APPROVAL_PENDING'
+                    approver_id = self.request.POST.get('designated_approver')
+                    if approver_id:
+                        from users.models import User
+                        try:
+                            self.object.designated_approver = User.objects.get(pk=approver_id)
+                        except User.DoesNotExist:
+                            pass
+                else:
+                    from django.core.exceptions import ValidationError
+                    form.add_error(None, ValidationError(f"Invoice cannot be saved because customer is {self.object.customer.customer_status}."))
+                    return super().form_invalid(form)
+            
+            self.object.save()
+
             if items.is_valid():
                 items.instance = self.object
                 saved_items = items.save(commit=False)
@@ -315,6 +369,9 @@ class InvoiceUpdateView(LoginRequiredMixin, PermissionRequiredMixin, UpdateView)
                 self.object.tax_amount = tax
                 self.object.total_amount = total
                 self.object.save()
+                
+                if getattr(self.object, 'status', None) == 'APPROVAL_PENDING':
+                    send_invoice_approval_email(self.object, self.request)
             else:
                 return super().form_invalid(form)
             
@@ -368,6 +425,13 @@ class InvoicePrintView(LoginRequiredMixin, PermissionRequiredMixin, DetailView):
     context_object_name = 'invoice'
     permission_required = 'sales.view_invoice'
 
+    def get(self, request, *args, **kwargs):
+        self.object = self.get_object()
+        if self.object.status == 'APPROVAL_PENDING':
+            messages.error(request, "Cannot print an invoice that is pending approval.")
+            return redirect('invoice_list')
+        return super().get(request, *args, **kwargs)
+
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         # Total Value of Supply = total_amount - tax_amount 
@@ -420,4 +484,37 @@ def cancel_invoice_view(request, pk):
             messages.success(request, f"Invoice {invoice.invoice_number} cancelled. Stock restored.")
         except Exception as e:
             messages.error(request, f"Error: {str(e)}")
+    return redirect('invoice_list')
+
+@login_required
+def approve_invoice_view(request, pk):
+    invoice = get_object_or_404(Invoice, pk=pk)
+    if not request.user.has_perm('sales.approve_invoice'):
+        messages.error(request, "You do not have permission to approve invoices.")
+        return redirect('invoice_list')
+        
+    if request.method == 'POST':
+        if invoice.status == 'APPROVAL_PENDING':
+            invoice.status = 'DRAFT'
+            invoice.is_approved = True
+            invoice.save(update_fields=['status', 'is_approved'])
+            messages.success(request, f"Invoice {invoice.invoice_number} has been approved and moved to Draft.")
+        else:
+            messages.warning(request, "This invoice is not pending approval.")
+    return redirect('invoice_list')
+
+@login_required
+def reject_invoice_view(request, pk):
+    invoice = get_object_or_404(Invoice, pk=pk)
+    if not request.user.has_perm('sales.approve_invoice'):
+        messages.error(request, "You do not have permission to reject invoices.")
+        return redirect('invoice_list')
+        
+    if request.method == 'POST':
+        if invoice.status == 'APPROVAL_PENDING':
+            invoice.status = 'CANCELLED'
+            invoice.save(update_fields=['status'])
+            messages.error(request, f"Invoice {invoice.invoice_number} has been rejected and cancelled.")
+        else:
+            messages.warning(request, "This invoice is not pending approval.")
     return redirect('invoice_list')

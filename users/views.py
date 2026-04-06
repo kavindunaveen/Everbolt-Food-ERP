@@ -41,3 +41,16 @@ class UserDeleteView(LoginRequiredMixin, AdminRequiredMixin, DeleteView):
     model = User
     template_name = 'users/user_confirm_delete.html'
     success_url = reverse_lazy('user_list')
+
+from django.shortcuts import get_object_or_404, redirect
+from django.contrib.auth.decorators import login_required
+
+@login_required
+def notification_read(request, pk):
+    from .models import Notification
+    notification = get_object_or_404(Notification, pk=pk, recipient=request.user)
+    notification.is_read = True
+    notification.save()
+    if notification.link:
+        return redirect(notification.link)
+    return redirect('sales_dashboard')

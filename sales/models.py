@@ -47,6 +47,7 @@ class Invoice(models.Model):
 
     class Status(models.TextChoices):
         DRAFT = 'DRAFT', 'Draft'
+        APPROVAL_PENDING = 'APPROVAL_PENDING', 'Pending Approval'
         ISSUED = 'ISSUED', 'Issued'
         PAID = 'PAID', 'Paid'
         CANCELLED = 'CANCELLED', 'Cancelled'
@@ -55,6 +56,8 @@ class Invoice(models.Model):
     invoice_type = models.CharField(max_length=20, choices=Type.choices, default=Type.CREDIT)
     customer = models.ForeignKey(Customer, on_delete=models.PROTECT)
     salesperson = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True)
+    designated_approver = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name='invoices_to_approve')
+    is_approved = models.BooleanField(default=False)
     
     creation_date = models.DateTimeField(auto_now_add=True)
     delivery_date = models.DateField(blank=True, null=True)
@@ -82,6 +85,11 @@ class Invoice(models.Model):
 
     def __str__(self):
         return f"{self.invoice_number} ({self.get_invoice_type_display()})"
+
+    class Meta:
+        permissions = [
+            ("approve_invoice", "Can approve pending invoices"),
+        ]
 
 class InvoiceItem(models.Model):
     invoice = models.ForeignKey(Invoice, related_name='items', on_delete=models.CASCADE)

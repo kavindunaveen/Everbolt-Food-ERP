@@ -1,4 +1,8 @@
 from django.db import transaction
+from django.db.models import Q
+from django.core.mail import send_mail
+from django.conf import settings
+from users.models import User
 from inventory.models import StockLedger, Product
 
 def issue_invoice(invoice, user):
@@ -75,3 +79,56 @@ def cancel_invoice(invoice, user):
                 
         if ledgers:
             StockLedger.objects.bulk_create(ledgers)
+
+from users.models import Notification
+
+def send_invoice_approval_email(invoice, request):
+    """
+    Creates an in-app notification and sends an email to the designated approver.
+    """
+    if invoice.designated_approver:
+        approvers = [invoice.designated_approver]
+    else:
+        approvers = User.objects.filter(
+            Q(is_superuser=True) | 
+            Q(role='ADMIN') | 
+            Q(user_permissions__codename='approve_invoice')
+        ).filter(is_active=True).distinct()
+    
+    # Create In-App Notification for all designated approvers
+    for manager in approvers:
+        Notification.objects.create(
+            recipient=manager,
+            title=f"Approval Required: {invoice.invoice_number}",
+            message=f"Invoice for {invoice.customer.customer_name} (Rs {invoice.total_amount}). Needs approval because customer is {invoice.customer.get_customer_status_display()}.",
+            link="/sales/invoices/"
+        )
+    
+    recipient_list = [user.email for user in approvers if user.email]
+    
+    if not recipient_list:
+        return
+        
+    subject = f"Invoice Approval Required: {invoice.invoice_number}"
+    
+    url = request.build_absolute_uri(f"/sales/")
+    
+    message = (
+        f"Hello,\n\n"
+        f"A new invoice ({invoice.invoice_number}) has been drafted by {invoice.salesperson.get_full_name() or invoice.salesperson.username} "
+        f"for customer '{invoice.customer.customer_name}', but requires approval because the customer is marked as {invoice.customer.get_customer_status_display()}.\n\n"
+        f"Invoice Total: Rs {invoice.total_amount}\n\n"
+        f"Please log in to the system to approve or reject this invoice:\n{url}\n\n"
+        f"Thank you,\nEverbolt ERP System"
+    )
+    
+    try:
+        send_mail(
+            subject=subject,
+            message=message,
+            from_email=settings.DEFAULT_FROM_EMAIL if hasattr(settings, 'DEFAULT_FROM_EMAIL') else 'noreply@everbolt.com',
+            recipient_list=recipient_list,
+            fail_silently=True,
+        )
+    except Exception as e:
+        print(f"Failed to send email notification: {str(e)}")

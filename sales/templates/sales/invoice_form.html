@@ -47,7 +47,7 @@
             {% if form.instance.pk %}Edit Invoice: {{ form.instance.invoice_number }}{% else %}Create New Invoice{% endif %}
         </h1>
         <div class="flex items-center space-x-3">
-            {% if form.instance.pk %}
+            {% if form.instance.pk and form.instance.status != 'APPROVAL_PENDING' %}
             <a href="{% url 'invoice_print' form.instance.pk %}" target="_blank" class="btn-premium btn-secondary">
                 🖨️ Print
             </a>
@@ -157,12 +157,27 @@
             </div>
             
             <div class="px-6 py-4 border-t border-gray-200 bg-gray-50 flex justify-between items-center">
+                {% if form.instance.status == 'DRAFT' or not form.instance.status %}
                 <button type="button" id="add-row" class="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-emerald-700 bg-emerald-100 hover:bg-emerald-200 transition-colors">
                     + Add Product Line
                 </button>
-                <div class="flex space-x-3">
-                    <a href="{% url 'invoice_list' %}" class="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 transition-colors">Cancel</a>
-                    <button type="submit" class="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-emerald-600 hover:bg-emerald-700 transition-colors">Save Invoice</button>
+                {% else %}
+                <div></div>
+                {% endif %}
+                <div class="flex space-x-3" id="action-buttons-container">
+                    <a href="{% url 'invoice_list' %}" class="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 transition-colors">{% if form.instance.status == 'DRAFT' or not form.instance.status %}Cancel{% else %}Go Back{% endif %}</a>
+                    
+                    {% if form.instance.status == 'DRAFT' or not form.instance.status %}
+                    <select name="designated_approver" id="designated_approver" class="no-select2 hidden px-4 py-2 border border-orange-300 bg-orange-50 text-orange-800 rounded-md focus:ring-orange-500 focus:border-orange-500 sm:text-sm" disabled required>
+                        <option value="">Select Approving Manager...</option>
+                        {% for manager in approvers %}
+                            <option value="{{ manager.pk }}">{{ manager.get_full_name|default:manager.username }} ({{ manager.get_role_display }})</option>
+                        {% endfor %}
+                    </select>
+
+                    <button type="submit" id="save-invoice-btn" class="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-emerald-600 hover:bg-emerald-700 transition-colors">Save Invoice</button>
+                    <button type="submit" id="send-approval-btn" name="is_approval_request" value="true" class="hidden px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-orange-600 hover:bg-orange-700 transition-colors">Send for Approval</button>
+                    {% endif %}
                 </div>
             </div>
         </div>
@@ -206,6 +221,14 @@
 }
 </script>
 
+<script id="customer-status-data" type="application/json">
+{
+{% for customer in form.fields.customer.queryset %}
+    "{{ customer.pk }}": "{{ customer.customer_status }}"{% if not forloop.last %},{% endif %}
+{% endfor %}
+}
+</script>
+
 <script>
     $(document).ready(function() {
         // Special Customer Alert logic
@@ -218,13 +241,53 @@
         } catch(e) {
             console.error("Error parsing customer special data", e);
         }
+        
+        var customerStatus = {};
+        try {
+            var rawStatusData = document.getElementById('customer-status-data').textContent.trim();
+            if(rawStatusData) {
+                customerStatus = JSON.parse(rawStatusData);
+            }
+        } catch(e) {
+            console.error("Error parsing customer status data", e);
+        }
+
+        const blockMsgDiv = $('<div id="approval-block-msg" class="w-full bg-orange-50 border-l-4 border-orange-500 p-4 mb-4 hidden rounded-md shadow-sm"><p class="text-sm font-medium text-orange-800" id="approval-msg-text"></p></div>');
+        $('form[method="post"]:not([action*="logout"])').prepend(blockMsgDiv);
 
         $('#id_customer').on('change', function() {
+            {% if form.instance.status == 'DRAFT' or not form.instance.status %}
+            {% if not form.instance.is_approved %}
             var customerId = $(this).val();
+            
+            // Handle Status Block Logic first
+            if (customerId && (customerStatus[customerId] === 'BLACKLIST' || customerStatus[customerId] === 'ONHOLD')) {
+                const statusTxt = customerStatus[customerId] === 'BLACKLIST' ? 'blacklisted' : 'onhold';
+                $('#approval-msg-text').text(`We can't draft the invoice because this customer is already ${statusTxt}. Please select a manager and send for approval.`);
+                $('#approval-block-msg').removeClass('hidden');
+                
+                $('#save-invoice-btn').addClass('hidden');
+                $('#send-approval-btn').removeClass('hidden');
+                $('#designated_approver').removeClass('hidden').prop('disabled', false);
+            } else {
+                $('#approval-block-msg').addClass('hidden');
+                $('#save-invoice-btn').removeClass('hidden');
+                $('#send-approval-btn').addClass('hidden');
+                $('#designated_approver').addClass('hidden').prop('disabled', true);
+            }
+            
+            // Special customer logic
             if (customerId && customerSpecial[customerId] === true) {
                 alert("Special Customer Selected!\n\nPlease remember to manually adjust the prices for this customer if required.");
             }
+            {% endif %}
+            {% endif %}
         });
+
+        // Trigger change event on page load to apply block constraints if editing
+        {% if form.instance.status == 'DRAFT' or not form.instance.status %}
+        $('#id_customer').trigger('change');
+        {% endif %}
 
         // Due Date logic
         var customerTerms = {};
@@ -274,7 +337,7 @@
         });
         // Initialize Select2 on all selects
         function initSelects(scope) {
-            $(scope).find('select').not('#empty-row select').each(function() {
+            $(scope).find('select').not('#empty-row select').not('.no-select2').each(function() {
                 if (!$(this).hasClass('select2-hidden-accessible')) {
                     $(this).select2({ width: '100%' });
                 }

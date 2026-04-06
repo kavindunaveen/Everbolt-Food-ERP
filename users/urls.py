@@ -6,4 +6,5 @@ urlpatterns = [
     path('new/', views.UserCreateView.as_view(), name='user_create'),
     path('<int:pk>/edit/', views.UserUpdateView.as_view(), name='user_edit'),
     path('<int:pk>/delete/', views.UserDeleteView.as_view(), name='user_delete'),
+    path('notification/<int:pk>/read/', views.notification_read, name='notification_read'),
 ]
