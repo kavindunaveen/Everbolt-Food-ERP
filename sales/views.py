@@ -86,10 +86,33 @@ class QuotationListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
         qs = super().get_queryset().order_by('-creation_date')
         if not self.request.user.has_perm('sales.approve_invoice'):
             qs = qs.filter(salesperson=self.request.user)
+            
+        status = self.request.GET.get('status')
+        if status:
+            qs = qs.filter(status=status)
+            
+        date_from = self.request.GET.get('date_from')
+        if date_from:
+            qs = qs.filter(creation_date__gte=date_from)
+            
+        date_to = self.request.GET.get('date_to')
+        if date_to:
+            qs = qs.filter(creation_date__lte=date_to)
+            
         q = self.request.GET.get('q')
         if q:
             qs = qs.filter(quotation_number__icontains=q)
         return qs
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        try:
+            from users.models import SavedFilter
+            context['saved_filters'] = SavedFilter.objects.filter(user=self.request.user, model_name='Quotation')
+        except ImportError:
+            context['saved_filters'] = []
+        context['model_name'] = 'Quotation'
+        return context
 
 class InvoiceListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
     model = Invoice
@@ -102,10 +125,33 @@ class InvoiceListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
         qs = super().get_queryset().order_by('-creation_date')
         if not self.request.user.has_perm('sales.approve_invoice'):
             qs = qs.filter(salesperson=self.request.user)
+            
+        status = self.request.GET.get('status')
+        if status:
+            qs = qs.filter(status=status)
+            
+        date_from = self.request.GET.get('date_from')
+        if date_from:
+            qs = qs.filter(creation_date__gte=date_from)
+            
+        date_to = self.request.GET.get('date_to')
+        if date_to:
+            qs = qs.filter(creation_date__lte=date_to)
+            
         q = self.request.GET.get('q')
         if q:
             qs = qs.filter(invoice_number__icontains=q)
         return qs
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        try:
+            from users.models import SavedFilter
+            context['saved_filters'] = SavedFilter.objects.filter(user=self.request.user, model_name='Invoice')
+        except ImportError:
+            context['saved_filters'] = []
+        context['model_name'] = 'Invoice'
+        return context
 
 class QuotationCreateView(LoginRequiredMixin, PermissionRequiredMixin, CreateView):
     model = Quotation

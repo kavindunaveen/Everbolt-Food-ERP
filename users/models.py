@@ -53,3 +53,16 @@ class Notification(models.Model):
 
     def __str__(self):
         return f"Notification for {self.recipient.username}: {self.title}"
+
+class SavedFilter(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='saved_filters')
+    model_name = models.CharField(max_length=50) # e.g. Customer, Invoice, Quotation
+    name = models.CharField(max_length=255)
+    query_string = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"{self.user.username}'s filter: {self.name} on {self.model_name}"

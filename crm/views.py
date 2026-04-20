@@ -16,10 +16,31 @@ class CustomerListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
 
     def get_queryset(self):
         qs = super().get_queryset()
+        
+        has_sales = self.request.GET.get('has_sales')
+        if has_sales == 'true':
+            qs = qs.filter(invoice__isnull=False).distinct()
+        elif has_sales == 'false':
+            qs = qs.filter(invoice__isnull=True)
+            
+        customer_type = self.request.GET.get('customer_type')
+        if customer_type:
+            qs = qs.filter(customer_type=customer_type)
+            
         q = self.request.GET.get('q')
         if q:
             qs = qs.filter(customer_name__icontains=q) | qs.filter(customer_code__icontains=q) | qs.filter(company_name__icontains=q)
         return qs
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        try:
+            from users.models import SavedFilter
+            context['saved_filters'] = SavedFilter.objects.filter(user=self.request.user, model_name='Customer')
+        except ImportError:
+            context['saved_filters'] = []
+        context['model_name'] = 'Customer'
+        return context
 
 class CustomerCreateView(LoginRequiredMixin, PermissionRequiredMixin, CreateView):
     model = Customer

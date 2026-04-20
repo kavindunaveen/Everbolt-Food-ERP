@@ -7,10 +7,7 @@
     <div class="flex justify-between items-center mb-6">
         <h1 class="text-2xl font-bold text-gray-900 border-b-4 border-purple-500 inline-block pb-1">Customers</h1>
         <div class="flex space-x-3">
-            <form method="get" class="flex">
-                <input type="text" name="q" placeholder="Search customers..." value="{{ request.GET.q }}" class="px-3 py-2 border border-gray-300 rounded-l-md focus:ring-purple-500 focus:border-purple-500 block w-full sm:text-sm">
-                <button type="submit" class="bg-gray-100 hover:bg-gray-200 border border-l-0 border-gray-300 rounded-r-md px-3 py-2 text-gray-700">Search</button>
-            </form>
+            {% include 'partials/filter_bar.html' with search_placeholder="Search customers..." %}
             {% if perms.crm.add_customer %}
             <a href="{% url 'customer_create' %}" class="bg-purple-600 hover:bg-purple-700 text-white font-medium py-2 px-4 rounded-lg shadow transition duration-150">
                 + New Customer

@@ -1,0 +1,100 @@
+{% extends 'layouts/base.html' %}
+
+{% block title %}Supplier Details | ERP System{% endblock %}
+
+{% block breadcrumbs %}
+<li>
+    <div class="flex items-center">
+        <svg class="h-5 w-5 flex-shrink-0 text-gray-300" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true"><path d="M5.555 17.776l8-16 .894.448-8 16-.894-.448z" /></svg>
+        <a href="{% url 'supplier_list' %}" class="ml-2 text-sm font-medium text-gray-500 hover:text-gray-700">Suppliers</a>
+    </div>
+</li>
+<li>
+    <div class="flex items-center">
+        <svg class="h-5 w-5 flex-shrink-0 text-gray-300" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true"><path d="M5.555 17.776l8-16 .894.448-8 16-.894-.448z" /></svg>
+        <span class="ml-2 text-sm font-medium text-gray-500">{{ supplier.supplier_code }}</span>
+    </div>
+</li>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-5xl mx-auto py-6 sm:px-6 lg:px-8">
+    <div class="bg-white shadow overflow-hidden sm:rounded-lg mb-8">
+        <div class="px-4 py-5 sm:px-6 flex justify-between items-center">
+            <div>
+                <h3 class="text-xl leading-6 font-bold text-gray-900 border-b-4 border-indigo-500 inline-block pb-1">
+                    {{ supplier.supplier_name }}
+                </h3>
+                <p class="mt-1 max-w-2xl text-sm text-gray-500">
+                    {{ supplier.supplier_code }}
+                </p>
+            </div>
+            <div class="flex gap-2">
+                <a href="{% url 'supplier_update' supplier.pk %}" class="bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2 px-4 rounded-lg shadow-sm transition duration-150">Edit</a>
+                <a href="{% url 'supplier_delete' supplier.pk %}" class="bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 font-medium py-2 px-4 rounded-lg shadow-sm transition duration-150">Delete</a>
+            </div>
+        </div>
+        <div class="border-t border-gray-200">
+            <dl>
+                <div class="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                    <dt class="text-sm font-semibold text-gray-500 uppercase tracking-widest">Supplier Type</dt>
+                    <dd class="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
+                        {% if supplier.supplier_type == 'OTHER' %}
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+                                {{ supplier.custom_supplier_type }}
+                            </span>
+                        {% else %}
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800">
+                                {{ supplier.get_supplier_type_display }}
+                            </span>
+                        {% endif %}
+                    </dd>
+                </div>
+                <div class="bg-white px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6 border-b border-gray-100">
+                    <dt class="text-sm font-semibold text-gray-500 uppercase tracking-widest">Contact Number</dt>
+                    <dd class="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">{{ supplier.contact_number }}</dd>
+                </div>
+                <div class="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                    <dt class="text-sm font-semibold text-gray-500 uppercase tracking-widest">Email Address</dt>
+                    <dd class="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">{{ supplier.email|default:"Not Provided" }}</dd>
+                </div>
+                <div class="bg-white px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                    <dt class="text-sm font-semibold text-gray-500 uppercase tracking-widest">Address</dt>
+                    <dd class="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
+                        {{ supplier.address_line1 }}<br>
+                        {% if supplier.address_line2 %}{{ supplier.address_line2 }}<br>{% endif %}
+                        {{ supplier.city }}, {{ supplier.get_province_display }}<br>
+                        {% if supplier.zip_code %}ZIP: {{ supplier.zip_code }}{% endif %}
+                    </dd>
+                </div>
+                <div class="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6 border-t border-gray-100">
+                    <dt class="text-sm font-semibold text-gray-500 uppercase tracking-widest">Bank Details</dt>
+                    <dd class="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
+                        {% if supplier.bank_name or supplier.bank_branch or supplier.bank_account_no %}
+                            <ul class="border border-gray-200 rounded-md divide-y divide-gray-200 bg-white shadow-sm">
+                                <li class="pl-3 pr-4 py-3 flex items-center justify-between text-sm">
+                                    <div class="w-0 flex-1 flex items-center">
+                                        <svg class="flex-shrink-0 h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 14v3m4-3v3m4-3v3M3 21h18M3 10h18M3 7l9-4 9 4M4 10h16v11H4z" />
+                                        </svg>
+                                        <span class="ml-2 flex-1 w-0 truncate"><b>{{ supplier.get_bank_name_display|default:supplier.bank_name|default:"-" }}</b> - {{ supplier.bank_branch|default:"-" }}</span>
+                                    </div>
+                                    <div class="ml-4 flex-shrink-0">
+                                        <span class="font-mono text-gray-600 bg-gray-100 px-2 py-1 rounded">{{ supplier.bank_account_no|default:"N/A" }}</span>
+                                    </div>
+                                </li>
+                            </ul>
+                        {% else %}
+                            <span class="text-gray-400 italic">Not Provided</span>
+                        {% endif %}
+                    </dd>
+                </div>
+                <div class="bg-white px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                    <dt class="text-sm font-semibold text-gray-500 uppercase tracking-widest">VAT Registration</dt>
+                    <dd class="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">{{ supplier.vat_reg_num|default:"Not Provided" }}</dd>
+                </div>
+            </dl>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,275 @@
+{% extends 'layouts/base.html' %}
+{% load static %}
+
+{% block title %}{% if object %}Edit Supplier{% else %}New Supplier{% endif %} | ERP System{% endblock %}
+
+{% block extra_head %}
+<!-- Select2 CSS -->
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<style>
+    /* Styling for Select2 to match premium UI */
+    .select2-container--default .select2-selection--single {
+        height: 46px; /* Matched with py-2.5 */
+        border: 1px solid #e5e7eb;
+        border-radius: 0.75rem;
+        padding-top: 8px;
+        padding-left: 8px;
+        box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+    }
+    .select2-container--default .select2-selection--single .select2-selection__arrow {
+        height: 44px;
+    }
+    .select2-container--default.select2-container--focus .select2-selection--single {
+        border-color: #ef4444; 
+        box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.1);
+    }
+</style>
+{% endblock %}
+
+{% block breadcrumbs %}
+<li>
+    <div class="flex items-center">
+        <svg class="h-5 w-5 flex-shrink-0 text-gray-300" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true"><path d="M5.555 17.776l8-16 .894.448-8 16-.894-.448z" /></svg>
+        <a href="{% url 'supplier_list' %}" class="ml-2 text-sm font-medium text-gray-500 hover:text-gray-700">Suppliers</a>
+    </div>
+</li>
+<li>
+    <div class="flex items-center">
+        <svg class="h-5 w-5 flex-shrink-0 text-gray-300" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true"><path d="M5.555 17.776l8-16 .894.448-8 16-.894-.448z" /></svg>
+        <span class="ml-2 text-sm font-medium text-gray-500">{% if object %}Edit {{ object.supplier_code }}{% else %}New Supplier{% endif %}</span>
+    </div>
+</li>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto py-6 sm:px-6 lg:px-8">
+    <div class="mb-6 flex items-center justify-between">
+        <h1 class="text-2xl font-bold text-gray-900 border-b-4 border-indigo-500 inline-block pb-1">
+            {% if object %}Edit Supplier: {{ object.supplier_name }}{% else %}Register New Supplier{% endif %}
+        </h1>
+        <a href="{% url 'supplier_list' %}" class="text-sm font-medium text-gray-500 hover:text-indigo-600 transition-colors">
+            &larr; Back to List
+        </a>
+    </div>
+
+    <div class="bg-white shadow-xl rounded-2xl border border-gray-100 p-8" x-data="supplierForm()">
+        <form method="post" class="space-y-6">
+            {% csrf_token %}
+            {% if form.non_field_errors %}
+                <div class="bg-red-50 border-l-4 border-red-500 p-4 mb-6 rounded-r-md">
+                    <div class="flex">
+                        <div class="ml-3">
+                            <h3 class="text-sm font-medium text-red-800">Please correct the errors below.</h3>
+                            <div class="mt-2 text-sm text-red-700">{{ form.non_field_errors }}</div>
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+
+            <!-- Category: Basic Details -->
+            <div class="mb-8">
+                <h3 class="text-lg leading-6 font-medium text-gray-900 border-b border-gray-200 pb-2 mb-4">Basic Profile</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="col-span-1 md:col-span-2">
+                        <label for="{{ form.supplier_name.id_for_label }}">Supplier Name *</label>
+                        {{ form.supplier_name }}
+                        <p class="text-xs text-red-500 mt-1">{{ form.supplier_name.errors.as_text }}</p>
+                    </div>
+
+                    <div class="col-span-1">
+                        <label for="{{ form.supplier_type.id_for_label }}">Specialization / Supplier Type *</label>
+                        {{ form.supplier_type }}
+                        <p class="text-xs text-red-500 mt-1">{{ form.supplier_type.errors.as_text }}</p>
+                    </div>
+                    
+                    <div class="col-span-1" x-show="showCustomType" style="display: none;" x-transition>
+                        <label for="{{ form.custom_supplier_type.id_for_label }}">Custom Supplier Type *</label>
+                        {{ form.custom_supplier_type }}
+                        <p class="text-xs text-red-500 mt-1">{{ form.custom_supplier_type.errors.as_text }}</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Category: Contact Information -->
+            <div class="mb-8">
+                <h3 class="text-lg leading-6 font-medium text-gray-900 border-b border-gray-200 pb-2 mb-4">Contact Details</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="col-span-1">
+                        <label for="{{ form.contact_number.id_for_label }}">Contact Number *</label>
+                        <!-- Alpine @keydown restricts input strictly to numbers and control keys -->
+                        <div x-data>
+                            {{ form.contact_number }}
+                        </div>
+                        <p class="text-xs text-gray-500 mt-1">Numbers only.</p>
+                        <p class="text-xs text-red-500 mt-1">{{ form.contact_number.errors.as_text }}</p>
+                    </div>
+
+                    <div class="col-span-1">
+                        <label for="{{ form.email.id_for_label }}">Email</label>
+                        {{ form.email }}
+                        <p class="text-xs text-red-500 mt-1">{{ form.email.errors.as_text }}</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Category: Address components -->
+            <div class="mb-8">
+                <h3 class="text-lg leading-6 font-medium text-gray-900 border-b border-gray-200 pb-2 mb-4">Physical Address</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="col-span-1 md:col-span-2">
+                        <label for="{{ form.address_line1.id_for_label }}">Address Line 1 *</label>
+                        {{ form.address_line1 }}
+                        <p class="text-xs text-red-500 mt-1">{{ form.address_line1.errors.as_text }}</p>
+                    </div>
+                    
+                    <div class="col-span-1 md:col-span-2">
+                        <label for="{{ form.address_line2.id_for_label }}">Address Line 2 (Optional)</label>
+                        {{ form.address_line2 }}
+                        <p class="text-xs text-red-500 mt-1">{{ form.address_line2.errors.as_text }}</p>
+                    </div>
+
+                    <div class="col-span-1">
+                        <label for="{{ form.city.id_for_label }}">City *</label>
+                        {{ form.city }}
+                        <p class="text-xs text-red-500 mt-1">{{ form.city.errors.as_text }}</p>
+                    </div>
+
+                    <div class="col-span-1">
+                        <label for="{{ form.province.id_for_label }}">Province *</label>
+                        {{ form.province }}
+                        <p class="text-xs text-red-500 mt-1">{{ form.province.errors.as_text }}</p>
+                    </div>
+
+                    <div class="col-span-1">
+                        <label for="{{ form.zip_code.id_for_label }}">ZIP / Postal Code</label>
+                        {{ form.zip_code }}
+                        <p class="text-xs text-red-500 mt-1">{{ form.zip_code.errors.as_text }}</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Category: Bank & Tax Information -->
+            <div class="mb-8">
+                <h3 class="text-lg leading-6 font-medium text-gray-900 border-b border-gray-200 pb-2 mb-4">Billing & Tax</h3>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div class="col-span-1">
+                        <label for="{{ form.bank_name.id_for_label }}">Bank Name</label>
+                        {{ form.bank_name }}
+                        <p class="text-xs text-red-500 mt-1">{{ form.bank_name.errors.as_text }}</p>
+                    </div>
+
+                    <div class="col-span-1">
+                        <label for="{{ form.bank_branch.id_for_label }}">Bank Branch</label>
+                        {{ form.bank_branch }}
+                        <p class="text-xs text-gray-500 mt-1">Search or type a new branch.</p>
+                        <p class="text-xs text-red-500 mt-1">{{ form.bank_branch.errors.as_text }}</p>
+                    </div>
+
+                    <div class="col-span-1">
+                        <label for="{{ form.bank_account_no.id_for_label }}">Bank Account No.</label>
+                        {{ form.bank_account_no }}
+                        <p class="text-xs text-red-500 mt-1">{{ form.bank_account_no.errors.as_text }}</p>
+                    </div>
+
+                    <div class="col-span-1 md:col-span-3 mt-2">
+                        <label for="{{ form.vat_reg_num.id_for_label }}">VAT Registration Number</label>
+                        {{ form.vat_reg_num }}
+                        <p class="text-xs text-red-500 mt-1">{{ form.vat_reg_num.errors.as_text }}</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex justify-end space-x-3 pt-6 border-t border-gray-100">
+                <a href="{% url 'supplier_list' %}" class="btn-premium btn-secondary">
+                    Cancel
+                </a>
+                <button type="submit" class="btn-premium btn-primary bg-indigo-600 hover:bg-indigo-700 shadow-indigo-600/20">
+                    {% if object %}Update Supplier{% else %}Register Supplier{% endif %}
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<!-- jQuery (Required by Select2) -->
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<!-- Select2 JS -->
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+
+<script>
+    // Document layout enhancements for numeric-only inputs
+    document.addEventListener('DOMContentLoaded', () => {
+        const numberInput = document.getElementById('{{ form.contact_number.id_for_label }}');
+        if (numberInput) {
+            numberInput.addEventListener('keydown', (e) => {
+                // Allow: backspace, delete, tab, escape, enter and .
+                if ([46, 8, 9, 27, 13, 110, 190].indexOf(e.keyCode) !== -1 ||
+                     // Allow: Ctrl+A, Command+A
+                    (e.keyCode === 65 && (e.ctrlKey === true || e.metaKey === true)) || 
+                     // Allow: home, end, left, right, down, up
+                    (e.keyCode >= 35 && e.keyCode <= 40)) {
+                         return; // let it happen
+                }
+                // Ensure that it is a number and stop the keypress
+                if ((e.shiftKey || (e.keyCode < 48 || e.keyCode > 57)) && (e.keyCode < 96 || e.keyCode > 105)) {
+                    e.preventDefault();
+                }
+            });
+        }
+    });
+
+    // Alpine.js component for managing state
+    function supplierForm() {
+        return {
+            showCustomType: false,
+            init() {
+                const selectElement = $('#{{ form.supplier_type.id_for_label }}');
+                
+                // Set initial state
+                if (selectElement.val() === 'OTHER') {
+                    this.showCustomType = true;
+                }
+
+                // Initialize Standard Select2s
+                selectElement.select2({
+                    width: '100%',
+                    placeholder: 'Search/Select supplier type...'
+                });
+                
+                // Initialize General Select2s manually
+                $('#{{ form.bank_name.id_for_label }}').select2({ width: '100%' });
+                $('#{{ form.province.id_for_label }}').select2({ width: '100%' });
+                
+                // Initialize Tags-based Select2 for branches
+                $('#{{ form.bank_branch.id_for_label }}').select2({
+                    width: '100%',
+                    tags: true, // allows typing whatever branch they want!
+                    createTag: function (params) {
+                        return {
+                          id: params.term,
+                          text: params.term,
+                          newOption: true
+                        }
+                    }
+                });
+
+                // Listen to Select2 changes
+                selectElement.on('change', (e) => {
+                    if (e.target.value === 'OTHER') {
+                        this.showCustomType = true;
+                        // Small timeout to allow element to render before focusing
+                        setTimeout(() => {
+                            document.getElementById('{{ form.custom_supplier_type.id_for_label }}').focus();
+                        }, 50);
+                    } else {
+                        this.showCustomType = false;
+                        document.getElementById('{{ form.custom_supplier_type.id_for_label }}').value = '';
+                    }
+                });
+            }
+        }
+    }
+</script>
+{% endblock %}

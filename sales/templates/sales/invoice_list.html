@@ -7,10 +7,7 @@
     <div class="flex justify-between items-center mb-6">
         <h1 class="text-2xl font-bold text-gray-900 border-b-4 border-emerald-500 inline-block pb-1">My Invoices</h1>
         <div class="flex space-x-3">
-            <form method="get" class="flex">
-                <input type="text" name="q" placeholder="Search invoices..." value="{{ request.GET.q }}" class="px-3 py-2 border border-gray-300 rounded-l-md focus:ring-emerald-500 focus:border-emerald-500 block w-full sm:text-sm">
-                <button type="submit" class="bg-gray-100 hover:bg-gray-200 border border-l-0 border-gray-300 rounded-r-md px-3 py-2 text-gray-700">Search</button>
-            </form>
+            {% include 'partials/filter_bar.html' with search_placeholder="Search invoices..." %}
             <a href="{% url 'invoice_export' %}?q={{ request.GET.q }}" class="bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 font-medium py-2 px-4 rounded-lg shadow-sm transition duration-150">
                 Export CSV
             </a>

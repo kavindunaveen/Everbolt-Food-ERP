@@ -102,3 +102,102 @@ def cancel_grn_view(request, pk):
         except Exception as e:
             messages.error(request, f"Error cancelling GRN: {str(e)}")
     return redirect('grn_list')
+
+import json
+from django.http import JsonResponse
+from django.db import transaction
+from .models import PurchaseOrder, PurchaseOrderItem, POType
+from suppliers.models import Supplier
+
+@login_required
+def purchase_order_hub(request):
+    # This is the new entry point for purchases module
+    return render(request, 'purchases/po_hub.html')
+
+class PurchaseOrderListView(LoginRequiredMixin, ListView):
+    model = PurchaseOrder
+    template_name = 'purchases/po_list.html'
+    context_object_name = 'pos'
+    paginate_by = 20
+    ordering = ['-id']
+
+@login_required
+def purchase_order_create(request, po_type):
+    if po_type not in ['raw', 'packing']:
+        return redirect('po_hub')
+        
+    actual_type = POType.RAW_MATERIAL if po_type == 'raw' else POType.PACKING_MATERIAL
+    
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            supplier_id = data.get('supplier_id')
+            date = data.get('date')
+            attention = data.get('attention', '')
+            payment_term = data.get('payment_term', 'CREDIT')
+            apply_vat = data.get('apply_vat', False)
+            items = data.get('items', [])
+            
+            if not supplier_id or not date or not items:
+                return JsonResponse({'success': False, 'message': 'Missing required fields (Supplier, Date, or Items).'})
+                
+            supplier = Supplier.objects.get(id=supplier_id)
+            
+            with transaction.atomic():
+                po = PurchaseOrder.objects.create(
+                    po_type=actual_type,
+                    supplier=supplier,
+                    date=date,
+                    attention=attention,
+                    payment_term=payment_term,
+                    apply_vat=apply_vat,
+                    created_by=request.user
+                )
+                
+                for item in items:
+                    PurchaseOrderItem.objects.create(
+                        po=po,
+                        category=item.get('category'),
+                        sub_category=item.get('sub_category'),
+                        material_code=item.get('material_code', ''),
+                        unit=item.get('unit'),
+                        qty=item.get('qty'),
+                        unit_price=item.get('unit_price', 0.00)
+                    )
+            
+            # Send back redirect URL so JS can redirect
+            return JsonResponse({'success': True, 'redirect_url': reverse('po_detail', args=[po.id])})
+            
+        except Exception as e:
+            return JsonResponse({'success': False, 'message': str(e)})
+
+    suppliers = Supplier.objects.all()
+    # To properly initialize generating sequences, pass the next sequence placeholder to form visually
+    # EFPO format check
+    last_po = PurchaseOrder.objects.filter(po_number__startswith="EFPO-").order_by('-po_number').first()
+    if last_po:
+        try:
+            next_seq = int(last_po.po_number.split('-')[1]) + 1
+        except:
+            next_seq = 1
+    else:
+        next_seq = 1
+    preview_po_number = f"EFPO-{next_seq:04d}"
+
+    return render(request, 'purchases/po_form.html', {
+        'po_type': actual_type,
+        'po_type_str': po_type,
+        'suppliers': suppliers,
+        'preview_po_number': preview_po_number
+    })
+
+class PurchaseOrderDetailView(LoginRequiredMixin, DetailView):
+    model = PurchaseOrder
+    template_name = 'purchases/po_detail.html'
+    context_object_name = 'po'
+
+class PurchaseOrderPrintView(LoginRequiredMixin, DetailView):
+    model = PurchaseOrder
+    template_name = 'purchases/po_print.html'
+    context_object_name = 'po'
+

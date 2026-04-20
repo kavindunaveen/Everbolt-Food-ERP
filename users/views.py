@@ -54,3 +54,42 @@ def notification_read(request, pk):
     if notification.link:
         return redirect(notification.link)
     return redirect('sales_dashboard')
+
+from django.views import View
+from django.http import JsonResponse
+from .models import SavedFilter
+from django.views.decorators.http import require_POST
+from django.utils.decorators import method_decorator
+import json
+
+@method_decorator(login_required, name='dispatch')
+class SaveFilterView(View):
+    def post(self, request, *args, **kwargs):
+        try:
+            data = json.loads(request.body)
+            model_name = data.get('model_name')
+            name = data.get('name')
+            query_string = data.get('query_string')
+            
+            if not all([model_name, name, query_string]):
+                return JsonResponse({'status': 'error', 'message': 'Missing fields'}, status=400)
+                
+            SavedFilter.objects.create(
+                user=request.user,
+                model_name=model_name,
+                name=name,
+                query_string=query_string
+            )
+            return JsonResponse({'status': 'success'})
+        except Exception as e:
+            return JsonResponse({'status': 'error', 'message': str(e)}, status=400)
+
+@method_decorator(login_required, name='dispatch')
+class DeleteFilterView(View):
+    def post(self, request, pk, *args, **kwargs):
+        try:
+            saved_filter = get_object_or_404(SavedFilter, pk=pk, user=request.user)
+            saved_filter.delete()
+            return JsonResponse({'status': 'success'})
+        except Exception as e:
+            return JsonResponse({'status': 'error', 'message': str(e)}, status=400)

@@ -1,0 +1,404 @@
+{% extends 'layouts/base.html' %}
+{% load static %}
+
+{% block title %}New {{ po_type_str|title }} PO | ERP System{% endblock %}
+
+{% block extra_head %}
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<style>
+    .select2-container--default .select2-selection--single {
+        height: 46px; border: 1px solid #e5e7eb; border-radius: 0.75rem; padding-top: 8px; padding-left: 8px; box-shadow: 0 1px 2px 0 rgba(0,0,0,0.05);
+    }
+    .select2-container--default .select2-selection--single .select2-selection__arrow { height: 44px; }
+</style>
+<!-- CSRF Token helper -->
+<meta name="csrf-token" content="{{ csrf_token }}">
+{% endblock %}
+
+{% block breadcrumbs %}
+<li>
+    <div class="flex items-center">
+        <svg class="h-5 w-5 flex-shrink-0 text-gray-300" fill="currentColor" viewBox="0 0 20 20"><path d="M5.555 17.776l8-16 .894.448-8 16-.894-.448z" /></svg>
+        <a href="{% url 'po_hub' %}" class="ml-2 text-sm font-medium text-gray-500 hover:text-gray-700">Hub</a>
+    </div>
+</li>
+<li>
+    <div class="flex items-center">
+        <svg class="h-5 w-5 flex-shrink-0 text-gray-300" fill="currentColor" viewBox="0 0 20 20"><path d="M5.555 17.776l8-16 .894.448-8 16-.894-.448z" /></svg>
+        <span class="ml-2 text-sm font-medium text-gray-500">New {{ po_type_str|title }} PO</span>
+    </div>
+</li>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8" x-data="poForm('{{ po_type_str }}')">
+    <div class="mb-6 flex items-center justify-between">
+        <h1 class="text-2xl font-bold text-gray-900 border-b-4 {% if po_type_str == 'raw' %}border-emerald-500{% else %}border-blue-500{% endif %} inline-block pb-1">
+            New {% if po_type_str == 'raw' %}Raw Material{% else %}Packing Material{% endif %} Purchase Order
+        </h1>
+    </div>
+
+    <!-- Alert Banner -->
+    <div x-show="errorMessage" style="display: none;" class="bg-red-50 border-l-4 border-red-500 p-4 mb-6 rounded-r-md">
+        <div class="flex">
+            <div class="ml-3">
+                <h3 class="text-sm font-medium text-red-800" x-text="errorMessage"></h3>
+            </div>
+        </div>
+    </div>
+
+    <!-- Header Form -->
+    <div class="bg-white shadow-sm rounded-2xl border border-gray-200 p-6 mb-6">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div class="col-span-1">
+                <label class="block text-sm font-semibold text-gray-700 mb-1">Supplier *</label>
+                <div wire:ignore>
+                    <select id="supplier_select" class="w-full">
+                        <option value=""></option>
+                        {% for sup in suppliers %}
+                            <option value="{{ sup.id }}">{{ sup.supplier_name }} ({{ sup.supplier_code }})</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+            <div class="col-span-1">
+                <label class="block text-sm font-semibold text-gray-700 mb-1">Date *</label>
+                <input type="date" x-model="date" class="w-full border-gray-300 rounded-lg shadow-sm focus:border-indigo-500 focus:ring-indigo-500 h-[46px] px-3">
+            </div>
+            <div class="col-span-1">
+                <label class="block text-sm font-semibold text-gray-700 mb-1">Attention To</label>
+                <input type="text" x-model="attention" placeholder="e.g. Imesh" class="w-full border-gray-300 rounded-lg shadow-sm focus:border-indigo-500 focus:ring-indigo-500 h-[46px] px-3">
+            </div>
+            <div class="col-span-1">
+                <label class="block text-sm font-semibold text-gray-700 mb-1">Payment Term</label>
+                <select x-model="payment_term" class="w-full border-gray-300 rounded-lg shadow-sm focus:border-indigo-500 focus:ring-indigo-500 h-[46px] px-3">
+                    <option value="CREDIT">Credit</option>
+                    <option value="CASH">Cash</option>
+                    <option value="ADVANCE">Advance</option>
+                </select>
+            </div>
+            <div class="col-span-1 flex items-center pt-8">
+                <label class="inline-flex items-center">
+                    <input type="checkbox" x-model="apply_vat" class="form-checkbox h-5 w-5 text-indigo-600 rounded">
+                    <span class="ml-2 text-sm font-semibold text-gray-700">Apply 18% VAT</span>
+                </label>
+            </div>
+            <div class="col-span-1">
+                <label class="block text-sm font-semibold text-gray-700 mb-1">PO Number (Auto)</label>
+                <input type="text" value="{{ preview_po_number }}" disabled class="w-full bg-gray-50 border-gray-200 rounded-lg shadow-sm text-gray-500 font-bold h-[46px] px-3">
+            </div>
+        </div>
+    </div>
+
+    <!-- Line Items Table -->
+    <div class="bg-white shadow-sm rounded-2xl border border-gray-200 p-6 mb-6">
+        <div class="flex justify-between items-center mb-4">
+            <h3 class="text-lg font-bold text-gray-900 border-l-4 border-indigo-500 pl-3">Order Items</h3>
+        </div>
+
+        <div class="overflow-x-auto ring-1 ring-gray-300 rounded-lg">
+            <table class="min-w-full divide-y divide-gray-300">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900 min-w-[200px]">Item / Material *</th>
+                        <th class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900 min-w-[200px]" x-show="po_type === 'packing'">Sub-Category</th>
+                        <th class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Code</th>
+                        <th class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900 w-24">Unit *</th>
+                        <th class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900 w-24">Qty *</th>
+                        <th class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900 w-32">Unit Price *</th>
+                        <th class="px-3 py-3.5 text-right text-sm font-semibold text-gray-900 w-32">Amount</th>
+                        <th class="px-3 py-3.5 text-center text-sm font-semibold text-gray-900 w-16"></th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-200 bg-white">
+                    <template x-for="(item, index) in items" :key="index">
+                        <tr>
+                            <td class="px-3 py-4 text-sm">
+                                <!-- RAW MATERIAL CATEGORY DROPDOWN -->
+                                <template x-if="po_type === 'raw'">
+                                    <select x-model="item.category" @change="updateRawCode(index)" class="w-full border-gray-300 rounded-md shadow-sm">
+                                        <option value="">Select Material...</option>
+                                        <template x-for="opt in rawMaterials" :key="opt.val">
+                                            <option :value="opt.val" x-text="opt.label"></option>
+                                        </template>
+                                    </select>
+                                </template>
+
+                                <!-- PACKING MATERIAL CATEGORY DROPDOWN -->
+                                <template x-if="po_type === 'packing'">
+                                    <select x-model="item.category" @change="handlePackingCategoryChange(index)" class="w-full border-gray-300 rounded-md shadow-sm">
+                                        <option value="">Select Category...</option>
+                                        <template x-for="cat in Object.keys(packingMatrix)" :key="cat">
+                                            <option :value="cat" x-text="cat"></option>
+                                        </template>
+                                    </select>
+                                </template>
+
+                                <!-- MANUAL ENTRY FOR "OTHER/HERBS/FLAVOURS" in RAW -->
+                                <template x-if="po_type === 'raw' && ['herbs', 'flavours', 'other'].includes(item.category)">
+                                    <input type="text" x-model="item.sub_category" @input="updateRawCode(index)" placeholder="Type manual name..." class="mt-2 w-full border-gray-300 rounded-md shadow-sm text-sm">
+                                </template>
+                            </td>
+
+                            <!-- PACKING SUB-CATEGORY -->
+                            <td class="px-3 py-4 text-sm" x-show="po_type === 'packing'">
+                                <template x-if="item.category && packingMatrix[item.category]">
+                                    <div x-data="{ opts: packingMatrix[item.category] }">
+                                        <template x-if="opts === 'manual'">
+                                            <input type="text" x-model="item.sub_category" placeholder="Enter manual description..." class="w-full border-gray-300 rounded-md shadow-sm">
+                                        </template>
+                                        <template x-if="Array.isArray(opts)">
+                                            <select x-model="item.sub_category" class="w-full border-gray-300 rounded-md shadow-sm">
+                                                <option value="">Select variant...</option>
+                                                <template x-for="opt in opts" :key="opt">
+                                                    <option :value="opt" x-text="opt"></option>
+                                                </template>
+                                            </select>
+                                        </template>
+                                    </div>
+                                </template>
+                            </td>
+
+                            <td class="px-3 py-4 text-sm text-gray-500 font-mono">
+                                <span x-text="item.material_code || (po_type === 'packing' ? 'Auto-generated' : '')"></span>
+                            </td>
+
+                            <td class="px-3 py-4 text-sm">
+                                <select x-model="item.unit" class="w-full border-gray-300 rounded-md shadow-sm">
+                                    <option value="">...</option>
+                                    <template x-if="po_type === 'raw'">
+                                        <optgroup label="Volume / Mass">
+                                            <option value="kg">kg</option>
+                                            <option value="g">g</option>
+                                            <option value="l">l</option>
+                                            <option value="ml">ml</option>
+                                            <option value="pcs">Pcs (Manual)</option>
+                                        </optgroup>
+                                    </template>
+                                    <template x-if="po_type === 'packing'">
+                                        <optgroup label="Packaging">
+                                            <option value="Pcs">Pcs</option>
+                                            <option value="packets">packets</option>
+                                            <option value="Bottles">Bottles</option>
+                                            <option value="schachets/sticks">schachets/sticks</option>
+                                        </optgroup>
+                                    </template>
+                                </select>
+                            </td>
+
+                            <td class="px-3 py-4 text-sm">
+                                <input type="number" step="0.001" x-model="item.qty" class="w-full border-gray-300 rounded-md shadow-sm" placeholder="0.000">
+                            </td>
+
+                            <td class="px-3 py-4 text-sm">
+                                <input type="number" step="0.01" x-model="item.unit_price" class="w-full border-gray-300 rounded-md shadow-sm" placeholder="0.00">
+                            </td>
+
+                            <td class="px-3 py-4 text-sm text-right font-bold text-gray-900">
+                                <span x-text="((parseFloat(item.qty) || 0) * (parseFloat(item.unit_price) || 0)).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})"></span>
+                            </td>
+
+                            <td class="px-3 py-4 text-sm text-center">
+                                <button type="button" @click="removeItem(index)" class="text-red-500 hover:text-red-700">
+                                    <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                    </svg>
+                                </button>
+                            </td>
+                        </tr>
+                    </template>
+                </tbody>
+            </table>
+            
+            <button type="button" @click="addItem()" class="w-full py-3 bg-gray-50 border-t border-gray-300 text-sm font-semibold text-indigo-600 hover:bg-gray-100 transition-colors flex items-center justify-center">
+                <svg class="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                Add Another Item
+            </button>
+            <div class="bg-gray-50 p-4 border-t border-gray-200 flex justify-end">
+                <div class="w-64">
+                    <div class="flex justify-between py-1">
+                        <span class="text-sm font-medium text-gray-500">Sub Total</span>
+                        <span class="text-sm font-bold text-gray-900" x-text="subTotal.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})"></span>
+                    </div>
+                    <div class="flex justify-between py-1" x-show="apply_vat">
+                        <span class="text-sm font-medium text-gray-500">VAT (18%)</span>
+                        <span class="text-sm font-bold text-red-600" x-text="vatAmount.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})"></span>
+                    </div>
+                    <div class="flex justify-between py-2 border-t border-gray-300 mt-2">
+                        <span class="text-base font-bold text-gray-900">Grand Total</span>
+                        <span class="text-base font-black text-gray-900" x-text="grandTotal.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})"></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Actions -->
+    <div class="flex justify-end space-x-3">
+        <a href="{% url 'po_hub' %}" class="btn-premium btn-secondary">Cancel</a>
+        <button type="button" @click="submitPO()" :disabled="submitting" class="btn-premium btn-primary bg-indigo-600 hover:bg-indigo-700 shadow-indigo-600/20 disabled:opacity-50">
+            <span x-text="submitting ? 'Saving...' : 'Generate Purchase Order'"></span>
+        </button>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+
+<script>
+function poForm(type) {
+    return {
+        po_type: type,
+        supplier_id: '',
+        date: new Date().toISOString().split('T')[0],
+        attention: '',
+        payment_term: 'CREDIT',
+        apply_vat: false,
+        items: [],
+        submitting: false,
+        errorMessage: '',
+
+        get subTotal() {
+            return this.items.reduce((acc, item) => {
+                let q = parseFloat(item.qty) || 0;
+                let p = parseFloat(item.unit_price) || 0;
+                return acc + (q * p);
+            }, 0);
+        },
+        get vatAmount() {
+            if (this.apply_vat) return this.subTotal * 0.18;
+            return 0;
+        },
+        get grandTotal() {
+            return this.subTotal + this.vatAmount;
+        },
+
+        // Data Definitions
+        rawMaterials: [
+            {val: 'suger-white', label: 'Sugar - White'},
+            {val: 'suger-brown', label: 'Sugar - Brown'},
+            {val: 'salt', label: 'Salt'},
+            {val: 'paper', label: 'Paper'},
+            {val: 'creamer', label: 'Creamer'},
+            {val: 'herbs', label: 'Herbs (Manual Entry)'},
+            {val: 'flavours', label: 'Flavours (Manual Entry)'},
+            {val: 'other', label: 'Other (Manual Entry)'}
+        ],
+        rawCodes: {
+            'suger-white': 'RM-sw',
+            'suger-brown': 'RM-sb',
+            'salt': 'RM-salt',
+            'paper': 'RM-paper',
+            'creamer': 'RM-creamer'
+        },
+        packingMatrix: {
+            'stick reels': ['brown sugar stick reel', 'white sugar stick reel', 'tesla white sugar reel', 'tesla brown sugar stick reel'],
+            'sachet reel': ['brown sugar sachet reel', 'white sugar sachet reel', 'creamer sachet reel', 'thurya white sugar sachet reel', 'thurya brown sugar sachet reel'],
+            'envelop reel': ['black tea envelop reel', 'green tea envelop reel'],
+            'transparent zipperlock pouch': ['6 × 8 cm', '7 × 10 cm', '10 × 14 cm', '14 × 18 cm', '6 × 9 cm', '12 × 15 cm', '4 × 6 cm', '9 × 12 cm'],
+            'cannister': ['50g', '100g'],
+            'box': ['Slim Herb Tea', 'Ushma', 'Island Spicy Fusion', 'Special Hibiscus Blend', 'Herbal Soothe', 'Harmany Broow', 'Fat Burn Tea', 'Detox Blend', 'Citrus and Spice Energy', 'Calm Mind Blend', 'Balance Blend', 'Moringa Morning Dew', 'Immuno Up', 'Glyco Guard', 'Green Guard Balance', 'Vita Cure', 'Jasmine Green Tea', 'Mango Tea', 'Ginger Tea', 'Caramel Tea', 'Lemon Green Tea', 'Pineapple Tea', 'Strawberry Tea', 'Passion Fruit Tea', 'Green Tea', 'Cinnoman Tea', 'Black Tea'],
+            'standalone zipperlock pouch': 'manual',
+            'glass bottle': ['Kithul treacle'],
+            'plastic bottle': ['Kithul Powder', 'Kithul Flour', 'Kithul Pieces']
+        },
+
+        init() {
+            // Select2 init
+            $(() => {
+                $('#supplier_select').select2({ placeholder: 'Search for a supplier...' });
+                $('#supplier_select').on('change', (e) => {
+                    this.supplier_id = e.target.value;
+                });
+            });
+            // Auto add first line
+            this.addItem();
+        },
+
+        addItem() {
+            this.items.push({
+                category: '',
+                sub_category: '',
+                material_code: '',
+                unit: '',
+                qty: '',
+                unit_price: ''
+            });
+        },
+
+        removeItem(index) {
+            this.items.splice(index, 1);
+        },
+
+        updateRawCode(index) {
+            let item = this.items[index];
+            if (['herbs', 'flavours', 'other'].includes(item.category)) {
+                // Generate based on manual name safely
+                let cleanName = (item.sub_category || '').replace(/[^a-zA-Z0-9]/g, '').toLowerCase() || 'xxxx';
+                item.material_code = `RM-${cleanName}`;
+            } else {
+                item.material_code = this.rawCodes[item.category] || '';
+                item.sub_category = ''; // reset manual field
+            }
+        },
+
+        handlePackingCategoryChange(index) {
+            let item = this.items[index];
+            item.sub_category = ''; 
+            // The PM material code is auto-generated by the backend upon save!
+            item.material_code = 'Auto-generated';
+        },
+
+        async submitPO() {
+            this.errorMessage = '';
+            
+            if (!this.supplier_id) { this.errorMessage = 'Please select a supplier.'; return; }
+            if (!this.date) { this.errorMessage = 'Please select a date.'; return; }
+            if (this.items.length === 0) { this.errorMessage = 'Please add at least one line item.'; return; }
+
+            // Validate lines
+            for (let i=0; i<this.items.length; i++) {
+                let item = this.items[i];
+                if (!item.category) { this.errorMessage = `Item ${i+1} is missing a category/material.`; return; }
+                if (!item.unit) { this.errorMessage = `Item ${i+1} is missing a unit.`; return; }
+                if (!item.qty || isNaN(parseFloat(item.qty))) { this.errorMessage = `Item ${i+1} has an invalid quantity.`; return; }
+            }
+
+            this.submitting = true;
+
+            try {
+                const response = await fetch(window.location.href, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                    },
+                    body: JSON.stringify({
+                        supplier_id: this.supplier_id,
+                        date: this.date,
+                        attention: this.attention,
+                        payment_term: this.payment_term,
+                        apply_vat: this.apply_vat,
+                        items: this.items
+                    })
+                });
+
+                const data = await response.json();
+                
+                if (data.success) {
+                    window.location.href = data.redirect_url;
+                } else {
+                    this.errorMessage = data.message || 'An error occurred while saving the PO.';
+                    this.submitting = false;
+                }
+            } catch(e) {
+                this.errorMessage = 'Network error. Please try again.';
+                this.submitting = false;
+            }
+        }
+    }
+}
+</script>
+{% endblock %}
