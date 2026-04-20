@@ -29,7 +29,7 @@ SECRET_KEY = 'django-insecure-htprn1oozvg77%+cn-uc=j*d7e=&gr+6+r4u14do6#=lpj50^l
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['erp.organicfoodslanka.com', '178.128.52.97', 'localhost', '127.0.0.1']
+ALLOWED_HOSTS = ['erp.organicfoodslanka.com', 'staging.organicfoodslanka.com', '178.128.52.97', 'localhost', '127.0.0.1']
 
 
 # Application definition
