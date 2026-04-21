@@ -1,0 +1,78 @@
+{% extends 'layouts/base.html' %}
+{% block title %}GRN Hub | ERP System{% endblock %}
+{% block breadcrumbs %}
+<li>
+    <div class="flex items-center">
+        <svg class="h-5 w-5 flex-shrink-0 text-gray-300" fill="currentColor" viewBox="0 0 20 20"><path d="M5.555 17.776l8-16 .894.448-8 16-.894-.448z" /></svg>
+        <span class="ml-2 text-sm font-medium text-gray-500">GRN Receipt Hub</span>
+    </div>
+</li>
+{% endblock %}
+{% block content %}
+<div class="max-w-6xl mx-auto py-6 sm:px-6 lg:px-8">
+    <div class="bg-white shadow overflow-hidden sm:rounded-lg">
+        <div class="px-4 py-5 sm:px-6 border-b border-gray-200 bg-gray-50 flex justify-between items-center">
+            <div>
+                <h3 class="text-xl leading-6 font-bold text-gray-900 border-l-4 border-indigo-500 pl-3">Pending Receipts</h3>
+                <p class="mt-1 text-sm text-gray-500">Select a Confirmed Purchase Order to begin receiving goods.</p>
+            </div>
+            <div>
+                <a href="{% url 'grn_list' %}" class="bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 font-medium py-2 px-4 rounded-md shadow-sm transition duration-150">
+                    View GRN History
+                </a>
+            </div>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">PO Number</th>
+                        <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Supplier</th>
+                        <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Date</th>
+                        <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Items Remaining</th>
+                        <th class="px-6 py-3 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider">Action</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    {% for po in pos %}
+                    <tr class="hover:bg-gray-50 transition-colors duration-150">
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="text-sm font-bold text-indigo-600">{{ po.po_number }}</div>
+                            <div class="text-xs text-gray-500">{{ po.get_po_type_display }}</div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="text-sm font-medium text-gray-900">{{ po.supplier.supplier_name }}</div>
+                            <div class="text-xs text-gray-500">{{ po.supplier.contact_number }}</div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {{ po.date }}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            {% for item in po.items.all %}
+                                {% if item.remaining_qty > 0 %}
+                                <div class="text-xs text-gray-600">
+                                    <span class="font-bold text-gray-900">{{ item.category }}</span> 
+                                    (Missing: {{ item.remaining_qty }} {{ item.unit }})
+                                </div>
+                                {% endif %}
+                            {% endfor %}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-center text-sm font-medium">
+                            <a href="{% url 'grn_receive_po' po.pk %}" class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 bg-opacity-90">
+                                Receive Goods
+                            </a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="5" class="px-6 py-10 text-center text-gray-500">
+                            No Confirmed Purchase Orders waiting for receipt.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

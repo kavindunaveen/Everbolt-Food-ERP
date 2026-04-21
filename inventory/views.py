@@ -20,6 +20,9 @@ class ProductDetailAPIView(LoginRequiredMixin, View):
             return JsonResponse({
                 'id': product.id,
                 'selling_price': str(product.selling_price),
+                'price_tier_100': str(product.price_tier_100) if product.price_tier_100 else None,
+                'price_tier_250': str(product.price_tier_250) if product.price_tier_250 else None,
+                'price_tier_500': str(product.price_tier_500) if product.price_tier_500 else None,
                 'current_stock': str(product.current_stock)
             })
         except Product.DoesNotExist:

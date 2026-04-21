@@ -13,7 +13,7 @@
 <div class="px-4 py-6 sm:px-0">
     <div class="flex justify-between items-center mb-8">
         <h1 class="text-3xl font-bold text-gray-900 border-b-4 border-red-500 inline-block pb-1">Sales Dashboard</h1>
-        
+        <div class="flex items-center space-x-3">
             {% if perms.sales.add_quotation %}
             <a href="{% url 'quotation_create' %}" class="btn-premium btn-secondary">
                 + New Quotation

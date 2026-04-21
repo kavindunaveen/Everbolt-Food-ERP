@@ -7,21 +7,28 @@
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        @page { size: 24.13cm 30.48cm; margin: 0; }
+        @page { size: A4; margin: 15mm; }
         body {
             font-family: Arial, sans-serif;
             background-color: #fff; color: #000;
-            width: 24.13cm; height: 30.48cm;
-            margin: 0 auto; position: relative;
-            box-sizing: border-box; padding: 2cm 1.5cm;
+            margin: 0; box-sizing: border-box;
+            display: flex; flex-direction: column;
+            min-height: 100vh;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+        }
+        @media screen {
+            body { 
+                width: 21cm; min-height: 29.7cm; margin: 2rem auto;
+                padding: 15mm;
+                box-shadow: 0 0 15px rgba(0,0,0,0.1); 
+            }
         }
         .table-borders th, .table-borders td {
             border: 1px solid #000; padding: 0.5rem;
         }
         @media print {
             .no-print { display: none !important; }
-            body { padding: 0 !important; width: 100% !important; height: 100% !important; border:none; }
-            .print-pad { padding: 2cm 2cm; }
         }
     </style>
 </head>
@@ -33,11 +40,13 @@
         </button>
     </div>
 
+    <!-- Main Content wrapper to push footer down -->
+    <div class="flex-1">
+
     <!-- Header Section -->
     <div class="flex justify-between items-center mb-6 border-b pb-4 border-gray-100">
-        <div class="w-1/3">
-            <h1 class="text-4xl text-red-600 font-bold" style="font-family: cursive;">Everbolt</h1>
-            <p class="text-xs text-red-600 font-bold -mt-2 ml-4">Food Products</p>
+        <div class="w-1/2">
+            <img src="{% static 'sales/img/logo.png' %}" alt="Everbolt Logo" class="h-28 object-contain">
         </div>
         <div class="w-2/3 text-center text-sm font-semibold">
             <h2 class="text-red-600 text-base font-bold mb-1">EVERBOLT FOOD PRODUCTS (PVT) LTD</h2>
@@ -52,45 +61,41 @@
 
     <!-- Supplier & Info block -->
     <div class="flex justify-between mb-8 text-sm">
-        <div class="w-1/2">
+        <div class="w-1/2 pr-4">
             <div class="flex mb-1">
-                <div class="w-24">supplier :</div>
-                <div class="font-bold flex-1">{{ po.supplier.supplier_name }}</div>
+                <div class="w-28 font-bold uppercase text-gray-500 text-xs tracking-wider pt-0.5">Supplier</div>
+                <div class="font-bold flex-1 text-base">{{ po.supplier.supplier_name }}</div>
             </div>
             <div class="flex mb-1">
-                <div class="w-24"></div>
-                <div class="flex-1">
+                <div class="w-28"></div>
+                <div class="flex-1 leading-snug">
                     {{ po.supplier.address_line1 }}<br>
                     {% if po.supplier.address_line2 %}{{ po.supplier.address_line2 }}<br>{% endif %}
                     {{ po.supplier.city }}, {{ po.supplier.get_province_display }}
                 </div>
             </div>
             {% if po.attention %}
-            <div class="flex mt-8 font-bold text-sm">
-                <div class="w-24">Attention :</div>
-                <div class="flex-1">{{ po.attention }}</div>
+            <div class="flex mt-6 text-sm">
+                <div class="w-28 font-bold uppercase text-gray-500 text-xs tracking-wider pt-0.5">Attention</div>
+                <div class="flex-1 font-bold">{{ po.attention }}</div>
             </div>
             {% endif %}
         </div>
-        <div class="w-1/3">
-            <div class="flex mb-1">
-                <div class="w-24">PO No:</div>
-                <div class="font-semibold">{{ po.po_number }}</div>
+        <div class="w-5/12">
+            <div class="flex mb-2">
+                <div class="w-32 font-bold uppercase text-gray-500 text-xs tracking-wider pt-0.5">PO No</div>
+                <div class="font-bold text-base">{{ po.po_number }}</div>
             </div>
-            <div class="flex mb-1">
-                <div class="w-24">Date:</div>
+            <div class="flex mb-2">
+                <div class="w-32 font-bold uppercase text-gray-500 text-xs tracking-wider pt-0.5">Date</div>
                 <div>{{ po.date }}</div>
             </div>
-            <div class="flex mb-1">
-                <div class="w-24">Prepared:</div>
-                <div>{{ po.created_by.first_name }}</div>
+            <div class="flex mb-2">
+                <div class="w-32 font-bold uppercase text-gray-500 text-xs tracking-wider pt-0.5">Prepared By</div>
+                <div class="font-semibold uppercase">{{ po.created_by.get_full_name|default:po.created_by.username }}</div>
             </div>
-            <div class="flex mb-1">
-                <div class="w-24">By:</div>
-                <div>{{ po.created_by.last_name }}</div>
-            </div>
-            <div class="flex mb-1">
-                <div class="w-24">Payment term:</div>
+            <div class="flex mb-2">
+                <div class="w-32 font-bold uppercase text-gray-500 text-xs tracking-wider pt-0.5">Payment term</div>
                 <div class="uppercase">{{ po.get_payment_term_display }}</div>
             </div>
         </div>
@@ -103,8 +108,8 @@
                 <th class="w-24">Product Code</th>
                 <th>Item Description</th>
                 <th class="w-20 text-right">Qty</th>
-                <th class="w-24 text-right">Unit Price</th>
-                <th class="w-32 text-right">Amount</th>
+                <th class="w-24 text-right">Unit Price (Rs.)</th>
+                <th class="w-32 text-right">Amount (Rs.)</th>
             </tr>
         </thead>
         <tbody>
@@ -115,41 +120,42 @@
                     {{ item.category }}
                     {% if item.sub_category %}<br><span class="text-xs text-gray-600">({{ item.sub_category }})</span>{% endif %}
                 </td>
-                <td class="text-right">{{ item.qty }}</td>
-                <td class="text-right">{{ item.unit_price }}</td>
-                <td class="text-right">{{ item.amount }}</td>
+                <td class="text-right">{{ item.qty|floatformat:0 }}</td>
+                <td class="text-right">{{ item.unit_price|floatformat:2 }}</td>
+                <td class="text-right font-semibold">{{ item.amount|floatformat:2 }}</td>
             </tr>
             {% endfor %}
-            <!-- Blank row for padding visually if needed -->
-            <tr style="height: 100px;">
-                <td style="border-bottom:none; border-top:none;"></td>
-                <td style="border-bottom:none; border-top:none;"></td>
-                <td style="border-bottom:none; border-top:none;"></td>
-                <td style="border-bottom:none; border-top:none;"></td>
-                <td style="border-bottom:none; border-top:none;"></td>
+            <!-- Fill row for invoice grid extension -->
+            <tr style="height: 120px;">
+                <td style="border-top:none; border-bottom: 1px solid #000;"></td>
+                <td style="border-top:none; border-bottom: 1px solid #000;"></td>
+                <td style="border-top:none; border-bottom: 1px solid #000;"></td>
+                <td style="border-top:none; border-bottom: 1px solid #000;"></td>
+                <td style="border-top:none; border-bottom: 1px solid #000;"></td>
             </tr>
             <tr>
                 <td colspan="3" rowspan="{% if po.apply_vat %}3{% else %}2{% endif %}" style="border:none;"></td>
-                <td class="font-bold">Sub Total</td>
-                <td class="text-right font-bold">{{ po.sub_total }}</td>
+                <td class="font-bold" style="border: 1px solid #000; padding: 0.5rem;">Sub Total</td>
+                <td class="text-right font-bold" style="border: 1px solid #000; padding: 0.5rem;">{{ po.sub_total|floatformat:2 }}</td>
             </tr>
             {% if po.apply_vat %}
             <tr>
-                <td class="font-bold">VAT-18%</td>
-                <td class="text-right font-bold">{{ po.vat_amount }}</td>
+                <td class="font-bold" style="border: 1px solid #000; padding: 0.5rem;">VAT-18%</td>
+                <td class="text-right font-bold" style="border: 1px solid #000; padding: 0.5rem;">{{ po.vat_amount|floatformat:2 }}</td>
             </tr>
             {% endif %}
             <tr>
-                <td class="font-bold">Grand Total</td>
-                <td class="text-right font-bold">{{ po.grand_total }}</td>
+                <td class="font-bold" style="border: 1px solid #000; padding: 0.5rem;">Grand Total</td>
+                <td class="text-right font-extrabold text-lg" style="border: 1px solid #000; padding: 0.5rem;">Rs. {{ po.grand_total|floatformat:2 }}</td>
             </tr>
         </tbody>
     </table>
+    </div> <!-- End Main Content -->
 
-    <!-- Authorized Signatures -->
-    <div class="absolute bottom-[3cm] left-[2cm] text-sm leading-relaxed">
+    <!-- Authorized Signatures at Bottom -->
+    <div class="mt-auto pt-16 pb-8 text-sm leading-relaxed" style="page-break-inside: avoid;">
         .........................................................<br>
-        Prabath Guruge<br>
+        <strong>Prabath Guruge</strong><br>
         Director - Everbolt Food Products Pvt Ltd<br>
         Approved by
     </div>

@@ -387,15 +387,33 @@
                 .then(data => {
                     if (data.error) return;
                     
-                    const priceInput = row.find('input[name$="-unit_price"]');
-                    if (priceInput.length && !priceInput.val()) {
-                        priceInput.val(data.selling_price);
-                    }
+                    // Store pricing tiers
+                    row.data('price_tier_100', data.price_tier_100 || data.selling_price);
+                    row.data('price_tier_250', data.price_tier_250 || data.selling_price);
+                    row.data('price_tier_500', data.price_tier_500 || data.selling_price);
+                    row.data('auto_pricing_enabled', true);
                     
+                    const priceInput = row.find('input[name$="-unit_price"]');
                     const qtyInput = row.find('input[name$="-quantity"]');
-                    if (qtyInput.length && !qtyInput.val()) {
+                    
+                    if (qtyInput.length && (!qtyInput.val() || qtyInput.val() == '0')) {
                         qtyInput.val(1);
                     }
+                    
+                    let qty = parseFloat(qtyInput.val()) || 1;
+                    let targetPrice = data.selling_price;
+                    
+                    if (data.price_tier_100) {
+                        if (qty >= 500) {
+                            targetPrice = data.price_tier_500;
+                        } else if (qty > 100) {
+                            targetPrice = data.price_tier_250;
+                        } else {
+                            targetPrice = data.price_tier_100;
+                        }
+                    }
+                    
+                    priceInput.val(targetPrice);
                     
                     if (data.current_stock === 0) {
                         alert("Warning: This product is completely out of stock!");
@@ -407,7 +425,28 @@
 
         // Live calculation triggers on input changes
         $(document).on('input', 'input[name$="-quantity"], input[name$="-unit_price"]', function() {
-            calculateRowTotal($(this).closest('tr')[0]);
+            const row = $(this).closest('tr');
+            
+            // Auto Update tier pricing if triggered by quantity change
+            if ($(this).attr('name').endsWith('-quantity') && row.data('auto_pricing_enabled')) {
+                const qty = parseFloat($(this).val()) || 0;
+                const p100 = row.data('price_tier_100');
+                const p250 = row.data('price_tier_250');
+                const p500 = row.data('price_tier_500');
+                
+                if (p100 && p250 && p500) {
+                    const priceInput = row.find('input[name$="-unit_price"]');
+                    if (qty >= 500) {
+                        priceInput.val(p500);
+                    } else if (qty > 100) {
+                        priceInput.val(p250);
+                    } else {
+                        priceInput.val(p100);
+                    }
+                }
+            }
+            
+            calculateRowTotal(row[0]);
         });
 
         // Remove row logic

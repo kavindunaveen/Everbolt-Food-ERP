@@ -9,7 +9,8 @@ class GRN(models.Model):
         CANCELLED = 'CANCELLED', 'Cancelled'
 
     grn_number = models.CharField(max_length=50, unique=True, blank=True)
-    supplier = models.CharField(max_length=200)
+    po = models.ForeignKey('PurchaseOrder', on_delete=models.SET_NULL, null=True, blank=True, related_name='grns')
+    supplier = models.CharField(max_length=200) # Kept for backward compatibility
     date = models.DateField()
     ref_number = models.CharField(max_length=100, blank=True, null=True, help_text="Supplier Invoice Number")
     remarks = models.TextField(blank=True, null=True)
@@ -37,6 +38,7 @@ class GRN(models.Model):
 
 class GRNItem(models.Model):
     grn = models.ForeignKey(GRN, on_delete=models.CASCADE, related_name='items')
+    po_item = models.ForeignKey('PurchaseOrderItem', on_delete=models.SET_NULL, null=True, blank=True, related_name='grn_receipts')
     product = models.ForeignKey(Product, on_delete=models.PROTECT)
     qty = models.DecimalField(max_digits=12, decimal_places=3)
     unit_cost = models.DecimalField(max_digits=12, decimal_places=2)
@@ -122,11 +124,16 @@ class PurchaseOrderItem(models.Model):
     material_code = models.CharField(max_length=100)
     unit = models.CharField(max_length=50)
     qty = models.DecimalField(max_digits=12, decimal_places=3)
+    received_qty = models.DecimalField(max_digits=12, decimal_places=3, default=0.000)
     unit_price = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
 
     @property
     def amount(self):
         return Decimal(self.qty) * Decimal(self.unit_price)
+
+    @property
+    def remaining_qty(self):
+        return self.qty - self.received_qty
 
     def save(self, *args, **kwargs):
         # Auto-generate material code for PM if not provided

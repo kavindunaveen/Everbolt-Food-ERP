@@ -253,7 +253,7 @@ function poForm(type) {
         po_type: type,
         supplier_id: '',
         date: new Date().toISOString().split('T')[0],
-        attention: '',
+        attention: '{{ request.user.get_full_name|default:request.user.username|escapejs }}',
         payment_term: 'CREDIT',
         apply_vat: false,
         items: [],

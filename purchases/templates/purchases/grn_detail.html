@@ -9,7 +9,6 @@
         <div class="flex space-x-3">
             <a href="{% url 'grn_list' %}" class="bg-gray-100 hover:bg-gray-200 border border-gray-300 rounded-md px-4 py-2 text-gray-700">Back</a>
             {% if grn.status == 'DRAFT' %}
-            <a href="{% url 'grn_update' grn.pk %}" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-md shadow">Edit</a>
             <form action="{% url 'grn_confirm' grn.pk %}" method="post" class="inline">
                 {% csrf_token %}
                 <button type="submit" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md shadow" onclick="return confirm('Confirm GRN? This will update stock levels.');">Confirm</button>

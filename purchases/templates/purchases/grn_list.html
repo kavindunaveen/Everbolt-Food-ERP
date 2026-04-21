@@ -6,7 +6,7 @@
 <div class="px-4 py-6 sm:px-0">
     <div class="flex justify-between items-center mb-6">
         <h1 class="text-2xl font-bold text-gray-900 border-b-4 border-blue-500 inline-block pb-1">Good Receipt Notes</h1>
-        <a href="{% url 'grn_create' %}" class="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg shadow transition duration-150">
+        <a href="{% url 'grn_receive_hub' %}" class="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg shadow transition duration-150">
             + Receive Stock (GRN)
         </a>
     </div>
@@ -45,7 +45,6 @@
                         <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                             <a href="{% url 'grn_detail' grn.pk %}" class="text-blue-600 hover:text-blue-900 mr-3">View</a>
                             {% if grn.status == 'DRAFT' %}
-                                <a href="{% url 'grn_update' grn.pk %}" class="text-indigo-600 hover:text-indigo-900 mr-3">Edit</a>
                                 <form action="{% url 'grn_confirm' grn.pk %}" method="post" class="inline">
                                     {% csrf_token %}
                                     <button type="submit" class="text-green-600 hover:text-green-900" onclick="return confirm('Confirm GRN? This will update stock levels.');">Confirm</button>
@@ -56,7 +55,7 @@
                     {% empty %}
                     <tr>
                         <td colspan="5" class="px-6 py-10 text-center text-gray-500">
-                            No GRNs found. Click "+ Receive Stock" to create one.
+                            No GRNs found. Click "+ Receive Stock" to begin a GRN.
                         </td>
                     </tr>
                     {% endfor %}

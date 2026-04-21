@@ -1,11 +1,15 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.urls import reverse_lazy, reverse
 from django.contrib import messages
-from django.views.generic import ListView, CreateView, UpdateView, DetailView
+from django.views.generic import ListView, DetailView
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.decorators import login_required
-from .models import GRN
-from .forms import GRNForm, GRNItemFormSet
+import json
+from decimal import Decimal
+from django.http import JsonResponse
+from django.db import transaction
+from .models import GRN, GRNItem, PurchaseOrder, PurchaseOrderItem, POType
+from suppliers.models import Supplier
 from .services import confirm_grn, cancel_grn
 
 class GRNListView(LoginRequiredMixin, ListView):
@@ -20,66 +24,7 @@ class GRNDetailView(LoginRequiredMixin, DetailView):
     template_name = 'purchases/grn_detail.html'
     context_object_name = 'grn'
 
-class GRNCreateView(LoginRequiredMixin, CreateView):
-    model = GRN
-    form_class = GRNForm
-    template_name = 'purchases/grn_form.html'
-    success_url = reverse_lazy('grn_list')
 
-    def get_context_data(self, **kwargs):
-        data = super().get_context_data(**kwargs)
-        if self.request.POST:
-            data['items'] = GRNItemFormSet(self.request.POST)
-        else:
-            data['items'] = GRNItemFormSet()
-        return data
-
-    def form_valid(self, form):
-        context = self.get_context_data()
-        items = context['items']
-        
-        if items.is_valid():
-            form.instance.created_by = self.request.user
-            self.object = form.save()
-            items.instance = self.object
-            items.save()
-            messages.success(self.request, f"GRN {self.object.grn_number} created successfully as Draft.")
-            return redirect(self.success_url)
-        else:
-            return self.render_to_response(self.get_context_data(form=form))
-
-class GRNUpdateView(LoginRequiredMixin, UpdateView):
-    model = GRN
-    form_class = GRNForm
-    template_name = 'purchases/grn_form.html'
-    success_url = reverse_lazy('grn_list')
-
-    def dispatch(self, request, *args, **kwargs):
-        if self.get_object().status != GRN.StatusChoices.DRAFT:
-            messages.error(request, "Only Draft GRNs can be edited.")
-            return redirect('grn_list')
-        return super().dispatch(request, *args, **kwargs)
-
-    def get_context_data(self, **kwargs):
-        data = super().get_context_data(**kwargs)
-        if self.request.POST:
-            data['items'] = GRNItemFormSet(self.request.POST, instance=self.object)
-        else:
-            data['items'] = GRNItemFormSet(instance=self.object)
-        return data
-
-    def form_valid(self, form):
-        context = self.get_context_data()
-        items = context['items']
-        
-        if items.is_valid():
-            self.object = form.save()
-            items.instance = self.object
-            items.save()
-            messages.success(self.request, f"GRN {self.object.grn_number} updated.")
-            return redirect(self.success_url)
-        else:
-            return self.render_to_response(self.get_context_data(form=form))
 
 @login_required
 def confirm_grn_view(request, pk):
@@ -103,11 +48,133 @@ def cancel_grn_view(request, pk):
             messages.error(request, f"Error cancelling GRN: {str(e)}")
     return redirect('grn_list')
 
-import json
-from django.http import JsonResponse
-from django.db import transaction
-from .models import PurchaseOrder, PurchaseOrderItem, POType
-from suppliers.models import Supplier
+@login_required
+def grn_receive_hub(request):
+    # Only show CONFIRMED POs that have unreceived items
+    # An item is unreceived if received_qty < qty
+    confirmed_pos = PurchaseOrder.objects.filter(status=PurchaseOrder.StatusChoices.CONFIRMED)
+    pos_to_show = []
+    for po in confirmed_pos:
+        # Check if there's remaining qty
+        remaining = False
+        for item in po.items.all():
+            if item.received_qty < item.qty:
+                remaining = True
+                break
+        if remaining:
+            pos_to_show.append(po)
+
+    return render(request, 'purchases/grn_hub.html', {'pos': pos_to_show})
+
+@login_required
+def grn_receive_po(request, po_id):
+    po = get_object_or_404(PurchaseOrder, pk=po_id, status=PurchaseOrder.StatusChoices.CONFIRMED)
+    
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            received_items = data.get('items', [])
+            if not received_items:
+                return JsonResponse({'success': False, 'message': 'No items received.'})
+                
+            from inventory.models import Product, StockLedger
+            
+            with transaction.atomic():
+                # Create the GRN Header
+                grn = GRN.objects.create(
+                    po=po,
+                    supplier=po.supplier.supplier_name, # Stored as text for fallback
+                    date=request.POST.get('date', data.get('date')),
+                    ref_number=data.get('ref_number', ''),
+                    remarks=data.get('remarks', ''),
+                    status=GRN.StatusChoices.DRAFT,  # Can auto-confirm or leave as draft
+                    created_by=request.user
+                )
+
+                for r_item in received_items:
+                    po_item_id = r_item.get('po_item_id')
+                    try:
+                        po_item = PurchaseOrderItem.objects.get(id=po_item_id, po=po)
+                    except PurchaseOrderItem.DoesNotExist:
+                        continue
+                        
+                    receive_qty = Decimal(str(r_item.get('receive_qty', 0)))
+                    if receive_qty <= 0:
+                        continue
+                        
+                    if receive_qty > po_item.remaining_qty:
+                        return JsonResponse({'success': False, 'message': f'Cannot receive {receive_qty} for {po_item.material_code}. Only {po_item.remaining_qty} remaining.'})
+                        
+                    unit_price = Decimal(str(r_item.get('unit_price', po_item.unit_price)))
+                    
+                    # 1. Product Synchronization Check
+                    # If this material doesn't exist in the master Inventory table, silently create it.
+                    prod_name = po_item.category
+                    if po_item.sub_category:
+                        prod_name += f" - {po_item.sub_category}"
+                        
+                    inv_class = Product.InventoryClasses.PACKAGING if po.po_type == POType.PACKING_MATERIAL else Product.InventoryClasses.RAW
+                    
+                    product, created = Product.objects.get_or_create(
+                        product_id=po_item.material_code,
+                        defaults={
+                            'name': prod_name,
+                            'inventory_class': inv_class,
+                            'stock_unit': Product.UnitTypes.PCS if po_item.unit.lower() == 'pcs' else Product.UnitTypes.KG, # simplistic fallback
+                            'selling_unit': Product.UnitTypes.PCS,
+                            'selling_price': unit_price * Decimal('1.5'), # arbitrary placeholder
+                            'custom_load_price': unit_price
+                        }
+                    )
+                    
+                    # If product already existed, we still want to update its cost price with the latest incoming price
+                    if not created and product.custom_load_price != unit_price:
+                        product.custom_load_price = unit_price
+                        product.save(update_fields=['custom_load_price'])
+
+                    # 2. Create GRNItem
+                    # Expiry handled manually later if needed
+                    GRNItem.objects.create(
+                        grn=grn,
+                        po_item=po_item,
+                        product=product,
+                        qty=receive_qty,
+                        unit_cost=unit_price
+                    )
+                    
+                    # 3. Update PO Item received count
+                    po_item.received_qty += receive_qty
+                    po_item.save(update_fields=['received_qty'])
+
+                # Confirm the GRN immediately to update Stock Ledgers as requested by workflow
+                from purchases.services import confirm_grn
+                confirm_grn(grn, request.user)
+
+            return JsonResponse({'success': True, 'redirect_url': reverse('grn_list')})
+            
+        except Exception as e:
+            return JsonResponse({'success': False, 'message': str(e)})
+            
+    # GET Logic
+    items_to_receive = []
+    for item in po.items.all():
+        if item.remaining_qty > 0:
+            items_to_receive.append({
+                'id': item.id,
+                'category': item.category,
+                'sub_category': item.sub_category,
+                'material_code': item.material_code,
+                'unit': item.unit,
+                'remaining_qty': float(item.remaining_qty),
+                'unit_price': float(item.unit_price)
+            })
+            
+    context = {
+        'po': po,
+        'items_json': json.dumps(items_to_receive)
+    }
+    return render(request, 'purchases/grn_receive_form.html', context)
+
 
 @login_required
 def purchase_order_hub(request):
@@ -200,4 +267,29 @@ class PurchaseOrderPrintView(LoginRequiredMixin, DetailView):
     model = PurchaseOrder
     template_name = 'purchases/po_print.html'
     context_object_name = 'po'
+
+@login_required
+def purchase_order_confirm(request, pk):
+    po = get_object_or_404(PurchaseOrder, pk=pk)
+    if po.status == PurchaseOrder.StatusChoices.DRAFT:
+        po.status = PurchaseOrder.StatusChoices.CONFIRMED
+        po.save()
+        messages.success(request, f"Purchase Order {po.po_number} Confirmed successfully.")
+    else:
+        messages.warning(request, "Only DRAFT orders can be confirmed.")
+    return redirect('po_detail', pk=pk)
+
+@login_required
+def purchase_order_cancel(request, pk):
+    po = get_object_or_404(PurchaseOrder, pk=pk)
+    if po.status in [PurchaseOrder.StatusChoices.DRAFT, PurchaseOrder.StatusChoices.CONFIRMED]:
+        # Check if already fulfilled partially
+        received_items = po.items.filter(received_qty__gt=0)
+        if received_items.exists() and po.status == PurchaseOrder.StatusChoices.CONFIRMED:
+            messages.warning(request, "Cannot cancel a PO that has already been partially received via GRN.")
+        else:
+            po.status = PurchaseOrder.StatusChoices.CANCELLED
+            po.save()
+            messages.success(request, f"Purchase Order {po.po_number} has been Cancelled.")
+    return redirect('po_detail', pk=pk)
 
