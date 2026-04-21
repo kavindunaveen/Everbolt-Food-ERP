@@ -5,7 +5,7 @@ from .models import User
 
 def get_custom_permissions():
     """Returns permissions only for our custom apps."""
-    return Permission.objects.filter(content_type__app_label__in=['crm', 'inventory', 'sales'])
+    return Permission.objects.filter(content_type__app_label__in=['crm', 'inventory', 'sales', 'purchases', 'suppliers', 'users'])
 
 class CustomPermissionChoiceField(forms.ModelMultipleChoiceField):
     def label_from_instance(self, obj):

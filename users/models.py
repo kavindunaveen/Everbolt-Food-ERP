@@ -5,6 +5,7 @@ class User(AbstractUser):
     class Roles(models.TextChoices):
         ADMIN = 'ADMIN', 'Admin'
         SALES_OFFICER = 'SALES_OFFICER', 'Sales Officer'
+        USER = 'USER', 'User'
 
     role = models.CharField(max_length=50, choices=Roles.choices, default=Roles.SALES_OFFICER)
     contact_number = models.CharField(max_length=20, blank=True, null=True)

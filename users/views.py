@@ -1,13 +1,13 @@
 from django.shortcuts import render
 from django.urls import reverse_lazy
 from django.views.generic import ListView, CreateView, UpdateView, DeleteView
-from django.contrib.auth.mixins import LoginRequiredMixin
-from sales.views import AdminRequiredMixin
+from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
 from .models import User
 from .forms import CustomUserCreationForm, CustomUserChangeForm
 from django.db.models import Q
 
-class UserListView(LoginRequiredMixin, AdminRequiredMixin, ListView):
+class UserListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
+    permission_required = 'users.view_user'
     model = User
     template_name = 'users/user_list.html'
     context_object_name = 'users'
@@ -25,19 +25,22 @@ class UserListView(LoginRequiredMixin, AdminRequiredMixin, ListView):
             )
         return qs
 
-class UserCreateView(LoginRequiredMixin, AdminRequiredMixin, CreateView):
+class UserCreateView(LoginRequiredMixin, PermissionRequiredMixin, CreateView):
+    permission_required = 'users.add_user'
     model = User
     form_class = CustomUserCreationForm
     template_name = 'users/user_form.html'
     success_url = reverse_lazy('user_list')
 
-class UserUpdateView(LoginRequiredMixin, AdminRequiredMixin, UpdateView):
+class UserUpdateView(LoginRequiredMixin, PermissionRequiredMixin, UpdateView):
+    permission_required = 'users.change_user'
     model = User
     form_class = CustomUserChangeForm
     template_name = 'users/user_form.html'
     success_url = reverse_lazy('user_list')
 
-class UserDeleteView(LoginRequiredMixin, AdminRequiredMixin, DeleteView):
+class UserDeleteView(LoginRequiredMixin, PermissionRequiredMixin, DeleteView):
+    permission_required = 'users.delete_user'
     model = User
     template_name = 'users/user_confirm_delete.html'
     success_url = reverse_lazy('user_list')
