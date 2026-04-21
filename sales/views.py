@@ -72,7 +72,10 @@ class SalesDashboardView(LoginRequiredMixin, TemplateView):
         context['recent_quotations'] = quotations[:15]
         context['recent_invoices'] = invoices[:15]
         
-        context['total_invoice_amount'] = invoices.aggregate(Sum('total_amount'))['total_amount__sum'] or Decimal('0.00')
+        # Exclude cancelled invoices from the total amount stat
+        active_invoices = invoices.exclude(status='CANCELLED')
+        context['total_invoice_count'] = active_invoices.count()
+        context['total_invoice_amount'] = active_invoices.aggregate(Sum('total_amount'))['total_amount__sum'] or Decimal('0.00')
         return context
 
 class QuotationListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
