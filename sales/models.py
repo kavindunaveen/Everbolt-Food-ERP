@@ -5,12 +5,20 @@ from crm.models import Customer
 from inventory.models import Product
 
 class Quotation(models.Model):
+    class Status(models.TextChoices):
+        DRAFT = 'DRAFT', 'Draft'
+        SENT = 'SENT', 'Sent to Customer'
+        EXPIRED = 'EXPIRED', 'Expired'
+        CONVERTED = 'CONVERTED', 'Converted to Invoice'
+        CANCELLED = 'CANCELLED', 'Cancelled'
+
     quotation_number = models.CharField(max_length=50, unique=True)
     customer = models.ForeignKey(Customer, on_delete=models.PROTECT)
     salesperson = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True)
     creation_date = models.DateTimeField(auto_now_add=True)
     valid_until = models.DateField()
     customer_po_number = models.CharField(max_length=50, blank=True, null=True)
+    status = models.CharField(max_length=20, choices=Status.choices, default=Status.DRAFT)
     total_amount = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
     tax_amount = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
     notes = models.TextField(blank=True, null=True)
@@ -111,7 +119,7 @@ class Return(models.Model):
         SELLABLE = 'SELLABLE', 'Good / Sellable'
         DAMAGED = 'DAMAGED', 'Damaged / Unsellable'
 
-    return_number = models.CharField(max_length=50, unique=True)
+    return_number = models.CharField(max_length=50, unique=True, blank=True)
     original_invoice = models.ForeignKey(Invoice, on_delete=models.PROTECT)
     returned_product = models.ForeignKey(Product, on_delete=models.PROTECT)
     quantity = models.PositiveIntegerField()
@@ -120,6 +128,20 @@ class Return(models.Model):
     
     credit_note_issued = models.BooleanField(default=False)
     stock_updated = models.BooleanField(default=False, help_text="True if stock was added back")
+    created_date = models.DateTimeField(auto_now_add=True, null=True, blank=True)
+
+    def save(self, *args, **kwargs):
+        if not self.return_number:
+            last_return = Return.objects.order_by('-id').first()
+            if last_return and last_return.return_number.startswith('RTN-'):
+                try:
+                    seq = int(last_return.return_number.split('-')[-1]) + 1
+                except ValueError:
+                    seq = 1
+            else:
+                seq = 1
+            self.return_number = f"RTN-{seq:04d}"
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return self.return_number

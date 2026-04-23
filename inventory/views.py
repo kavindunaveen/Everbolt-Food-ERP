@@ -8,7 +8,6 @@ from django.http import JsonResponse, HttpResponse
 import csv
 import io
 from decimal import Decimal
-from sales.views import AdminRequiredMixin
 from .models import Product, StockAdjustment, StockLedger
 from .forms import ProductForm, StockAdjustmentForm
 from .services import confirm_stock_adjustment, cancel_stock_adjustment

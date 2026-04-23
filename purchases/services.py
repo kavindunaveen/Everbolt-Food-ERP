@@ -50,9 +50,9 @@ def cancel_grn(grn, user):
         for item in grn.items.all():
             ledgers.append(StockLedger(
                 product=item.product,
-                tx_type=StockLedger.TransactionTypes.GRN,
+                tx_type=StockLedger.TransactionTypes.ADJ_NEG,  # Reversal is a negative adjustment, not a GRN
                 qty_in=0,
-                qty_out=item.qty, # Reverse the IN by putting it in OUT
+                qty_out=item.qty,  # Reverse the original stock-IN
                 reference_type='GRN-CANCEL',
                 reference_id=grn.id,
                 reference_number=grn.grn_number,

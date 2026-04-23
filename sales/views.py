@@ -436,7 +436,10 @@ class QuotationExportView(LoginRequiredMixin, PermissionRequiredMixin, View):
         writer = csv.writer(response)
         writer.writerow(['Quotation Number', 'Customer', 'Creation Date', 'Salesperson', 'Valid Until', 'Total Amount'])
         
-        quotations = Quotation.objects.filter(salesperson=self.request.user)
+        if not request.user.has_perm('sales.approve_invoice'):
+            quotations = Quotation.objects.filter(salesperson=self.request.user)
+        else:
+            quotations = Quotation.objects.all()
         q = request.GET.get('q')
         if q:
             quotations = quotations.filter(quotation_number__icontains=q)
@@ -456,7 +459,10 @@ class InvoiceExportView(LoginRequiredMixin, PermissionRequiredMixin, View):
         writer = csv.writer(response)
         writer.writerow(['Invoice Number', 'Type', 'Customer', 'Salesperson', 'Status', 'Delivery Date', 'Total Amount'])
         
-        invoices = Invoice.objects.filter(salesperson=self.request.user)
+        if not request.user.has_perm('sales.approve_invoice'):
+            invoices = Invoice.objects.filter(salesperson=self.request.user)
+        else:
+            invoices = Invoice.objects.all()
         q = request.GET.get('q')
         if q:
             invoices = invoices.filter(invoice_number__icontains=q)
@@ -567,3 +573,30 @@ def reject_invoice_view(request, pk):
         else:
             messages.warning(request, "This invoice is not pending approval.")
     return redirect('invoice_list')
+
+@login_required
+def quotation_mark_sent_view(request, pk):
+    """Mark a DRAFT quotation as SENT (i.e. delivered to customer)."""
+    quotation = get_object_or_404(Quotation, pk=pk)
+    if request.method == 'POST':
+        if quotation.status == 'DRAFT':
+            quotation.status = 'SENT'
+            quotation.save(update_fields=['status'])
+            messages.success(request, f"Quotation {quotation.quotation_number} marked as Sent.")
+        else:
+            messages.warning(request, "Only DRAFT quotations can be marked as Sent.")
+    return redirect('quotation_list')
+
+@login_required
+def quotation_cancel_view(request, pk):
+    """Cancel a DRAFT or SENT quotation."""
+    quotation = get_object_or_404(Quotation, pk=pk)
+    if request.method == 'POST':
+        if quotation.status in ['DRAFT', 'SENT']:
+            quotation.status = 'CANCELLED'
+            quotation.save(update_fields=['status'])
+            messages.success(request, f"Quotation {quotation.quotation_number} cancelled.")
+        else:
+            messages.warning(request, "Only DRAFT or SENT quotations can be cancelled.")
+    return redirect('quotation_list')
+

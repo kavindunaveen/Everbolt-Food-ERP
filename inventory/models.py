@@ -163,7 +163,7 @@ class StockAdjustment(models.Model):
             last_adj = StockAdjustment.objects.order_by('-id').first()
             if last_adj and last_adj.adjustment_number.startswith('ADJ-'):
                 try:
-                    seq = int(last_adj.adjustment_number.split('-')[1]) + 1
+                    seq = int(last_adj.adjustment_number.split('-')[-1]) + 1
                 except ValueError:
                     seq = 1
             else:

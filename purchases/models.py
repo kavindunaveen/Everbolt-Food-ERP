@@ -25,7 +25,7 @@ class GRN(models.Model):
             last_grn = GRN.objects.order_by('-id').first()
             if last_grn and last_grn.grn_number.startswith('GRN-'):
                 try:
-                    seq = int(last_grn.grn_number.split('-')[1]) + 1
+                    seq = int(last_grn.grn_number.split('-')[-1]) + 1
                 except ValueError:
                     seq = 1
             else:
@@ -103,7 +103,7 @@ class PurchaseOrder(models.Model):
                 last_po = PurchaseOrder.objects.select_for_update().filter(po_number__startswith=prefix).order_by('-po_number').first()
                 if last_po:
                     try:
-                        last_seq = int(last_po.po_number.split('-')[1])
+                        last_seq = int(last_po.po_number.split('-')[-1])
                         new_seq = last_seq + 1
                     except ValueError:
                         new_seq = 1

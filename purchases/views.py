@@ -122,7 +122,7 @@ def grn_receive_po(request, po_id):
                             'inventory_class': inv_class,
                             'stock_unit': Product.UnitTypes.PCS if po_item.unit.lower() == 'pcs' else Product.UnitTypes.KG, # simplistic fallback
                             'selling_unit': Product.UnitTypes.PCS,
-                            'selling_price': unit_price * Decimal('1.5'), # arbitrary placeholder
+                            'selling_price': Decimal('0.00'), # Raw/Packaging materials have no selling price
                             'custom_load_price': unit_price
                         }
                     )
@@ -146,9 +146,8 @@ def grn_receive_po(request, po_id):
                     po_item.received_qty += receive_qty
                     po_item.save(update_fields=['received_qty'])
 
-                # Confirm the GRN immediately to update Stock Ledgers as requested by workflow
-                from purchases.services import confirm_grn
-                confirm_grn(grn, request.user)
+                # GRN is left as DRAFT — user must manually confirm from the GRN list.
+                # This allows for a review step before stock is updated.
 
             return JsonResponse({'success': True, 'redirect_url': reverse('grn_list')})
             
@@ -244,7 +243,7 @@ def purchase_order_create(request, po_type):
     last_po = PurchaseOrder.objects.filter(po_number__startswith="EFPO-").order_by('-po_number').first()
     if last_po:
         try:
-            next_seq = int(last_po.po_number.split('-')[1]) + 1
+            next_seq = int(last_po.po_number.split('-')[-1]) + 1
         except:
             next_seq = 1
     else:

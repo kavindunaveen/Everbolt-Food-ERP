@@ -25,27 +25,59 @@
                 <tr>
                     <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Number</th>
                     <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Customer</th>
-                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date & Time</th>
+                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date &amp; Time</th>
                     <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Salesperson</th>
                     <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Valid Until</th>
+                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
                     <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total Amount</th>
-
+                    <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                 </tr>
             </thead>
             <tbody class="bg-white divide-y divide-gray-200">
                 {% for quote in quotations %}
-                <tr class="hover:bg-gray-50 transition-colors {% if perms.sales.change_quotation %}cursor-pointer{% endif %}" {% if perms.sales.change_quotation %}onclick="window.location.href='{% url 'quotation_edit' quote.pk %}'"{% endif %}>
+                <tr class="hover:bg-gray-50 transition-colors">
                     <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-red-600">{{ quote.quotation_number }}</td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ quote.customer.customer_name }}</td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ quote.creation_date|date:"Y-m-d H:i" }}</td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ quote.salesperson.username|title }}</td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ quote.valid_until }}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm">
+                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full
+                            {% if quote.status == 'DRAFT' %}bg-gray-100 text-gray-800
+                            {% elif quote.status == 'SENT' %}bg-blue-100 text-blue-800
+                            {% elif quote.status == 'CONVERTED' %}bg-green-100 text-green-800
+                            {% elif quote.status == 'EXPIRED' %}bg-orange-100 text-orange-800
+                            {% elif quote.status == 'CANCELLED' %}bg-red-100 text-red-800
+                            {% else %}bg-gray-100 text-gray-800{% endif %}">
+                            {{ quote.get_status_display }}
+                        </span>
+                    </td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">Rs. {{ quote.total_amount }}</td>
-
+                    <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-2">
+                        {% if perms.sales.change_quotation %}
+                            <a href="{% url 'quotation_edit' quote.pk %}" class="text-indigo-600 hover:text-indigo-900">Edit</a>
+                        {% endif %}
+                        {% if quote.status == 'DRAFT' %}
+                            <form action="{% url 'quotation_mark_sent' quote.pk %}" method="post" class="inline">
+                                {% csrf_token %}
+                                <button type="submit" class="text-blue-600 hover:text-blue-900">Mark Sent</button>
+                            </form>
+                            <form action="{% url 'quotation_cancel' quote.pk %}" method="post" class="inline">
+                                {% csrf_token %}
+                                <button type="submit" class="text-red-600 hover:text-red-900" onclick="return confirm('Cancel this quotation?')">Cancel</button>
+                            </form>
+                        {% elif quote.status == 'SENT' %}
+                            <form action="{% url 'quotation_cancel' quote.pk %}" method="post" class="inline">
+                                {% csrf_token %}
+                                <button type="submit" class="text-red-600 hover:text-red-900" onclick="return confirm('Cancel this quotation?')">Cancel</button>
+                            </form>
+                        {% endif %}
+                        <a href="{% url 'quotation_print' quote.pk %}" class="text-blue-600 hover:text-blue-900">Print</a>
+                    </td>
                 </tr>
                 {% empty %}
                 <tr>
-                    <td colspan="6" class="px-6 py-10 text-center text-gray-500">
+                    <td colspan="8" class="px-6 py-10 text-center text-gray-500">
                         No quotations found. Click "New Quotation" to create one.
                     </td>
                 </tr>

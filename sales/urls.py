@@ -23,4 +23,6 @@ urlpatterns = [
     path('sales/invoices/<int:pk>/cancel/', views.cancel_invoice_view, name='invoice_cancel'),
     path('sales/invoices/<int:pk>/approve/', views.approve_invoice_view, name='invoice_approve'),
     path('sales/invoices/<int:pk>/reject/', views.reject_invoice_view, name='invoice_reject'),
+    path('sales/quotations/<int:pk>/mark-sent/', views.quotation_mark_sent_view, name='quotation_mark_sent'),
+    path('sales/quotations/<int:pk>/cancel/', views.quotation_cancel_view, name='quotation_cancel'),
 ]
