@@ -38,9 +38,26 @@ class ProductListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
     def get_queryset(self):
         qs = super().get_queryset()
         q = self.request.GET.get('q')
+        category = self.request.GET.get('category')
+        
         if q:
-            qs = qs.filter(name__icontains=q) | qs.filter(product_id__icontains=q)
+            qs = qs.filter(Q(name__icontains=q) | Q(product_id__icontains=q))
+        
+        if category:
+            qs = qs.filter(category=category)
+            
         return qs
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['categories'] = Product.CategoryChoices.choices
+        context['model_name'] = 'Product'
+        try:
+            from users.models import SavedFilter
+            context['saved_filters'] = SavedFilter.objects.filter(user=self.request.user, model_name='Product')
+        except ImportError:
+            context['saved_filters'] = []
+        return context
 
 class ProductCreateView(LoginRequiredMixin, PermissionRequiredMixin, CreateView):
     model = Product

@@ -14,6 +14,12 @@ class CustomerForm(forms.ModelForm):
             if not getattr(field.widget, 'input_type', '') == 'checkbox':
                 field.widget.attrs['class'] = 'w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm'
         
+        # Filter assigned_sales_officer to show only SALES_OFFICER role
+        if 'assigned_sales_officer' in self.fields:
+            from users.models import User
+            self.fields['assigned_sales_officer'].queryset = User.objects.filter(role=User.Roles.SALES_OFFICER)
+            self.fields['assigned_sales_officer'].empty_label = "--- Select Sales Officer ---"
+        
         # Enforce exact numeric entry on the frontend for Phone
         if 'phone' in self.fields:
             self.fields['phone'].widget.attrs.update({

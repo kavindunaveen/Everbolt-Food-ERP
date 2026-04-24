@@ -76,7 +76,7 @@ class Customer(models.Model):
     customer_type = models.CharField(max_length=50, choices=CustomerType.choices)
     custom_customer_type = models.CharField(max_length=150, blank=True, null=True)
     
-    assigned_sales_officer = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name='customers')
+    assigned_sales_officer = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=False, related_name='customers')
     order_type = models.CharField(max_length=50, choices=OrderType.choices, blank=True, null=True)
     
     payment_terms = models.CharField(max_length=50, choices=PaymentTerms.choices, default=PaymentTerms.CASH)

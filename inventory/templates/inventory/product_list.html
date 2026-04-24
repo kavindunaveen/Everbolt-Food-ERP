@@ -7,10 +7,7 @@
     <div class="flex justify-between items-center mb-6">
         <h1 class="text-2xl font-bold text-gray-900 border-b-4 border-blue-500 inline-block pb-1">Products Inventory</h1>
         <div class="flex space-x-3">
-            <form method="get" class="flex">
-                <input type="text" name="q" placeholder="Search by SKU, Name or ID..." value="{{ request.GET.q }}" class="px-3 py-2 border border-gray-300 rounded-l-md focus:ring-blue-500 focus:border-blue-500 block w-full sm:text-sm">
-                <button type="submit" class="bg-gray-100 hover:bg-gray-200 border border-l-0 border-gray-300 rounded-r-md px-3 py-2 text-gray-700">Search</button>
-            </form>
+            {% include 'partials/filter_bar.html' with search_placeholder="Search products..." %}
             {% if perms.inventory.add_product %}
             <a href="{% url 'product_import' %}" class="bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2 px-4 rounded-lg shadow-sm transition duration-150 mr-2 flex items-center">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
