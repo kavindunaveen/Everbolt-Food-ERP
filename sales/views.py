@@ -4,14 +4,14 @@ from django.http import HttpResponse
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin, PermissionRequiredMixin
 from django.contrib.auth.decorators import login_required, permission_required
 from django.contrib import messages
-from django.urls import reverse_lazy
+from django.urls import reverse_lazy, reverse
 from django.db import transaction
 from django.utils import timezone
 from django.db.models import Sum
 from decimal import Decimal
 from .models import Quotation, Invoice
 from .forms import QuotationForm, QuotationItemFormSet, InvoiceForm, InvoiceItemFormSet
-from .services import issue_invoice, cancel_invoice, send_invoice_approval_email, log_sales_event
+from .services import issue_invoice, cancel_invoice, send_invoice_approval_email, log_sales_event, update_stock_reserves
 import csv
 from num2words import num2words
 
@@ -417,6 +417,10 @@ class InvoiceUpdateView(LoginRequiredMixin, PermissionRequiredMixin, UpdateView)
         from django.contrib.contenttypes.models import ContentType
         ct = ContentType.objects.get_for_model(Invoice)
         data['audit_logs'] = SalesAuditLog.objects.filter(content_type=ct, object_id=self.object.id).order_by('-timestamp')
+        
+        # Add cancellation approvers
+        cancellation_approver_emails = ['admin@organicfoodslanka.com', 'info@organicfoodslanka.com', 'hashan@organicfoodslanka.com']
+        data['cancellation_approvers'] = User.objects.filter(email__in=cancellation_approver_emails, is_active=True)
         return data
 
     def form_valid(self, form):
@@ -612,11 +616,48 @@ def confirm_invoice_view(request, pk):
 def cancel_invoice_view(request, pk):
     invoice = get_object_or_404(Invoice, pk=pk)
     if request.method == 'POST':
+        if invoice.status != 'ISSUED':
+            messages.error(request, "Only Issued invoices can be cancelled.")
+            return redirect('invoice_list')
+            
+        reason = request.POST.get('cancellation_reason')
+        approver_id = request.POST.get('designated_approver')
+        if not reason or not approver_id:
+            messages.error(request, "Reason and Approver are required.")
+            return redirect('invoice_list')
+            
+        from users.models import User
         try:
-            cancel_invoice(invoice, request.user)
-            messages.success(request, f"Invoice {invoice.invoice_number} cancelled. Stock restored.")
-        except Exception as e:
-            messages.error(request, f"Error: {str(e)}")
+            approver = User.objects.get(pk=approver_id)
+        except User.DoesNotExist:
+            messages.error(request, "Invalid approver selected.")
+            return redirect('invoice_list')
+
+        old_status = invoice.get_status_display()
+        invoice.status = 'CANCEL_PENDING'
+        invoice.cancellation_reason = reason
+        invoice.designated_approver = approver
+        invoice.save(update_fields=['status', 'cancellation_reason', 'designated_approver'])
+        
+        log_sales_event(
+            obj=invoice,
+            user=request.user,
+            action="Cancellation Requested",
+            old_value=old_status,
+            new_value="Cancellation Pending",
+            notes=f"Requested by {request.user.get_full_name()}. Reason: {reason}. Assigned to: {approver.get_full_name()}"
+        )
+        
+        # Notify the specific approver
+        from users.models import Notification
+        Notification.objects.create(
+            recipient=approver,
+            title="Cancellation Approval Required",
+            message=f"Cancellation requested for Invoice {invoice.invoice_number} by {request.user.get_full_name()}.",
+            link=reverse('invoice_list')
+        )
+            
+        messages.success(request, f"Cancellation request for {invoice.invoice_number} has been sent to {approver.get_full_name()} for approval.")
     return redirect('invoice_list')
 
 @login_required
@@ -627,11 +668,13 @@ def approve_invoice_view(request, pk):
         return redirect('invoice_list')
         
     if request.method == 'POST':
+        reviewer_notes = request.POST.get('reviewer_notes', '')
+        
         if invoice.status == 'APPROVAL_PENDING':
             old_status = invoice.get_status_display()
             invoice.status = 'DRAFT'
             invoice.is_approved = True
-            invoice.reviewer_notes = request.POST.get('reviewer_notes', '')
+            invoice.reviewer_notes = reviewer_notes
             invoice.save(update_fields=['status', 'is_approved', 'reviewer_notes'])
             
             log_sales_event(
@@ -640,12 +683,59 @@ def approve_invoice_view(request, pk):
                 action="Invoice Approved",
                 old_value=old_status,
                 new_value=invoice.get_status_display(),
-                notes=f"Manager Notes: {invoice.reviewer_notes}"
+                notes=f"Manager Notes: {reviewer_notes}"
             )
             
+            # Notify creator
+            from users.models import Notification
+            if invoice.salesperson:
+                Notification.objects.create(
+                    recipient=invoice.salesperson,
+                    title="Invoice Approved",
+                    message=f"Your invoice {invoice.invoice_number} has been approved and moved to Draft.",
+                    link=reverse('invoice_list')
+                )
+            
             messages.success(request, f"Invoice {invoice.invoice_number} has been approved and moved to Draft.")
+            
+        elif invoice.status == 'CANCEL_PENDING':
+            # Check for specific emails for cancellation approval
+            allowed_emails = ['admin@organicfoodslanka.com', 'info@organicfoodslanka.com', 'hashan@organicfoodslanka.com']
+            if request.user.email not in allowed_emails:
+                messages.error(request, "You do not have permission to approve cancellations.")
+                return redirect('invoice_list')
+                
+            old_status = invoice.get_status_display()
+            try:
+                from .services import cancel_invoice as service_cancel_invoice
+                service_cancel_invoice(invoice, request.user)
+                invoice.reviewer_notes = reviewer_notes
+                invoice.save(update_fields=['reviewer_notes'])
+                
+                log_sales_event(
+                    obj=invoice,
+                    user=request.user,
+                    action="Cancellation Approved",
+                    old_value=old_status,
+                    new_value="Cancelled",
+                    notes=f"Manager Notes: {reviewer_notes}"
+                )
+                
+                # Notify creator
+                from users.models import Notification
+                if invoice.salesperson:
+                    Notification.objects.create(
+                        recipient=invoice.salesperson,
+                        title="Cancellation Approved",
+                        message=f"Invoice {invoice.invoice_number} cancellation has been approved. Stock restored.",
+                        link=reverse('invoice_list')
+                    )
+                
+                messages.success(request, f"Cancellation for {invoice.invoice_number} has been approved. Stock has been restored.")
+            except Exception as e:
+                messages.error(request, f"Error during cancellation: {str(e)}")
         else:
-            messages.warning(request, "This invoice is not pending approval.")
+            messages.warning(request, "This invoice is not pending any approval.")
     return redirect('invoice_list')
 
 @login_required
@@ -656,11 +746,14 @@ def reject_invoice_view(request, pk):
         return redirect('invoice_list')
         
     if request.method == 'POST':
+        reviewer_notes = request.POST.get('reviewer_notes', '')
+        
         if invoice.status == 'APPROVAL_PENDING':
             old_status = invoice.get_status_display()
-            invoice.status = 'CANCELLED'
-            invoice.reviewer_notes = request.POST.get('reviewer_notes', '')
-            invoice.save(update_fields=['status', 'reviewer_notes'])
+            invoice.status = 'DRAFT' # Correct: Back to Draft for salesperson to fix or issue
+            invoice.is_approved = False # Still not approved if rejected
+            invoice.reviewer_notes = reviewer_notes
+            invoice.save(update_fields=['status', 'is_approved', 'reviewer_notes'])
             
             log_sales_event(
                 obj=invoice,
@@ -668,12 +761,56 @@ def reject_invoice_view(request, pk):
                 action="Invoice Rejected",
                 old_value=old_status,
                 new_value=invoice.get_status_display(),
-                notes=f"Reason for rejection: {invoice.reviewer_notes}"
+                notes=f"Manager Notes: {reviewer_notes}"
             )
             
-            messages.error(request, f"Invoice {invoice.invoice_number} has been rejected and cancelled.")
+            # Notify creator
+            from users.models import Notification
+            if invoice.salesperson:
+                Notification.objects.create(
+                    recipient=invoice.salesperson,
+                    title="Invoice Rejected",
+                    message=f"Your invoice {invoice.invoice_number} has been rejected. Manager Notes: {reviewer_notes}",
+                    link=reverse('invoice_edit', kwargs={'pk': invoice.pk})
+                )
+            
+            messages.warning(request, f"Invoice {invoice.invoice_number} has been rejected and moved back to Draft.")
+            
+        elif invoice.status == 'CANCEL_PENDING':
+            # Check for specific emails for cancellation rejection
+            allowed_emails = ['admin@organicfoodslanka.com', 'info@organicfoodslanka.com', 'hashan@organicfoodslanka.com']
+            if request.user.email not in allowed_emails:
+                messages.error(request, "You do not have permission to reject cancellations.")
+                return redirect('invoice_list')
+                
+            old_status = invoice.get_status_display()
+            invoice.status = 'ISSUED' # Return to Issued
+            invoice.reviewer_notes = reviewer_notes
+            invoice.save(update_fields=['status', 'reviewer_notes'])
+            
+            log_sales_event(
+                obj=invoice,
+                user=request.user,
+                action="Cancellation Rejected",
+                old_value=old_status,
+                new_value="Issued",
+                notes=f"Manager Notes: {reviewer_notes}"
+            )
+            
+            # Notify creator
+            from users.models import Notification
+            if invoice.salesperson:
+                Notification.objects.create(
+                    recipient=invoice.salesperson,
+                    title="Cancellation Rejected",
+                    message=f"Cancellation request for Invoice {invoice.invoice_number} was rejected. Status returned to Issued.",
+                    link=reverse('invoice_list')
+                )
+                
+            messages.warning(request, f"Cancellation request for {invoice.invoice_number} has been rejected.")
         else:
-            messages.warning(request, "This invoice is not pending approval.")
+            messages.warning(request, "This invoice is not pending any approval.")
+            
     return redirect('invoice_list')
 
 @login_required

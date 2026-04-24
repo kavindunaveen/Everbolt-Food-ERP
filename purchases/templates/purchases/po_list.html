@@ -7,7 +7,7 @@
     <div class="flex justify-between items-center mb-6">
         <h1 class="text-2xl font-bold text-gray-900 border-b-4 border-emerald-500 inline-block pb-1">Purchase Orders</h1>
         <div class="flex space-x-3">
-            <a href="{% url 'po_hub' %}" class="btn-premium btn-primary bg-emerald-600 hover:bg-emerald-700 shadow-emerald-600/20">
+            <a href="{% url 'po_create_default' %}" class="btn-premium btn-primary bg-emerald-600 hover:bg-emerald-700 shadow-emerald-600/20">
                 + New Purchase Order
             </a>
         </div>
@@ -49,6 +49,9 @@
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                             <a href="{% url 'po_detail' po.pk %}" class="text-indigo-600 hover:text-indigo-900 mr-3">View</a>
+                            {% if po.status == 'DRAFT' %}
+                            <a href="{% url 'po_edit' po.pk %}" class="text-amber-600 hover:text-amber-900 mr-3">Edit</a>
+                            {% endif %}
                             <a href="{% url 'po_print' po.pk %}" target="_blank" class="text-gray-600 hover:text-gray-900">Print</a>
                         </td>
                     </tr>

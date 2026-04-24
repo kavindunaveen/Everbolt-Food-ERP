@@ -65,6 +65,7 @@ class Invoice(models.Model):
         APPROVAL_PENDING = 'APPROVAL_PENDING', 'Pending Approval'
         ISSUED = 'ISSUED', 'Issued'
         PAID = 'PAID', 'Paid'
+        CANCEL_PENDING = 'CANCEL_PENDING', 'Cancellation Pending'
         CANCELLED = 'CANCELLED', 'Cancelled'
 
     invoice_number = models.CharField(max_length=50, unique=True)
@@ -84,6 +85,7 @@ class Invoice(models.Model):
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.DRAFT)
     notes = models.TextField(blank=True, null=True)
     reviewer_notes = models.TextField(blank=True, null=True, help_text="Notes from the approver/manager")
+    cancellation_reason = models.TextField(blank=True, null=True)
 
     def save(self, *args, **kwargs):
         if not self.invoice_number:

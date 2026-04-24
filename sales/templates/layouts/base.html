@@ -153,15 +153,20 @@
 
     <!-- Main Content -->
     <main class="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8 flex-grow w-full">
-        {% if messages %}
-            <div class="mb-4">
-                {% for message in messages %}
-                    <div class="p-4 mb-2 rounded-md {% if message.tags == 'error' %}bg-red-100 text-red-700{% elif message.tags == 'success' %}bg-green-100 text-green-700{% else %}bg-blue-100 text-blue-700{% endif %}">
-                        {{ message }}
-                    </div>
-                {% endfor %}
-            </div>
-        {% endif %}
+        <div x-data="{ 
+            init() {
+                {% if messages %}
+                    {% for message in messages %}
+                        window.dispatchEvent(new CustomEvent('toast', { 
+                            detail: { 
+                                type: '{% if message.tags == 'error' %}error{% elif message.tags == 'success' %}success{% elif message.tags == 'warning' %}warning{% else %}info{% endif %}', 
+                                message: '{{ message|escapejs }}' 
+                            } 
+                        }));
+                    {% endfor %}
+                {% endif %}
+            }
+        }"></div>
         
         {% block content %}
         {% endblock %}

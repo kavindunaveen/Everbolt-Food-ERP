@@ -175,10 +175,6 @@ def grn_receive_po(request, po_id):
     return render(request, 'purchases/grn_receive_form.html', context)
 
 
-@login_required
-def purchase_order_hub(request):
-    # This is the new entry point for purchases module
-    return render(request, 'purchases/po_hub.html')
 
 class PurchaseOrderListView(LoginRequiredMixin, ListView):
     model = PurchaseOrder
@@ -188,7 +184,7 @@ class PurchaseOrderListView(LoginRequiredMixin, ListView):
     ordering = ['-id']
 
 @login_required
-def purchase_order_create(request, po_type):
+def purchase_order_create(request, po_type='raw'):
     if po_type not in ['raw', 'packing']:
         return redirect('po_hub')
         
@@ -256,6 +252,77 @@ def purchase_order_create(request, po_type):
         'suppliers': suppliers,
         'preview_po_number': preview_po_number
     })
+
+@login_required
+def purchase_order_edit(request, pk):
+    po = get_object_or_404(PurchaseOrder, pk=pk)
+    if po.status != PurchaseOrder.StatusChoices.DRAFT:
+        messages.warning(request, "Only DRAFT purchase orders can be edited.")
+        return redirect('po_detail', pk=pk)
+
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            supplier_id = data.get('supplier_id')
+            date = data.get('date')
+            attention = data.get('attention', '')
+            payment_term = data.get('payment_term', 'CREDIT')
+            apply_vat = data.get('apply_vat', False)
+            items_data = data.get('items', [])
+
+            if not supplier_id or not date or not items_data:
+                return JsonResponse({'success': False, 'message': 'Missing required fields.'})
+
+            supplier = Supplier.objects.get(id=supplier_id)
+
+            with transaction.atomic():
+                po.supplier = supplier
+                po.date = date
+                po.attention = attention
+                po.payment_term = payment_term
+                po.apply_vat = apply_vat
+                # Keep po_type as it was originally
+                po.save()
+
+                # Recreate items
+                po.items.all().delete()
+                for item in items_data:
+                    PurchaseOrderItem.objects.create(
+                        po=po,
+                        category=item.get('category'),
+                        sub_category=item.get('sub_category'),
+                        material_code=item.get('material_code', ''),
+                        unit=item.get('unit'),
+                        qty=item.get('qty'),
+                        unit_price=item.get('unit_price', 0.00)
+                    )
+
+            return JsonResponse({'success': True, 'redirect_url': reverse('po_detail', args=[po.id])})
+        except Exception as e:
+            return JsonResponse({'success': False, 'message': str(e)})
+
+    # GET logic
+    suppliers = Supplier.objects.all()
+    items_list = []
+    for item in po.items.all():
+        items_list.append({
+            'category': item.category,
+            'sub_category': item.sub_category,
+            'material_code': item.material_code,
+            'unit': item.unit,
+            'qty': float(item.qty),
+            'unit_price': float(item.unit_price)
+        })
+
+    context = {
+        'po': po,
+        'po_type': po.po_type,
+        'po_type_str': 'raw' if po.po_type == POType.RAW_MATERIAL else 'packing',
+        'suppliers': suppliers,
+        'preview_po_number': po.po_number,
+        'existing_items_json': json.dumps(items_list)
+    }
+    return render(request, 'purchases/po_form.html', context)
 
 class PurchaseOrderDetailView(LoginRequiredMixin, DetailView):
     model = PurchaseOrder

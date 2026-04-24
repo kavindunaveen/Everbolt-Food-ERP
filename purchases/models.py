@@ -1,5 +1,6 @@
 from django.db import models
 from django.conf import settings
+from decimal import Decimal
 from inventory.models import Product
 
 class GRN(models.Model):

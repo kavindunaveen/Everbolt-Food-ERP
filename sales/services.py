@@ -3,10 +3,10 @@ from django.db.models import Q
 from django.core.mail import send_mail
 from django.conf import settings
 from users.models import User
-from inventory.models import StockLedger, Product
 from inventory.models import StockLedger, Product, StockReserve
 from django.utils import timezone
 from datetime import timedelta
+from .models import SalesAuditLog
 
 def update_stock_reserves(invoice):
     """
@@ -106,8 +106,8 @@ def cancel_invoice(invoice, user):
     """
     Cancels an ISSUED invoice and restores stock.
     """
-    if invoice.status != 'ISSUED':
-        raise ValueError("Only ISSUED invoices can be cancelled.")
+    if invoice.status not in ['ISSUED', 'CANCEL_PENDING']:
+        raise ValueError("Only ISSUED or CANCEL_PENDING invoices can be cancelled.")
         
     with transaction.atomic():
         old_status = invoice.get_status_display()
