@@ -51,6 +51,7 @@ INSTALLED_APPS = [
     'manufacturing.apps.ManufacturingConfig',
     'dashboard.apps.DashboardConfig',
     'suppliers.apps.SuppliersConfig',
+    'contacts.apps.ContactsConfig',
 ]
 
 MIDDLEWARE = [
@@ -69,7 +70,7 @@ ROOT_URLCONF = 'sales_erp.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': [BASE_DIR / 'contacts' / 'templates'],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
