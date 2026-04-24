@@ -21,7 +21,7 @@
 <div x-data="{ 
     showSpecialModal: false,
     showCancelModal: false,
-    invoiceNumber: '{{ form.instance.invoice_number }}'
+    invoiceNumber: '{{ form.instance.invoice_number|default:"" }}'
 }" @open-special-modal.window="showSpecialModal = true">
     <!-- Special Customer Modal Overlay -->
     <div x-show="showSpecialModal" 
@@ -612,6 +612,7 @@
     });
 </script>
     <!-- Cancellation Request Modal -->
+    {% if form.instance.pk %}
     <div x-show="showCancelModal" 
          class="fixed inset-0 z-50 overflow-y-auto" 
          x-cloak
@@ -668,5 +669,6 @@
             </div>
         </div>
     </div>
+    {% endif %}
 </div>
 {% endblock %}
