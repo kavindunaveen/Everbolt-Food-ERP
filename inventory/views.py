@@ -92,7 +92,7 @@ def bulk_export_products(request):
         writer.writerow([
             'System ID', 'Product ID', 'Name', 
             'Category', 'Brand', 'Tea Type', 'Packet Size', 'Stock Unit', 'Selling Unit',
-            'Inventory Class', 'Product Type',
+            'Inventory Class', 'Production Type',
             'Selling Price', 'Custom Load Price',
             'Reorder Level', 'Track Stock', 'Allow Negative Stock', 'Tax Rate', 'Status',
             'Current Stock'
@@ -162,7 +162,7 @@ class ProductImportView(LoginRequiredMixin, PermissionRequiredMixin, View):
                 stock_unit = row.get('Stock Unit')
                 selling_unit = row.get('Selling Unit')
                 inv_class = row.get('Inventory Class')
-                prod_type = row.get('Product Type')
+                prod_type = row.get('Production Type')
                 
                 selling_price = row.get('Selling Price')
                 custom_price = row.get('Custom Load Price')
@@ -259,7 +259,7 @@ def download_import_template(request):
     writer.writerow([
         'System ID', 'Product ID', 'Name', 
         'Category', 'Brand', 'Tea Type', 'Packet Size', 'Stock Unit', 'Selling Unit',
-        'Inventory Class', 'Product Type',
+        'Inventory Class', 'Production Type',
         'Selling Price', 'Custom Load Price',
         'Reorder Level', 'Track Stock', 'Allow Negative Stock', 'Tax Rate', 'Status',
         'Current Stock'

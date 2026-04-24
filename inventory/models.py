@@ -56,7 +56,7 @@ class Product(models.Model):
     selling_unit = models.CharField(max_length=20, choices=UnitTypes.choices, default=UnitTypes.PCS)
     
     inventory_class = models.CharField(max_length=50, choices=InventoryClasses.choices, default=InventoryClasses.FINISHED)
-    product_type = models.CharField(max_length=50, choices=ProductTypes.choices, default=ProductTypes.DIRECT_PACKING)
+    product_type = models.CharField(max_length=50, choices=ProductTypes.choices, default=ProductTypes.DIRECT_PACKING, verbose_name="Production Type")
     
     track_stock = models.BooleanField(default=True)
     allow_negative_stock = models.BooleanField(default=False)
