@@ -1,5 +1,12 @@
 from django.contrib import admin
-from .models import Quotation, QuotationItem, Invoice, InvoiceItem, Return
+from .models import Quotation, QuotationItem, Invoice, InvoiceItem, Return, SalesAuditLog
+
+@admin.register(SalesAuditLog)
+class SalesAuditLogAdmin(admin.ModelAdmin):
+    list_display = ('timestamp', 'action', 'content_object', 'user', 'old_value', 'new_value')
+    list_filter = ('action', 'user', 'timestamp')
+    search_fields = ('action', 'notes', 'user__username')
+    readonly_fields = ('timestamp',)
 
 class QuotationItemInline(admin.TabularInline):
     model = QuotationItem

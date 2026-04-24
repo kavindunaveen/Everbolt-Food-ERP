@@ -22,6 +22,7 @@ class Quotation(models.Model):
     total_amount = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
     tax_amount = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
     notes = models.TextField(blank=True, null=True)
+    is_converted = models.BooleanField(default=False)
 
     def save(self, *args, **kwargs):
         if not self.quotation_number:
@@ -39,6 +40,12 @@ class Quotation(models.Model):
 
     def __str__(self):
         return self.quotation_number
+
+    @property
+    def is_late(self):
+        if self.status in ['DRAFT', 'SENT'] and self.valid_until < timezone.now().date():
+            return True
+        return False
 
 class QuotationItem(models.Model):
     quotation = models.ForeignKey(Quotation, related_name='items', on_delete=models.CASCADE)
@@ -76,6 +83,7 @@ class Invoice(models.Model):
     tax_amount = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.DRAFT)
     notes = models.TextField(blank=True, null=True)
+    reviewer_notes = models.TextField(blank=True, null=True, help_text="Notes from the approver/manager")
 
     def save(self, *args, **kwargs):
         if not self.invoice_number:
@@ -93,6 +101,12 @@ class Invoice(models.Model):
 
     def __str__(self):
         return f"{self.invoice_number} ({self.get_invoice_type_display()})"
+
+    @property
+    def is_overdue(self):
+        if self.status == 'ISSUED' and self.due_date and self.due_date < timezone.now().date():
+            return True
+        return False
 
     class Meta:
         permissions = [
@@ -145,3 +159,25 @@ class Return(models.Model):
 
     def __str__(self):
         return self.return_number
+from django.contrib.contenttypes.fields import GenericForeignKey
+from django.contrib.contenttypes.models import ContentType
+
+class SalesAuditLog(models.Model):
+    # Link to any sales-related model (Invoice, Quotation, Return)
+    content_type = models.ForeignKey(ContentType, on_delete=models.CASCADE)
+    object_id = models.PositiveIntegerField()
+    content_object = GenericForeignKey('content_type', 'object_id')
+    
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True)
+    timestamp = models.DateTimeField(auto_now_add=True)
+    
+    action = models.CharField(max_length=100)  # e.g., "Status Changed"
+    old_value = models.CharField(max_length=100, blank=True, null=True)
+    new_value = models.CharField(max_length=100, blank=True, null=True)
+    notes = models.TextField(blank=True, null=True)
+
+    class Meta:
+        ordering = ['-timestamp']
+
+    def __str__(self):
+        return f"{self.action} on {self.content_object} by {self.user}"

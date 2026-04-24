@@ -4,6 +4,50 @@ from django.core.mail import send_mail
 from django.conf import settings
 from users.models import User
 from inventory.models import StockLedger, Product
+from inventory.models import StockLedger, Product, StockReserve
+from django.utils import timezone
+from datetime import timedelta
+
+def update_stock_reserves(invoice):
+    """
+    Updates or creates stock reserves for all items in a DRAFT invoice.
+    Reserves are valid for 15 minutes from the last update.
+    """
+    if invoice.status != 'DRAFT':
+        # Remove any existing reserves if not draft
+        StockReserve.objects.filter(reference_type='INV', reference_id=invoice.id).delete()
+        return
+
+    with transaction.atomic():
+        # Clear existing for this invoice to recalculate
+        StockReserve.objects.filter(reference_type='INV', reference_id=invoice.id).delete()
+        
+        expiry = timezone.now() + timedelta(minutes=15)
+        reserves = []
+        for item in invoice.items.all():
+            reserves.append(StockReserve(
+                product=item.product,
+                quantity=item.quantity,
+                reference_type='INV',
+                reference_id=invoice.id,
+                expiry_time=expiry
+            ))
+        
+        if reserves:
+            StockReserve.objects.bulk_create(reserves)
+
+def log_sales_event(obj, user, action, old_value=None, new_value=None, notes=None):
+    """
+    Creates an audit log entry for a sales-related object.
+    """
+    SalesAuditLog.objects.create(
+        content_object=obj,
+        user=user,
+        action=action,
+        old_value=str(old_value) if old_value else None,
+        new_value=str(new_value) if new_value else None,
+        notes=notes
+    )
 
 def issue_invoice(invoice, user):
     """
@@ -16,8 +60,18 @@ def issue_invoice(invoice, user):
         raise ValueError("Only DRAFT invoices can be issued.")
         
     with transaction.atomic():
+        old_status = invoice.get_status_display()
         invoice.status = 'ISSUED'
         invoice.save(update_fields=['status'])
+        
+        log_sales_event(
+            obj=invoice,
+            user=user,
+            action="Invoice Issued",
+            old_value=old_status,
+            new_value=invoice.get_status_display(),
+            notes="Stock deducted and invoice finalized."
+        )
         
         ledgers = []
         for item in invoice.items.all():
@@ -45,6 +99,8 @@ def issue_invoice(invoice, user):
         
         if ledgers:
             StockLedger.objects.bulk_create(ledgers)
+            
+        update_stock_reserves(invoice)
 
 def cancel_invoice(invoice, user):
     """
@@ -54,8 +110,18 @@ def cancel_invoice(invoice, user):
         raise ValueError("Only ISSUED invoices can be cancelled.")
         
     with transaction.atomic():
+        old_status = invoice.get_status_display()
         invoice.status = 'CANCELLED'
         invoice.save(update_fields=['status'])
+        
+        log_sales_event(
+            obj=invoice,
+            user=user,
+            action="Invoice Cancelled",
+            old_value=old_status,
+            new_value=invoice.get_status_display(),
+            notes="Invoice cancelled and stock restored."
+        )
         
         ledgers = []
         for item in invoice.items.all():
@@ -79,6 +145,8 @@ def cancel_invoice(invoice, user):
                 
         if ledgers:
             StockLedger.objects.bulk_create(ledgers)
+            
+        update_stock_reserves(invoice)
 
 from users.models import Notification
 

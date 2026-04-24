@@ -2,7 +2,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.views.generic import TemplateView, ListView, CreateView, UpdateView, View, DetailView
 from django.http import HttpResponse
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin, PermissionRequiredMixin
-from django.contrib.auth.decorators import login_required
+from django.contrib.auth.decorators import login_required, permission_required
 from django.contrib import messages
 from django.urls import reverse_lazy
 from django.db import transaction
@@ -11,7 +11,7 @@ from django.db.models import Sum
 from decimal import Decimal
 from .models import Quotation, Invoice
 from .forms import QuotationForm, QuotationItemFormSet, InvoiceForm, InvoiceItemFormSet
-from .services import issue_invoice, cancel_invoice, send_invoice_approval_email
+from .services import issue_invoice, cancel_invoice, send_invoice_approval_email, log_sales_event
 import csv
 from num2words import num2words
 
@@ -55,22 +55,40 @@ class SalesDashboardView(LoginRequiredMixin, TemplateView):
     
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        # Limit strictly to the logged-in officer's records
+        from users.models import User
+        context['sales_officers'] = User.objects.filter(role=User.Roles.SALES_OFFICER)
+        context['model_name'] = 'SalesDashboard'
+        
         q = self.request.GET.get('q')
+        date_from = self.request.GET.get('date_from')
+        date_to = self.request.GET.get('date_to')
+        salesperson_id = self.request.GET.get('salesperson')
         
         if not self.request.user.has_perm('sales.approve_invoice'):
-            quotations = Quotation.objects.filter(salesperson=self.request.user).order_by('-creation_date')
-            invoices = Invoice.objects.filter(salesperson=self.request.user).order_by('-creation_date')
+            quotations = Quotation.objects.filter(salesperson=self.request.user)
+            invoices = Invoice.objects.filter(salesperson=self.request.user)
         else:
-            quotations = Quotation.objects.all().order_by('-creation_date')
-            invoices = Invoice.objects.all().order_by('-creation_date')
+            quotations = Quotation.objects.all()
+            invoices = Invoice.objects.all()
         
         if q:
             quotations = quotations.filter(quotation_number__icontains=q)
             invoices = invoices.filter(invoice_number__icontains=q)
             
-        context['recent_quotations'] = quotations[:15]
-        context['recent_invoices'] = invoices[:15]
+        if date_from:
+            quotations = quotations.filter(creation_date__gte=date_from)
+            invoices = invoices.filter(creation_date__gte=date_from)
+            
+        if date_to:
+            quotations = quotations.filter(creation_date__lte=date_to)
+            invoices = invoices.filter(creation_date__lte=date_to)
+            
+        if salesperson_id:
+            quotations = quotations.filter(salesperson_id=salesperson_id)
+            invoices = invoices.filter(salesperson_id=salesperson_id)
+            
+        context['recent_quotations'] = quotations.order_by('-creation_date')[:15]
+        context['recent_invoices'] = invoices.order_by('-creation_date')[:15]
         
         # Exclude cancelled invoices from the total amount stat
         active_invoices = invoices.exclude(status='CANCELLED')
@@ -105,10 +123,17 @@ class QuotationListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
         q = self.request.GET.get('q')
         if q:
             qs = qs.filter(quotation_number__icontains=q)
+            
+        salesperson_id = self.request.GET.get('salesperson')
+        if salesperson_id:
+            qs = qs.filter(salesperson_id=salesperson_id)
+            
         return qs
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
+        from users.models import User
+        context['sales_officers'] = User.objects.filter(role=User.Roles.SALES_OFFICER)
         try:
             from users.models import SavedFilter
             context['saved_filters'] = SavedFilter.objects.filter(user=self.request.user, model_name='Quotation')
@@ -144,10 +169,17 @@ class InvoiceListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
         q = self.request.GET.get('q')
         if q:
             qs = qs.filter(invoice_number__icontains=q)
+            
+        salesperson_id = self.request.GET.get('salesperson')
+        if salesperson_id:
+            qs = qs.filter(salesperson_id=salesperson_id)
+            
         return qs
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
+        from users.models import User
+        context['sales_officers'] = User.objects.filter(role=User.Roles.SALES_OFFICER)
         try:
             from users.models import SavedFilter
             context['saved_filters'] = SavedFilter.objects.filter(user=self.request.user, model_name='Invoice')
@@ -210,6 +242,8 @@ class QuotationCreateView(LoginRequiredMixin, PermissionRequiredMixin, CreateVie
             else:
                 return super().form_invalid(form)
             
+            
+        log_sales_event(self.object, self.request.user, "Quotation Created", new_value=self.object.get_status_display())
         return super().form_valid(form)
 
 class QuotationUpdateView(LoginRequiredMixin, PermissionRequiredMixin, UpdateView):
@@ -225,6 +259,11 @@ class QuotationUpdateView(LoginRequiredMixin, PermissionRequiredMixin, UpdateVie
             data['items'] = QuotationItemFormSet(self.request.POST, instance=self.object)
         else:
             data['items'] = QuotationItemFormSet(instance=self.object)
+        
+        from .models import SalesAuditLog
+        from django.contrib.contenttypes.models import ContentType
+        ct = ContentType.objects.get_for_model(Quotation)
+        data['audit_logs'] = SalesAuditLog.objects.filter(content_type=ct, object_id=self.object.id).order_by('-timestamp')
         return data
 
     def form_valid(self, form):
@@ -339,6 +378,16 @@ class InvoiceCreateView(LoginRequiredMixin, PermissionRequiredMixin, CreateView)
                 self.object.total_amount = total
                 self.object.save()
                 
+                log_sales_event(
+                    obj=self.object,
+                    user=self.request.user,
+                    action="Invoice Created",
+                    new_value=self.object.get_status_display(),
+                    notes=f"Initial creation. Approver: {self.object.designated_approver}" if self.object.status == 'APPROVAL_PENDING' else None
+                )
+                
+                update_stock_reserves(self.object)
+                
                 if getattr(self.object, 'status', None) == 'APPROVAL_PENDING':
                     send_invoice_approval_email(self.object, self.request)
             else:
@@ -363,6 +412,11 @@ class InvoiceUpdateView(LoginRequiredMixin, PermissionRequiredMixin, UpdateView)
         from users.models import User
         approving_users = [u for u in User.objects.filter(is_active=True) if u.has_perm('sales.approve_invoice') and u != self.request.user]
         data['approvers'] = approving_users
+        
+        from .models import SalesAuditLog
+        from django.contrib.contenttypes.models import ContentType
+        ct = ContentType.objects.get_for_model(Invoice)
+        data['audit_logs'] = SalesAuditLog.objects.filter(content_type=ct, object_id=self.object.id).order_by('-timestamp')
         return data
 
     def form_valid(self, form):
@@ -419,6 +473,8 @@ class InvoiceUpdateView(LoginRequiredMixin, PermissionRequiredMixin, UpdateView)
                 self.object.total_amount = total
                 self.object.save()
                 
+                update_stock_reserves(self.object)
+                
                 if getattr(self.object, 'status', None) == 'APPROVAL_PENDING':
                     send_invoice_approval_email(self.object, self.request)
             else:
@@ -440,12 +496,23 @@ class QuotationExportView(LoginRequiredMixin, PermissionRequiredMixin, View):
             quotations = Quotation.objects.filter(salesperson=self.request.user)
         else:
             quotations = Quotation.objects.all()
+
         q = request.GET.get('q')
+        date_from = request.GET.get('date_from')
+        date_to = request.GET.get('date_to')
+        salesperson_id = request.GET.get('salesperson')
+        
         if q:
             quotations = quotations.filter(quotation_number__icontains=q)
+        if date_from:
+            quotations = quotations.filter(creation_date__gte=date_from)
+        if date_to:
+            quotations = quotations.filter(creation_date__lte=date_to)
+        if salesperson_id:
+            quotations = quotations.filter(salesperson_id=salesperson_id)
             
-        for q_obj in quotations:
-            writer.writerow([q_obj.quotation_number, q_obj.customer.customer_name, q_obj.creation_date, q_obj.salesperson.username.title(), q_obj.valid_until, q_obj.total_amount])
+        for q_obj in quotations.order_by('-creation_date'):
+            writer.writerow([q_obj.quotation_number, q_obj.customer.customer_name, q_obj.creation_date, q_obj.salesperson.username.title() if q_obj.salesperson else 'N/A', q_obj.valid_until, q_obj.total_amount])
             
         return response
 
@@ -463,12 +530,23 @@ class InvoiceExportView(LoginRequiredMixin, PermissionRequiredMixin, View):
             invoices = Invoice.objects.filter(salesperson=self.request.user)
         else:
             invoices = Invoice.objects.all()
+
         q = request.GET.get('q')
+        date_from = request.GET.get('date_from')
+        date_to = request.GET.get('date_to')
+        salesperson_id = request.GET.get('salesperson')
+        
         if q:
             invoices = invoices.filter(invoice_number__icontains=q)
+        if date_from:
+            invoices = invoices.filter(creation_date__gte=date_from)
+        if date_to:
+            invoices = invoices.filter(creation_date__lte=date_to)
+        if salesperson_id:
+            invoices = invoices.filter(salesperson_id=salesperson_id)
             
-        for inv in invoices:
-            writer.writerow([inv.invoice_number, inv.get_invoice_type_display(), inv.customer.customer_name, inv.salesperson.username.title(), inv.get_status_display(), inv.delivery_date, inv.total_amount])
+        for inv in invoices.order_by('-creation_date'):
+            writer.writerow([inv.invoice_number, inv.get_invoice_type_display(), inv.customer.customer_name, inv.salesperson.username.title() if inv.salesperson else 'N/A', inv.get_status_display(), inv.delivery_date, inv.total_amount])
             
         return response
 
@@ -550,9 +628,21 @@ def approve_invoice_view(request, pk):
         
     if request.method == 'POST':
         if invoice.status == 'APPROVAL_PENDING':
+            old_status = invoice.get_status_display()
             invoice.status = 'DRAFT'
             invoice.is_approved = True
-            invoice.save(update_fields=['status', 'is_approved'])
+            invoice.reviewer_notes = request.POST.get('reviewer_notes', '')
+            invoice.save(update_fields=['status', 'is_approved', 'reviewer_notes'])
+            
+            log_sales_event(
+                obj=invoice,
+                user=request.user,
+                action="Invoice Approved",
+                old_value=old_status,
+                new_value=invoice.get_status_display(),
+                notes=f"Manager Notes: {invoice.reviewer_notes}"
+            )
+            
             messages.success(request, f"Invoice {invoice.invoice_number} has been approved and moved to Draft.")
         else:
             messages.warning(request, "This invoice is not pending approval.")
@@ -567,8 +657,20 @@ def reject_invoice_view(request, pk):
         
     if request.method == 'POST':
         if invoice.status == 'APPROVAL_PENDING':
+            old_status = invoice.get_status_display()
             invoice.status = 'CANCELLED'
-            invoice.save(update_fields=['status'])
+            invoice.reviewer_notes = request.POST.get('reviewer_notes', '')
+            invoice.save(update_fields=['status', 'reviewer_notes'])
+            
+            log_sales_event(
+                obj=invoice,
+                user=request.user,
+                action="Invoice Rejected",
+                old_value=old_status,
+                new_value=invoice.get_status_display(),
+                notes=f"Reason for rejection: {invoice.reviewer_notes}"
+            )
+            
             messages.error(request, f"Invoice {invoice.invoice_number} has been rejected and cancelled.")
         else:
             messages.warning(request, "This invoice is not pending approval.")
@@ -580,8 +682,18 @@ def quotation_mark_sent_view(request, pk):
     quotation = get_object_or_404(Quotation, pk=pk)
     if request.method == 'POST':
         if quotation.status == 'DRAFT':
+            old_status = quotation.get_status_display()
             quotation.status = 'SENT'
             quotation.save(update_fields=['status'])
+            
+            log_sales_event(
+                obj=quotation,
+                user=request.user,
+                action="Quotation Sent",
+                old_value=old_status,
+                new_value=quotation.get_status_display()
+            )
+            
             messages.success(request, f"Quotation {quotation.quotation_number} marked as Sent.")
         else:
             messages.warning(request, "Only DRAFT quotations can be marked as Sent.")
@@ -593,10 +705,114 @@ def quotation_cancel_view(request, pk):
     quotation = get_object_or_404(Quotation, pk=pk)
     if request.method == 'POST':
         if quotation.status in ['DRAFT', 'SENT']:
+            old_status = quotation.get_status_display()
             quotation.status = 'CANCELLED'
             quotation.save(update_fields=['status'])
+            
+            log_sales_event(
+                obj=quotation,
+                user=request.user,
+                action="Quotation Cancelled",
+                old_value=old_status,
+                new_value=quotation.get_status_display()
+            )
+            
             messages.success(request, f"Quotation {quotation.quotation_number} cancelled.")
         else:
             messages.warning(request, "Only DRAFT or SENT quotations can be cancelled.")
     return redirect('quotation_list')
 
+
+@login_required
+@permission_required('sales.add_invoice', raise_exception=True)
+def convert_quotation_view(request, pk):
+    """Converts a Quotation into a Draft Invoice."""
+    quotation = get_object_or_404(Quotation, pk=pk)
+    
+    if quotation.is_converted:
+        messages.warning(request, "This quotation has already been converted to an invoice.")
+        return redirect('quotation_list')
+        
+    with transaction.atomic():
+        # Create Invoice Header
+        invoice = Invoice.objects.create(
+            customer=quotation.customer,
+            salesperson=request.user,
+            invoice_number=get_next_invoice_number(),
+            total_amount=quotation.total_amount,
+            tax_amount=quotation.tax_amount,
+            notes=f"Converted from Quotation {quotation.quotation_number}. " + (quotation.notes or ""),
+            status='DRAFT'
+        )
+        
+        # Create Invoice Items
+        from .models import InvoiceItem
+        for q_item in quotation.items.all():
+            InvoiceItem.objects.create(
+                invoice=invoice,
+                product=q_item.product,
+                quantity=q_item.quantity,
+                unit_price=q_item.unit_price,
+                tax_amount=q_item.tax_amount,
+                line_total=q_item.line_total
+            )
+            
+        # Update Quotation status
+        quotation.status = 'CONVERTED'
+        quotation.is_converted = True
+        quotation.save(update_fields=['status', 'is_converted'])
+        
+        log_sales_event(
+            obj=quotation,
+            user=request.user,
+            action="Converted to Invoice",
+            new_value=invoice.invoice_number
+        )
+        
+        log_sales_event(
+            obj=invoice,
+            user=request.user,
+            action="Created from Quotation",
+            old_value=quotation.quotation_number
+        )
+        
+        messages.success(request, f"Quotation {quotation.quotation_number} converted to Invoice {invoice.invoice_number} successfully.")
+        return redirect('invoice_update', pk=invoice.pk)
+
+from django.http import JsonResponse
+
+@login_required
+def customer_search_ajax(request):
+    """API endpoint for Select2 AJAX customer search."""
+    q = request.GET.get('q', '')
+    customers = Customer.objects.filter(
+        Q(customer_name__icontains=q) | 
+        Q(company_name__icontains=q) |
+        Q(phone_number__icontains=q)
+    )[:20]
+    
+    results = [
+        {'id': c.id, 'text': f"{c.customer_name} ({c.company_name or 'No Company'})"} 
+        for c in customers
+    ]
+    return JsonResponse({'results': results})
+
+@login_required
+def product_search_ajax(request):
+    """API endpoint for Select2 AJAX product search."""
+    q = request.GET.get('q', '')
+    products = Product.objects.filter(
+        Q(name__icontains=q) | 
+        Q(product_id__icontains=q)
+    )[:20]
+    
+    results = [
+        {
+            'id': p.id, 
+            'text': f"[{p.product_id}] {p.name}",
+            'price': float(p.selling_price),
+            'stock': float(p.available_stock)
+        } 
+        for p in products
+    ]
+    return JsonResponse({'results': results})

@@ -59,6 +59,7 @@ class Customer(models.Model):
     company_name = models.CharField(max_length=200, blank=True, null=True)
     contact_person = models.CharField(max_length=150)
     phone = models.CharField(max_length=50)
+    phone_secondary = models.CharField(max_length=50, blank=True, null=True)
     email = models.EmailField(blank=True, null=True)
     
     billing_address_line1 = models.CharField(max_length=255, blank=True, null=True)

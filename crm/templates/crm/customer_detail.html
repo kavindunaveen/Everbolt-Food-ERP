@@ -94,7 +94,12 @@
             <div class="space-y-4">
                 <div class="grid grid-cols-3 gap-4">
                     <div class="text-sm font-medium text-gray-500">Phone</div>
-                    <div class="col-span-2 text-sm text-gray-900">{{ customer.phone|default:"-" }}</div>
+                    <div class="col-span-2 text-sm text-gray-900">
+                        {{ customer.phone }}
+                        {% if customer.phone_secondary %}
+                            <div class="text-xs text-gray-500 mt-1">Secondary: {{ customer.phone_secondary }}</div>
+                        {% endif %}
+                    </div>
                 </div>
                 <div class="grid grid-cols-3 gap-4">
                     <div class="text-sm font-medium text-gray-500">Contact Person</div>

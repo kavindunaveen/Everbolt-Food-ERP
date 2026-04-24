@@ -3,93 +3,237 @@
 {% block title %}Invoices | Sales ERP{% endblock %}
 
 {% block content %}
-<div class="px-4 py-6 sm:px-0">
-    <div class="flex justify-between items-center mb-6">
-        <h1 class="text-2xl font-bold text-gray-900 border-b-4 border-emerald-500 inline-block pb-1">My Invoices</h1>
-        <div class="flex space-x-3">
+<div class="px-4 py-6 sm:px-0" x-data="{ 
+    compactMode: localStorage.getItem('compactMode') === 'true',
+    showApprovalModal: false,
+    approvalAction: '',
+    approvalUrl: '',
+    invoiceNumber: '',
+    reviewerNotes: '',
+    
+    toggleCompact() {
+        this.compactMode = !this.compactMode;
+        localStorage.setItem('compactMode', this.compactMode);
+    },
+    openModal(action, url, number) {
+        this.approvalAction = action;
+        this.approvalUrl = url;
+        this.invoiceNumber = number;
+        this.reviewerNotes = '';
+        this.showApprovalModal = true;
+    }
+}">
+    <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
+        <div>
+            <h1 class="text-3xl font-extrabold text-gray-900 tracking-tight">Invoices</h1>
+            <p class="text-sm text-gray-500 mt-1">Track and manage all customer billing records.</p>
+        </div>
+        <div class="flex items-center space-x-3 w-full md:w-auto">
+            <button @click="toggleCompact()" class="p-2 bg-white border border-gray-200 rounded-lg text-gray-500 hover:text-emerald-600 hover:border-emerald-200 transition-all shadow-sm" title="Toggle Compact Mode">
+                <svg x-show="!compactMode" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"></path></svg>
+                <svg x-show="compactMode" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" transform="rotate(180 12 12)"></path></svg>
+            </button>
+
             {% include 'partials/filter_bar.html' with search_placeholder="Search invoices..." %}
-            <a href="{% url 'invoice_export' %}?q={{ request.GET.q }}" class="bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 font-medium py-2 px-4 rounded-lg shadow-sm transition duration-150">
-                Export CSV
+            <a href="{% url 'invoice_export' %}?q={{ request.GET.q }}&salesperson={{ request.GET.salesperson }}&date_from={{ request.GET.date_from }}&date_to={{ request.GET.date_to }}" class="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50 transition-colors">
+                <svg class="w-4 h-4 mr-2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a2 2 0 002 2h12a2 2 0 002 2h12a2 2 0 002-2v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                Export
             </a>
             {% if perms.sales.add_invoice %}
-            <a href="{% url 'invoice_create' %}" class="bg-emerald-600 hover:bg-emerald-700 text-white font-medium py-2 px-4 rounded-lg shadow transition duration-150">
-                + New Invoice
+            <a href="{% url 'invoice_create' %}" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-lg text-white bg-emerald-600 hover:bg-emerald-700 transition-all shadow-md">
+                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                New Invoice
             </a>
             {% endif %}
         </div>
     </div>
 
-    <div class="bg-white shadow-sm rounded-lg border border-gray-200 overflow-x-auto w-full">
-        <table class="min-w-full divide-y divide-gray-200">
-            <thead class="bg-gray-50">
-                <tr>
-                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Number</th>
-                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
-                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Customer</th>
-                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date & Time</th>
-                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Salesperson</th>
-                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total Amount</th>
-                    <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-
-                </tr>
-            </thead>
-            <tbody class="bg-white divide-y divide-gray-200">
-                {% for inv in invoices %}
-                <tr class="hover:bg-gray-50 transition-colors {% if perms.sales.change_invoice %}cursor-pointer{% endif %}" {% if perms.sales.change_invoice %}onclick="window.location.href='{% url 'invoice_edit' inv.pk %}'"{% endif %}>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-red-600">{{ inv.invoice_number }}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ inv.get_invoice_type_display }}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ inv.customer.customer_name }}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ inv.creation_date|date:"Y-m-d H:i" }}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ inv.salesperson.username|title }}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm">
-                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
-                            {% if inv.status == 'PAID' %}bg-green-100 text-green-800
-                            {% elif inv.status == 'ISSUED' %}bg-blue-100 text-blue-800
-                            {% elif inv.status == 'APPROVAL_PENDING' %}bg-orange-100 text-orange-800
-                            {% elif inv.status == 'CANCELLED' %}bg-red-100 text-red-800
-                            {% else %}bg-gray-100 text-gray-800{% endif %}">
-                            {{ inv.get_status_display }}
-                        </span>
-                    </td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">Rs. {{ inv.total_amount }}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                        {% if inv.status == 'DRAFT' %}
-                        <form action="{% url 'invoice_confirm' inv.pk %}" method="post" class="inline">
-                            {% csrf_token %}
-                            <button type="submit" class="text-emerald-600 hover:text-emerald-900 mr-2" onclick="return confirm('Confirm & Deduct Stock?')">Confirm</button>
-                        </form>
-                        {% elif inv.status == 'APPROVAL_PENDING' and perms.sales.approve_invoice %}
-                        <form action="{% url 'invoice_approve' inv.pk %}" method="post" class="inline">
-                            {% csrf_token %}
-                            <button type="submit" class="text-emerald-600 hover:text-emerald-900 mr-2" onclick="return confirm('Approve this Invoice?')">Approve</button>
-                        </form>
-                        <form action="{% url 'invoice_reject' inv.pk %}" method="post" class="inline">
-                            {% csrf_token %}
-                            <button type="submit" class="text-red-600 hover:text-red-900 mr-2" onclick="return confirm('Reject this Invoice?')">Reject</button>
-                        </form>
-                        {% elif inv.status == 'ISSUED' %}
-                        <form action="{% url 'invoice_cancel' inv.pk %}" method="post" class="inline">
-                            {% csrf_token %}
-                            <button type="submit" class="text-red-600 hover:text-red-900" onclick="return confirm('Cancel & Restore Stock?')">Cancel</button>
-                        </form>
-                        {% endif %}
-                        {% if inv.status != 'APPROVAL_PENDING' %}
-                        <a href="{% url 'invoice_print' inv.pk %}" class="text-blue-600 hover:text-blue-900 ml-2">Print</a>
-                        {% endif %}
-                    </td>
-
-                </tr>
-                {% empty %}
-                <tr>
-                    <td colspan="7" class="px-6 py-10 text-center text-gray-500">
-                        No invoices found. Click "New Invoice" to create one.
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+    <div class="bg-white shadow-md rounded-2xl border border-gray-100 overflow-hidden transition-all duration-300">
+        <div class="overflow-x-auto w-full">
+            <table class="min-w-full divide-y divide-gray-100">
+                <thead class="bg-gray-50/50">
+                    <tr>
+                        <th scope="col" :class="compactMode ? 'px-6 py-2' : 'px-6 py-4'" class="text-left text-[11px] font-bold text-gray-400 uppercase tracking-widest">Invoice Details</th>
+                        <th scope="col" :class="compactMode ? 'px-6 py-2' : 'px-6 py-4'" class="text-left text-[11px] font-bold text-gray-400 uppercase tracking-widest">Customer</th>
+                        <th scope="col" :class="compactMode ? 'px-6 py-2' : 'px-6 py-4'" class="text-left text-[11px] font-bold text-gray-400 uppercase tracking-widest">Sales Officer</th>
+                        <th scope="col" :class="compactMode ? 'px-6 py-2' : 'px-6 py-4'" class="text-left text-[11px] font-bold text-gray-400 uppercase tracking-widest">Status</th>
+                        <th scope="col" :class="compactMode ? 'px-6 py-2' : 'px-6 py-4'" class="text-right text-[11px] font-bold text-gray-400 uppercase tracking-widest">Total Amount</th>
+                        <th scope="col" :class="compactMode ? 'px-6 py-2' : 'px-6 py-4'" class="text-center text-[11px] font-bold text-gray-400 uppercase tracking-widest">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-100">
+                    {% for inv in invoices %}
+                    <tr class="hover:bg-gray-50 transition-colors group">
+                        <td :class="compactMode ? 'px-6 py-2' : 'px-6 py-4'" class="whitespace-nowrap">
+                            <div class="flex flex-col">
+                                <span class="text-sm font-bold text-emerald-600 group-hover:underline cursor-pointer" onclick="window.location.href='{% url 'invoice_edit' inv.pk %}'">{{ inv.invoice_number }}</span>
+                                <span x-show="!compactMode" class="text-[11px] text-gray-400 font-medium">{{ inv.creation_date|date:"M d, Y H:i" }}</span>
+                            </div>
+                        </td>
+                        <td :class="compactMode ? 'px-6 py-2' : 'px-6 py-4'" class="whitespace-nowrap">
+                            <div class="text-sm font-semibold text-gray-800">{{ inv.customer.customer_name }}</div>
+                            <div x-show="!compactMode" class="text-[11px] text-gray-500 font-medium">{{ inv.get_invoice_type_display }}</div>
+                        </td>
+                        <td :class="compactMode ? 'px-6 py-2' : 'px-6 py-4'" class="whitespace-nowrap text-sm text-gray-600 font-medium">
+                            {{ inv.salesperson.get_full_name|default:inv.salesperson.username|title }}
+                        </td>
+                        <td :class="compactMode ? 'px-6 py-2' : 'px-6 py-4'" class="whitespace-nowrap">
+                            <span class="px-2.5 py-1 text-[10px] font-extrabold rounded-md uppercase tracking-wider
+                                {% if inv.status == 'PAID' %}bg-green-100 text-green-700
+                                {% elif inv.status == 'ISSUED' %}bg-blue-100 text-blue-700
+                                {% elif inv.status == 'APPROVAL_PENDING' %}bg-orange-100 text-orange-700
+                                {% elif inv.status == 'CANCELLED' %}bg-red-100 text-red-700
+                                {% else %}bg-gray-100 text-gray-600{% endif %}">
+                                {{ inv.get_status_display }}
+                            </span>
+                            {% if inv.is_overdue %}
+                            <span class="ml-2 px-2.5 py-1 text-[10px] font-extrabold rounded-md uppercase tracking-wider bg-red-600 text-white animate-pulse">
+                                OVERDUE
+                            </span>
+                            {% endif %}
+                        </td>
+                        <td :class="compactMode ? 'px-6 py-2' : 'px-6 py-4'" class="whitespace-nowrap text-right text-sm font-bold text-gray-900">
+                            Rs {{ inv.total_amount|floatformat:2 }}
+                        </td>
+                        <td :class="compactMode ? 'px-6 py-2' : 'px-6 py-4'" class="whitespace-nowrap text-center text-sm font-medium">
+                            <div class="flex items-center justify-center space-x-2">
+                                {% if inv.status == 'DRAFT' %}
+                                <button type="button" 
+                                        @click="if(confirm('Confirm & Deduct Stock?')) { 
+                                            fetch('{% url 'invoice_confirm' inv.pk %}', {
+                                                method: 'POST',
+                                                headers: { 'X-CSRFToken': '{{ csrf_token }}' }
+                                            }).then(res => {
+                                                if(res.ok) {
+                                                    $dispatch('toast', { type: 'success', message: 'Invoice confirmed successfully!' });
+                                                    setTimeout(() => window.location.reload(), 1000);
+                                                } else {
+                                                    $dispatch('toast', { type: 'error', message: 'Failed to confirm invoice.' });
+                                                }
+                                            })
+                                        }"
+                                        class="p-1.5 text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors" 
+                                        title="Confirm Invoice">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                                </button>
+                                {% elif inv.status == 'APPROVAL_PENDING' and perms.sales.approve_invoice %}
+                                <button @click="openModal('Approve', '{% url 'invoice_approve' inv.pk %}', '{{ inv.invoice_number }}')" class="p-1.5 text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors" title="Approve">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                </button>
+                                <button @click="openModal('Reject', '{% url 'invoice_reject' inv.pk %}', '{{ inv.invoice_number }}')" class="p-1.5 text-red-600 hover:bg-red-50 rounded-lg transition-colors" title="Reject">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                </button>
+                                {% elif inv.status == 'ISSUED' %}
+                                <button type="button" 
+                                        @click="if(confirm('Cancel & Restore Stock?')) { 
+                                            fetch('{% url 'invoice_cancel' inv.pk %}', {
+                                                method: 'POST',
+                                                headers: { 'X-CSRFToken': '{{ csrf_token }}' }
+                                            }).then(res => {
+                                                if(res.ok) {
+                                                    $dispatch('toast', { type: 'success', message: 'Invoice cancelled and stock restored!' });
+                                                    setTimeout(() => window.location.reload(), 1000);
+                                                } else {
+                                                    $dispatch('toast', { type: 'error', message: 'Failed to cancel invoice.' });
+                                                }
+                                            })
+                                        }"
+                                        class="p-1.5 text-red-600 hover:bg-red-50 rounded-lg transition-colors" 
+                                        title="Cancel">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                                </button>
+                                {% endif %}
+                                {% if inv.status != 'APPROVAL_PENDING' %}
+                                <a href="{% url 'invoice_print' inv.pk %}" target="_blank" class="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" title="Print Invoice">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
+                                </a>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="7" class="px-6 py-20 text-center">
+                            <div class="flex flex-col items-center justify-center space-y-4">
+                                <div class="w-24 h-24 bg-gray-50 rounded-full flex items-center justify-center">
+                                    <svg class="w-12 h-12 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                                </div>
+                                <div>
+                                    <h3 class="text-lg font-bold text-gray-900">No Invoices Found</h3>
+                                    <p class="text-sm text-gray-500 mt-1">Ready to make a sale? Create your first invoice here.</p>
+                                </div>
+                                <a href="{% url 'invoice_create' %}" class="inline-flex items-center px-4 py-2 bg-emerald-600 text-white font-bold rounded-lg hover:bg-emerald-700 transition-all shadow-md">
+                                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                                    Create New Invoice
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% if is_paginated %}
+        <div class="px-6 py-4 bg-gray-50/50 border-t border-gray-100">
+            {% include 'partials/pagination.html' %}
+        </div>
+        {% endif %}
     </div>
-        {% include 'partials/pagination.html' %}
+
+    <!-- Approval/Rejection Modal -->
+    <div x-show="showApprovalModal" 
+         class="fixed inset-0 z-50 overflow-y-auto" 
+         x-cloak
+         x-transition:enter="transition ease-out duration-300"
+         x-transition:enter-start="opacity-0"
+         x-transition:enter-end="opacity-100"
+         x-transition:leave="transition ease-in duration-200"
+         x-transition:leave-start="opacity-100"
+         x-transition:leave-end="opacity-0">
+        <div class="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
+            <div class="fixed inset-0 transition-opacity bg-gray-900/60 backdrop-blur-sm" @click="showApprovalModal = false"></div>
+
+            <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+
+            <div class="inline-block overflow-hidden text-left align-bottom transition-all transform bg-white rounded-2xl shadow-2xl sm:my-8 sm:align-middle sm:max-w-lg sm:w-full"
+                 x-transition:enter="transition ease-out duration-300"
+                 x-transition:enter-start="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
+                 x-transition:enter-end="opacity-100 translate-y-0 sm:scale-100">
+                
+                <form :action="approvalUrl" method="post">
+                    {% csrf_token %}
+                    <div class="px-8 pt-8 pb-6 bg-white">
+                        <div class="flex items-center justify-between mb-6">
+                            <h3 class="text-xl font-bold text-gray-900" x-text="approvalAction + ' Invoice ' + invoiceNumber"></h3>
+                            <button type="button" @click="showApprovalModal = false" class="text-gray-400 hover:text-gray-500">
+                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                            </button>
+                        </div>
+                        
+                        <div class="mb-4">
+                            <label class="block text-sm font-bold text-gray-700 mb-2 uppercase tracking-wider">Reviewer Notes / Reason</label>
+                            <textarea name="reviewer_notes" 
+                                      x-model="reviewerNotes"
+                                      rows="4" 
+                                      class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all text-gray-700 bg-gray-50/50"
+                                      placeholder="Add your comments here..."></textarea>
+                            <p class="mt-2 text-xs text-gray-400 font-medium italic">These notes will be saved in the audit log for accountability.</p>
+                        </div>
+                    </div>
+                    
+                    <div class="px-8 py-6 bg-gray-50 flex flex-row-reverse gap-3">
+                        <button type="submit" 
+                                :class="approvalAction === 'Approve' ? 'bg-emerald-600 hover:bg-emerald-700' : 'bg-red-600 hover:bg-red-700'"
+                                class="px-6 py-2.5 text-white font-bold rounded-xl transition-all shadow-lg transform active:scale-95"
+                                x-text="'Confirm ' + approvalAction">
+                        </button>
+                        <button type="button" @click="showApprovalModal = false" class="px-6 py-2.5 text-gray-600 font-bold bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition-all">
+                            Cancel
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
 </div>
 {% endblock %}

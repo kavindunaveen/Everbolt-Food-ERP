@@ -25,4 +25,9 @@ urlpatterns = [
     path('sales/invoices/<int:pk>/reject/', views.reject_invoice_view, name='invoice_reject'),
     path('sales/quotations/<int:pk>/mark-sent/', views.quotation_mark_sent_view, name='quotation_mark_sent'),
     path('sales/quotations/<int:pk>/cancel/', views.quotation_cancel_view, name='quotation_cancel'),
+    path('sales/quotations/<int:pk>/convert/', views.convert_quotation_view, name='quotation_convert'),
+    
+    # AJAX Search Endpoints
+    path('api/customers/search/', views.customer_search_ajax, name='customer_search_ajax'),
+    path('api/products/search/', views.product_search_ajax, name='product_search_ajax'),
 ]

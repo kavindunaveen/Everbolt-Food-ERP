@@ -74,6 +74,13 @@ class Product(models.Model):
     # This is a cache field derived from StockLedger, it should not be manually maintained.
     current_stock = models.DecimalField(max_digits=12, decimal_places=3, default=0.000, help_text="Cached balance from StockLedger")
 
+    @property
+    def available_stock(self):
+        """Returns current stock minus active reserves."""
+        from django.utils import timezone
+        active_reserves = self.reserves.filter(expiry_time__gt=timezone.now()).aggregate(models.Sum('quantity'))['quantity__sum'] or 0
+        return self.current_stock - active_reserves
+
     def save(self, *args, **kwargs):
         from django.utils.text import slugify
         
@@ -173,3 +180,19 @@ class StockAdjustment(models.Model):
 
     def __str__(self):
         return f"{self.adjustment_number} - {self.product.name}"
+
+class StockReserve(models.Model):
+    product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='reserves')
+    quantity = models.DecimalField(max_digits=12, decimal_places=3)
+    # reference to what is holding the stock
+    reference_type = models.CharField(max_length=50) # e.g. 'INV'
+    reference_id = models.IntegerField()
+    expiry_time = models.DateTimeField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def is_valid(self):
+        from django.utils import timezone
+        return self.expiry_time > timezone.now()
+
+    def __str__(self):
+        return f"Reserve {self.quantity} for {self.product.name}"

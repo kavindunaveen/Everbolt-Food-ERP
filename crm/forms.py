@@ -21,16 +21,25 @@ class CustomerForm(forms.ModelForm):
             self.fields['assigned_sales_officer'].empty_label = "--- Select Sales Officer ---"
         
         # Enforce exact numeric entry on the frontend for Phone
-        if 'phone' in self.fields:
-            self.fields['phone'].widget.attrs.update({
-                'pattern': '[0-9]{10}',
-                'title': '10 digit numeric phone number',
-                'oninput': "this.value = this.value.replace(/[^0-9]/g, '').slice(0, 10);"
-            })
+        for field_name in ['phone', 'phone_secondary']:
+            if field_name in self.fields:
+                self.fields[field_name].widget.attrs.update({
+                    'pattern': '[0-9]{10}',
+                    'title': '10 digit numeric phone number',
+                    'oninput': "this.value = this.value.replace(/[^0-9]/g, '').slice(0, 10);"
+                })
 
-    def clean_phone(self):
-        phone = self.cleaned_data.get('phone', '')
+    def _clean_phone_field(self, field_name):
+        phone = self.cleaned_data.get(field_name, '')
+        if not phone:
+            return phone
         phone = re.sub(r'[^0-9]', '', phone)
         if len(phone) != 10:
-            raise ValidationError("Phone number must contain exactly 10 digits.")
+            raise ValidationError(f"{field_name.replace('_', ' ').capitalize()} number must contain exactly 10 digits.")
         return phone
+
+    def clean_phone(self):
+        return self._clean_phone_field('phone')
+
+    def clean_phone_secondary(self):
+        return self._clean_phone_field('phone_secondary')
