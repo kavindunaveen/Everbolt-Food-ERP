@@ -1,4 +1,5 @@
 from django.shortcuts import render, redirect, get_object_or_404
+from django.db.models import Q
 from django.urls import reverse_lazy
 from django.contrib import messages
 from django.views.generic import ListView, CreateView, UpdateView, DeleteView, DetailView, View
@@ -322,7 +323,10 @@ class StockLedgerView(LoginRequiredMixin, ListView):
 
     def get_queryset(self):
         qs = super().get_queryset()
-        product_id = self.request.GET.get('product')
-        if product_id:
-            qs = qs.filter(product_id=product_id)
+        query = self.request.GET.get('product')
+        if query:
+            qs = qs.filter(
+                Q(product__product_id__icontains=query) | 
+                Q(product__name__icontains=query)
+            )
         return qs
