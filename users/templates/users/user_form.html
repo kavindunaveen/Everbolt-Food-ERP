@@ -45,64 +45,101 @@
                     {% for field in form %}
                     {% if field.name != 'user_permissions' %}
                     <div class="space-y-1">
-                        <label for="{{ field.id_for_label }}" class="block text-sm font-medium text-gray-700">
+                        <label for="{{ field.id_for_label }}" class="block text-sm font-bold text-gray-700">
                             {{ field.label }} {% if field.field.required %}<span class="text-red-500">*</span>{% endif %}
                         </label>
-                        {{ field.errors }}
+                        {% if field.errors %}
+                        <div class="text-red-600 text-xs font-bold mt-1 mb-1">
+                            {% for error in field.errors %}
+                                <p>{{ error }}</p>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
                         
                         <div class="relative rounded-md shadow-sm">
                             {% if field.field.widget.input_type == 'checkbox' %}
                                 <div class="flex items-center h-5 mt-2">
-                                    <input type="{{ field.field.widget.input_type }}" name="{{ field.html_name }}" id="{{ field.id_for_label }}" {% if field.value %}checked{% endif %} class="focus:ring-red-500 h-4 w-4 text-red-600 border-gray-300 rounded">
+                                    <input type="{{ field.field.widget.input_type }}" name="{{ field.html_name }}" id="{{ field.id_for_label }}" {% if field.value %}checked{% endif %} class="focus:ring-red-500 h-4 w-4 text-red-600 border-gray-300 rounded transition-all">
                                     <label for="{{ field.id_for_label }}" class="ml-3 text-sm text-gray-600">{{ field.help_text|default:"Active account" }}</label>
                                 </div>
+                            {% elif field.field.widget.choices %}
+                                <select name="{{ field.html_name }}" id="{{ field.id_for_label }}" 
+                                        class="focus:ring-red-500 focus:border-red-500 block w-full sm:text-sm border-gray-300 rounded-md py-2.5 px-3 border {% if field.errors %}border-red-300 bg-red-50{% endif %} transition-all">
+                                    {% for choice in field.field.choices %}
+                                        <option value="{{ choice.0 }}" {% if field.value|stringformat:"s" == choice.0|stringformat:"s" %}selected{% endif %}>{{ choice.1 }}</option>
+                                    {% endfor %}
+                                </select>
                             {% else %}
-                                <input type="{{ field.field.widget.input_type|default:'text' }}" name="{{ field.html_name }}" id="{{ field.id_for_label }}" value="{{ field.value|default:'' }}" class="focus:ring-red-500 focus:border-red-500 block w-full sm:text-sm border-gray-300 rounded-md py-2 px-3 border" {% if field.field.required %}required{% endif %}>
+                                <input type="{{ field.field.widget.input_type|default:'text' }}" name="{{ field.html_name }}" id="{{ field.id_for_label }}" value="{{ field.value|default:'' }}" 
+                                       class="focus:ring-red-500 focus:border-red-500 block w-full sm:text-sm border-gray-300 rounded-md py-2.5 px-3 border {% if field.errors %}border-red-300 bg-red-50{% endif %} transition-all" 
+                                       {% if field.field.required %}required{% endif %} {% if field.field.widget.attrs.placeholder %}placeholder="{{ field.field.widget.attrs.placeholder }}"{% endif %}>
                             {% endif %}
                         </div>
                         {% if field.help_text and field.field.widget.input_type != 'checkbox' %}
-                        <p class="text-xs text-gray-500">{{ field.help_text|safe }}</p>
+                        <p class="text-[10px] text-gray-400 font-medium italic mt-1">{{ field.help_text|safe }}</p>
                         {% endif %}
                     </div>
                     {% endif %}
                     {% endfor %}
                 </div>
 
-                <!-- Categorical Permissions UI -->
+                <!-- Odoo-style Advanced Access Rights Matrix -->
                 <div class="mt-10 border-t border-gray-200 pt-8">
-                    <h3 class="text-sm font-bold text-gray-900 mb-6 uppercase tracking-wider">Access Rights Categories</h3>
-                    
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-                        {% for category, perms in form.get_grouped_permissions.items %}
-                        <div class="bg-gray-50/50 rounded-lg p-5 border border-gray-200 perm-category">
-                            <div class="flex justify-between items-center mb-4">
-                                <h4 class="font-bold text-red-700 bg-red-50 border border-red-100 rounded px-3 py-1.5 text-xs uppercase tracking-wide">{{ category }}</h4>
-                                <button type="button" class="text-xs text-emerald-600 hover:text-emerald-800 font-medium select-all-btn transition-colors">Select All</button>
-                            </div>
-                            <div class="space-y-3 perm-list">
-                                {% for perm in perms %}
-                                <div class="flex items-center justify-between hover:bg-gray-100 p-2 rounded -mx-2 transition-colors">
-                                    <label for="id_user_permissions_{{ perm.pk }}" class="text-sm font-medium text-gray-700 flex-1 cursor-pointer">
-                                        {{ perm.label }}
-                                    </label>
-                                    <div class="ml-4 flex-shrink-0 flex items-center h-5">
-                                        <input type="checkbox" name="user_permissions" value="{{ perm.pk }}" id="id_user_permissions_{{ perm.pk }}" class="focus:ring-red-500 h-4 w-4 text-red-600 border-gray-300 rounded" {% if perm.checked %}checked{% endif %}>
-                                    </div>
-                                </div>
-                                {% endfor %}
-                            </div>
+                    <div class="flex items-center justify-between mb-6">
+                        <h3 class="text-sm font-bold text-gray-900 uppercase tracking-wider">Advanced Access Rights (Matrix)</h3>
+                        <div class="flex space-x-2">
+                            <button type="button" onclick="window.setAllPermissions(true)" class="text-[10px] font-black uppercase tracking-widest text-emerald-600 hover:text-emerald-700">Check All</button>
+                            <span class="text-gray-300">|</span>
+                            <button type="button" onclick="window.setAllPermissions(false)" class="text-[10px] font-black uppercase tracking-widest text-red-600 hover:text-red-700">Uncheck All</button>
                         </div>
-                        {% endfor %}
                     </div>
-                    {{ form.user_permissions.errors }}
+                    
+                    <div class="overflow-x-auto shadow-sm rounded-xl border border-gray-200">
+                        <table class="min-w-full divide-y divide-gray-200" id="permission-matrix">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-black text-gray-500 uppercase tracking-wider border-r border-gray-200">Module / Document</th>
+                                    <th scope="col" class="px-6 py-3 text-center text-xs font-black text-gray-500 uppercase tracking-wider">View</th>
+                                    <th scope="col" class="px-6 py-3 text-center text-xs font-black text-gray-500 uppercase tracking-wider">Create</th>
+                                    <th scope="col" class="px-6 py-3 text-center text-xs font-black text-gray-500 uppercase tracking-wider">Edit</th>
+                                    <th scope="col" class="px-6 py-3 text-center text-xs font-black text-gray-500 uppercase tracking-wider">Delete</th>
+                                    <th scope="col" class="px-6 py-3 text-center text-xs font-black text-gray-500 uppercase tracking-wider border-l border-gray-200">Approve</th>
+                                </tr>
+                            </thead>
+                            <tbody class="bg-white divide-y divide-gray-100">
+                                {% for row in form.get_permission_matrix %}
+                                <tr class="hover:bg-gray-50 transition-colors" data-model="{{ row.model|lower }}">
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-900 border-r border-gray-100">{{ row.model }}</td>
+                                    {% for item in row.cols %}
+                                        <td class="px-6 py-4 whitespace-nowrap text-center {% if forloop.last %}border-l border-gray-100 bg-gray-50/50{% endif %}">
+                                            {% if item %}
+                                                <input type="checkbox" name="user_permissions" value="{{ item.pk }}" id="perm_{{ item.pk }}" 
+                                                       class="focus:ring-red-500 h-5 w-5 text-red-600 border-gray-300 rounded cursor-pointer transition-transform hover:scale-110 shadow-sm"
+                                                       {% if item.checked %}checked{% endif %}
+                                                       data-action-index="{{ forloop.counter0 }}">
+                                            {% else %}
+                                                <span class="text-gray-200 select-none">-</span>
+                                            {% endif %}
+                                        </td>
+                                    {% endfor %}
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% if form.user_permissions.errors %}
+                    <div class="text-red-600 text-xs font-bold mt-2">
+                        {{ form.user_permissions.errors }}
+                    </div>
+                    {% endif %}
                 </div>
             </div>
 
             <div class="px-6 py-4 bg-gray-50 flex items-center justify-end gap-3">
-                <a href="{% url 'user_list' %}" class="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-colors">
+                <a href="{% url 'user_list' %}" class="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-bold rounded-lg text-gray-700 bg-white hover:bg-gray-50 focus:outline-none transition-all">
                     Cancel
                 </a>
-                <button type="submit" class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-lg text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-colors">
+                <button type="submit" class="inline-flex items-center px-4 py-2 border border-transparent shadow-lg text-sm font-bold rounded-lg text-white bg-red-600 hover:bg-red-700 focus:outline-none transition-all active:scale-95">
                     {% if object %}Save Changes{% else %}Create User{% endif %}
                 </button>
             </div>
@@ -112,37 +149,51 @@
 
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        document.querySelectorAll('.select-all-btn').forEach(function(btn) {
-            btn.addEventListener('click', function() {
-                const container = this.closest('.perm-category');
-                const checkboxes = container.querySelectorAll('.perm-list input[type="checkbox"]');
-                const allChecked = Array.from(checkboxes).every(cb => cb.checked);
-                
-                checkboxes.forEach(function(cb) {
-                    cb.checked = !allChecked;
-                });
-                
-                this.textContent = allChecked ? 'Select All' : 'Deselect All';
-            });
-        });
+        // More robust selector for role field
+        const roleSelect = document.querySelector('select[name="role"]') || document.getElementById('id_role');
+        const checkboxes = document.querySelectorAll('input[name="user_permissions"]');
         
-        // Initial state setup for 'Edit' views where checkboxes may already be ticked
-        document.querySelectorAll('.perm-category').forEach(function(container) {
-            const checkboxes = container.querySelectorAll('.perm-list input[type="checkbox"]');
-            const allChecked = Array.from(checkboxes).every(cb => cb.checked);
-            const btn = container.querySelector('.select-all-btn');
-            if (allChecked && checkboxes.length > 0) {
-                btn.textContent = 'Deselect All';
-            }
-            
-            // Listen for manual checkbox toggles to update the button text appropriately
-            checkboxes.forEach(function(cb) {
-                cb.addEventListener('change', function() {
-                    const currentAllChecked = Array.from(checkboxes).every(c => c.checked);
-                    btn.textContent = currentAllChecked ? 'Deselect All' : 'Select All';
-                });
+        window.setAllPermissions = function(checked) {
+            checkboxes.forEach(cb => cb.checked = checked);
+        };
+
+        if (roleSelect) {
+            roleSelect.addEventListener('change', function(e) {
+                const role = e.target.value;
+                console.log('Role changed to:', role);
+                
+                if (role === 'ADMIN') {
+                    window.setAllPermissions(true);
+                } else if (role === 'SALES_OFFICER') {
+                    // Uncheck everything first
+                    window.setAllPermissions(false);
+                    
+                    const rows = document.querySelectorAll('#permission-matrix tbody tr');
+                    rows.forEach(row => {
+                        const rowCheckboxes = row.querySelectorAll('input[type="checkbox"]');
+                        const modelName = row.getAttribute('data-model');
+                        
+                        rowCheckboxes.forEach(cb => {
+                            const actionIndex = parseInt(cb.getAttribute('data-action-index'));
+                            
+                            // View is always checked for Sales Officer (actionIndex 0)
+                            if (actionIndex === 0) {
+                                cb.checked = true;
+                            }
+                            
+                            // Sales and Contact models get Add (1) and Edit (2)
+                            if (modelName && (modelName.includes('sales') || modelName.includes('contact') || modelName.includes('customer') || modelName.includes('supplier'))) {
+                                if (actionIndex === 1 || actionIndex === 2) {
+                                    cb.checked = true;
+                                }
+                            }
+                        });
+                    });
+                } else if (role === 'USER') {
+                    window.setAllPermissions(false);
+                }
             });
-        });
+        }
     });
 </script>
 {% endblock %}

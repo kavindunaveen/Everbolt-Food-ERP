@@ -1,23 +1,69 @@
 from django import forms
 from django.contrib.auth.forms import UserCreationForm, UserChangeForm
 from django.contrib.auth.models import Permission
+from django.contrib.contenttypes.models import ContentType
 from .models import User
 
 def get_custom_permissions():
     """Returns permissions only for our custom apps."""
-    return Permission.objects.filter(content_type__app_label__in=['crm', 'inventory', 'sales', 'purchases', 'suppliers', 'users'])
+    return Permission.objects.filter(content_type__app_label__in=[
+        'crm', 'inventory', 'sales', 'purchases', 'suppliers', 'users', 'manufacturing'
+    ]).exclude(codename__icontains='logentry').exclude(codename__icontains='session')
 
-class CustomPermissionChoiceField(forms.ModelMultipleChoiceField):
-    def label_from_instance(self, obj):
-        # Turns "Can add product" into "Add Product"
-        return obj.name.replace('Can ', '').title()
+class MatrixPermissionMixin:
+    def get_permission_matrix(self):
+        matrix = {}
+        user_perms_ids = []
+        if self.instance and self.instance.pk:
+            user_perms_ids = list(self.instance.user_permissions.values_list('pk', flat=True))
+            
+        perms = get_custom_permissions().select_related('content_type')
+        
+        # Define the columns we care about
+        actions = ['view', 'add', 'change', 'delete', 'approve']
+        
+        for perm in perms:
+            # Model name formatted nicely
+            model_name = perm.content_type.name.title()
+            # Replace some names to match the 9 modules
+            if model_name == 'User': model_name = 'Users'
+            elif model_name == 'Customer': model_name = 'Contacts (Customers)'
+            elif model_name == 'Supplier': model_name = 'Contacts (Suppliers)'
+            elif model_name == 'Product': model_name = 'Products'
+            elif model_name == 'Purchaseorder': model_name = 'Purchase Orders'
+            elif model_name == 'Grn': model_name = 'GRN'
+            elif model_name == 'Stockledger': model_name = 'Reports (Stock Ledger)'
+            elif model_name == 'Productionorder': model_name = 'Manufacturing (Production Orders)'
+            elif model_name == 'Bom': model_name = 'Manufacturing (BOM)'
+            elif model_name == 'Bom Item': model_name = 'Manufacturing (BOM Items)'
+            
+            if model_name not in matrix:
+                matrix[model_name] = {action: None for action in actions}
+                matrix[model_name]['model'] = model_name
+                
+            action = perm.codename.split('_')[0]
+            if action in actions:
+                matrix[model_name][action] = {
+                    'pk': perm.pk,
+                    'checked': perm.pk in user_perms_ids or (self.instance and self.instance.pk and self.instance.is_admin())
+                }
+                
+        rows = []
+        for model_name, actions_dict in matrix.items():
+            if any(actions_dict[a] for a in actions):
+                cols = [actions_dict.get(a) for a in actions]
+                rows.append({
+                    'model': model_name,
+                    'cols': cols
+                })
+        rows.sort(key=lambda x: x['model'])
+        return rows
 
-class CustomUserCreationForm(UserCreationForm):
-    user_permissions = CustomPermissionChoiceField(
+class CustomUserCreationForm(UserCreationForm, MatrixPermissionMixin):
+    user_permissions = forms.ModelMultipleChoiceField(
         queryset=Permission.objects.none(),
         widget=forms.CheckboxSelectMultiple,
         required=False,
-        label="Access Rights"
     )
 
     class Meta:
@@ -28,30 +74,19 @@ class CustomUserCreationForm(UserCreationForm):
         super().__init__(*args, **kwargs)
         self.fields['user_permissions'].queryset = get_custom_permissions()
 
-    def get_grouped_permissions(self):
-        grouped = {}
-        for perm in self.fields['user_permissions'].queryset.select_related('content_type'):
-            app_label = perm.content_type.app_label.title()
-            if app_label == 'Crm': app_label = 'CRM'
-            
-            if app_label not in grouped:
-                grouped[app_label] = []
-                
-            grouped[app_label].append({
-                'pk': perm.pk,
-                'label': perm.name.replace('Can ', '').title(),
-                'checked': False
-            })
-        return grouped
-
-class CustomUserChangeForm(UserChangeForm):
+class CustomUserChangeForm(UserChangeForm, MatrixPermissionMixin):
     password = None
+    new_password = forms.CharField(
+        required=False, 
+        widget=forms.PasswordInput(attrs={'placeholder': 'Enter new password to reset'}), 
+        label="Reset Password",
+        help_text="Leave blank to keep the current password."
+    )
     
-    user_permissions = CustomPermissionChoiceField(
+    user_permissions = forms.ModelMultipleChoiceField(
         queryset=Permission.objects.none(),
         widget=forms.CheckboxSelectMultiple,
         required=False,
-        label="Access Rights"
     )
 
     class Meta:
@@ -62,22 +97,12 @@ class CustomUserChangeForm(UserChangeForm):
         super().__init__(*args, **kwargs)
         self.fields['user_permissions'].queryset = get_custom_permissions()
 
-    def get_grouped_permissions(self):
-        grouped = {}
-        user_perms_ids = []
-        if self.instance and self.instance.pk:
-            user_perms_ids = list(self.instance.user_permissions.values_list('pk', flat=True))
-            
-        for perm in self.fields['user_permissions'].queryset.select_related('content_type'):
-            app_label = perm.content_type.app_label.title()
-            if app_label == 'Crm': app_label = 'CRM'
-            
-            if app_label not in grouped:
-                grouped[app_label] = []
-                
-            grouped[app_label].append({
-                'pk': perm.pk,
-                'label': perm.name.replace('Can ', '').title(),
-                'checked': perm.pk in user_perms_ids
-            })
-        return grouped
+    def save(self, commit=True):
+        user = super().save(commit=False)
+        new_pass = self.cleaned_data.get('new_password')
+        if new_pass:
+            user.set_password(new_pass)
+        if commit:
+            user.save()
+            self.save_m2m()
+        return user

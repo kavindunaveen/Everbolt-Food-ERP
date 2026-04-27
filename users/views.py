@@ -6,8 +6,12 @@ from .models import User
 from .forms import CustomUserCreationForm, CustomUserChangeForm
 from django.db.models import Q
 
-class UserListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
-    permission_required = 'users.view_user'
+from django.contrib.auth.mixins import UserPassesTestMixin
+class AdminRequiredMixin(UserPassesTestMixin):
+    def test_func(self):
+        return self.request.user.is_admin()
+
+class UserListView(LoginRequiredMixin, AdminRequiredMixin, ListView):
     model = User
     template_name = 'users/user_list.html'
     context_object_name = 'users'
@@ -25,25 +29,43 @@ class UserListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
             )
         return qs
 
-class UserCreateView(LoginRequiredMixin, PermissionRequiredMixin, CreateView):
-    permission_required = 'users.add_user'
+class UserCreateView(LoginRequiredMixin, AdminRequiredMixin, CreateView):
     model = User
     form_class = CustomUserCreationForm
     template_name = 'users/user_form.html'
     success_url = reverse_lazy('user_list')
 
-class UserUpdateView(LoginRequiredMixin, PermissionRequiredMixin, UpdateView):
-    permission_required = 'users.change_user'
+class UserUpdateView(LoginRequiredMixin, AdminRequiredMixin, UpdateView):
     model = User
     form_class = CustomUserChangeForm
     template_name = 'users/user_form.html'
     success_url = reverse_lazy('user_list')
 
-class UserDeleteView(LoginRequiredMixin, PermissionRequiredMixin, DeleteView):
-    permission_required = 'users.delete_user'
+class UserDeleteView(LoginRequiredMixin, AdminRequiredMixin, DeleteView):
     model = User
     template_name = 'users/user_confirm_delete.html'
     success_url = reverse_lazy('user_list')
+
+from django import forms
+class ProfileUpdateForm(forms.ModelForm):
+    class Meta:
+        model = User
+        fields = ('first_name', 'last_name', 'email', 'contact_number')
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['email'].disabled = True
+        self.fields['email'].help_text = "Only an administrator can change your email address."
+
+class ProfileUpdateView(LoginRequiredMixin, UpdateView):
+    model = User
+    form_class = ProfileUpdateForm
+    template_name = 'users/profile_form.html'
+    success_url = reverse_lazy('sales_dashboard')
+
+    def get_object(self):
+        return self.request.user
+
 
 from django.shortcuts import get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
