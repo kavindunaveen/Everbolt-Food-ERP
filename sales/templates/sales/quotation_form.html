@@ -106,7 +106,7 @@
 </style>
 
 <div class="max-w-7xl mx-auto px-4 py-8">
-    <div class="mb-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+    <div class="mb-4 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
             <h1 class="text-3xl font-extrabold text-gray-900 tracking-tight">
                 {% if form.instance.pk %}Edit Quotation <span class="text-red-600">#{{ form.instance.quotation_number }}</span>{% else %}New Quotation{% endif %}
@@ -114,15 +114,97 @@
             <p class="text-sm text-gray-500 mt-1">{% if form.instance.pk %}Modify the price estimate for your customer.{% else %}Prepare a new price quotation for a prospective client.{% endif %}</p>
         </div>
         <div class="flex items-center space-x-3">
-            {% if form.instance.pk %}
-            <a href="{% url 'quotation_print' form.instance.pk %}" target="_blank" class="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-bold rounded-lg text-gray-700 bg-white hover:bg-gray-50 transition-all">
-                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
-                Print
-            </a>
-            {% endif %}
             <a href="{% url 'quotation_list' %}" class="inline-flex items-center px-4 py-2 border border-gray-200 text-sm font-bold rounded-lg text-gray-600 bg-gray-50 hover:bg-gray-100 transition-all">Back to List</a>
         </div>
     </div>
+
+    {% if form.instance.pk %}
+    <!-- Action and Status Bar (Odoo Style) -->
+    <div class="bg-white border border-gray-200 flex flex-col md:flex-row justify-between items-stretch mb-6 rounded-md shadow-sm overflow-hidden">
+        <div class="flex items-center p-2 gap-2 flex-wrap">
+            <button type="button" onclick="document.getElementById('save-quotation-btn').click()" class="px-4 py-2 bg-[#714B67] text-white text-sm font-bold rounded-sm hover:bg-[#5C3A53] transition-colors shadow-sm">Save Quotation</button>
+            
+            {% if form.instance.status == 'DRAFT' %}
+            <form action="{% url 'quotation_mark_sent' form.instance.pk %}" method="post" class="inline m-0 p-0">
+                {% csrf_token %}
+                <button type="submit" class="px-4 py-2 bg-white border border-gray-300 text-gray-700 text-sm font-bold rounded-sm hover:bg-gray-50 transition-colors shadow-sm">Mark as Sent</button>
+            </form>
+            <form action="{% url 'quotation_cancel' form.instance.pk %}" method="post" class="inline m-0 p-0">
+                {% csrf_token %}
+                <button type="submit" onclick="return confirm('Cancel this quotation?')" class="px-4 py-2 bg-white border border-gray-300 text-gray-700 text-sm font-bold rounded-sm hover:bg-gray-50 transition-colors shadow-sm">Cancel</button>
+            </form>
+            {% elif form.instance.status == 'SENT' %}
+            <form action="{% url 'quotation_cancel' form.instance.pk %}" method="post" class="inline m-0 p-0">
+                {% csrf_token %}
+                <button type="submit" onclick="return confirm('Cancel this quotation?')" class="px-4 py-2 bg-white border border-gray-300 text-gray-700 text-sm font-bold rounded-sm hover:bg-gray-50 transition-colors shadow-sm">Cancel</button>
+            </form>
+            {% endif %}
+            
+            {% if form.instance.status == 'SENT' and not form.instance.is_converted %}
+            <a href="{% url 'quotation_convert' form.instance.pk %}" onclick="return confirm('Convert this quotation to a DRAFT invoice?')" class="px-4 py-2 bg-[#714B67] text-white text-sm font-bold rounded-sm hover:bg-[#5C3A53] transition-colors shadow-sm">Convert to Invoice</a>
+            {% endif %}
+            
+            <a href="{% url 'quotation_print' form.instance.pk %}" target="_blank" class="px-4 py-2 bg-white border border-gray-300 text-gray-700 text-sm font-bold rounded-sm hover:bg-gray-50 transition-colors shadow-sm">Print</a>
+        </div>
+        
+        <div class="flex items-center bg-gray-50 overflow-hidden md:border-l md:border-t-0 border-t border-gray-200">
+            <style>
+                .status-arrow {
+                    position: relative;
+                    padding: 10px 20px 10px 30px;
+                    background-color: #f9fafb;
+                    color: #6b7280;
+                    font-size: 11px;
+                    font-weight: 700;
+                    text-transform: uppercase;
+                    border-right: 1px solid #e5e7eb;
+                    display: flex;
+                    align-items: center;
+                    height: 100%;
+                }
+                .status-arrow::before, .status-arrow::after {
+                    content: '';
+                    position: absolute;
+                    top: 0;
+                    border-top: 20px solid transparent;
+                    border-bottom: 20px solid transparent;
+                }
+                .status-arrow::before {
+                    left: 0;
+                    border-left: 10px solid #e5e7eb;
+                }
+                .status-arrow::after {
+                    right: -10px;
+                    border-left: 10px solid #f9fafb;
+                    z-index: 10;
+                }
+                .status-arrow.active {
+                    color: #111827;
+                    background-color: #f3f4f6;
+                }
+                .status-arrow.active::after {
+                    border-left-color: #f3f4f6;
+                }
+                .status-arrow:first-child::before {
+                    display: none;
+                }
+                .status-arrow:first-child {
+                    padding-left: 20px;
+                }
+            </style>
+            
+            <div class="status-arrow {% if form.instance.status == 'DRAFT' or not form.instance.status %}active{% endif %}">Draft</div>
+            <div class="status-arrow {% if form.instance.status == 'SENT' %}active{% endif %}">Sent</div>
+            {% if form.instance.status == 'CONVERTED' %}
+            <div class="status-arrow active text-emerald-600">Converted to Sales Order</div>
+            {% elif form.instance.status == 'EXPIRED' %}
+            <div class="status-arrow active text-orange-600">Expired</div>
+            {% elif form.instance.status == 'CANCELLED' %}
+            <div class="status-arrow active text-red-600">Cancelled</div>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
 
     <form method="post" class="space-y-8">
         {% csrf_token %}
@@ -168,11 +250,12 @@
                 <table class="min-w-full divide-y divide-gray-100">
                     <thead class="bg-gray-50/30">
                         <tr>
-                            <th class="px-6 py-4 text-left text-[11px] font-bold text-gray-400 uppercase tracking-widest">Product</th>
-                            <th class="px-6 py-4 text-left text-[11px] font-bold text-gray-400 uppercase tracking-widest w-32 text-center">Quantity</th>
-                            <th class="px-6 py-4 text-left text-[11px] font-bold text-gray-400 uppercase tracking-widest w-40 text-right">Unit Price (Rs)</th>
-                            <th class="px-6 py-4 text-left text-[11px] font-bold text-gray-400 uppercase tracking-widest w-40 text-right">Total (Rs)</th>
-                            <th class="px-6 py-4 text-center text-[11px] font-bold text-gray-400 uppercase tracking-widest w-24">Actions</th>
+                            <th class="px-6 py-4 text-left text-[11px] font-bold text-gray-400 uppercase tracking-widest min-w-[200px]">Product</th>
+                            <th class="px-6 py-4 text-left text-[11px] font-bold text-gray-400 uppercase tracking-widest min-w-[100px] text-center">Quantity</th>
+                            <th class="px-6 py-4 text-left text-[11px] font-bold text-gray-400 uppercase tracking-widest min-w-[120px] text-right">Unit Price (Rs)</th>
+                            <th class="px-6 py-4 text-left text-[11px] font-bold text-gray-400 uppercase tracking-widest min-w-[120px] text-right">Discount (Rs)</th>
+                            <th class="px-6 py-4 text-left text-[11px] font-bold text-gray-400 uppercase tracking-widest min-w-[120px] text-right">Total (Rs)</th>
+                            <th class="px-6 py-4 text-center text-[11px] font-bold text-gray-400 uppercase tracking-widest min-w-[80px]">Actions</th>
                         </tr>
                     </thead>
                     <tbody id="formset-container" class="divide-y divide-gray-50">
@@ -185,22 +268,28 @@
                                     <div class="text-red-500 text-[10px] font-bold mt-1 uppercase">{{ item_form.product.errors|striptags }}</div>
                                 {% endif %}
                             </td>
-                            <td class="px-6 py-4 w-32">
+                            <td class="px-6 py-4">
                                 {{ item_form.quantity }}
                                 {% if item_form.quantity.errors %}
                                     <div class="text-red-500 text-[10px] font-bold mt-1 uppercase text-center">{{ item_form.quantity.errors|striptags }}</div>
                                 {% endif %}
                             </td>
-                            <td class="px-6 py-4 w-40">
+                            <td class="px-6 py-4">
                                 {{ item_form.unit_price }}
                                 {% if item_form.unit_price.errors %}
                                     <div class="text-red-500 text-[10px] font-bold mt-1 uppercase text-right">{{ item_form.unit_price.errors|striptags }}</div>
                                 {% endif %}
                             </td>
-                            <td class="px-6 py-4 w-40">
+                            <td class="px-6 py-4">
+                                {{ item_form.discount }}
+                                {% if item_form.discount.errors %}
+                                    <div class="text-red-500 text-[10px] font-bold mt-1 uppercase text-right">{{ item_form.discount.errors|striptags }}</div>
+                                {% endif %}
+                            </td>
+                            <td class="px-6 py-4">
                                 <input type="text" class="w-full px-3 py-2 border border-gray-100 rounded-lg bg-gray-50 text-gray-900 font-bold text-right line-total" value="0.00" readonly tabindex="-1">
                             </td>
-                            <td class="px-6 py-4 text-center w-24">
+                            <td class="px-6 py-4 text-center">
                                 {% if item_form.instance.pk %}
                                     <div class="flex items-center justify-center">
                                         {{ item_form.DELETE }}
@@ -228,7 +317,7 @@
                 
                 <div class="flex items-center gap-3">
                     <a href="{% url 'quotation_list' %}" class="px-4 py-2 text-sm font-bold text-gray-500 hover:text-gray-700 transition-colors">Discard Changes</a>
-                    <button type="submit" class="px-8 py-2 bg-red-600 text-white font-bold rounded-lg hover:bg-red-700 transition-all shadow-md">Save Quotation</button>
+                    <button type="submit" id="save-quotation-btn" class="{% if form.instance.pk %}hidden{% endif %} px-8 py-2 bg-red-600 text-white font-bold rounded-lg hover:bg-red-700 transition-all shadow-md">Save Quotation</button>
                 </div>
             </div>
         </div>
@@ -297,28 +386,34 @@
     <tbody id="empty-row">
         <tr class="formset-row">
             {{ items.empty_form.id }}
-            <td class="px-4 py-4 w-1/3">
+            <td class="px-4 py-4 min-w-[200px]">
                 {{ items.empty_form.product }}
                 {% if items.empty_form.product.errors %}
                     <div class="text-red-500 text-xs mt-1">{{ items.empty_form.product.errors|striptags }}</div>
                 {% endif %}
             </td>
-            <td class="px-4 py-4 w-1/6">
+            <td class="px-4 py-4 min-w-[100px]">
                 {{ items.empty_form.quantity }}
                 {% if items.empty_form.quantity.errors %}
                     <div class="text-red-500 text-xs mt-1">{{ items.empty_form.quantity.errors|striptags }}</div>
                 {% endif %}
             </td>
-            <td class="px-4 py-4 w-1/6">
+            <td class="px-4 py-4 min-w-[120px]">
                 {{ items.empty_form.unit_price }}
                 {% if items.empty_form.unit_price.errors %}
                     <div class="text-red-500 text-xs mt-1">{{ items.empty_form.unit_price.errors|striptags }}</div>
                 {% endif %}
             </td>
-            <td class="px-4 py-4 w-1/6">
+            <td class="px-4 py-4 min-w-[120px]">
+                {{ items.empty_form.discount }}
+                {% if items.empty_form.discount.errors %}
+                    <div class="text-red-500 text-xs mt-1">{{ items.empty_form.discount.errors|striptags }}</div>
+                {% endif %}
+            </td>
+            <td class="px-4 py-4 min-w-[120px]">
                 <input type="text" class="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50 text-gray-700 font-semibold text-right line-total" value="0.00" readonly>
             </td>
-            <td class="px-4 py-4 text-center w-1/6">
+            <td class="px-4 py-4 text-center min-w-[80px]">
                 <div class="hidden">{{ items.empty_form.DELETE }}</div>
                 <button type="button" class="remove-row px-3 py-2 bg-red-100 text-red-600 hover:bg-red-200 rounded-md transition-colors" title="Remove Line">
                     <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
@@ -377,7 +472,8 @@
         function calculateRowTotal(row) {
             const qty = parseFloat($(row).find('input[name$="-quantity"]').val()) || 0;
             const price = parseFloat($(row).find('input[name$="-unit_price"]').val()) || 0;
-            $(row).find('.line-total').val((qty * price).toFixed(2));
+            const discount = parseFloat($(row).find('input[name$="-discount"]').val()) || 0;
+            $(row).find('.line-total').val(((qty * price) - discount).toFixed(2));
         }
 
         // Run calculations on load for existing items
@@ -452,7 +548,7 @@
         });
 
         // Live calculation triggers on input changes
-        $(document).on('input', 'input[name$="-quantity"], input[name$="-unit_price"]', function() {
+        $(document).on('input', 'input[name$="-quantity"], input[name$="-unit_price"], input[name$="-discount"]', function() {
             const row = $(this).closest('tr');
             
             // Auto Update tier pricing if triggered by quantity change

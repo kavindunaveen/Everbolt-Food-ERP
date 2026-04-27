@@ -21,6 +21,7 @@ urlpatterns = [
     path('sales/invoices/<int:pk>/print/', views.InvoicePrintView.as_view(), name='invoice_print'),
     path('sales/invoices/<int:pk>/confirm/', views.confirm_invoice_view, name='invoice_confirm'),
     path('sales/invoices/<int:pk>/cancel/', views.cancel_invoice_view, name='invoice_cancel'),
+    path('sales/invoices/<int:pk>/request-edit/', views.request_edit_invoice_view, name='invoice_request_edit'),
     path('sales/invoices/<int:pk>/approve/', views.approve_invoice_view, name='invoice_approve'),
     path('sales/invoices/<int:pk>/reject/', views.reject_invoice_view, name='invoice_reject'),
     path('sales/quotations/<int:pk>/mark-sent/', views.quotation_mark_sent_view, name='quotation_mark_sent'),

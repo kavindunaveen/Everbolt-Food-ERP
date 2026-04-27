@@ -21,6 +21,7 @@ class Quotation(models.Model):
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.DRAFT)
     total_amount = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
     tax_amount = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
+    total_discount = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
     notes = models.TextField(blank=True, null=True)
     is_converted = models.BooleanField(default=False)
 
@@ -52,8 +53,13 @@ class QuotationItem(models.Model):
     product = models.ForeignKey(Product, on_delete=models.PROTECT)
     quantity = models.PositiveIntegerField()
     unit_price = models.DecimalField(max_digits=12, decimal_places=2)
+    discount = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
     tax_amount = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
     line_total = models.DecimalField(max_digits=12, decimal_places=2)
+
+    @property
+    def amount_ex_vat(self):
+        return self.line_total - self.tax_amount
 
 class Invoice(models.Model):
     class Type(models.TextChoices):
@@ -65,6 +71,7 @@ class Invoice(models.Model):
         APPROVAL_PENDING = 'APPROVAL_PENDING', 'Pending Approval'
         ISSUED = 'ISSUED', 'Issued'
         PAID = 'PAID', 'Paid'
+        EDIT_PENDING = 'EDIT_PENDING', 'Edit Pending'
         CANCEL_PENDING = 'CANCEL_PENDING', 'Cancellation Pending'
         CANCELLED = 'CANCELLED', 'Cancelled'
 
@@ -82,6 +89,7 @@ class Invoice(models.Model):
     
     total_amount = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
     tax_amount = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
+    total_discount = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.DRAFT)
     notes = models.TextField(blank=True, null=True)
     reviewer_notes = models.TextField(blank=True, null=True, help_text="Notes from the approver/manager")
@@ -120,8 +128,13 @@ class InvoiceItem(models.Model):
     product = models.ForeignKey(Product, on_delete=models.PROTECT)
     quantity = models.PositiveIntegerField()
     unit_price = models.DecimalField(max_digits=12, decimal_places=2)
+    discount = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
     tax_amount = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
     line_total = models.DecimalField(max_digits=12, decimal_places=2)
+
+    @property
+    def amount_ex_vat(self):
+        return self.line_total - self.tax_amount
 
 
 class Return(models.Model):

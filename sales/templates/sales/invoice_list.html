@@ -87,7 +87,7 @@
                             <span class="px-2.5 py-1 text-[10px] font-extrabold rounded-md uppercase tracking-wider
                                 {% if inv.status == 'PAID' %}bg-green-100 text-green-700
                                 {% elif inv.status == 'ISSUED' %}bg-blue-100 text-blue-700
-                                {% elif inv.status == 'APPROVAL_PENDING' or inv.status == 'CANCEL_PENDING' %}bg-orange-100 text-orange-700
+                                {% elif inv.status == 'APPROVAL_PENDING' or inv.status == 'CANCEL_PENDING' or inv.status == 'EDIT_PENDING' %}bg-orange-100 text-orange-700
                                 {% elif inv.status == 'CANCELLED' %}bg-red-100 text-red-700
                                 {% else %}bg-gray-100 text-gray-600{% endif %}">
                                 {{ inv.get_status_display }}
@@ -103,15 +103,7 @@
                         </td>
                         <td :class="compactMode ? 'px-6 py-2' : 'px-6 py-4'" class="whitespace-nowrap text-center text-sm font-medium">
                             <div class="flex items-center justify-center space-x-2">
-                                {% if inv.status == 'DRAFT' %}
-                                <button type="button" 
-                                        @click="showConfirmModal = true; confirmUrl = '{% url 'invoice_confirm' inv.pk %}'; invoiceNumber = '{{ inv.invoice_number }}';"
-                                        class="flex items-center px-2 py-1.5 text-[11px] font-bold uppercase tracking-wider text-emerald-700 bg-emerald-50 hover:bg-emerald-100 rounded-lg transition-all" 
-                                        title="Confirm & Deduct Stock">
-                                    <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                                    Issue
-                                </button>
-                                {% elif inv.status == 'APPROVAL_PENDING' and perms.sales.approve_invoice %}
+                                {% if inv.status == 'APPROVAL_PENDING' and perms.sales.approve_invoice %}
                                 <div class="flex space-x-1">
                                     <button @click="openModal('Approve', '{% url 'invoice_approve' inv.pk %}', '{{ inv.invoice_number }}')" class="p-1.5 text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors" title="Approve">
                                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
@@ -120,15 +112,22 @@
                                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
                                     </button>
                                 </div>
-                                {% elif inv.status == 'CANCEL_PENDING' and request.user.email in 'admin@organicfoodslanka.com,info@organicfoodslanka.com,hashan@organicfoodslanka.com' %}
+                                {% elif inv.status == 'CANCEL_PENDING' and perms.sales.approve_invoice %}
                                 <div class="flex space-x-1">
-                                    <button @click="openModal('Approve Cancellation', '{% url 'invoice_approve' inv.pk %}', '{{ inv.invoice_number }}', '{{ inv.cancellation_reason|escapejs }}')" class="flex items-center px-2 py-1.5 text-[11px] font-bold uppercase tracking-wider text-orange-700 bg-orange-50 hover:bg-orange-100 rounded-lg transition-all" title="Approve Cancellation">
-                                        <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                                        Approve
+                                    <button @click="openModal('Approve Cancellation', '{% url 'invoice_approve' inv.pk %}', '{{ inv.invoice_number }}', '{{ inv.cancellation_reason|escapejs }}')" class="p-1.5 text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors" title="Approve Cancellation">
+                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
                                     </button>
-                                    <button @click="openModal('Reject Cancellation', '{% url 'invoice_reject' inv.pk %}', '{{ inv.invoice_number }}', '{{ inv.cancellation_reason|escapejs }}')" class="flex items-center px-2 py-1.5 text-[11px] font-bold uppercase tracking-wider text-red-700 bg-red-50 hover:bg-red-100 rounded-lg transition-all" title="Reject Cancellation">
-                                        <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-                                        Reject
+                                    <button @click="openModal('Reject Cancellation', '{% url 'invoice_reject' inv.pk %}', '{{ inv.invoice_number }}', '{{ inv.cancellation_reason|escapejs }}')" class="p-1.5 text-red-600 hover:bg-red-50 rounded-lg transition-colors" title="Reject Cancellation">
+                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                    </button>
+                                </div>
+                                {% elif inv.status == 'EDIT_PENDING' and perms.sales.approve_invoice %}
+                                <div class="flex space-x-1">
+                                    <button @click="openModal('Approve Edit', '{% url 'invoice_approve' inv.pk %}', '{{ inv.invoice_number }}', '{{ inv.cancellation_reason|escapejs }}')" class="p-1.5 text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors" title="Approve Edit">
+                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                    </button>
+                                    <button @click="openModal('Reject Edit', '{% url 'invoice_reject' inv.pk %}', '{{ inv.invoice_number }}', '{{ inv.cancellation_reason|escapejs }}')" class="p-1.5 text-red-600 hover:bg-red-50 rounded-lg transition-colors" title="Reject Edit">
+                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
                                     </button>
                                 </div>
                                 {% endif %}
@@ -207,39 +206,6 @@
                         <button type="button" @click="showApprovalModal = false" class="px-6 py-2.5 text-gray-600 font-bold bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition-all">Cancel</button>
                     </div>
                 </form>
-            </div>
-        </div>
-    </div>
-    <div x-show="showConfirmModal" 
-         class="fixed inset-0 z-50 overflow-y-auto" 
-         x-cloak
-         x-transition:enter="transition ease-out duration-300"
-         x-transition:enter-start="opacity-0"
-         x-transition:enter-end="opacity-100"
-         x-transition:leave="transition ease-in duration-200"
-         x-transition:leave-start="opacity-100"
-         x-transition:leave-end="opacity-0">
-        <div class="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
-            <div class="fixed inset-0 transition-opacity bg-gray-900/60 backdrop-blur-sm" @click="showConfirmModal = false"></div>
-            <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
-            <div class="inline-block overflow-hidden text-left align-bottom transition-all transform bg-white rounded-2xl shadow-2xl sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
-                <div class="px-8 pt-8 pb-6 bg-white text-center">
-                    <div class="w-20 h-20 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-6">
-                        <svg class="w-10 h-10 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
-                    </div>
-                    <h3 class="text-2xl font-black text-gray-900 tracking-tight mb-2">Confirm & Deduct Stock?</h3>
-                    <p class="text-gray-500">Are you sure you want to issue invoice <span class="font-bold text-gray-900" x-text="invoiceNumber"></span>? This will permanently deduct items from inventory.</p>
-                </div>
-                <div class="px-8 py-6 bg-gray-50 flex flex-row-reverse gap-3">
-                    <button type="button" 
-                            @click="fetch(confirmUrl, { method: 'POST', headers: { 'X-CSRFToken': '{{ csrf_token }}' } }).then(res => { if(res.ok) window.location.reload(); })"
-                            class="px-8 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl shadow-lg transform active:scale-95 transition-all">
-                        Confirm & Issue
-                    </button>
-                    <button type="button" @click="showConfirmModal = false" class="px-8 py-3 text-gray-600 font-bold bg-white border border-gray-200 rounded-xl hover:bg-gray-100 transition-all">
-                        Cancel
-                    </button>
-                </div>
             </div>
         </div>
     </div>

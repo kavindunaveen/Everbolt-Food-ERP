@@ -21,7 +21,21 @@
 <div x-data="{ 
     showSpecialModal: false,
     showCancelModal: false,
-    invoiceNumber: '{{ form.instance.invoice_number|default:"" }}'
+    showEditModal: false,
+    showApprovalModal: false,
+    approvalAction: '',
+    approvalUrl: '',
+    reviewerNotes: '',
+    cancellationReasonDisplay: '',
+    invoiceNumber: '{{ form.instance.invoice_number|default:"" }}',
+    openModal(action, url, number, reason = '') {
+        this.approvalAction = action;
+        this.approvalUrl = url;
+        this.invoiceNumber = number;
+        this.cancellationReasonDisplay = reason;
+        this.reviewerNotes = '';
+        this.showApprovalModal = true;
+    }
 }" @open-special-modal.window="showSpecialModal = true">
     <!-- Special Customer Modal Overlay -->
     <div x-show="showSpecialModal" 
@@ -109,7 +123,7 @@
 </style>
 
 <div class="max-w-7xl mx-auto px-4 py-8">
-    <div class="mb-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+    <div class="mb-4 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
             <h1 class="text-3xl font-extrabold text-gray-900 tracking-tight">
                 {% if form.instance.pk %}Edit Invoice <span class="text-emerald-600">#{{ form.instance.invoice_number }}</span>{% else %}New Invoice{% endif %}
@@ -117,18 +131,107 @@
             <p class="text-sm text-gray-500 mt-1">{% if form.instance.pk %}Update the details of this existing invoice.{% else %}Generate a new billing statement for a customer.{% endif %}</p>
         </div>
         <div class="flex items-center space-x-3">
-            {% if form.instance.pk and form.instance.status != 'APPROVAL_PENDING' %}
-            <a href="{% url 'invoice_print' form.instance.pk %}" target="_blank" class="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-bold rounded-lg text-gray-700 bg-white hover:bg-gray-50 transition-all">
-                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
-                Print
-            </a>
-            {% endif %}
             <a href="{% url 'invoice_list' %}" class="inline-flex items-center px-4 py-2 border border-gray-200 text-sm font-bold rounded-lg text-gray-600 bg-gray-50 hover:bg-gray-100 transition-all">Back to List</a>
         </div>
     </div>
 
+    {% if form.instance.pk %}
+    <!-- Action and Status Bar (Odoo Style) -->
+    <div class="bg-white border border-gray-200 flex flex-col md:flex-row justify-between items-stretch mb-6 rounded-md shadow-sm overflow-hidden">
+        <div class="flex items-center p-2 gap-2 flex-wrap">
+            {% if form.instance.status == 'DRAFT' or not form.instance.status %}
+                <button type="button" id="top-save-btn" onclick="document.getElementById('save-invoice-btn').click()" class="px-4 py-2 bg-white border border-gray-300 text-gray-700 text-sm font-bold rounded-sm hover:bg-gray-50 transition-colors shadow-sm">Save Invoice</button>
+                <button type="button" id="top-request-approval-btn" onclick="document.getElementById('send-approval-btn').click()" class="hidden px-4 py-2 bg-orange-600 text-white text-sm font-bold rounded-sm hover:bg-orange-700 transition-colors shadow-sm">Request Approval</button>
+            {% endif %}
+            
+            {% if form.instance.status == 'DRAFT' and form.instance.pk %}
+                <form action="{% url 'invoice_confirm' form.instance.pk %}" method="post" class="inline m-0 p-0" id="top-issue-btn">
+                    {% csrf_token %}
+                    <button type="submit" class="px-4 py-2 bg-[#714B67] text-white text-sm font-bold rounded-sm hover:bg-[#5C3A53] transition-colors shadow-sm" onclick="return confirm('Confirm and issue this invoice? Stock will be deducted.');">Issue Invoice</button>
+                </form>
+            {% endif %}
+
+            {% if form.instance.status == 'APPROVAL_PENDING' and perms.sales.approve_invoice %}
+                <button type="button" @click="openModal('Approve', '{% url 'invoice_approve' form.instance.pk %}', '{{ form.instance.invoice_number }}')" class="px-4 py-2 bg-[#714B67] text-white text-sm font-bold rounded-sm hover:bg-[#5C3A53] transition-colors shadow-sm">Approve</button>
+                <button type="button" @click="openModal('Reject', '{% url 'invoice_reject' form.instance.pk %}', '{{ form.instance.invoice_number }}')" class="px-4 py-2 bg-white border border-gray-300 text-gray-700 text-sm font-bold rounded-sm hover:bg-gray-50 transition-colors shadow-sm">Reject</button>
+            {% elif form.instance.status == 'CANCEL_PENDING' and perms.sales.approve_invoice %}
+                <button type="button" @click="openModal('Approve Cancellation', '{% url 'invoice_approve' form.instance.pk %}', '{{ form.instance.invoice_number }}', '{{ form.instance.cancellation_reason|escapejs }}')" class="px-4 py-2 bg-[#714B67] text-white text-sm font-bold rounded-sm hover:bg-[#5C3A53] transition-colors shadow-sm">Approve Cancellation</button>
+                <button type="button" @click="openModal('Reject Cancellation', '{% url 'invoice_reject' form.instance.pk %}', '{{ form.instance.invoice_number }}', '{{ form.instance.cancellation_reason|escapejs }}')" class="px-4 py-2 bg-white border border-gray-300 text-gray-700 text-sm font-bold rounded-sm hover:bg-gray-50 transition-colors shadow-sm">Reject Cancellation</button>
+            {% elif form.instance.status == 'ISSUED' %}
+                <button type="button" @click="showEditModal = true" class="px-4 py-2 bg-white border border-gray-300 text-gray-700 text-sm font-bold rounded-sm hover:bg-gray-50 transition-colors shadow-sm">Request Edit</button>
+                <button type="button" @click="showCancelModal = true" class="px-4 py-2 bg-white border border-gray-300 text-gray-700 text-sm font-bold rounded-sm hover:bg-gray-50 transition-colors shadow-sm">Request Cancellation</button>
+            {% endif %}
+            
+            {% if form.instance.status != 'APPROVAL_PENDING' and form.instance.status != 'CANCELLED' %}
+                <a href="{% url 'invoice_print' form.instance.pk %}" target="_blank" class="px-4 py-2 bg-white border border-gray-300 text-gray-700 text-sm font-bold rounded-sm hover:bg-gray-50 transition-colors shadow-sm">Print</a>
+            {% endif %}
+        </div>
+        
+        <div class="flex items-center bg-gray-50 overflow-hidden md:border-l md:border-t-0 border-t border-gray-200">
+            <style>
+                .status-arrow {
+                    position: relative;
+                    padding: 10px 20px 10px 30px;
+                    background-color: #f9fafb;
+                    color: #6b7280;
+                    font-size: 11px;
+                    font-weight: 700;
+                    text-transform: uppercase;
+                    border-right: 1px solid #e5e7eb;
+                    display: flex;
+                    align-items: center;
+                    height: 100%;
+                }
+                .status-arrow::before, .status-arrow::after {
+                    content: '';
+                    position: absolute;
+                    top: 0;
+                    border-top: 20px solid transparent;
+                    border-bottom: 20px solid transparent;
+                }
+                .status-arrow::before {
+                    left: 0;
+                    border-left: 10px solid #e5e7eb;
+                }
+                .status-arrow::after {
+                    right: -10px;
+                    border-left: 10px solid #f9fafb;
+                    z-index: 10;
+                }
+                .status-arrow.active {
+                    color: #111827;
+                    background-color: #f3f4f6;
+                }
+                .status-arrow.active::after {
+                    border-left-color: #f3f4f6;
+                }
+                .status-arrow:first-child::before {
+                    display: none;
+                }
+                .status-arrow:first-child {
+                    padding-left: 20px;
+                }
+            </style>
+            
+            <div class="status-arrow {% if form.instance.status == 'DRAFT' %}active{% endif %}">Draft</div>
+            {% if form.instance.status == 'APPROVAL_PENDING' %}
+                <div class="status-arrow active text-orange-600">Waiting Approval</div>
+            {% endif %}
+            <div class="status-arrow {% if form.instance.status == 'ISSUED' %}active{% endif %}">Issued</div>
+            {% if form.instance.status == 'EDIT_PENDING' %}
+                <div class="status-arrow active text-orange-600">Edit Pending</div>
+            {% elif form.instance.status == 'CANCEL_PENDING' %}
+                <div class="status-arrow active text-orange-600">Cancel Pending</div>
+            {% elif form.instance.status == 'CANCELLED' %}
+                <div class="status-arrow active text-red-600">Cancelled</div>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+
     <form method="post" class="space-y-8">
         {% csrf_token %}
+        <fieldset {% if form.instance.status and form.instance.status != 'DRAFT' %}disabled{% endif %} class="space-y-8">
         
         <!-- Header Info -->
         <div class="bg-white shadow-xl shadow-gray-100/50 rounded-2xl border border-gray-100 overflow-hidden">
@@ -183,9 +286,10 @@
                     <thead class="bg-gray-50/30">
                         <tr>
                             <th class="px-6 py-4 text-left text-[11px] font-bold text-gray-400 uppercase tracking-widest">Product</th>
-                            <th class="px-6 py-4 text-left text-[11px] font-bold text-gray-400 uppercase tracking-widest w-32 text-center">Quantity</th>
-                            <th class="px-6 py-4 text-left text-[11px] font-bold text-gray-400 uppercase tracking-widest w-40 text-right">Unit Price (Rs)</th>
-                            <th class="px-6 py-4 text-left text-[11px] font-bold text-gray-400 uppercase tracking-widest w-40 text-right">Total (Rs)</th>
+                            <th class="px-6 py-4 text-left text-[11px] font-bold text-gray-400 uppercase tracking-widest w-24 text-center">Quantity</th>
+                            <th class="px-6 py-4 text-left text-[11px] font-bold text-gray-400 uppercase tracking-widest w-32 text-right">Unit Price (Rs)</th>
+                            <th class="px-6 py-4 text-left text-[11px] font-bold text-gray-400 uppercase tracking-widest w-32 text-right">Discount (Rs)</th>
+                            <th class="px-6 py-4 text-left text-[11px] font-bold text-gray-400 uppercase tracking-widest w-32 text-right">Total (Rs)</th>
                             <th class="px-6 py-4 text-center text-[11px] font-bold text-gray-400 uppercase tracking-widest w-24">Actions</th>
                         </tr>
                     </thead>
@@ -199,19 +303,25 @@
                                     <div class="text-red-500 text-[10px] font-bold mt-1 uppercase">{{ item_form.product.errors|striptags }}</div>
                                 {% endif %}
                             </td>
-                            <td class="px-6 py-4 w-32">
+                            <td class="px-6 py-4 w-24">
                                 {{ item_form.quantity }}
                                 {% if item_form.quantity.errors %}
                                     <div class="text-red-500 text-[10px] font-bold mt-1 uppercase text-center">{{ item_form.quantity.errors|striptags }}</div>
                                 {% endif %}
                             </td>
-                            <td class="px-6 py-4 w-40">
+                            <td class="px-6 py-4 w-32">
                                 {{ item_form.unit_price }}
                                 {% if item_form.unit_price.errors %}
                                     <div class="text-red-500 text-[10px] font-bold mt-1 uppercase text-right">{{ item_form.unit_price.errors|striptags }}</div>
                                 {% endif %}
                             </td>
-                            <td class="px-6 py-4 w-40">
+                            <td class="px-6 py-4 w-32">
+                                {{ item_form.discount }}
+                                {% if item_form.discount.errors %}
+                                    <div class="text-red-500 text-[10px] font-bold mt-1 uppercase text-right">{{ item_form.discount.errors|striptags }}</div>
+                                {% endif %}
+                            </td>
+                            <td class="px-6 py-4 w-32">
                                 <input type="text" class="w-full px-3 py-2 border border-gray-100 rounded-lg bg-gray-50 text-gray-900 font-bold text-right line-total" value="0.00" readonly tabindex="-1">
                             </td>
                             <td class="px-6 py-4 text-center w-24">
@@ -254,22 +364,58 @@
                             {% endfor %}
                         </select>
 
-                        <button type="submit" id="save-invoice-btn" class="px-6 py-2 bg-emerald-600 text-white font-bold rounded-lg hover:bg-emerald-700 transition-all shadow-md">Save Invoice</button>
+                        <!-- The actual submit buttons, hidden if we are using the top bar, but we can keep them for newly created forms where top bar doesn't exist yet -->
+                        <button type="submit" id="save-invoice-btn" class="{% if form.instance.pk %}hidden{% endif %} px-6 py-2 bg-emerald-600 text-white font-bold rounded-lg hover:bg-emerald-700 transition-all shadow-md">Save Invoice</button>
                         <button type="submit" id="send-approval-btn" name="is_approval_request" value="true" class="hidden px-6 py-2 bg-orange-500 text-white font-bold rounded-lg hover:bg-orange-600 transition-all shadow-md">Request Approval</button>
                     </div>
-                    {% endif %}
-                    
-                    {% if form.instance.status == 'ISSUED' %}
-                    <button type="button" 
-                            @click="showCancelModal = true"
-                            class="px-6 py-2 bg-red-600 text-white font-bold rounded-lg hover:bg-red-700 transition-all shadow-md">
-                        Request Cancellation
-                    </button>
                     {% endif %}
                 </div>
             </div>
         </div>
+        </fieldset>
     </form>
+
+    <!-- Approval/Rejection Modal -->
+    <div x-show="showApprovalModal" 
+         class="fixed inset-0 z-[110] overflow-y-auto" 
+         x-cloak
+         x-transition:enter="transition ease-out duration-300"
+         x-transition:enter-start="opacity-0"
+         x-transition:enter-end="opacity-100"
+         x-transition:leave="transition ease-in duration-200"
+         x-transition:leave-start="opacity-100"
+         x-transition:leave-end="opacity-0">
+        <div class="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
+            <div class="fixed inset-0 transition-opacity bg-gray-900/60 backdrop-blur-sm" @click="showApprovalModal = false"></div>
+            <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+            <div class="inline-block overflow-hidden text-left align-bottom transition-all transform bg-white rounded-2xl shadow-2xl sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+                <form :action="approvalUrl" method="post">
+                    {% csrf_token %}
+                    <div class="px-8 pt-8 pb-6 bg-white">
+                        <div class="flex items-center justify-between mb-6">
+                            <h3 class="text-xl font-bold text-gray-900" x-text="approvalAction + ' Invoice ' + invoiceNumber"></h3>
+                            <button type="button" @click="showApprovalModal = false" class="text-gray-400 hover:text-gray-500">
+                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                            </button>
+                        </div>
+
+                        <div x-show="cancellationReasonDisplay" class="mb-6 p-4 bg-red-50 border border-red-100 rounded-xl">
+                            <label class="block text-[10px] font-black text-red-400 uppercase tracking-widest mb-1">Requester's Reason</label>
+                            <p class="text-sm text-red-900 font-medium italic" x-text="cancellationReasonDisplay"></p>
+                        </div>
+                        <div class="mb-4">
+                            <label class="block text-sm font-bold text-gray-700 mb-2 uppercase tracking-wider">Reviewer Notes / Reason</label>
+                            <textarea name="reviewer_notes" x-model="reviewerNotes" rows="4" class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all text-gray-700 bg-gray-50/50" placeholder="Add your comments here..."></textarea>
+                        </div>
+                    </div>
+                    <div class="px-8 py-6 bg-gray-50 flex flex-row-reverse gap-3">
+                        <button type="submit" :class="approvalAction.includes('Approve') ? 'bg-emerald-600 hover:bg-emerald-700' : 'bg-red-600 hover:bg-red-700'" class="px-6 py-2.5 text-white font-bold rounded-xl shadow-lg transform active:scale-95" x-text="'Confirm ' + approvalAction"></button>
+                        <button type="button" @click="showApprovalModal = false" class="px-6 py-2.5 text-gray-600 font-bold bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition-all">Cancel</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
 
     <!-- Activity Timeline -->
     {% if audit_logs %}
@@ -333,12 +479,13 @@
         <tr class="formset-row">
             {{ items.empty_form.id }}
             <td class="px-4 py-4 w-1/3">{{ items.empty_form.product }}</td>
-            <td class="px-4 py-4 w-1/6">{{ items.empty_form.quantity }}</td>
-            <td class="px-4 py-4 w-1/6">{{ items.empty_form.unit_price }}</td>
-            <td class="px-4 py-4 w-1/6">
+            <td class="px-4 py-4 w-24">{{ items.empty_form.quantity }}</td>
+            <td class="px-4 py-4 w-32">{{ items.empty_form.unit_price }}</td>
+            <td class="px-4 py-4 w-32">{{ items.empty_form.discount }}</td>
+            <td class="px-4 py-4 w-32">
                 <input type="text" class="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50 text-gray-700 font-semibold text-right line-total" value="0.00" readonly>
             </td>
-            <td class="px-4 py-4 text-center w-1/6">
+            <td class="px-4 py-4 text-center w-24">
                 <div class="hidden">{{ items.empty_form.DELETE }}</div>
                 <button type="button" class="remove-row px-3 py-2 bg-red-100 text-red-600 hover:bg-red-200 rounded-md transition-colors" title="Remove Line">
                     <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
@@ -412,11 +559,19 @@
                 $('#save-invoice-btn').addClass('hidden');
                 $('#send-approval-btn').removeClass('hidden');
                 $('#designated_approver').removeClass('hidden').prop('disabled', false);
+                
+                $('#top-save-btn').addClass('hidden');
+                $('#top-request-approval-btn').removeClass('hidden');
+                $('#top-issue-btn').addClass('hidden');
             } else {
                 $('#approval-block-msg').addClass('hidden');
                 $('#save-invoice-btn').removeClass('hidden');
                 $('#send-approval-btn').addClass('hidden');
                 $('#designated_approver').addClass('hidden').prop('disabled', true);
+                
+                $('#top-save-btn').removeClass('hidden');
+                $('#top-request-approval-btn').addClass('hidden');
+                $('#top-issue-btn').removeClass('hidden');
             }
             
             // Special customer logic
@@ -498,7 +653,8 @@
         function calculateRowTotal(row) {
             const qty = parseFloat($(row).find('input[name$="-quantity"]').val()) || 0;
             const price = parseFloat($(row).find('input[name$="-unit_price"]').val()) || 0;
-            $(row).find('.line-total').val((qty * price).toFixed(2));
+            const discount = parseFloat($(row).find('input[name$="-discount"]').val()) || 0;
+            $(row).find('.line-total').val(((qty * price) - discount).toFixed(2));
         }
 
         // Run calculations on load for existing items
@@ -573,7 +729,7 @@
         });
 
         // Live calculation triggers on input changes
-        $(document).on('input', 'input[name$="-quantity"], input[name$="-unit_price"]', function() {
+        $(document).on('input', 'input[name$="-quantity"], input[name$="-unit_price"], input[name$="-discount"]', function() {
             const row = $(this).closest('tr');
             
             // Auto Update tier pricing if triggered by quantity change
@@ -611,8 +767,66 @@
         });
     });
 </script>
-    <!-- Cancellation Request Modal -->
+    <!-- Edit Request Modal -->
     {% if form.instance.pk %}
+    <div x-show="showEditModal" 
+         class="fixed inset-0 z-50 overflow-y-auto" 
+         x-cloak
+         x-transition:enter="transition ease-out duration-300"
+         x-transition:enter-start="opacity-0"
+         x-transition:enter-end="opacity-100"
+         x-transition:leave="transition ease-in duration-200"
+         x-transition:leave-start="opacity-100"
+         x-transition:leave-end="opacity-0">
+        <div class="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
+            <div class="fixed inset-0 transition-opacity bg-gray-900/60 backdrop-blur-sm" @click="showEditModal = false"></div>
+
+            <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+
+            <div class="inline-block overflow-hidden text-left align-bottom transition-all transform bg-white rounded-3xl shadow-2xl sm:my-8 sm:align-middle sm:max-w-lg sm:w-full"
+                 x-transition:enter="transition ease-out duration-300"
+                 x-transition:enter-start="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
+                 x-transition:enter-end="opacity-100 translate-y-0 sm:scale-100">
+                
+                <form action="{% url 'invoice_request_edit' form.instance.pk %}" method="post">
+                    {% csrf_token %}
+                    <div class="px-8 pt-10 pb-6 text-center">
+                        <div class="w-20 h-20 bg-blue-50 rounded-2xl flex items-center justify-center mx-auto mb-6 text-blue-500 shadow-inner">
+                            <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+                        </div>
+                        <h3 class="text-2xl font-black text-gray-900 tracking-tight text-center mb-2">Request Edit</h3>
+                        <p class="text-center text-gray-500 mb-6">Explain why invoice <span class="font-bold text-gray-900" x-text="invoiceNumber"></span> needs to be edited. Approval will restore stock and revert status to Draft.</p>
+                        
+                        <div class="space-y-4 text-left">
+                            <div>
+                                <label class="block text-sm font-bold text-gray-700 mb-2 uppercase tracking-wider">Select Approver *</label>
+                                <select name="designated_approver" required class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all bg-gray-50/50">
+                                    <option value="">Choose an administrator...</option>
+                                    {% for approver in cancellation_approvers %}
+                                        <option value="{{ approver.pk }}">{{ approver.get_full_name }} ({{ approver.email }})</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-bold text-gray-700 mb-2 uppercase tracking-wider">Reason for Edit *</label>
+                                <textarea name="cancellation_reason" required rows="4" class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all bg-gray-50/50" placeholder="e.g. Forgot to add a discount, wrong quantity..."></textarea>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="px-8 py-6 bg-gray-50 flex flex-row-reverse gap-3">
+                        <button type="submit" class="px-8 py-3 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 transition-all shadow-lg transform active:scale-95 uppercase tracking-wider">
+                            Send Request
+                        </button>
+                        <button type="button" @click="showEditModal = false" class="px-8 py-3 text-gray-600 font-bold bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition-all uppercase tracking-wider">
+                            Dismiss
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Cancellation Request Modal -->
     <div x-show="showCancelModal" 
          class="fixed inset-0 z-50 overflow-y-auto" 
          x-cloak

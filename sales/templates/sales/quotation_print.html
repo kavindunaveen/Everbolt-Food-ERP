@@ -38,7 +38,7 @@
         function shareOnWhatsApp() {
             var quotationNo  = '{{ quotation.quotation_number }}';
             var customer     = '{{ quotation.customer.company_name|default:quotation.customer.customer_name }}';
-            var totalAmount  = '{{ total_amount|floatformat:0 }}';
+            var totalAmount  = '{{ total_amount|floatformat:2 }}';
             var validUntil   = '{{ quotation.valid_until|date:"Y-m-d" }}';
             var msg = 'Dear ' + customer + ',\n\nPlease find your Quotation attached below:\n\n'
                     + '\ud83d\udcc4 Quotation No: ' + quotationNo + '\n'
@@ -117,7 +117,7 @@
         <div class="flex-row" style="margin-bottom: 15px;">
             <div class="box" style="width: 24%;">
                 <strong>Sales Officer:</strong><br>
-                {{ quotation.salesperson.get_full_name|default:quotation.salesperson.username|title }}
+                {% if quotation.customer.assigned_sales_officer %}{{ quotation.customer.assigned_sales_officer.get_full_name|default:quotation.customer.assigned_sales_officer.username|title }}{% else %}{{ quotation.salesperson.get_full_name|default:quotation.salesperson.username|title }}{% endif %}
             </div>
             <div class="box" style="width: 24%;">
                 <strong>Payment Term:</strong><br>
@@ -142,9 +142,10 @@
             <thead>
                 <tr>
                     <th width="15%">Reference</th>
-                    <th width="40%">Description of Goods or Services</th>
+                    <th width="35%">Description of Goods or Services</th>
                     <th width="10%">Quantity</th>
-                    <th width="15%">Unit Price</th>
+                    <th width="10%">Unit Price</th>
+                    <th width="10%">Discount</th>
                     <th width="20%">Amount Excluding VAT (Rs.)</th>
                 </tr>
             </thead>
@@ -155,9 +156,9 @@
                     <td>{{ item.product.name }}</td>
                     <td class="text-center">{{ item.quantity }}</td>
                     <td class="text-right">{{ item.unit_price|floatformat:2 }}</td>
+                    <td class="text-right">{{ item.discount|default:0|floatformat:2 }}</td>
                     <td class="text-right">
-                        {% widthratio item.quantity 1 item.unit_price as line_ex_vat %}
-                        {{ line_ex_vat|floatformat:2 }}
+                        {{ item.amount_ex_vat|floatformat:2 }}
                     </td>
                 </tr>
                 {% endfor %}
@@ -169,20 +170,25 @@
                     <td style="border-bottom-color:transparent; border-top-color:transparent;"></td>
                     <td style="border-bottom-color:transparent; border-top-color:transparent;"></td>
                     <td style="border-bottom-color:transparent; border-top-color:transparent;"></td>
+                    <td style="border-bottom-color:transparent; border-top-color:transparent;"></td>
                 </tr>
                 {% endfor %}
 
                 <tr>
-                    <td colspan="4" class="text-right" style="font-weight: bold;">Total Value of Supply:</td>
-                    <td class="text-right" style="font-weight: bold;">{{ total_value_supply|floatformat:0 }}</td>
+                    <td colspan="5" class="text-right" style="font-weight: bold;">Total Discount:</td>
+                    <td class="text-right" style="font-weight: bold;">{{ quotation.total_discount|floatformat:2 }}</td>
                 </tr>
                 <tr>
-                    <td colspan="4" class="text-right" style="font-weight: bold;">VAT Amount (Total Value of Supply @ 18%):</td>
-                    <td class="text-right" style="font-weight: bold;">{{ tax_amount|floatformat:0 }}</td>
+                    <td colspan="5" class="text-right" style="font-weight: bold;">Total Value of Supply:</td>
+                    <td class="text-right" style="font-weight: bold;">{{ total_value_supply|floatformat:2 }}</td>
                 </tr>
                 <tr>
-                    <td colspan="4" class="text-right" style="font-weight: bold; font-size: 1.1em;">Total Amount including VAT:</td>
-                    <td class="text-right" style="font-weight: bold; font-size: 1.1em;">{{ total_amount|floatformat:0 }}</td>
+                    <td colspan="5" class="text-right" style="font-weight: bold;">VAT Amount (Total Value of Supply @ 18%):</td>
+                    <td class="text-right" style="font-weight: bold;">{{ tax_amount|floatformat:2 }}</td>
+                </tr>
+                <tr>
+                    <td colspan="5" class="text-right" style="font-weight: bold; font-size: 1.1em;">Total Amount including VAT:</td>
+                    <td class="text-right" style="font-weight: bold; font-size: 1.1em;">{{ total_amount|floatformat:2 }}</td>
                 </tr>
             </tbody>
         </table>
@@ -206,7 +212,7 @@
                 <td style="border:none; text-align:center; vertical-align: top; padding: 0 5px;">
                     <div style="border-top: 1px solid #000; padding-top: 5px;">
                         Prepared By<br>
-                        <span style="font-size: 0.9em;">({{ quotation.salesperson.get_full_name|default:quotation.salesperson.username|title }})</span>
+                        <span style="font-size: 0.9em;">({% if quotation.customer.assigned_sales_officer %}{{ quotation.customer.assigned_sales_officer.get_full_name|default:quotation.customer.assigned_sales_officer.username|title }}{% else %}{{ quotation.salesperson.get_full_name|default:quotation.salesperson.username|title }}{% endif %})</span>
                     </div>
                 </td>
                 <td style="border:none; text-align:center; vertical-align: top; padding: 0 5px;">

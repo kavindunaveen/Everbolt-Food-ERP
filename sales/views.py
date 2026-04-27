@@ -220,23 +220,27 @@ class QuotationCreateView(LoginRequiredMixin, PermissionRequiredMixin, CreateVie
                 
                 total = 0
                 tax = 0
+                tot_discount = 0
                 for item in saved_items:
                     item.quotation = self.object
+                    discount = item.discount or Decimal('0.00')
                     if self.object.customer.vat_enabled:
-                        item.tax_amount = (item.quantity * item.unit_price) * Decimal('0.18')
+                        item.tax_amount = ((item.quantity * item.unit_price) - discount) * Decimal('0.18')
                     else:
                         item.tax_amount = Decimal('0.00')
                         
-                    item.line_total = (item.quantity * item.unit_price) + item.tax_amount
+                    item.line_total = (item.quantity * item.unit_price) - discount + item.tax_amount
                     item.save()
                     
                     total += item.line_total
                     tax += item.tax_amount
+                    tot_discount += discount
                 
                 for obj in items.deleted_objects:
                     obj.delete()
                 
                 self.object.tax_amount = tax
+                self.object.total_discount = tot_discount
                 self.object.total_amount = total
                 self.object.save()
             else:
@@ -277,27 +281,32 @@ class QuotationUpdateView(LoginRequiredMixin, PermissionRequiredMixin, UpdateVie
                 
                 total = 0
                 tax = 0
+                tot_discount = 0
                 for item in saved_items:
                     item.quotation = self.object
+                    discount = item.discount or Decimal('0.00')
                     if self.object.customer.vat_enabled:
-                        item.tax_amount = (item.quantity * item.unit_price) * Decimal('0.18')
+                        item.tax_amount = ((item.quantity * item.unit_price) - discount) * Decimal('0.18')
                     else:
                         item.tax_amount = Decimal('0.00')
                         
-                    item.line_total = (item.quantity * item.unit_price) + item.tax_amount
+                    item.line_total = (item.quantity * item.unit_price) - discount + item.tax_amount
                     item.save()
                     
                 # Re-calculate totals from ALL items associated with this quotation
                 for item in self.object.items.all():
                     total += item.line_total
                     tax += item.tax_amount
+                    tot_discount += item.discount or Decimal('0.00')
                 
                 for obj in items.deleted_objects:
                     obj.delete()
                     total -= obj.line_total
                     tax -= obj.tax_amount
+                    tot_discount -= obj.discount or Decimal('0.00')
                 
                 self.object.tax_amount = tax
+                self.object.total_discount = tot_discount
                 self.object.total_amount = total
                 self.object.save()
             else:
@@ -358,23 +367,27 @@ class InvoiceCreateView(LoginRequiredMixin, PermissionRequiredMixin, CreateView)
                 
                 total = 0
                 tax = 0
+                tot_discount = 0
                 for item in saved_items:
                     item.invoice = self.object
+                    discount = item.discount or Decimal('0.00')
                     if self.object.customer.vat_enabled:
-                        item.tax_amount = (item.quantity * item.unit_price) * Decimal('0.18')
+                        item.tax_amount = ((item.quantity * item.unit_price) - discount) * Decimal('0.18')
                     else:
                         item.tax_amount = Decimal('0.00')
                         
-                    item.line_total = (item.quantity * item.unit_price) + item.tax_amount
+                    item.line_total = (item.quantity * item.unit_price) - discount + item.tax_amount
                     item.save()
                     
                     total += item.line_total
                     tax += item.tax_amount
+                    tot_discount += discount
                 
                 for obj in items.deleted_objects:
                     obj.delete()
                 
                 self.object.tax_amount = tax
+                self.object.total_discount = tot_discount
                 self.object.total_amount = total
                 self.object.save()
                 
@@ -418,9 +431,8 @@ class InvoiceUpdateView(LoginRequiredMixin, PermissionRequiredMixin, UpdateView)
         ct = ContentType.objects.get_for_model(Invoice)
         data['audit_logs'] = SalesAuditLog.objects.filter(content_type=ct, object_id=self.object.id).order_by('-timestamp')
         
-        # Add cancellation approvers
-        cancellation_approver_emails = ['admin@organicfoodslanka.com', 'info@organicfoodslanka.com', 'hashan@organicfoodslanka.com']
-        data['cancellation_approvers'] = User.objects.filter(email__in=cancellation_approver_emails, is_active=True)
+        # Add cancellation approvers based on permission
+        data['cancellation_approvers'] = [u for u in User.objects.filter(is_active=True) if u.has_perm('sales.approve_invoice')]
         return data
 
     def form_valid(self, form):
@@ -428,6 +440,11 @@ class InvoiceUpdateView(LoginRequiredMixin, PermissionRequiredMixin, UpdateView)
         items = context['items']
         with transaction.atomic():
             self.object = form.save(commit=False)
+            
+            if self.object.pk and self.object.status != 'DRAFT':
+                from django.core.exceptions import ValidationError
+                form.add_error(None, ValidationError("Only DRAFT invoices can be edited and saved."))
+                return super().form_invalid(form)
             
             # Block or Mark for approval based on customer status
             if self.object.customer.customer_status in ['BLACKLIST', 'ONHOLD'] and self.object.status == 'DRAFT' and not getattr(self.object, 'is_approved', False):
@@ -453,27 +470,32 @@ class InvoiceUpdateView(LoginRequiredMixin, PermissionRequiredMixin, UpdateView)
                 
                 total = 0
                 tax = 0
+                tot_discount = 0
                 for item in saved_items:
                     item.invoice = self.object
+                    discount = item.discount or Decimal('0.00')
                     if self.object.customer.vat_enabled:
-                        item.tax_amount = (item.quantity * item.unit_price) * Decimal('0.18')
+                        item.tax_amount = ((item.quantity * item.unit_price) - discount) * Decimal('0.18')
                     else:
                         item.tax_amount = Decimal('0.00')
                         
-                    item.line_total = (item.quantity * item.unit_price) + item.tax_amount
+                    item.line_total = (item.quantity * item.unit_price) - discount + item.tax_amount
                     item.save()
                     
                 # Re-calculate totals from ALL items
                 for item in self.object.items.all():
                     total += item.line_total
                     tax += item.tax_amount
+                    tot_discount += item.discount or Decimal('0.00')
                 
                 for obj in items.deleted_objects:
                     obj.delete()
                     total -= obj.line_total
                     tax -= obj.tax_amount
+                    tot_discount -= obj.discount or Decimal('0.00')
                 
                 self.object.tax_amount = tax
+                self.object.total_discount = tot_discount
                 self.object.total_amount = total
                 self.object.save()
                 
@@ -661,6 +683,53 @@ def cancel_invoice_view(request, pk):
     return redirect('invoice_list')
 
 @login_required
+def request_edit_invoice_view(request, pk):
+    invoice = get_object_or_404(Invoice, pk=pk)
+    if request.method == 'POST':
+        if invoice.status != 'ISSUED':
+            messages.error(request, "Only Issued invoices can be edited.")
+            return redirect('invoice_list')
+            
+        reason = request.POST.get('cancellation_reason')
+        approver_id = request.POST.get('designated_approver')
+        if not reason or not approver_id:
+            messages.error(request, "Reason and Approver are required.")
+            return redirect('invoice_list')
+            
+        from users.models import User
+        try:
+            approver = User.objects.get(pk=approver_id)
+        except User.DoesNotExist:
+            messages.error(request, "Invalid approver selected.")
+            return redirect('invoice_list')
+
+        old_status = invoice.get_status_display()
+        invoice.status = 'EDIT_PENDING'
+        invoice.cancellation_reason = reason
+        invoice.designated_approver = approver
+        invoice.save(update_fields=['status', 'cancellation_reason', 'designated_approver'])
+        
+        log_sales_event(
+            obj=invoice,
+            user=request.user,
+            action="Edit Requested",
+            old_value=old_status,
+            new_value="Edit Pending",
+            notes=f"Requested by {request.user.get_full_name()}. Reason: {reason}. Assigned to: {approver.get_full_name()}"
+        )
+        
+        from users.models import Notification
+        Notification.objects.create(
+            recipient=approver,
+            title="Edit Approval Required",
+            message=f"Edit requested for Invoice {invoice.invoice_number} by {request.user.get_full_name()}.",
+            link=reverse('invoice_list')
+        )
+            
+        messages.success(request, f"Edit request for {invoice.invoice_number} has been sent to {approver.get_full_name()} for approval.")
+    return redirect('invoice_list')
+
+@login_required
 def approve_invoice_view(request, pk):
     invoice = get_object_or_404(Invoice, pk=pk)
     if not request.user.has_perm('sales.approve_invoice'):
@@ -699,9 +768,8 @@ def approve_invoice_view(request, pk):
             messages.success(request, f"Invoice {invoice.invoice_number} has been approved and moved to Draft.")
             
         elif invoice.status == 'CANCEL_PENDING':
-            # Check for specific emails for cancellation approval
-            allowed_emails = ['admin@organicfoodslanka.com', 'info@organicfoodslanka.com', 'hashan@organicfoodslanka.com']
-            if request.user.email not in allowed_emails:
+            # Check for permissions for cancellation approval
+            if not request.user.has_perm('sales.approve_invoice'):
                 messages.error(request, "You do not have permission to approve cancellations.")
                 return redirect('invoice_list')
                 
@@ -734,6 +802,46 @@ def approve_invoice_view(request, pk):
                 messages.success(request, f"Cancellation for {invoice.invoice_number} has been approved. Stock has been restored.")
             except Exception as e:
                 messages.error(request, f"Error during cancellation: {str(e)}")
+                
+        elif invoice.status == 'EDIT_PENDING':
+            # Check for permissions for edit approval
+            if not request.user.has_perm('sales.approve_invoice'):
+                messages.error(request, "You do not have permission to approve edits.")
+                return redirect('invoice_list')
+                
+            old_status = invoice.get_status_display()
+            try:
+                from .services import cancel_invoice as service_cancel_invoice
+                # We reuse cancel_invoice to restore stock
+                service_cancel_invoice(invoice, request.user)
+                # But we change status to DRAFT instead of CANCELLED
+                invoice.status = 'DRAFT'
+                invoice.reviewer_notes = reviewer_notes
+                invoice.cancellation_reason = ''  # Clear reason
+                invoice.save(update_fields=['status', 'reviewer_notes', 'cancellation_reason'])
+                
+                log_sales_event(
+                    obj=invoice,
+                    user=request.user,
+                    action="Edit Approved",
+                    old_value=old_status,
+                    new_value="Draft",
+                    notes=f"Stock restored. Manager Notes: {reviewer_notes}"
+                )
+                
+                # Notify creator
+                from users.models import Notification
+                if invoice.salesperson:
+                    Notification.objects.create(
+                        recipient=invoice.salesperson,
+                        title="Edit Approved",
+                        message=f"Invoice {invoice.invoice_number} edit has been approved. It is now a Draft and stock is restored.",
+                        link=reverse('invoice_edit', kwargs={'pk': invoice.pk})
+                    )
+                
+                messages.success(request, f"Edit for {invoice.invoice_number} has been approved. Stock restored and invoice is now a Draft.")
+            except Exception as e:
+                messages.error(request, f"Error during edit approval: {str(e)}")
         else:
             messages.warning(request, "This invoice is not pending any approval.")
     return redirect('invoice_list')
@@ -777,9 +885,8 @@ def reject_invoice_view(request, pk):
             messages.warning(request, f"Invoice {invoice.invoice_number} has been rejected and moved back to Draft.")
             
         elif invoice.status == 'CANCEL_PENDING':
-            # Check for specific emails for cancellation rejection
-            allowed_emails = ['admin@organicfoodslanka.com', 'info@organicfoodslanka.com', 'hashan@organicfoodslanka.com']
-            if request.user.email not in allowed_emails:
+            # Check for permissions for cancellation rejection
+            if not request.user.has_perm('sales.approve_invoice'):
                 messages.error(request, "You do not have permission to reject cancellations.")
                 return redirect('invoice_list')
                 
@@ -808,6 +915,38 @@ def reject_invoice_view(request, pk):
                 )
                 
             messages.warning(request, f"Cancellation request for {invoice.invoice_number} has been rejected.")
+            
+        elif invoice.status == 'EDIT_PENDING':
+            # Check for permissions for edit rejection
+            if not request.user.has_perm('sales.approve_invoice'):
+                messages.error(request, "You do not have permission to reject edits.")
+                return redirect('invoice_list')
+                
+            old_status = invoice.get_status_display()
+            invoice.status = 'ISSUED' # Return to Issued
+            invoice.reviewer_notes = reviewer_notes
+            invoice.cancellation_reason = ''
+            invoice.save(update_fields=['status', 'reviewer_notes', 'cancellation_reason'])
+            
+            log_sales_event(
+                obj=invoice,
+                user=request.user,
+                action="Edit Rejected",
+                old_value=old_status,
+                new_value="Issued",
+                notes=f"Manager Notes: {reviewer_notes}"
+            )
+            
+            from users.models import Notification
+            if invoice.salesperson:
+                Notification.objects.create(
+                    recipient=invoice.salesperson,
+                    title="Edit Rejected",
+                    message=f"Edit request for Invoice {invoice.invoice_number} was rejected. Status returned to Issued.",
+                    link=reverse('invoice_list')
+                )
+                
+            messages.warning(request, f"Edit request for {invoice.invoice_number} has been rejected.")
         else:
             messages.warning(request, "This invoice is not pending any approval.")
             
