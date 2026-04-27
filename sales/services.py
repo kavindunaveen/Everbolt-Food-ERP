@@ -102,6 +102,34 @@ def issue_invoice(invoice, user):
             
         update_stock_reserves(invoice)
 
+def restore_stock(invoice, user, remark_prefix="Stock Restoration"):
+    """
+    Internal helper to restore stock for all items in an invoice.
+    """
+    ledgers = []
+    for item in invoice.items.all():
+        qty = item.quantity
+        if qty > 0:
+            ledgers.append(StockLedger(
+                product=item.product,
+                tx_type=StockLedger.TransactionTypes.SALES_RET,
+                qty_in=qty,
+                qty_out=0,
+                reference_type='INV-RESTORE',
+                reference_id=invoice.id,
+                reference_number=invoice.invoice_number,
+                remarks=f"{remark_prefix} ({invoice.invoice_number})",
+                user=user
+            ))
+            
+            prod_obj = Product.objects.select_for_update().get(id=item.product.id)
+            prod_obj.current_stock += qty
+            prod_obj.save(update_fields=['current_stock'])
+            
+    if ledgers:
+        StockLedger.objects.bulk_create(ledgers)
+    update_stock_reserves(invoice)
+
 def cancel_invoice(invoice, user):
     """
     Cancels an ISSUED invoice and restores stock.
@@ -123,30 +151,7 @@ def cancel_invoice(invoice, user):
             notes="Invoice cancelled and stock restored."
         )
         
-        ledgers = []
-        for item in invoice.items.all():
-            qty = item.quantity
-            if qty > 0:
-                ledgers.append(StockLedger(
-                    product=item.product,
-                    tx_type=StockLedger.TransactionTypes.SALES_RET, # Restoration from cancel is basically a return
-                    qty_in=qty,
-                    qty_out=0,
-                    reference_type='INV-CANCEL',
-                    reference_id=invoice.id,
-                    reference_number=invoice.invoice_number,
-                    remarks=f"Stock Restoration (Cancel {invoice.invoice_number})",
-                    user=user
-                ))
-                
-                prod_obj = Product.objects.select_for_update().get(id=item.product.id)
-                prod_obj.current_stock += qty
-                prod_obj.save(update_fields=['current_stock'])
-                
-        if ledgers:
-            StockLedger.objects.bulk_create(ledgers)
-            
-        update_stock_reserves(invoice)
+        restore_stock(invoice, user, "Invoice Cancelled")
 
 from users.models import Notification
 

@@ -51,7 +51,7 @@
 
             /* Buttons Enhancement */
             .btn-premium {
-                @apply px-5 py-2.5 rounded-xl font-semibold transition-all duration-300 active:scale-[0.95] shadow-sm inline-flex items-center justify-center;
+                @apply px-5 py-2.5 rounded-xl font-semibold transition-all duration-75 shadow-sm inline-flex items-center justify-center;
             }
 
             .btn-primary {
@@ -64,7 +64,7 @@
 
             /* Card Hover Effects */
             .card-premium {
-                @apply bg-white rounded-2xl border border-gray-100 shadow-sm transition-all duration-300 hover:shadow-xl hover:shadow-gray-200/50 hover:-translate-y-1;
+                @apply bg-white rounded-2xl border border-gray-100 shadow-sm transition-all duration-100 hover:shadow-xl hover:shadow-gray-200/50;
             }
         }
     </style>
@@ -194,12 +194,7 @@
          @toast.window="addToast($event.detail.type, $event.detail.message)"
          class="fixed bottom-10 right-10 z-[100] flex flex-col gap-3 pointer-events-none">
         <template x-for="toast in toasts" :key="toast.id">
-            <div x-transition:enter="transition ease-out duration-300"
-                 x-transition:enter-start="translate-x-full opacity-0"
-                 x-transition:enter-end="translate-x-0 opacity-100"
-                 x-transition:leave="transition ease-in duration-200"
-                 x-transition:leave-start="translate-x-0 opacity-100"
-                 x-transition:leave-end="translate-x-full opacity-0"
+            <div x-transition.opacity
                  :class="{
                     'bg-emerald-600': toast.type === 'success',
                     'bg-red-600': toast.type === 'error',

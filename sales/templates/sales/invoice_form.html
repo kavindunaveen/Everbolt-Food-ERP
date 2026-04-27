@@ -22,6 +22,7 @@
     showSpecialModal: false,
     showCancelModal: false,
     showEditModal: false,
+    showConfirmIssueModal: false,
     showApprovalModal: false,
     approvalAction: '',
     approvalUrl: '',
@@ -39,20 +40,13 @@
 }" @open-special-modal.window="showSpecialModal = true">
     <!-- Special Customer Modal Overlay -->
     <div x-show="showSpecialModal" 
-         x-transition:enter="transition ease-out duration-300"
-         x-transition:enter-start="opacity-0"
-         x-transition:enter-end="opacity-100"
-         x-transition:leave="transition ease-in duration-200"
-         x-transition:leave-start="opacity-100"
-         x-transition:leave-end="opacity-0"
+         x-transition.opacity
          class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-gray-900/60 backdrop-blur-sm"
          style="display: none;">
         
         <div @click.away="showSpecialModal = false"
              x-show="showSpecialModal"
-             x-transition:enter="transition ease-out duration-300"
-             x-transition:enter-start="opacity-0 scale-95 translate-y-4"
-             x-transition:enter-end="opacity-100 scale-100 translate-y-0"
+             x-transition.opacity
              class="bg-white rounded-3xl shadow-2xl max-w-md w-full overflow-hidden border border-amber-100">
             
             <div class="bg-amber-50 p-8 flex flex-col items-center text-center">
@@ -140,15 +134,14 @@
     <div class="bg-white border border-gray-200 flex flex-col md:flex-row justify-between items-stretch mb-6 rounded-md shadow-sm overflow-hidden">
         <div class="flex items-center p-2 gap-2 flex-wrap">
             {% if form.instance.status == 'DRAFT' or not form.instance.status %}
-                <button type="button" id="top-save-btn" onclick="document.getElementById('save-invoice-btn').click()" class="px-4 py-2 bg-white border border-gray-300 text-gray-700 text-sm font-bold rounded-sm hover:bg-gray-50 transition-colors shadow-sm">Save Invoice</button>
+                <button type="button" id="top-save-btn" onclick="document.getElementById('save-invoice-btn').click()" class="px-4 py-2 bg-white border border-gray-300 text-gray-700 text-sm font-bold rounded-sm hover:bg-gray-50 transition-colors shadow-sm">Update & Save</button>
                 <button type="button" id="top-request-approval-btn" onclick="document.getElementById('send-approval-btn').click()" class="hidden px-4 py-2 bg-orange-600 text-white text-sm font-bold rounded-sm hover:bg-orange-700 transition-colors shadow-sm">Request Approval</button>
             {% endif %}
             
             {% if form.instance.status == 'DRAFT' and form.instance.pk %}
-                <form action="{% url 'invoice_confirm' form.instance.pk %}" method="post" class="inline m-0 p-0" id="top-issue-btn">
-                    {% csrf_token %}
-                    <button type="submit" class="px-4 py-2 bg-[#714B67] text-white text-sm font-bold rounded-sm hover:bg-[#5C3A53] transition-colors shadow-sm" onclick="return confirm('Confirm and issue this invoice? Stock will be deducted.');">Issue Invoice</button>
-                </form>
+                <div class="inline m-0 p-0" id="top-issue-btn">
+                    <button type="button" @click="showConfirmIssueModal = true" class="px-4 py-2 bg-[#714B67] text-white text-sm font-bold rounded-sm hover:bg-[#5C3A53] transition-colors shadow-sm">Issue Invoice</button>
+                </div>
             {% endif %}
 
             {% if form.instance.status == 'APPROVAL_PENDING' and perms.sales.approve_invoice %}
@@ -162,7 +155,7 @@
                 <button type="button" @click="showCancelModal = true" class="px-4 py-2 bg-white border border-gray-300 text-gray-700 text-sm font-bold rounded-sm hover:bg-gray-50 transition-colors shadow-sm">Request Cancellation</button>
             {% endif %}
             
-            {% if form.instance.status != 'APPROVAL_PENDING' and form.instance.status != 'CANCELLED' %}
+            {% if form.instance.status == 'ISSUED' or form.instance.status == 'PAID' %}
                 <a href="{% url 'invoice_print' form.instance.pk %}" target="_blank" class="px-4 py-2 bg-white border border-gray-300 text-gray-700 text-sm font-bold rounded-sm hover:bg-gray-50 transition-colors shadow-sm">Print</a>
             {% endif %}
         </div>
@@ -375,16 +368,42 @@
         </fieldset>
     </form>
 
+    <!-- Confirm Issue Modal -->
+    <div x-show="showConfirmIssueModal" 
+         class="fixed inset-0 z-[120] overflow-y-auto" 
+         x-cloak
+         x-transition.opacity>
+        <div class="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
+            <div class="fixed inset-0 transition-opacity bg-gray-900/60 backdrop-blur-sm" @click="showConfirmIssueModal = false"></div>
+            <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+            <div class="inline-block overflow-hidden text-left align-bottom transition-all transform bg-white rounded-2xl shadow-2xl sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+                <form action="{% url 'invoice_confirm' form.instance.pk %}" method="post">
+                    {% csrf_token %}
+                    <div class="px-8 pt-10 pb-6 text-center">
+                        <div class="w-20 h-20 bg-purple-50 rounded-2xl flex items-center justify-center mx-auto mb-6 text-purple-600 shadow-inner">
+                            <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                        </div>
+                        <h3 class="text-2xl font-black text-gray-900 tracking-tight text-center mb-2">Confirm Issuance</h3>
+                        <p class="text-center text-gray-500 mb-6">Are you sure you want to issue invoice <span class="font-bold text-gray-900">#{{ form.instance.invoice_number }}</span>? This action will finalize the document and <span class="text-red-600 font-bold">deduct stock</span> from inventory.</p>
+                    </div>
+                    <div class="px-8 py-6 bg-gray-50 flex flex-row-reverse gap-3">
+                        <button type="submit" class="px-8 py-3 bg-[#714B67] text-white font-bold rounded-xl hover:bg-[#5C3A53] transition-all shadow-lg transform active:scale-95 uppercase tracking-wider">
+                            Yes, Issue Invoice
+                        </button>
+                        <button type="button" @click="showConfirmIssueModal = false" class="px-8 py-3 text-gray-600 font-bold bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition-all uppercase tracking-wider">
+                            Cancel
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
     <!-- Approval/Rejection Modal -->
     <div x-show="showApprovalModal" 
          class="fixed inset-0 z-[110] overflow-y-auto" 
          x-cloak
-         x-transition:enter="transition ease-out duration-300"
-         x-transition:enter-start="opacity-0"
-         x-transition:enter-end="opacity-100"
-         x-transition:leave="transition ease-in duration-200"
-         x-transition:leave-start="opacity-100"
-         x-transition:leave-end="opacity-0">
+         x-transition.opacity>
         <div class="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
             <div class="fixed inset-0 transition-opacity bg-gray-900/60 backdrop-blur-sm" @click="showApprovalModal = false"></div>
             <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
@@ -641,7 +660,8 @@
                 let options = { 
                     width: '100%',
                     placeholder: 'Select...',
-                    allowClear: true
+                    allowClear: true,
+                    disabled: $(this).closest('fieldset').is(':disabled') // Only disable if inside the locked fieldset
                 };
                 
                 $(this).select2(options);
@@ -772,21 +792,14 @@
     <div x-show="showEditModal" 
          class="fixed inset-0 z-50 overflow-y-auto" 
          x-cloak
-         x-transition:enter="transition ease-out duration-300"
-         x-transition:enter-start="opacity-0"
-         x-transition:enter-end="opacity-100"
-         x-transition:leave="transition ease-in duration-200"
-         x-transition:leave-start="opacity-100"
-         x-transition:leave-end="opacity-0">
+         x-transition.opacity>
         <div class="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
             <div class="fixed inset-0 transition-opacity bg-gray-900/60 backdrop-blur-sm" @click="showEditModal = false"></div>
 
             <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
 
             <div class="inline-block overflow-hidden text-left align-bottom transition-all transform bg-white rounded-3xl shadow-2xl sm:my-8 sm:align-middle sm:max-w-lg sm:w-full"
-                 x-transition:enter="transition ease-out duration-300"
-                 x-transition:enter-start="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
-                 x-transition:enter-end="opacity-100 translate-y-0 sm:scale-100">
+                 x-transition.opacity>
                 
                 <form action="{% url 'invoice_request_edit' form.instance.pk %}" method="post">
                     {% csrf_token %}
@@ -830,21 +843,14 @@
     <div x-show="showCancelModal" 
          class="fixed inset-0 z-50 overflow-y-auto" 
          x-cloak
-         x-transition:enter="transition ease-out duration-300"
-         x-transition:enter-start="opacity-0"
-         x-transition:enter-end="opacity-100"
-         x-transition:leave="transition ease-in duration-200"
-         x-transition:leave-start="opacity-100"
-         x-transition:leave-end="opacity-0">
+         x-transition.opacity>
         <div class="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
             <div class="fixed inset-0 transition-opacity bg-gray-900/60 backdrop-blur-sm" @click="showCancelModal = false"></div>
 
             <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
 
             <div class="inline-block overflow-hidden text-left align-bottom transition-all transform bg-white rounded-3xl shadow-2xl sm:my-8 sm:align-middle sm:max-w-lg sm:w-full"
-                 x-transition:enter="transition ease-out duration-300"
-                 x-transition:enter-start="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
-                 x-transition:enter-end="opacity-100 translate-y-0 sm:scale-100">
+                 x-transition.opacity>
                 
                 <form action="{% url 'invoice_cancel' form.instance.pk %}" method="post">
                     {% csrf_token %}

@@ -758,11 +758,15 @@ def approve_invoice_view(request, pk):
             # Notify creator
             from users.models import Notification
             if invoice.salesperson:
+                msg = f"Your invoice {invoice.invoice_number} has been approved."
+                if reviewer_notes:
+                    msg += f" Manager Notes: {reviewer_notes}"
+                
                 Notification.objects.create(
                     recipient=invoice.salesperson,
                     title="Invoice Approved",
-                    message=f"Your invoice {invoice.invoice_number} has been approved and moved to Draft.",
-                    link=reverse('invoice_list')
+                    message=msg,
+                    link=reverse('invoice_edit', kwargs={'pk': invoice.pk})
                 )
             
             messages.success(request, f"Invoice {invoice.invoice_number} has been approved and moved to Draft.")
@@ -792,10 +796,14 @@ def approve_invoice_view(request, pk):
                 # Notify creator
                 from users.models import Notification
                 if invoice.salesperson:
+                    msg = f"Invoice {invoice.invoice_number} cancellation has been approved. Stock restored."
+                    if reviewer_notes:
+                        msg += f" Manager Notes: {reviewer_notes}"
+                        
                     Notification.objects.create(
                         recipient=invoice.salesperson,
                         title="Cancellation Approved",
-                        message=f"Invoice {invoice.invoice_number} cancellation has been approved. Stock restored.",
+                        message=msg,
                         link=reverse('invoice_list')
                     )
                 
@@ -811,10 +819,10 @@ def approve_invoice_view(request, pk):
                 
             old_status = invoice.get_status_display()
             try:
-                from .services import cancel_invoice as service_cancel_invoice
-                # We reuse cancel_invoice to restore stock
-                service_cancel_invoice(invoice, request.user)
-                # But we change status to DRAFT instead of CANCELLED
+                from .services import restore_stock
+                # Use restore_stock to update inventory without setting status to CANCELLED
+                restore_stock(invoice, request.user, "Edit Approved (Stock Restored)")
+                
                 invoice.status = 'DRAFT'
                 invoice.reviewer_notes = reviewer_notes
                 invoice.cancellation_reason = ''  # Clear reason
@@ -832,10 +840,14 @@ def approve_invoice_view(request, pk):
                 # Notify creator
                 from users.models import Notification
                 if invoice.salesperson:
+                    msg = f"Invoice {invoice.invoice_number} edit has been approved. It is now a Draft and stock is restored."
+                    if reviewer_notes:
+                        msg += f" Manager Notes: {reviewer_notes}"
+
                     Notification.objects.create(
                         recipient=invoice.salesperson,
                         title="Edit Approved",
-                        message=f"Invoice {invoice.invoice_number} edit has been approved. It is now a Draft and stock is restored.",
+                        message=msg,
                         link=reverse('invoice_edit', kwargs={'pk': invoice.pk})
                     )
                 
@@ -875,10 +887,16 @@ def reject_invoice_view(request, pk):
             # Notify creator
             from users.models import Notification
             if invoice.salesperson:
+                msg = f"Your invoice {invoice.invoice_number} has been rejected."
+                if reviewer_notes:
+                    msg += f" Manager Notes: {reviewer_notes}"
+                else:
+                    msg += " No reason provided."
+
                 Notification.objects.create(
                     recipient=invoice.salesperson,
                     title="Invoice Rejected",
-                    message=f"Your invoice {invoice.invoice_number} has been rejected. Manager Notes: {reviewer_notes}",
+                    message=msg,
                     link=reverse('invoice_edit', kwargs={'pk': invoice.pk})
                 )
             
@@ -907,10 +925,14 @@ def reject_invoice_view(request, pk):
             # Notify creator
             from users.models import Notification
             if invoice.salesperson:
+                msg = f"Cancellation request for Invoice {invoice.invoice_number} was rejected. Status returned to Issued."
+                if reviewer_notes:
+                    msg += f" Manager Notes: {reviewer_notes}"
+
                 Notification.objects.create(
                     recipient=invoice.salesperson,
                     title="Cancellation Rejected",
-                    message=f"Cancellation request for Invoice {invoice.invoice_number} was rejected. Status returned to Issued.",
+                    message=msg,
                     link=reverse('invoice_list')
                 )
                 
@@ -939,10 +961,14 @@ def reject_invoice_view(request, pk):
             
             from users.models import Notification
             if invoice.salesperson:
+                msg = f"Edit request for Invoice {invoice.invoice_number} was rejected. The invoice remains in Issued status."
+                if reviewer_notes:
+                    msg += f" Manager Reason: {reviewer_notes}"
+
                 Notification.objects.create(
                     recipient=invoice.salesperson,
-                    title="Edit Rejected",
-                    message=f"Edit request for Invoice {invoice.invoice_number} was rejected. Status returned to Issued.",
+                    title="Edit Request Denied",
+                    message=msg,
                     link=reverse('invoice_list')
                 )
                 

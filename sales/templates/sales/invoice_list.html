@@ -131,7 +131,7 @@
                                     </button>
                                 </div>
                                 {% endif %}
-                                {% if inv.status != 'APPROVAL_PENDING' %}
+                                {% if inv.status == 'ISSUED' or inv.status == 'PAID' %}
                                 <a href="{% url 'invoice_print' inv.pk %}" target="_blank" class="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" title="Print Invoice">
                                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
                                 </a>
@@ -172,12 +172,7 @@
     <div x-show="showApprovalModal" 
          class="fixed inset-0 z-50 overflow-y-auto" 
          x-cloak
-         x-transition:enter="transition ease-out duration-300"
-         x-transition:enter-start="opacity-0"
-         x-transition:enter-end="opacity-100"
-         x-transition:leave="transition ease-in duration-200"
-         x-transition:leave-start="opacity-100"
-         x-transition:leave-end="opacity-0">
+         x-transition.opacity>
         <div class="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
             <div class="fixed inset-0 transition-opacity bg-gray-900/60 backdrop-blur-sm" @click="showApprovalModal = false"></div>
             <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
