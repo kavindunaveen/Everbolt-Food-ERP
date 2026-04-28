@@ -368,6 +368,7 @@
         </fieldset>
     </form>
 
+    {% if form.instance.pk %}
     <!-- Confirm Issue Modal -->
     <div x-show="showConfirmIssueModal" 
          class="fixed inset-0 z-[120] overflow-y-auto" 
@@ -399,6 +400,8 @@
         </div>
     </div>
 
+
+    {% endif %}
     <!-- Approval/Rejection Modal -->
     <div x-show="showApprovalModal" 
          class="fixed inset-0 z-[110] overflow-y-auto" 
