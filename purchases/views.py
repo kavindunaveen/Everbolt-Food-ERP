@@ -4,6 +4,8 @@ from django.contrib import messages
 from django.views.generic import ListView, DetailView
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.decorators import login_required
+from django.db.models import Sum, Count, Q
+from django.utils import timezone
 import json
 from decimal import Decimal
 from django.http import JsonResponse
@@ -24,8 +26,24 @@ class GRNDetailView(LoginRequiredMixin, DetailView):
     template_name = 'purchases/grn_detail.html'
     context_object_name = 'grn'
 
-
-
+@login_required
+def procurement_dashboard(request):
+    # Basic metrics for the procurement dashboard
+    recent_pos = PurchaseOrder.objects.order_by('-date')[:5]
+    recent_grns = GRN.objects.order_by('-date')[:5]
+    
+    pending_pos = PurchaseOrder.objects.filter(status=PurchaseOrder.StatusChoices.DRAFT).count()
+    confirmed_pos = PurchaseOrder.objects.filter(status=PurchaseOrder.StatusChoices.CONFIRMED).count()
+    draft_grns = GRN.objects.filter(status=GRN.StatusChoices.DRAFT).count()
+    
+    context = {
+        'recent_pos': recent_pos,
+        'recent_grns': recent_grns,
+        'pending_pos': pending_pos,
+        'confirmed_pos': confirmed_pos,
+        'draft_grns': draft_grns,
+    }
+    return render(request, 'purchases/procurement_dashboard.html', context)
 @login_required
 def confirm_grn_view(request, pk):
     grn = get_object_or_404(GRN, pk=pk)

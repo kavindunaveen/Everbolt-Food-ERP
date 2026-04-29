@@ -1,0 +1,73 @@
+{% extends 'layouts/base.html' %}
+
+{% block title %}Procurement | ERP System{% endblock %}
+
+{% block breadcrumbs %}
+    <li class="flex items-center space-x-2">
+        <svg class="w-4 h-4 text-gray-300" fill="currentColor" viewBox="0 0 20 20">
+            <path d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" />
+        </svg>
+        <span class="text-gray-900 font-bold">Procurement Hub</span>
+    </li>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto px-4 py-12">
+    <div class="text-center mb-12">
+        <h1 class="text-4xl font-black text-gray-900 tracking-tight mb-2">Procurement Management</h1>
+        <p class="text-gray-500 font-medium">Select a module to manage your purchasing workflows.</p>
+    </div>
+
+    <!-- Quick Stats Overview -->
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-10">
+        <div class="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm flex flex-col items-center justify-center">
+            <span class="text-2xl font-black text-gray-900">{{ pending_pos }}</span>
+            <span class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-1">Pending POs</span>
+        </div>
+        <div class="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm flex flex-col items-center justify-center">
+            <span class="text-2xl font-black text-emerald-600">{{ confirmed_pos }}</span>
+            <span class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-1">Confirmed POs</span>
+        </div>
+        <div class="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm flex flex-col items-center justify-center">
+            <span class="text-2xl font-black text-amber-600">{{ draft_grns }}</span>
+            <span class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-1">Draft GRNs</span>
+        </div>
+        <div class="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm flex flex-col items-center justify-center">
+            <span class="text-2xl font-black text-blue-600">{{ recent_grns|length }}</span>
+            <span class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-1">Recent GRNs</span>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+        <!-- Purchase Orders Card -->
+        <a href="{% url 'po_list' %}" class="group block bg-white rounded-3xl p-8 border border-gray-100 shadow-xl shadow-gray-100/50 hover:shadow-2xl hover:shadow-emerald-200/40 transition-all duration-300 hover:-translate-y-2">
+            <div class="w-16 h-16 bg-emerald-100 text-emerald-600 rounded-2xl flex items-center justify-center mb-6 group-hover:bg-emerald-600 group-hover:text-white transition-all duration-500">
+                <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 11-8 0v4M5 9h14l1 12H4L5 9z"></path>
+                </svg>
+            </div>
+            <h3 class="text-2xl font-black text-gray-900 mb-2">Purchase Orders</h3>
+            <p class="text-sm text-gray-500 leading-relaxed font-medium">Create POs, manage supplier requirements, and send confirmed orders for fulfillment.</p>
+            <div class="mt-8 flex items-center text-emerald-600 font-bold text-sm uppercase tracking-widest">
+                Manage POs
+                <svg class="ml-2 w-4 h-4 transition-transform group-hover:translate-x-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"></path></svg>
+            </div>
+        </a>
+
+        <!-- GRN Card -->
+        <a href="{% url 'grn_receive_hub' %}" class="group block bg-white rounded-3xl p-8 border border-gray-100 shadow-xl shadow-gray-100/50 hover:shadow-2xl hover:shadow-lime-200/40 transition-all duration-300 hover:-translate-y-2">
+            <div class="w-16 h-16 bg-lime-100 text-lime-600 rounded-2xl flex items-center justify-center mb-6 group-hover:bg-lime-600 group-hover:text-white transition-all duration-500">
+                <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path>
+                </svg>
+            </div>
+            <h3 class="text-2xl font-black text-gray-900 mb-2">Goods Received Notes</h3>
+            <p class="text-sm text-gray-500 leading-relaxed font-medium">Receive goods directly from confirmed POs and update live inventory stock levels.</p>
+            <div class="mt-8 flex items-center text-lime-600 font-bold text-sm uppercase tracking-widest">
+                Manage GRNs
+                <svg class="ml-2 w-4 h-4 transition-transform group-hover:translate-x-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"></path></svg>
+            </div>
+        </a>
+    </div>
+</div>
+{% endblock %}

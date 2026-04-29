@@ -18,10 +18,10 @@ class QuotationItemForm(forms.ModelForm):
         model = QuotationItem
         fields = ['product', 'quantity', 'unit_price', 'discount']
         widgets = {
-            'product': forms.Select(attrs={'class': 'w-full px-3 py-2 border border-gray-300 rounded-md'}),
-            'quantity': forms.NumberInput(attrs={'class': 'w-full px-3 py-2 border border-gray-300 rounded-md', 'step': '0.01'}),
-            'unit_price': forms.NumberInput(attrs={'class': 'w-full px-3 py-2 border border-gray-300 rounded-md', 'step': '0.01'}),
-            'discount': forms.NumberInput(attrs={'class': 'w-full px-3 py-2 border border-gray-300 rounded-md', 'step': '0.01'}),
+            'product': forms.Select(attrs={'class': 'w-full px-3 py-2 border border-gray-300 rounded-md font-medium text-sm'}),
+            'quantity': forms.NumberInput(attrs={'class': 'w-full px-3 py-2 border border-gray-300 rounded-md text-center font-bold text-sm min-w-[80px]', 'step': '0.01'}),
+            'unit_price': forms.NumberInput(attrs={'class': 'w-full px-3 py-2 border border-gray-300 rounded-md text-right font-bold text-sm min-w-[100px]', 'step': '0.01'}),
+            'discount': forms.NumberInput(attrs={'class': 'w-full px-3 py-2 border border-gray-300 rounded-md text-right font-bold text-sm min-w-[100px]', 'step': '0.01'}),
         }
 
 QuotationItemFormSet = inlineformset_factory(
@@ -47,10 +47,10 @@ class InvoiceItemForm(forms.ModelForm):
         model = InvoiceItem
         fields = ['product', 'quantity', 'unit_price', 'discount']
         widgets = {
-            'product': forms.Select(attrs={'class': 'w-full px-3 py-2 border border-gray-300 rounded-md'}),
-            'quantity': forms.NumberInput(attrs={'class': 'w-full px-3 py-2 border border-gray-300 rounded-md'}),
-            'unit_price': forms.NumberInput(attrs={'class': 'w-full px-3 py-2 border border-gray-300 rounded-md step-any'}),
-            'discount': forms.NumberInput(attrs={'class': 'w-full px-3 py-2 border border-gray-300 rounded-md step-any'}),
+            'product': forms.Select(attrs={'class': 'w-full px-3 py-2 border border-gray-300 rounded-md font-medium text-sm'}),
+            'quantity': forms.NumberInput(attrs={'class': 'w-full px-3 py-2 border border-gray-300 rounded-md text-center font-bold text-sm min-w-[80px]'}),
+            'unit_price': forms.NumberInput(attrs={'class': 'w-full px-3 py-2 border border-gray-300 rounded-md text-right font-bold text-sm min-w-[100px] step-any'}),
+            'discount': forms.NumberInput(attrs={'class': 'w-full px-3 py-2 border border-gray-300 rounded-md text-right font-bold text-sm min-w-[100px] step-any'}),
         }
 
     def clean(self):

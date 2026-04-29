@@ -74,7 +74,8 @@
     .select2-container .select2-selection--single {
         height: 46px; border-color: #e5e7eb; border-radius: 0.75rem; display: flex; align-items: center; box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05); transition: all 0.2s;
     }
-    .select2-container--default .select2-selection--single .select2-selection__rendered { color: #111827; padding-left: 1rem; font-weight: 500; font-size: 0.875rem; }
+    .select2-container { width: 100% !important; }
+    .select2-container--default .select2-selection--single .select2-selection__rendered { color: #111827; padding-left: 1rem; padding-right: 2.5rem; font-weight: 500; font-size: 0.875rem; width: 100%; overflow: hidden; text-overflow: ellipsis; }
     .select2-container--default .select2-selection--single .select2-selection__arrow { height: 44px; right: 12px; }
     .select2-dropdown { border-radius: 0.75rem; border-color: #e5e7eb; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04); border: 1px solid #f3f4f6; }
     
@@ -278,46 +279,46 @@
                 <table class="min-w-full divide-y divide-gray-100">
                     <thead class="bg-gray-50/30">
                         <tr>
-                            <th class="px-6 py-4 text-left text-[11px] font-bold text-gray-400 uppercase tracking-widest">Product</th>
-                            <th class="px-6 py-4 text-left text-[11px] font-bold text-gray-400 uppercase tracking-widest w-24 text-center">Quantity</th>
-                            <th class="px-6 py-4 text-left text-[11px] font-bold text-gray-400 uppercase tracking-widest w-32 text-right">Unit Price Ex-VAT (Rs)</th>
-                            <th class="px-6 py-4 text-left text-[11px] font-bold text-gray-400 uppercase tracking-widest w-32 text-right">Discount (Rs)</th>
-                            <th class="px-6 py-4 text-left text-[11px] font-bold text-gray-400 uppercase tracking-widest w-32 text-right">Total (Rs)</th>
-                            <th class="px-6 py-4 text-center text-[11px] font-bold text-gray-400 uppercase tracking-widest w-24">Actions</th>
+                            <th class="px-3 py-3 w-full text-left text-[11px] font-bold text-gray-400 uppercase tracking-widest min-w-[250px]">Product</th>
+                            <th class="px-3 py-3 text-center text-[11px] font-bold text-gray-400 uppercase tracking-widest w-[80px]">Quantity</th>
+                            <th class="px-3 py-3 text-right text-[11px] font-bold text-gray-400 uppercase tracking-widest w-[110px]">Unit Price (Rs)</th>
+                            <th class="px-3 py-3 text-right text-[11px] font-bold text-gray-400 uppercase tracking-widest w-[110px]">Discount (Rs)</th>
+                            <th class="px-3 py-3 text-right text-[11px] font-bold text-gray-400 uppercase tracking-widest w-[110px]">Total (Rs)</th>
+                            <th class="px-3 py-3 text-center text-[11px] font-bold text-gray-400 uppercase tracking-widest w-[60px]">Actions</th>
                         </tr>
                     </thead>
                     <tbody id="formset-container" class="divide-y divide-gray-50">
                         {% for item_form in items %}
                         <tr class="formset-row hover:bg-gray-50/30 transition-colors">
                             {{ item_form.id }}
-                            <td class="px-6 py-4 min-w-[300px]">
+                            <td class="px-3 py-3 w-full min-w-[250px]">
                                 {{ item_form.product }}
                                 {% if item_form.product.errors %}
                                     <div class="text-red-500 text-[10px] font-bold mt-1 uppercase">{{ item_form.product.errors|striptags }}</div>
                                 {% endif %}
                             </td>
-                            <td class="px-6 py-4 w-24">
+                            <td class="px-3 py-3 align-top w-[80px]">
                                 {{ item_form.quantity }}
                                 {% if item_form.quantity.errors %}
                                     <div class="text-red-500 text-[10px] font-bold mt-1 uppercase text-center">{{ item_form.quantity.errors|striptags }}</div>
                                 {% endif %}
                             </td>
-                            <td class="px-6 py-4 w-32">
+                            <td class="px-3 py-3 align-top w-[110px]">
                                 {{ item_form.unit_price }}
                                 {% if item_form.unit_price.errors %}
                                     <div class="text-red-500 text-[10px] font-bold mt-1 uppercase text-right">{{ item_form.unit_price.errors|striptags }}</div>
                                 {% endif %}
                             </td>
-                            <td class="px-6 py-4 w-32">
+                            <td class="px-3 py-3 align-top w-[110px]">
                                 {{ item_form.discount }}
                                 {% if item_form.discount.errors %}
                                     <div class="text-red-500 text-[10px] font-bold mt-1 uppercase text-right">{{ item_form.discount.errors|striptags }}</div>
                                 {% endif %}
                             </td>
-                            <td class="px-6 py-4 w-32">
-                                <input type="text" class="w-full px-3 py-2 border border-gray-100 rounded-lg bg-gray-50 text-gray-900 font-bold text-right line-total" value="0.00" readonly tabindex="-1">
+                            <td class="px-3 py-3 align-top w-[110px]">
+                                <input type="text" class="w-full px-3 py-2 border border-gray-100 rounded-md bg-gray-50 text-gray-900 font-bold text-sm text-right min-w-[100px] line-total" value="0.00" readonly tabindex="-1">
                             </td>
-                            <td class="px-6 py-4 text-center w-24">
+                            <td class="px-3 py-3 text-center align-top w-[60px]">
                                 {% if item_form.instance.pk %}
                                     <div class="flex items-center justify-center">
                                         {{ item_form.DELETE }}
@@ -500,14 +501,34 @@
     <tbody id="empty-row">
         <tr class="formset-row">
             {{ items.empty_form.id }}
-            <td class="px-4 py-4 w-1/3">{{ items.empty_form.product }}</td>
-            <td class="px-4 py-4 w-24">{{ items.empty_form.quantity }}</td>
-            <td class="px-4 py-4 w-32">{{ items.empty_form.unit_price }}</td>
-            <td class="px-4 py-4 w-32">{{ items.empty_form.discount }}</td>
-            <td class="px-4 py-4 w-32">
-                <input type="text" class="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50 text-gray-700 font-semibold text-right line-total" value="0.00" readonly>
+            <td class="px-3 py-3 w-full min-w-[250px]">
+                {{ items.empty_form.product }}
+                {% if items.empty_form.product.errors %}
+                    <div class="text-red-500 text-[10px] mt-1">{{ items.empty_form.product.errors|striptags }}</div>
+                {% endif %}
             </td>
-            <td class="px-4 py-4 text-center w-24">
+            <td class="px-3 py-3 w-[80px] align-top">
+                {{ items.empty_form.quantity }}
+                {% if items.empty_form.quantity.errors %}
+                    <div class="text-red-500 text-[10px] mt-1">{{ items.empty_form.quantity.errors|striptags }}</div>
+                {% endif %}
+            </td>
+            <td class="px-3 py-3 w-[110px] align-top">
+                {{ items.empty_form.unit_price }}
+                {% if items.empty_form.unit_price.errors %}
+                    <div class="text-red-500 text-[10px] mt-1">{{ items.empty_form.unit_price.errors|striptags }}</div>
+                {% endif %}
+            </td>
+            <td class="px-3 py-3 w-[110px] align-top">
+                {{ items.empty_form.discount }}
+                {% if items.empty_form.discount.errors %}
+                    <div class="text-red-500 text-[10px] mt-1">{{ items.empty_form.discount.errors|striptags }}</div>
+                {% endif %}
+            </td>
+            <td class="px-3 py-3 w-[110px] align-top">
+                <input type="text" class="w-full px-3 py-2 border border-gray-100 rounded-md bg-gray-50 text-gray-900 font-bold text-sm text-right min-w-[100px] line-total" value="0.00" readonly tabindex="-1">
+            </td>
+            <td class="px-3 py-3 text-center w-[60px] align-top">
                 <div class="hidden">{{ items.empty_form.DELETE }}</div>
                 <button type="button" class="remove-row px-3 py-2 bg-red-100 text-red-600 hover:bg-red-200 rounded-md transition-colors" title="Remove Line">
                     <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>

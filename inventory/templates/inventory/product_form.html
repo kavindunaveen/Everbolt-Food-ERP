@@ -155,8 +155,10 @@
                     <div class="space-y-6">
                         <div>
                             <label>Current Stock</label>
-                            {{ form.current_stock }}
-                            <p class="text-xs text-gray-500 mt-1 italic">Cached balance from StockLedger.</p>
+                            <div class="w-full px-3 py-2 border border-gray-200 rounded-md bg-gray-50 text-gray-500 sm:text-sm font-mono">
+                                {% if form.instance.pk %}{{ form.instance.current_stock }}{% else %}—{% endif %}
+                            </div>
+                            <p class="text-xs text-amber-600 mt-1 font-medium">⚠ Read-only. Use <a href="{% url 'adjustment_list' %}" class="underline hover:text-amber-800">Stock Adjustments</a> to change stock levels.</p>
                         </div>
                         <div>
                             <label>Reorder Level *</label>

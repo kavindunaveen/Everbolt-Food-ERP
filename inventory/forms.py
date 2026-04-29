@@ -4,7 +4,18 @@ from .models import Product, StockAdjustment
 class ProductForm(forms.ModelForm):
     class Meta:
         model = Product
-        fields = '__all__'
+        # IMPORTANT: current_stock is EXCLUDED — it is a cached field maintained
+        # exclusively by the StockLedger service. Editing it directly via this form
+        # would corrupt the stock balance. Use Stock Adjustments to change stock levels.
+        fields = [
+            'product_id', 'name', 'brand', 'category', 'tea_type',
+            'packet_size', 'stock_unit', 'selling_unit',
+            'inventory_class', 'product_type',
+            'track_stock', 'allow_negative_stock', 'reorder_level',
+            'selling_price', 'price_tier_100', 'price_tier_250', 'price_tier_500',
+            'custom_load_price', 'tax_rate',
+            'status',
+        ]
         widgets = {
             'product_id': forms.TextInput(attrs={'readonly': 'readonly'})
         }

@@ -180,22 +180,49 @@
         return {
             showSaveModal: false,
             filterName: '',
-            submitForm() {
+
+            // Collect ALL inputs in the filter form + the advanced panel selects
+            _collectParams() {
+                const params = new URLSearchParams();
+                // Read from the main form (search input q, plus any hidden inputs)
                 const form = document.getElementById('filter-form');
                 const formData = new FormData(form);
-                const params = new URLSearchParams();
                 for (const [key, value] of formData.entries()) {
-                    if (value) params.append(key, value);
+                    if (value && value.trim()) params.set(key, value.trim());
                 }
+                // Also read all selects & date inputs inside filter dropdown panels
+                // (they are inside the form tag so FormData catches them too — this is a safety net)
+                form.querySelectorAll('select, input[type="date"]').forEach(el => {
+                    if (el.name && el.value && el.value.trim()) {
+                        params.set(el.name, el.value.trim());
+                    }
+                });
+                return params;
+            },
+
+            submitForm() {
+                const params = this._collectParams();
                 window.location.search = params.toString();
             },
+
             saveFilter() {
-                if (!this.filterName) {
-                    alert("Please enter a name for the filter");
+                const trimmedName = (this.filterName || '').trim();
+                if (!trimmedName) {
+                    window.dispatchEvent(new CustomEvent('toast', {
+                        detail: { type: 'warning', message: 'Please enter a name for this filter.' }
+                    }));
                     return;
                 }
-                
-                const qs = window.location.search.replace('?', '');
+
+                // Build query string from current URL (already applied filters)
+                const qs = window.location.search.replace(/^\?/, '');
+                if (!qs) {
+                    window.dispatchEvent(new CustomEvent('toast', {
+                        detail: { type: 'info', message: 'Apply some filters first before saving.' }
+                    }));
+                    return;
+                }
+
                 fetch("{% url 'save_filter' %}", {
                     method: 'POST',
                     headers: {
@@ -204,27 +231,44 @@
                     },
                     body: JSON.stringify({
                         model_name: '{{ model_name }}',
-                        name: this.filterName,
+                        name: trimmedName,
                         query_string: qs
                     })
-                }).then(res => res.json()).then(data => {
-                    if(data.status === 'success') {
-                        window.location.reload();
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        this.showSaveModal = false;
+                        this.filterName = '';
+                        window.dispatchEvent(new CustomEvent('toast', {
+                            detail: { type: 'success', message: `Filter "${trimmedName}" saved successfully.` }
+                        }));
+                        setTimeout(() => window.location.reload(), 800);
                     } else {
-                        alert(data.message || 'Error saving filter');
+                        window.dispatchEvent(new CustomEvent('toast', {
+                            detail: { type: 'error', message: data.message || 'Error saving filter.' }
+                        }));
                     }
+                })
+                .catch(() => {
+                    window.dispatchEvent(new CustomEvent('toast', {
+                        detail: { type: 'error', message: 'Network error. Please try again.' }
+                    }));
                 });
             },
+
             deleteFilter(id) {
-                if(!confirm("Are you sure you want to remove this saved search?")) return;
                 fetch(`/users/filter/${id}/delete/`, {
                     method: 'POST',
-                    headers: {
-                        'X-CSRFToken': '{{ csrf_token }}'
-                    }
-                }).then(res => res.json()).then(data => {
-                    if(data.status === 'success') {
-                        window.location.reload();
+                    headers: { 'X-CSRFToken': '{{ csrf_token }}' }
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        window.dispatchEvent(new CustomEvent('toast', {
+                            detail: { type: 'success', message: 'Saved filter removed.' }
+                        }));
+                        setTimeout(() => window.location.reload(), 500);
                     }
                 });
             }

@@ -104,30 +104,34 @@ class QuotationListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
     permission_required = 'sales.view_quotation'
     
     def get_queryset(self):
+        from django.db.models import Q
         qs = super().get_queryset().order_by('-creation_date')
         if not self.request.user.has_perm('sales.approve_invoice'):
             qs = qs.filter(salesperson=self.request.user)
-            
+
         status = self.request.GET.get('status')
         if status:
             qs = qs.filter(status=status)
-            
+
         date_from = self.request.GET.get('date_from')
         if date_from:
-            qs = qs.filter(creation_date__gte=date_from)
-            
+            qs = qs.filter(creation_date__date__gte=date_from)
+
         date_to = self.request.GET.get('date_to')
         if date_to:
-            qs = qs.filter(creation_date__lte=date_to)
-            
+            qs = qs.filter(creation_date__date__lte=date_to)
+
         q = self.request.GET.get('q')
         if q:
-            qs = qs.filter(quotation_number__icontains=q)
-            
+            qs = qs.filter(
+                Q(quotation_number__icontains=q) |
+                Q(customer__customer_name__icontains=q)
+            )
+
         salesperson_id = self.request.GET.get('salesperson')
         if salesperson_id:
             qs = qs.filter(salesperson_id=salesperson_id)
-            
+
         return qs
 
     def get_context_data(self, **kwargs):
@@ -150,30 +154,34 @@ class InvoiceListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
     permission_required = 'sales.view_invoice'
     
     def get_queryset(self):
+        from django.db.models import Q
         qs = super().get_queryset().order_by('-creation_date')
         if not self.request.user.has_perm('sales.approve_invoice'):
             qs = qs.filter(salesperson=self.request.user)
-            
+
         status = self.request.GET.get('status')
         if status:
             qs = qs.filter(status=status)
-            
+
         date_from = self.request.GET.get('date_from')
         if date_from:
-            qs = qs.filter(creation_date__gte=date_from)
-            
+            qs = qs.filter(creation_date__date__gte=date_from)
+
         date_to = self.request.GET.get('date_to')
         if date_to:
-            qs = qs.filter(creation_date__lte=date_to)
-            
+            qs = qs.filter(creation_date__date__lte=date_to)
+
         q = self.request.GET.get('q')
         if q:
-            qs = qs.filter(invoice_number__icontains=q)
-            
+            qs = qs.filter(
+                Q(invoice_number__icontains=q) |
+                Q(customer__customer_name__icontains=q)
+            )
+
         salesperson_id = self.request.GET.get('salesperson')
         if salesperson_id:
             qs = qs.filter(salesperson_id=salesperson_id)
-            
+
         return qs
 
     def get_context_data(self, **kwargs):

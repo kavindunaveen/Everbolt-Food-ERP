@@ -32,21 +32,7 @@
         </div>
     </div>
     
-    <div class="mb-8 flex flex-wrap gap-3 items-center justify-between bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
-        <div class="flex-grow max-w-2xl">
-            {% include 'partials/filter_bar.html' with search_placeholder="Search quotations & invoices..." %}
-        </div>
-        <div class="flex gap-2">
-            <a href="{% url 'quotation_export' %}?q={{ request.GET.q }}&salesperson={{ request.GET.salesperson }}&date_from={{ request.GET.date_from }}&date_to={{ request.GET.date_to }}" class="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-xs font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 transition-colors">
-                <svg class="w-4 h-4 mr-2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a2 2 0 002 2h12a2 2 0 002-2v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
-                Quotes CSV
-            </a>
-            <a href="{% url 'invoice_export' %}?q={{ request.GET.q }}&salesperson={{ request.GET.salesperson }}&date_from={{ request.GET.date_from }}&date_to={{ request.GET.date_to }}" class="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-xs font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 transition-colors">
-                <svg class="w-4 h-4 mr-2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a2 2 0 002 2h12a2 2 0 002-2v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
-                Invoices CSV
-            </a>
-        </div>
-    </div>
+
 
     <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
         <!-- Stats Card 1 -->

@@ -2,6 +2,10 @@ from django.urls import path
 from . import views
 
 urlpatterns = [
+    # Procurement Dashboard
+    path('dashboard/', views.procurement_dashboard, name='procurement_dashboard'),
+    
+    # GRN System
     path('grn/', views.GRNListView.as_view(), name='grn_list'),
     path('grn/receive-hub/', views.grn_receive_hub, name='grn_receive_hub'),
     path('grn/receive/<int:po_id>/', views.grn_receive_po, name='grn_receive_po'),
@@ -10,7 +14,7 @@ urlpatterns = [
     path('grn/<int:pk>/cancel/', views.cancel_grn_view, name='grn_cancel'),
 
     # Purchase Order System
-    path('', views.purchase_order_create, name='po_hub'),
+    path('', views.procurement_dashboard, name='po_hub'), # Deprecated alias for backwards compatibility
     path('pos/', views.PurchaseOrderListView.as_view(), name='po_list'),
     path('pos/new/', views.purchase_order_create, name='po_create_default'),
     path('pos/new/<str:po_type>/', views.purchase_order_create, name='po_create'),
