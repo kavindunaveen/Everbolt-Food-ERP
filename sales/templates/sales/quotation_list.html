@@ -3,7 +3,119 @@
 {% block title %}Quotations | Sales ERP{% endblock %}
 
 {% block content %}
-<div class="px-4 py-6 sm:px-0">
+<div class="px-4 py-6 sm:px-0"
+     x-data="{
+        convertModal: false,
+        cancelModal: false,
+        activeForm: null,
+        activeQuoteNumber: '',
+        openConvert(formId, quoteNum) {
+            this.activeForm = formId;
+            this.activeQuoteNumber = quoteNum;
+            this.convertModal = true;
+        },
+        openCancel(formId, quoteNum) {
+            this.activeForm = formId;
+            this.activeQuoteNumber = quoteNum;
+            this.cancelModal = true;
+        },
+        confirm() {
+            if (this.activeForm) {
+                document.getElementById(this.activeForm).submit();
+            }
+        }
+     }">
+
+    <!-- ── Convert to Invoice Modal ── -->
+    <div x-show="convertModal"
+         x-cloak
+         x-transition:enter="transition ease-out duration-200"
+         x-transition:enter-start="opacity-0"
+         x-transition:enter-end="opacity-100"
+         x-transition:leave="transition ease-in duration-150"
+         x-transition:leave-start="opacity-100"
+         x-transition:leave-end="opacity-0"
+         class="fixed inset-0 z-[120] overflow-y-auto">
+        <div class="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
+            <div class="fixed inset-0 transition-opacity bg-gray-900/60 backdrop-blur-sm" @click="convertModal = false"></div>
+            <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+            <div x-transition:enter="transition ease-out duration-200"
+                 x-transition:enter-start="opacity-0 scale-95 translate-y-4"
+                 x-transition:enter-end="opacity-100 scale-100 translate-y-0"
+                 class="inline-block overflow-hidden text-left align-bottom transform bg-white rounded-2xl shadow-2xl sm:my-8 sm:align-middle sm:max-w-md sm:w-full">
+                <div class="px-8 pt-10 pb-6 text-center">
+                    <div class="w-20 h-20 bg-emerald-50 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-inner">
+                        <svg class="w-10 h-10 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                    </div>
+                    <h3 class="text-2xl font-black text-gray-900 tracking-tight mb-2">Convert to Invoice</h3>
+                    <p class="text-gray-500 text-sm leading-relaxed">
+                        Are you sure you want to convert quotation
+                        <span class="font-bold text-gray-800" x-text="'#' + activeQuoteNumber"></span>
+                        into a <span class="text-emerald-600 font-bold">Draft Invoice</span>?
+                        <br><span class="text-xs text-gray-400 mt-1 block">This action cannot be undone.</span>
+                    </p>
+                </div>
+                <div class="px-8 py-6 bg-gray-50 flex flex-row-reverse gap-3 rounded-b-2xl">
+                    <button @click="confirm(); convertModal = false"
+                            class="px-6 py-2.5 bg-emerald-600 text-white font-bold rounded-xl hover:bg-emerald-700 transition-all shadow-lg shadow-emerald-600/20 active:scale-95 uppercase tracking-wider text-sm">
+                        Yes, Convert
+                    </button>
+                    <button @click="convertModal = false"
+                            class="px-6 py-2.5 text-gray-600 font-bold bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition-all uppercase tracking-wider text-sm">
+                        Cancel
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── Cancel Quotation Modal ── -->
+    <div x-show="cancelModal"
+         x-cloak
+         x-transition:enter="transition ease-out duration-200"
+         x-transition:enter-start="opacity-0"
+         x-transition:enter-end="opacity-100"
+         x-transition:leave="transition ease-in duration-150"
+         x-transition:leave-start="opacity-100"
+         x-transition:leave-end="opacity-0"
+         class="fixed inset-0 z-[120] overflow-y-auto">
+        <div class="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
+            <div class="fixed inset-0 transition-opacity bg-gray-900/60 backdrop-blur-sm" @click="cancelModal = false"></div>
+            <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+            <div x-transition:enter="transition ease-out duration-200"
+                 x-transition:enter-start="opacity-0 scale-95 translate-y-4"
+                 x-transition:enter-end="opacity-100 scale-100 translate-y-0"
+                 class="inline-block overflow-hidden text-left align-bottom transform bg-white rounded-2xl shadow-2xl sm:my-8 sm:align-middle sm:max-w-md sm:w-full">
+                <div class="px-8 pt-10 pb-6 text-center">
+                    <div class="w-20 h-20 bg-red-50 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-inner">
+                        <svg class="w-10 h-10 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
+                        </svg>
+                    </div>
+                    <h3 class="text-2xl font-black text-gray-900 tracking-tight mb-2">Cancel Quotation</h3>
+                    <p class="text-gray-500 text-sm leading-relaxed">
+                        Are you sure you want to cancel quotation
+                        <span class="font-bold text-gray-800" x-text="'#' + activeQuoteNumber"></span>?
+                        <br><span class="text-xs text-gray-400 mt-1 block">This cannot be undone and the quotation will be closed.</span>
+                    </p>
+                </div>
+                <div class="px-8 py-6 bg-gray-50 flex flex-row-reverse gap-3 rounded-b-2xl">
+                    <button @click="confirm(); cancelModal = false"
+                            class="px-6 py-2.5 bg-red-600 text-white font-bold rounded-xl hover:bg-red-700 transition-all shadow-lg shadow-red-600/20 active:scale-95 uppercase tracking-wider text-sm">
+                        Yes, Cancel
+                    </button>
+                    <button @click="cancelModal = false"
+                            class="px-6 py-2.5 text-gray-600 font-bold bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition-all uppercase tracking-wider text-sm">
+                        Go Back
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── Page Header ── -->
     <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
         <div>
             <h1 class="text-3xl font-extrabold text-gray-900 tracking-tight">Quotations</h1>
@@ -12,7 +124,7 @@
         <div class="flex items-center space-x-3 w-full md:w-auto">
             {% include 'partials/filter_bar.html' with search_placeholder="Search orders..." %}
             <a href="{% url 'quotation_export' %}?q={{ request.GET.q }}&salesperson={{ request.GET.salesperson }}&date_from={{ request.GET.date_from }}&date_to={{ request.GET.date_to }}" class="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50 transition-colors">
-                <svg class="w-4 h-4 mr-2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a2 2 0 002 2h12a2 2 0 002 2h12a2 2 0 002-2v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                <svg class="w-4 h-4 mr-2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a2 2 0 002 2h12a2 2 0 002-2v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
                 Export
             </a>
             {% if perms.sales.add_quotation %}
@@ -82,32 +194,49 @@
                                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
                                 </a>
                                 {% endif %}
+
                                 {% if quote.status == 'DRAFT' %}
+                                <!-- Mark as Sent -->
                                 <form action="{% url 'quotation_mark_sent' quote.pk %}" method="post" class="inline">
                                     {% csrf_token %}
                                     <button type="submit" class="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" title="Mark as Sent">
                                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
                                     </button>
                                 </form>
-                                <form action="{% url 'quotation_cancel' quote.pk %}" method="post" class="inline">
+                                <!-- Cancel (DRAFT) - hidden form triggered by modal -->
+                                <form id="cancel-form-{{ quote.pk }}" action="{% url 'quotation_cancel' quote.pk %}" method="post" class="hidden">
                                     {% csrf_token %}
-                                    <button type="submit" class="p-1.5 text-red-600 hover:bg-red-50 rounded-lg transition-colors" title="Cancel" onclick="return confirm('Cancel this quotation?')">
-                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-                                    </button>
                                 </form>
+                                <button type="button"
+                                        @click="openCancel('cancel-form-{{ quote.pk }}', '{{ quote.quotation_number }}')"
+                                        class="p-1.5 text-red-600 hover:bg-red-50 rounded-lg transition-colors" title="Cancel Quotation">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                                </button>
+
                                 {% elif quote.status == 'SENT' %}
-                                <form action="{% url 'quotation_cancel' quote.pk %}" method="post" class="inline">
+                                <!-- Cancel (SENT) - hidden form triggered by modal -->
+                                <form id="cancel-form-{{ quote.pk }}" action="{% url 'quotation_cancel' quote.pk %}" method="post" class="hidden">
                                     {% csrf_token %}
-                                    <button type="submit" class="p-1.5 text-red-600 hover:bg-red-50 rounded-lg transition-colors" title="Cancel" onclick="return confirm('Cancel this quotation?')">
-                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-                                    </button>
                                 </form>
+                                <button type="button"
+                                        @click="openCancel('cancel-form-{{ quote.pk }}', '{{ quote.quotation_number }}')"
+                                        class="p-1.5 text-red-600 hover:bg-red-50 rounded-lg transition-colors" title="Cancel Quotation">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                                </button>
                                 {% endif %}
+
+                                <!-- Convert to Invoice - hidden form triggered by modal -->
                                 {% if quote.status == 'SENT' and not quote.is_converted %}
-                                <a href="{% url 'quotation_convert' quote.pk %}" class="p-1.5 text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors" title="Convert to Invoice" onclick="return confirm('Convert this quotation to a DRAFT invoice?')">
+                                <form id="convert-form-{{ quote.pk }}" action="{% url 'quotation_convert' quote.pk %}" method="get" class="hidden">
+                                </form>
+                                <button type="button"
+                                        @click="openConvert('convert-form-{{ quote.pk }}', '{{ quote.quotation_number }}')"
+                                        class="p-1.5 text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors" title="Convert to Invoice">
                                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                                </a>
+                                </button>
                                 {% endif %}
+
+                                <!-- Print -->
                                 <a href="{% url 'quotation_print' quote.pk %}" target="_blank" class="p-1.5 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors" title="Print Quotation">
                                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
                                 </a>
