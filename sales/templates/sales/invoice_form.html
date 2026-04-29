@@ -280,7 +280,7 @@
                         <tr>
                             <th class="px-6 py-4 text-left text-[11px] font-bold text-gray-400 uppercase tracking-widest">Product</th>
                             <th class="px-6 py-4 text-left text-[11px] font-bold text-gray-400 uppercase tracking-widest w-24 text-center">Quantity</th>
-                            <th class="px-6 py-4 text-left text-[11px] font-bold text-gray-400 uppercase tracking-widest w-32 text-right">Unit Price (Rs)</th>
+                            <th class="px-6 py-4 text-left text-[11px] font-bold text-gray-400 uppercase tracking-widest w-32 text-right">Unit Price Ex-VAT (Rs)</th>
                             <th class="px-6 py-4 text-left text-[11px] font-bold text-gray-400 uppercase tracking-widest w-32 text-right">Discount (Rs)</th>
                             <th class="px-6 py-4 text-left text-[11px] font-bold text-gray-400 uppercase tracking-widest w-32 text-right">Total (Rs)</th>
                             <th class="px-6 py-4 text-center text-[11px] font-bold text-gray-400 uppercase tracking-widest w-24">Actions</th>
@@ -368,6 +368,7 @@
         </fieldset>
     </form>
 
+    {% if form.instance.pk %}
     <!-- Confirm Issue Modal -->
     <div x-show="showConfirmIssueModal" 
          class="fixed inset-0 z-[120] overflow-y-auto" 
@@ -399,6 +400,8 @@
         </div>
     </div>
 
+
+    {% endif %}
     <!-- Approval/Rejection Modal -->
     <div x-show="showApprovalModal" 
          class="fixed inset-0 z-[110] overflow-y-auto" 

@@ -1079,7 +1079,7 @@ def convert_quotation_view(request, pk):
         )
         
         messages.success(request, f"Quotation {quotation.quotation_number} converted to Invoice {invoice.invoice_number} successfully.")
-        return redirect('invoice_update', pk=invoice.pk)
+        return redirect('invoice_edit', pk=invoice.pk)
 
 from django.http import JsonResponse
 
