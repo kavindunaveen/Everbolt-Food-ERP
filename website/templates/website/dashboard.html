@@ -1,0 +1,146 @@
+{% extends 'layouts/base.html' %}
+{% block title %}Website Management | Everbolt ERP{% endblock %}
+{% block breadcrumbs %}
+<li class="flex items-center space-x-2">
+    <svg class="w-4 h-4 text-gray-300" fill="currentColor" viewBox="0 0 20 20"><path d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z"/></svg>
+    <span class="text-gray-900 font-bold">Website</span>
+</li>
+{% endblock %}
+{% block content %}
+<div class="px-4 py-6 sm:px-0">
+    <!-- Header -->
+    <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
+        <div>
+            <div class="flex items-center gap-3 mb-1">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center shadow-lg shadow-violet-200">
+                    <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"/></svg>
+                </div>
+                <h1 class="text-3xl font-extrabold text-gray-900 tracking-tight">Website</h1>
+            </div>
+            <p class="text-sm text-gray-500">Manage <strong>organicfoodslanka.com</strong> — products, pages, enquiries &amp; settings.</p>
+        </div>
+        <div class="flex items-center gap-3">
+            {% if settings.is_maintenance_mode %}
+            <span class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-amber-100 text-amber-700 text-xs font-black rounded-full uppercase tracking-wider animate-pulse">
+                ⚠ Maintenance Mode On
+            </span>
+            {% else %}
+            <span class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-100 text-emerald-700 text-xs font-black rounded-full uppercase tracking-wider">
+                <span class="w-2 h-2 bg-emerald-500 rounded-full"></span> Website Live
+            </span>
+            {% endif %}
+            <a href="https://organicfoodslanka.com" target="_blank" class="inline-flex items-center gap-2 px-4 py-2 bg-violet-600 text-white text-sm font-bold rounded-xl hover:bg-violet-700 transition-all shadow-lg shadow-violet-200">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+                View Live Site
+            </a>
+        </div>
+    </div>
+
+    <!-- Stats Grid -->
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        <a href="{% url 'website_product_list' %}" class="group bg-white rounded-2xl border border-gray-100 shadow-sm p-6 hover:shadow-xl hover:shadow-violet-100/50 transition-all hover:-translate-y-0.5">
+            <div class="flex items-start justify-between mb-4">
+                <div class="w-12 h-12 bg-violet-50 rounded-xl flex items-center justify-center">
+                    <svg class="w-6 h-6 text-violet-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
+                </div>
+                <span class="text-[10px] font-black text-violet-500 bg-violet-50 px-2 py-1 rounded-full uppercase">{{ published_products }} Live</span>
+            </div>
+            <div class="text-3xl font-black text-gray-900 mb-1">{{ total_products }}</div>
+            <div class="text-sm font-semibold text-gray-500">Website Products</div>
+            {% if unlisted_count %}<div class="mt-2 text-[11px] text-amber-600 font-bold">{{ unlisted_count }} not yet listed</div>{% endif %}
+        </a>
+        <a href="{% url 'website_page_list' %}" class="group bg-white rounded-2xl border border-gray-100 shadow-sm p-6 hover:shadow-xl hover:shadow-blue-100/50 transition-all hover:-translate-y-0.5">
+            <div class="flex items-start justify-between mb-4">
+                <div class="w-12 h-12 bg-blue-50 rounded-xl flex items-center justify-center">
+                    <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                </div>
+                <span class="text-[10px] font-black text-blue-500 bg-blue-50 px-2 py-1 rounded-full uppercase">{{ published_pages }} Live</span>
+            </div>
+            <div class="text-3xl font-black text-gray-900 mb-1">{{ total_pages }}</div>
+            <div class="text-sm font-semibold text-gray-500">Pages</div>
+        </a>
+        <a href="{% url 'website_enquiry_list' %}" class="group bg-white rounded-2xl border border-gray-100 shadow-sm p-6 hover:shadow-xl hover:shadow-emerald-100/50 transition-all hover:-translate-y-0.5">
+            <div class="flex items-start justify-between mb-4">
+                <div class="w-12 h-12 bg-emerald-50 rounded-xl flex items-center justify-center">
+                    <svg class="w-6 h-6 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+                </div>
+                {% if new_enquiries %}<span class="text-[10px] font-black text-white bg-red-500 px-2 py-1 rounded-full uppercase animate-pulse">{{ new_enquiries }} New</span>
+                {% else %}<span class="text-[10px] font-black text-emerald-500 bg-emerald-50 px-2 py-1 rounded-full uppercase">All Read</span>{% endif %}
+            </div>
+            <div class="text-3xl font-black text-gray-900 mb-1">{{ total_enquiries }}</div>
+            <div class="text-sm font-semibold text-gray-500">Enquiries</div>
+        </a>
+        <a href="{% url 'website_category_list' %}" class="group bg-white rounded-2xl border border-gray-100 shadow-sm p-6 hover:shadow-xl hover:shadow-amber-100/50 transition-all hover:-translate-y-0.5">
+            <div class="flex items-start justify-between mb-4">
+                <div class="w-12 h-12 bg-amber-50 rounded-xl flex items-center justify-center">
+                    <svg class="w-6 h-6 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/></svg>
+                </div>
+                <span class="text-[10px] font-black text-amber-500 bg-amber-50 px-2 py-1 rounded-full uppercase">{{ featured_products }} Featured</span>
+            </div>
+            <div class="text-3xl font-black text-gray-900 mb-1">{{ total_categories }}</div>
+            <div class="text-sm font-semibold text-gray-500">Categories</div>
+        </a>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Quick Actions -->
+        <div class="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+            <div class="px-6 py-4 border-b border-gray-100 bg-gray-50/50">
+                <h3 class="text-sm font-black text-gray-800 uppercase tracking-widest">Quick Actions</h3>
+            </div>
+            <div class="p-4 space-y-1">
+                <a href="{% url 'website_product_add' %}" class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-violet-50 text-gray-700 hover:text-violet-700 transition-colors">
+                    <div class="w-8 h-8 bg-violet-100 rounded-lg flex items-center justify-center"><svg class="w-4 h-4 text-violet-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg></div>
+                    <span class="text-sm font-semibold">Add Product to Website</span>
+                </a>
+                <a href="{% url 'website_page_add' %}" class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-blue-50 text-gray-700 hover:text-blue-700 transition-colors">
+                    <div class="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center"><svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg></div>
+                    <span class="text-sm font-semibold">Create New Page</span>
+                </a>
+                <a href="{% url 'website_category_add' %}" class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-amber-50 text-gray-700 hover:text-amber-700 transition-colors">
+                    <div class="w-8 h-8 bg-amber-100 rounded-lg flex items-center justify-center"><svg class="w-4 h-4 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg></div>
+                    <span class="text-sm font-semibold">Add Category</span>
+                </a>
+                <a href="{% url 'website_enquiry_list' %}" class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-emerald-50 text-gray-700 hover:text-emerald-700 transition-colors">
+                    <div class="w-8 h-8 bg-emerald-100 rounded-lg flex items-center justify-center"><svg class="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg></div>
+                    <span class="text-sm font-semibold">View Enquiries</span>
+                </a>
+                <a href="{% url 'website_settings' %}" class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-gray-100 text-gray-700 transition-colors">
+                    <div class="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center"><svg class="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg></div>
+                    <span class="text-sm font-semibold">Website Settings</span>
+                </a>
+            </div>
+        </div>
+
+        <!-- Recent Enquiries -->
+        <div class="lg:col-span-2 bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+            <div class="px-6 py-4 border-b border-gray-100 bg-gray-50/50 flex justify-between items-center">
+                <h3 class="text-sm font-black text-gray-800 uppercase tracking-widest">New Enquiries</h3>
+                <a href="{% url 'website_enquiry_list' %}" class="text-xs font-bold text-violet-600 hover:text-violet-800">View All →</a>
+            </div>
+            {% if recent_enquiries %}
+            <div class="divide-y divide-gray-50">
+                {% for enquiry in recent_enquiries %}
+                <a href="{% url 'website_enquiry_detail' enquiry.pk %}" class="flex items-start gap-4 px-6 py-4 hover:bg-gray-50 transition-colors">
+                    <div class="w-9 h-9 bg-emerald-100 rounded-full flex items-center justify-center flex-shrink-0 text-sm font-black text-emerald-700">{{ enquiry.name|first|upper }}</div>
+                    <div class="flex-1 min-w-0">
+                        <div class="flex items-center justify-between gap-2">
+                            <p class="text-sm font-bold text-gray-900 truncate">{{ enquiry.name }}</p>
+                            <span class="text-[10px] text-gray-400 font-medium whitespace-nowrap">{{ enquiry.submitted_at|timesince }} ago</span>
+                        </div>
+                        <p class="text-xs text-gray-500 truncate">{{ enquiry.subject|default:enquiry.email }}</p>
+                        <p class="text-xs text-gray-400 mt-0.5 truncate">{{ enquiry.message|truncatechars:80 }}</p>
+                    </div>
+                </a>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="px-6 py-16 text-center">
+                <svg class="w-12 h-12 text-gray-200 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+                <p class="text-sm text-gray-400 font-medium">No new enquiries</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

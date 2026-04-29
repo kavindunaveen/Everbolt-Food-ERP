@@ -1,0 +1,30 @@
+{% extends 'layouts/base.html' %}
+{% block title %}Enquiry from {{ object.name }}{% endblock %}
+{% block content %}
+<div class="max-w-3xl mx-auto px-4 py-8">
+  <div class="flex justify-between items-center mb-6">
+    <h1 class="text-2xl font-extrabold text-gray-900">Enquiry from {{ object.name }}</h1>
+    <a href="{% url 'website_enquiry_list' %}" class="px-4 py-2 bg-white border border-gray-200 text-gray-700 text-sm font-bold rounded-xl hover:bg-gray-50">← Back</a>
+  </div>
+  <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 mb-6 space-y-3">
+    <div class="grid grid-cols-2 gap-4">
+      <div><p class="text-xs font-black text-gray-400 uppercase tracking-widest">Name</p><p class="text-sm font-semibold text-gray-900 mt-1">{{ object.name }}</p></div>
+      <div><p class="text-xs font-black text-gray-400 uppercase tracking-widest">Email</p><p class="text-sm font-semibold text-gray-900 mt-1">{{ object.email }}</p></div>
+      <div><p class="text-xs font-black text-gray-400 uppercase tracking-widest">Phone</p><p class="text-sm font-semibold text-gray-900 mt-1">{{ object.phone|default:"—" }}</p></div>
+      <div><p class="text-xs font-black text-gray-400 uppercase tracking-widest">Received</p><p class="text-sm font-semibold text-gray-900 mt-1">{{ object.submitted_at|date:"M d, Y H:i" }}</p></div>
+    </div>
+    <div><p class="text-xs font-black text-gray-400 uppercase tracking-widest">Subject</p><p class="text-sm font-semibold text-gray-900 mt-1">{{ object.subject|default:"—" }}</p></div>
+    <div><p class="text-xs font-black text-gray-400 uppercase tracking-widest mb-2">Message</p><div class="bg-gray-50 rounded-xl p-4 text-sm text-gray-800 whitespace-pre-wrap">{{ object.message }}</div></div>
+  </div>
+  <form method="post" class="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 space-y-4">{% csrf_token %}
+    <h3 class="text-sm font-black text-gray-800 uppercase tracking-widest">Update Enquiry</h3>
+    {% for field in form %}
+    <div>
+      <label class="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-1.5">{{ field.label }}</label>
+      {{ field }}
+    </div>
+    {% endfor %}
+    <button type="submit" class="px-6 py-2.5 bg-violet-600 text-white font-bold rounded-xl hover:bg-violet-700 transition-all">Save Changes</button>
+  </form>
+</div>
+{% endblock %}

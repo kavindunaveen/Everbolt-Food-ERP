@@ -52,6 +52,7 @@ INSTALLED_APPS = [
     'dashboard.apps.DashboardConfig',
     'suppliers.apps.SuppliersConfig',
     'contacts.apps.ContactsConfig',
+    'website.apps.WebsiteConfig',
 ]
 
 MIDDLEWARE = [
