@@ -105,13 +105,66 @@
     </div>
 
     {% if dn.remarks %}
-    <div class="bg-white shadow-xl shadow-gray-100/50 rounded-2xl border border-gray-100 overflow-hidden p-6">
+    <div class="bg-white shadow-xl shadow-gray-100/50 rounded-2xl border border-gray-100 overflow-hidden p-6 mb-8">
         <h3 class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Remarks</h3>
         <p class="text-sm text-gray-600 italic">"{{ dn.remarks }}"</p>
     </div>
     {% endif %}
 
-    <div class="mt-8 flex justify-between items-center text-[10px] text-gray-400 font-bold uppercase tracking-widest border-t border-dashed border-gray-200 pt-8">
+    <!-- Activity Timeline -->
+    {% if audit_logs %}
+    <div class="bg-white shadow-xl shadow-gray-100/50 rounded-2xl border border-gray-100 overflow-hidden mb-8">
+        <div class="px-6 py-4 bg-gray-50/50 border-b border-gray-100">
+            <h3 class="text-sm font-bold text-gray-800 uppercase tracking-widest">Activity & Audit History</h3>
+        </div>
+        <div class="p-6">
+            <div class="flow-root">
+                <ul role="list" class="-mb-8">
+                    {% for log in audit_logs %}
+                    <li>
+                        <div class="relative pb-8">
+                            {% if not forloop.last %}
+                            <span class="absolute top-4 left-4 -ml-px h-full w-0.5 bg-gray-100" aria-hidden="true"></span>
+                            {% endif %}
+                            <div class="relative flex space-x-3">
+                                <div>
+                                    <span class="h-8 w-8 rounded-full bg-indigo-50 flex items-center justify-center ring-8 ring-white">
+                                        {% if "Updated" in log.action %}
+                                        <svg class="h-4 w-4 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>
+                                        {% elif "Created" in log.action %}
+                                        <svg class="h-4 w-4 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" /></svg>
+                                        {% else %}
+                                        <svg class="h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                                        {% endif %}
+                                    </span>
+                                </div>
+                                <div class="min-w-0 flex-1 pt-1.5 flex justify-between space-x-4">
+                                    <div>
+                                        <p class="text-sm text-gray-800 font-bold">{{ log.action }} <span class="font-medium text-gray-400">by</span> {{ log.user.get_full_name|default:log.user.username }}</p>
+                                        {% if log.old_value or log.new_value %}
+                                        <p class="mt-0.5 text-xs text-gray-500 font-medium">
+                                            Status: <span class="text-gray-700 font-bold">{{ log.old_value|default:"None" }}</span> → <span class="text-indigo-600 font-bold">{{ log.new_value }}</span>
+                                        </p>
+                                        {% endif %}
+                                        {% if log.notes %}
+                                        <p class="mt-1 text-xs italic text-gray-400">{{ log.notes }}</p>
+                                        {% endif %}
+                                    </div>
+                                    <div class="text-right text-[10px] whitespace-nowrap text-gray-400 font-bold uppercase tracking-wider">
+                                        <time datetime="{{ log.timestamp|date:'c' }}">{{ log.timestamp|date:"M d, Y" }} at {{ log.timestamp|date:"H:i" }}</time>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <div class="mt-8 flex justify-between items-center text-[10px] text-gray-400 font-bold uppercase tracking-widest border-t border-dashed border-gray-200 pt-8 no-print">
         <div>Handed over by: ____________________</div>
         <div>Received by: ____________________</div>
     </div>

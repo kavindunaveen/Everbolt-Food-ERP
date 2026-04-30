@@ -1185,6 +1185,17 @@ class DeliveryNoteDetailView(LoginRequiredMixin, PermissionRequiredMixin, Detail
     context_object_name = 'dn'
     permission_required = 'sales.view_deliverynote'
 
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        from django.contrib.contenttypes.models import ContentType
+        from .models import SalesAuditLog
+        ct = ContentType.objects.get_for_model(DeliveryNote)
+        context['audit_logs'] = SalesAuditLog.objects.filter(
+            content_type=ct, 
+            object_id=self.object.id
+        ).order_by('-timestamp')
+        return context
+
 class DeliveryNoteCreateView(LoginRequiredMixin, PermissionRequiredMixin, CreateView):
     model = DeliveryNote
     form_class = DeliveryNoteForm
@@ -1206,6 +1217,15 @@ class DeliveryNoteCreateView(LoginRequiredMixin, PermissionRequiredMixin, Create
                     quantity=item.quantity
                 )
             messages.success(self.request, f"Delivery Note {self.object.dn_number} created successfully.")
+            
+            log_sales_event(
+                obj=self.object,
+                user=self.request.user,
+                action="Delivery Note Created",
+                new_value=self.object.get_status_display(),
+                notes=f"Linked to Invoice {invoice.invoice_number}"
+            )
+            
             return super().form_valid(form)
 
 @login_required
@@ -1244,7 +1264,18 @@ def update_dn_status(request, pk):
     if request.method == 'POST':
         new_status = request.POST.get('status')
         if new_status in dict(DeliveryNote.Status.choices):
+            old_display = dn.get_status_display()
             dn.status = new_status
             dn.save()
+            
+            log_sales_event(
+                obj=dn,
+                user=request.user,
+                action="Status Updated",
+                old_value=old_display,
+                new_value=dn.get_status_display(),
+                notes=f"Manual status change from list/detail view."
+            )
+            
             messages.success(request, f"Status of {dn.dn_number} updated to {dn.get_status_display()}.")
     return redirect('delivery_note_list')
