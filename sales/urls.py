@@ -31,4 +31,11 @@ urlpatterns = [
     # AJAX Search Endpoints
     path('api/customers/search/', views.customer_search_ajax, name='customer_search_ajax'),
     path('api/products/search/', views.product_search_ajax, name='product_search_ajax'),
+
+    # Delivery Note URLs
+    path('sales/delivery-notes/', views.DeliveryNoteListView.as_view(), name='delivery_note_list'),
+    path('sales/delivery-notes/new/', views.DeliveryNoteCreateView.as_view(), name='delivery_note_create'),
+    path('sales/delivery-notes/<int:pk>/', views.DeliveryNoteDetailView.as_view(), name='delivery_note_detail'),
+    path('sales/delivery-notes/<int:pk>/update-status/', views.update_dn_status, name='delivery_note_update_status'),
+    path('api/invoices/<int:pk>/details/', views.get_invoice_details, name='get_invoice_details'),
 ]

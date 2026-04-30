@@ -1,0 +1,133 @@
+{% extends 'layouts/base.html' %}
+
+{% block title %}Delivery Note Details | Sales ERP{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto px-4 py-8">
+    <div class="mb-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div>
+            <h1 class="text-3xl font-extrabold text-gray-900 tracking-tight">
+                Delivery Note <span class="text-indigo-600">#{{ dn.dn_number }}</span>
+            </h1>
+            <p class="text-sm text-gray-500 mt-1">Generated on {{ dn.created_at|date:"M d, Y" }} at {{ dn.created_at|date:"H:i" }}</p>
+        </div>
+        <div class="flex items-center space-x-3">
+            <a href="{% url 'delivery_note_list' %}" class="inline-flex items-center px-4 py-2 border border-gray-200 text-sm font-bold rounded-lg text-gray-600 bg-gray-50 hover:bg-gray-100 transition-all">Back to List</a>
+            <button onclick="window.print()" class="inline-flex items-center px-4 py-2 bg-white border border-gray-300 shadow-sm text-sm font-bold rounded-lg text-gray-700 hover:bg-gray-50 transition-colors">
+                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
+                Print
+            </button>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+        <!-- Delivery Summary -->
+        <div class="bg-white shadow-xl shadow-gray-100/50 rounded-2xl border border-gray-100 overflow-hidden">
+            <div class="px-6 py-4 bg-gray-50/50 border-b border-gray-100">
+                <h3 class="text-xs font-bold text-gray-400 uppercase tracking-widest">Delivery Summary</h3>
+            </div>
+            <div class="p-6 space-y-4">
+                <div class="flex justify-between">
+                    <span class="text-sm font-bold text-gray-400 uppercase tracking-wider">Status</span>
+                    <span class="px-2.5 py-1 text-[10px] font-extrabold rounded-md uppercase tracking-wider
+                        {% if dn.status == 'DELIVERED' %}bg-green-100 text-green-700
+                        {% elif dn.status == 'PENDING' %}bg-blue-100 text-blue-700
+                        {% elif dn.status == 'PARTIAL' %}bg-orange-100 text-orange-700
+                        {% elif dn.status == 'FAILED' %}bg-red-100 text-red-700
+                        {% else %}bg-gray-100 text-gray-600{% endif %}">
+                        {{ dn.get_status_display }}
+                    </span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-sm font-bold text-gray-400 uppercase tracking-wider">Invoice #</span>
+                    <span class="text-sm font-bold text-gray-900">{{ dn.invoice.invoice_number }}</span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-sm font-bold text-gray-400 uppercase tracking-wider">Delivered By</span>
+                    <span class="text-sm font-bold text-gray-900">
+                        {% if dn.delivered_by == 'OTHER' %}
+                            {{ dn.other_delivery_person }}
+                        {% else %}
+                            {{ dn.get_delivered_by_display }}
+                        {% endif %}
+                    </span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-sm font-bold text-gray-400 uppercase tracking-wider">Scheduled Date</span>
+                    <span class="text-sm font-bold text-gray-900">{{ dn.delivery_date|date:"M d, Y" }}</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Customer & Address -->
+        <div class="bg-white shadow-xl shadow-gray-100/50 rounded-2xl border border-gray-100 overflow-hidden">
+            <div class="px-6 py-4 bg-gray-50/50 border-b border-gray-100">
+                <h3 class="text-xs font-bold text-gray-400 uppercase tracking-widest">Destination</h3>
+            </div>
+            <div class="p-6 space-y-4">
+                <div>
+                    <span class="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-1">Customer</span>
+                    <p class="text-sm font-bold text-gray-900">{{ dn.customer_name }}</p>
+                </div>
+                <div>
+                    <span class="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-1">Delivery Address</span>
+                    <p class="text-sm text-gray-600 leading-relaxed">{{ dn.delivery_address }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Items Table -->
+    <div class="bg-white shadow-xl shadow-gray-100/50 rounded-2xl border border-gray-100 overflow-hidden mb-8">
+        <div class="px-6 py-4 bg-gray-50/50 border-b border-gray-100">
+            <h3 class="text-sm font-bold text-gray-800 uppercase tracking-widest">Dispatched Items</h3>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-100">
+                <thead class="bg-gray-50/30">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-[11px] font-bold text-gray-400 uppercase tracking-widest">Product ID</th>
+                        <th class="px-6 py-3 text-left text-[11px] font-bold text-gray-400 uppercase tracking-widest">Product Name</th>
+                        <th class="px-6 py-3 text-center text-[11px] font-bold text-gray-400 uppercase tracking-widest">Quantity</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-50">
+                    {% for item in dn.items.all %}
+                    <tr class="hover:bg-gray-50 transition-colors">
+                        <td class="px-6 py-4 text-sm font-medium text-gray-500">{{ item.product.product_id }}</td>
+                        <td class="px-6 py-4 text-sm font-bold text-gray-900">{{ item.product.name }}</td>
+                        <td class="px-6 py-4 text-sm font-black text-indigo-600 text-center">{{ item.quantity }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    {% if dn.remarks %}
+    <div class="bg-white shadow-xl shadow-gray-100/50 rounded-2xl border border-gray-100 overflow-hidden p-6">
+        <h3 class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Remarks</h3>
+        <p class="text-sm text-gray-600 italic">"{{ dn.remarks }}"</p>
+    </div>
+    {% endif %}
+
+    <div class="mt-8 flex justify-between items-center text-[10px] text-gray-400 font-bold uppercase tracking-widest border-t border-dashed border-gray-200 pt-8">
+        <div>Handed over by: ____________________</div>
+        <div>Received by: ____________________</div>
+    </div>
+</div>
+
+<style>
+    @media print {
+        body { background-color: white !important; }
+        .no-print { display: none !important; }
+        nav, footer, .max-w-7xl, .back-to-list { display: none !important; }
+        .max-w-4xl { max-width: 100% !important; margin: 0 !important; padding: 0 !important; }
+        .shadow-xl { shadow: none !important; }
+        .rounded-2xl { border-radius: 0 !important; }
+        .border { border-color: #eee !important; }
+        button { display: none !important; }
+        a { text-decoration: none !important; color: black !important; }
+    }
+</style>
+{% endblock %}

@@ -196,3 +196,60 @@ class SalesAuditLog(models.Model):
 
     def __str__(self):
         return f"{self.action} on {self.content_object} by {self.user}"
+
+class DeliveryNote(models.Model):
+    class Status(models.TextChoices):
+        PENDING = 'PENDING', 'Pending'
+        DELIVERED = 'DELIVERED', 'Delivered'
+        PARTIAL = 'PARTIAL', 'Partial'
+        FAILED = 'FAILED', 'Failed'
+
+    class DeliveryPerson(models.TextChoices):
+        SUMITH = 'SUMITH', 'Sumith'
+        ASANGA = 'ASANGA', 'Asanga'
+        CHAMINDA = 'CHAMINDA', 'Chaminda'
+        KESHAN = 'KESHAN', 'Keshan'
+        MANISTHA = 'MANISTHA', 'Manistha'
+        OTHER = 'OTHER', 'Other'
+
+    dn_number = models.CharField(max_length=50, unique=True)
+    invoice = models.ForeignKey(Invoice, on_delete=models.CASCADE, related_name='delivery_notes')
+    
+    # These are populated from the invoice but stored here for snapshot/record integrity
+    customer_name = models.CharField(max_length=200)
+    delivery_address = models.TextField()
+    delivery_date = models.DateField()
+    
+    delivered_by = models.CharField(max_length=50, choices=DeliveryPerson.choices)
+    other_delivery_person = models.CharField(max_length=150, blank=True, null=True, help_text="Fill if 'Other' is selected")
+    
+    status = models.CharField(max_length=20, choices=Status.choices, default=Status.PENDING)
+    remarks = models.TextField(blank=True, null=True)
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def save(self, *args, **kwargs):
+        if not self.dn_number:
+            now = timezone.now()
+            prefix = now.strftime("%y%b").upper() + "_EBDN_"
+            with transaction.atomic():
+                last_dn = DeliveryNote.objects.select_for_update().filter(dn_number__startswith=prefix).order_by('-dn_number').first()
+                if last_dn:
+                    last_seq = int(last_dn.dn_number.split('_')[-1])
+                    new_seq = last_seq + 1
+                else:
+                    new_seq = 1
+                self.dn_number = f"{prefix}{new_seq:05d}"
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return self.dn_number
+
+class DeliveryNoteItem(models.Model):
+    delivery_note = models.ForeignKey(DeliveryNote, related_name='items', on_delete=models.CASCADE)
+    product = models.ForeignKey(Product, on_delete=models.PROTECT)
+    quantity = models.PositiveIntegerField()
+
+    def __str__(self):
+        return f"{self.product.name} ({self.quantity})"

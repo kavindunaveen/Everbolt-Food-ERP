@@ -1,0 +1,120 @@
+{% extends 'layouts/base.html' %}
+
+{% block title %}Delivery Notes | Sales ERP{% endblock %}
+
+{% block content %}
+<div class="px-4 py-6 sm:px-0" x-data="{ 
+    compactMode: localStorage.getItem('compactMode') === 'true',
+    toggleCompact() {
+        this.compactMode = !this.compactMode;
+        localStorage.setItem('compactMode', this.compactMode);
+    }
+}">
+    <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
+        <div>
+            <h1 class="text-3xl font-extrabold text-gray-900 tracking-tight">Delivery Notes</h1>
+            <p class="text-sm text-gray-500 mt-1">Manage and track stock dispatch status.</p>
+        </div>
+        <div class="flex items-center space-x-3 w-full md:w-auto">
+            <button @click="toggleCompact()" class="p-2 bg-white border border-gray-200 rounded-lg text-gray-500 hover:text-emerald-600 hover:border-emerald-200 transition-all shadow-sm" title="Toggle Compact Mode">
+                <svg x-show="!compactMode" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"></path></svg>
+                <svg x-show="compactMode" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" transform="rotate(180 12 12)"></path></svg>
+            </button>
+
+            {% include 'partials/filter_bar.html' with search_placeholder="Search DNs..." %}
+            
+            {% if perms.sales.add_deliverynote %}
+            <a href="{% url 'delivery_note_create' %}" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-lg text-white bg-indigo-600 hover:bg-indigo-700 transition-all shadow-md">
+                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                New Delivery Note
+            </a>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="bg-white shadow-md rounded-2xl border border-gray-100 overflow-hidden transition-all duration-300">
+        <div class="overflow-x-auto w-full">
+            <table class="min-w-full divide-y divide-gray-100">
+                <thead class="bg-gray-50/50">
+                    <tr>
+                        <th scope="col" :class="compactMode ? 'px-6 py-2' : 'px-6 py-4'" class="text-left text-[11px] font-bold text-gray-400 uppercase tracking-widest">DN Details</th>
+                        <th scope="col" :class="compactMode ? 'px-6 py-2' : 'px-6 py-4'" class="text-left text-[11px] font-bold text-gray-400 uppercase tracking-widest">Invoice</th>
+                        <th scope="col" :class="compactMode ? 'px-6 py-2' : 'px-6 py-4'" class="text-left text-[11px] font-bold text-gray-400 uppercase tracking-widest">Customer</th>
+                        <th scope="col" :class="compactMode ? 'px-6 py-2' : 'px-6 py-4'" class="text-left text-[11px] font-bold text-gray-400 uppercase tracking-widest">Delivered By</th>
+                        <th scope="col" :class="compactMode ? 'px-6 py-2' : 'px-6 py-4'" class="text-left text-[11px] font-bold text-gray-400 uppercase tracking-widest">Status</th>
+                        <th scope="col" :class="compactMode ? 'px-6 py-2' : 'px-6 py-4'" class="text-center text-[11px] font-bold text-gray-400 uppercase tracking-widest">Change Status</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-100">
+                    {% for dn in delivery_notes %}
+                    <tr class="hover:bg-gray-50 transition-colors group">
+                        <td :class="compactMode ? 'px-6 py-2' : 'px-6 py-4'" class="whitespace-nowrap">
+                            <div class="flex flex-col">
+                                <a href="{% url 'delivery_note_detail' dn.pk %}" class="text-sm font-bold text-indigo-600 hover:underline">{{ dn.dn_number }}</a>
+                                <span x-show="!compactMode" class="text-[11px] text-gray-400 font-medium">{{ dn.created_at|date:"M d, Y" }}</span>
+                            </div>
+                        </td>
+                        <td :class="compactMode ? 'px-6 py-2' : 'px-6 py-4'" class="whitespace-nowrap">
+                            <div class="text-sm font-semibold text-gray-800">{{ dn.invoice.invoice_number }}</div>
+                        </td>
+                        <td :class="compactMode ? 'px-6 py-2' : 'px-6 py-4'" class="whitespace-nowrap text-sm text-gray-600 font-medium">
+                            {{ dn.customer_name }}
+                        </td>
+                        <td :class="compactMode ? 'px-6 py-2' : 'px-6 py-4'" class="whitespace-nowrap text-sm text-gray-600 font-medium">
+                            {% if dn.delivered_by == 'OTHER' %}
+                                {{ dn.other_delivery_person }}
+                            {% else %}
+                                {{ dn.get_delivered_by_display }}
+                            {% endif %}
+                        </td>
+                        <td :class="compactMode ? 'px-6 py-2' : 'px-6 py-4'" class="whitespace-nowrap">
+                            <span class="px-2.5 py-1 text-[10px] font-extrabold rounded-md uppercase tracking-wider
+                                {% if dn.status == 'DELIVERED' %}bg-green-100 text-green-700
+                                {% elif dn.status == 'PENDING' %}bg-blue-100 text-blue-700
+                                {% elif dn.status == 'PARTIAL' %}bg-orange-100 text-orange-700
+                                {% elif dn.status == 'FAILED' %}bg-red-100 text-red-700
+                                {% else %}bg-gray-100 text-gray-600{% endif %}">
+                                {{ dn.get_status_display }}
+                            </span>
+                        </td>
+                        <td :class="compactMode ? 'px-6 py-2' : 'px-6 py-4'" class="whitespace-nowrap text-center">
+                            <form action="{% url 'delivery_note_update_status' dn.pk %}" method="post" class="flex items-center justify-center space-x-2">
+                                {% csrf_token %}
+                                <select name="status" onchange="this.form.submit()" class="text-[10px] font-bold border-gray-200 rounded-lg py-1 px-2 focus:ring-indigo-500 focus:border-indigo-500 bg-gray-50">
+                                    {% for value, label in dn.Status.choices %}
+                                    <option value="{{ value }}" {% if dn.status == value %}selected{% endif %}>{{ label }}</option>
+                                    {% endfor %}
+                                </select>
+                            </form>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="6" class="px-6 py-20 text-center">
+                            <div class="flex flex-col items-center justify-center space-y-4">
+                                <div class="w-24 h-24 bg-gray-50 rounded-full flex items-center justify-center">
+                                    <svg class="w-12 h-12 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                                </div>
+                                <div>
+                                    <h3 class="text-lg font-bold text-gray-900">No Delivery Notes Found</h3>
+                                    <p class="text-sm text-gray-500 mt-1">Create your first delivery note from an invoice.</p>
+                                </div>
+                                <a href="{% url 'delivery_note_create' %}" class="inline-flex items-center px-4 py-2 bg-indigo-600 text-white font-bold rounded-lg hover:bg-indigo-700 transition-all shadow-md">
+                                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                                    New Delivery Note
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% if is_paginated %}
+        <div class="px-6 py-4 bg-gray-50/50 border-t border-gray-100">
+            {% include 'partials/pagination.html' %}
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

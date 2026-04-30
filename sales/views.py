@@ -1,6 +1,6 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.views.generic import TemplateView, ListView, CreateView, UpdateView, View, DetailView
-from django.http import HttpResponse
+from django.http import HttpResponse, JsonResponse
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin, PermissionRequiredMixin
 from django.contrib.auth.decorators import login_required, permission_required
 from django.contrib import messages
@@ -9,9 +9,10 @@ from django.db import transaction
 from django.utils import timezone
 from django.db.models import Sum
 from decimal import Decimal
-from .models import Quotation, Invoice
-from .forms import QuotationForm, QuotationItemFormSet, InvoiceForm, InvoiceItemFormSet
+from .models import Quotation, Invoice, DeliveryNote, DeliveryNoteItem
+from .forms import QuotationForm, QuotationItemFormSet, InvoiceForm, InvoiceItemFormSet, DeliveryNoteForm
 from .services import issue_invoice, cancel_invoice, send_invoice_approval_email, log_sales_event, update_stock_reserves
+from users.models import SavedFilter
 import csv
 from num2words import num2words
 
@@ -1126,3 +1127,124 @@ def product_search_ajax(request):
         for p in products
     ]
     return JsonResponse({'results': results})
+
+class DeliveryNoteListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
+    model = DeliveryNote
+    template_name = 'sales/delivery_note_list.html'
+    context_object_name = 'delivery_notes'
+    paginate_by = 20
+    permission_required = 'sales.view_deliverynote'
+    
+    def get_queryset(self):
+        qs = super().get_queryset().order_by('-created_at')
+        
+        # Status Filter
+        status = self.request.GET.get('status')
+        if status:
+            qs = qs.filter(status=status)
+        
+        # Delivered By Filter
+        delivered_by = self.request.GET.get('delivered_by')
+        if delivered_by:
+            qs = qs.filter(delivered_by=delivered_by)
+            
+        # Date Range Filter
+        date_from = self.request.GET.get('date_from')
+        date_to = self.request.GET.get('date_to')
+        if date_from:
+            qs = qs.filter(created_at__date__gte=date_from)
+        if date_to:
+            qs = qs.filter(created_at__date__lte=date_to)
+
+        # Unified Search (DN Details, Invoice, Customer)
+        q = self.request.GET.get('q')
+        if q:
+            from django.db.models import Q
+            qs = qs.filter(
+                Q(dn_number__icontains=q) |
+                Q(invoice__invoice_number__icontains=q) |
+                Q(customer_name__icontains=q)
+            )
+        return qs
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['model_name'] = 'DeliveryNote'
+        if self.request.user.is_authenticated:
+            context['saved_filters'] = SavedFilter.objects.filter(
+                user=self.request.user, 
+                model_name='DeliveryNote'
+            )
+        else:
+            context['saved_filters'] = []
+        return context
+
+class DeliveryNoteDetailView(LoginRequiredMixin, PermissionRequiredMixin, DetailView):
+    model = DeliveryNote
+    template_name = 'sales/delivery_note_detail.html'
+    context_object_name = 'dn'
+    permission_required = 'sales.view_deliverynote'
+
+class DeliveryNoteCreateView(LoginRequiredMixin, PermissionRequiredMixin, CreateView):
+    model = DeliveryNote
+    form_class = DeliveryNoteForm
+    template_name = 'sales/delivery_note_form.html'
+    permission_required = 'sales.add_deliverynote'
+
+    def get_success_url(self):
+        return reverse('delivery_note_detail', kwargs={'pk': self.object.pk})
+
+    def form_valid(self, form):
+        with transaction.atomic():
+            self.object = form.save()
+            # Copy items from invoice to DN items
+            invoice = self.object.invoice
+            for item in invoice.items.all():
+                DeliveryNoteItem.objects.create(
+                    delivery_note=self.object,
+                    product=item.product,
+                    quantity=item.quantity
+                )
+            messages.success(self.request, f"Delivery Note {self.object.dn_number} created successfully.")
+            return super().form_valid(form)
+
+@login_required
+def get_invoice_details(request, pk):
+    invoice = get_object_or_404(Invoice, pk=pk)
+    # Concatenate delivery address
+    customer = invoice.customer
+    address_parts = [
+        customer.delivery_address_line1,
+        customer.delivery_address_line2,
+        customer.delivery_city,
+        customer.delivery_province,
+        customer.delivery_zip_code
+    ]
+    address = ", ".join([p for p in address_parts if p])
+    
+    items = []
+    for item in invoice.items.all():
+        items.append({
+            'product_name': item.product.name,
+            'quantity': str(item.quantity),
+            'product_id': item.product.product_id
+        })
+        
+    data = {
+        'customer_name': customer.company_name or customer.customer_name,
+        'delivery_address': address,
+        'delivery_date': invoice.delivery_date.isoformat() if invoice.delivery_date else '',
+        'items': items
+    }
+    return JsonResponse(data)
+
+@login_required
+def update_dn_status(request, pk):
+    dn = get_object_or_404(DeliveryNote, pk=pk)
+    if request.method == 'POST':
+        new_status = request.POST.get('status')
+        if new_status in dict(DeliveryNote.Status.choices):
+            dn.status = new_status
+            dn.save()
+            messages.success(request, f"Status of {dn.dn_number} updated to {dn.get_status_display()}.")
+    return redirect('delivery_note_list')

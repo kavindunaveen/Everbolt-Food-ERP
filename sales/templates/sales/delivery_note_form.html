@@ -1,0 +1,175 @@
+{% extends 'layouts/base.html' %}
+
+{% block title %}{% if form.instance.pk %}Edit{% else %}New{% endif %} Delivery Note | Sales ERP{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 py-8" x-data="{ deliveredBy: '{{ form.delivered_by.value|default:'' }}' }">
+    <div class="mb-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div>
+            <h1 class="text-3xl font-extrabold text-gray-900 tracking-tight">
+                {% if form.instance.pk %}Edit Delivery Note <span class="text-indigo-600">#{{ form.instance.dn_number }}</span>{% else %}New Delivery Note{% endif %}
+            </h1>
+            <p class="text-sm text-gray-500 mt-1">Create a stock dispatch record for an issued invoice.</p>
+        </div>
+        <div class="flex items-center space-x-3">
+            <a href="{% url 'delivery_note_list' %}" class="inline-flex items-center px-4 py-2 border border-gray-200 text-sm font-bold rounded-lg text-gray-600 bg-gray-50 hover:bg-gray-100 transition-all">Back to List</a>
+        </div>
+    </div>
+
+    <form method="post" class="space-y-8">
+        {% csrf_token %}
+        
+        <div class="bg-white shadow-xl shadow-gray-100/50 rounded-2xl border border-gray-100 overflow-hidden">
+            <div class="px-6 py-4 bg-gray-50/50 border-b border-gray-100">
+                <h3 class="text-sm font-bold text-gray-800 uppercase tracking-widest">Delivery Information</h3>
+            </div>
+            <div class="p-6">
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <div class="lg:col-span-1">
+                        <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Invoice # <span class="text-red-500">*</span></label>
+                        {{ form.invoice }}
+                        {% if form.invoice.errors %}<p class="text-red-500 text-[10px] font-bold mt-1 uppercase">{{ form.invoice.errors.0 }}</p>{% endif %}
+                        <p class="text-[10px] text-gray-400 mt-1">Search by Invoice Number or Customer Name</p>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Customer Name</label>
+                        {{ form.customer_name }}
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Delivery Date</label>
+                        {{ form.delivery_date }}
+                    </div>
+                    <div class="md:col-span-2">
+                        <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Delivery Address</label>
+                        {{ form.delivery_address }}
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Delivered By <span class="text-red-500">*</span></label>
+                        <select name="delivered_by" id="id_delivered_by" x-model="deliveredBy" class="w-full px-3 py-2 border rounded-md focus:ring-indigo-500 focus:border-indigo-500 bg-white">
+                            <option value="">Select Delivery Person...</option>
+                            <option value="SUMITH" {% if form.delivered_by.value == 'SUMITH' %}selected{% endif %}>Sumith</option>
+                            <option value="ASANGA" {% if form.delivered_by.value == 'ASANGA' %}selected{% endif %}>Asanga</option>
+                            <option value="CHAMINDA" {% if form.delivered_by.value == 'CHAMINDA' %}selected{% endif %}>Chaminda</option>
+                            <option value="KESHAN" {% if form.delivered_by.value == 'KESHAN' %}selected{% endif %}>Keshan</option>
+                            <option value="MANISTHA" {% if form.delivered_by.value == 'MANISTHA' %}selected{% endif %}>Manistha</option>
+                            <option value="OTHER" {% if form.delivered_by.value == 'OTHER' %}selected{% endif %}>Other</option>
+                        </select>
+                        {% if form.delivered_by.errors %}<p class="text-red-500 text-[10px] font-bold mt-1 uppercase">{{ form.delivered_by.errors.0 }}</p>{% endif %}
+                    </div>
+                    <div x-show="deliveredBy === 'OTHER'" x-transition>
+                        <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Specify Other Person</label>
+                        {{ form.other_delivery_person }}
+                        {% if form.other_delivery_person.errors %}<p class="text-red-500 text-[10px] font-bold mt-1 uppercase">{{ form.other_delivery_person.errors.0 }}</p>{% endif %}
+                    </div>
+                    <div class="md:col-span-2 lg:col-span-3">
+                        <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Remarks</label>
+                        {{ form.remarks }}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Product Table (Read Only) -->
+        <div class="bg-white shadow-xl shadow-gray-100/50 rounded-2xl border border-gray-100 overflow-hidden">
+            <div class="px-6 py-4 bg-gray-50/50 border-b border-gray-100">
+                <h3 class="text-sm font-bold text-gray-800 uppercase tracking-widest">Product Details</h3>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-100">
+                    <thead class="bg-gray-50/30">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-[11px] font-bold text-gray-400 uppercase tracking-widest">Product ID</th>
+                            <th class="px-6 py-3 text-left text-[11px] font-bold text-gray-400 uppercase tracking-widest">Product Name</th>
+                            <th class="px-6 py-3 text-center text-[11px] font-bold text-gray-400 uppercase tracking-widest">Quantity</th>
+                        </tr>
+                    </thead>
+                    <tbody id="product-details-body" class="divide-y divide-gray-50">
+                        <tr id="no-invoice-selected">
+                            <td colspan="3" class="px-6 py-10 text-center text-sm text-gray-400 italic">Select an invoice to see product details</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="px-6 py-6 bg-gray-50/50 flex justify-end">
+                <button type="submit" class="px-8 py-3 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-700 transition-all shadow-lg transform active:scale-95 uppercase tracking-widest">
+                    Create Delivery Note
+                </button>
+            </div>
+        </div>
+    </form>
+</div>
+
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+
+<script>
+    $(document).ready(function() {
+        $('.select2-ajax-invoice').select2({
+            width: '100%',
+            placeholder: 'Search Invoice # or Customer...',
+            allowClear: true
+        });
+
+        $('#id_invoice').on('change', function() {
+            const invoiceId = $(this).val();
+            if (!invoiceId) {
+                // Reset fields
+                $('#id_customer_name').val('');
+                $('#id_delivery_address').val('');
+                $('#id_delivery_date').val('');
+                $('#product-details-body').html('<tr id="no-invoice-selected"><td colspan="3" class="px-6 py-10 text-center text-sm text-gray-400 italic">Select an invoice to see product details</td></tr>');
+                return;
+            }
+
+            // Show loading state
+            $('#product-details-body').html('<tr><td colspan="3" class="px-6 py-4 text-center"><div class="animate-spin inline-block w-6 h-6 border-2 border-indigo-500 border-t-transparent rounded-full"></div></td></tr>');
+
+            fetch(`/api/invoices/${invoiceId}/details/`)
+                .then(response => response.json())
+                .then(data => {
+                    $('#id_customer_name').val(data.customer_name);
+                    $('#id_delivery_address').val(data.delivery_address);
+                    $('#id_delivery_date').val(data.delivery_date);
+
+                    let html = '';
+                    if (data.items && data.items.length > 0) {
+                        data.items.forEach(item => {
+                            html += `
+                                <tr class="hover:bg-gray-50 transition-colors">
+                                    <td class="px-6 py-4 text-sm font-medium text-gray-500">${item.product_id}</td>
+                                    <td class="px-6 py-4 text-sm font-bold text-gray-900">${item.product_name}</td>
+                                    <td class="px-6 py-4 text-sm font-black text-indigo-600 text-center">${item.quantity}</td>
+                                </tr>
+                            `;
+                        });
+                    } else {
+                        html = '<tr><td colspan="3" class="px-6 py-4 text-center text-gray-500">No items found in this invoice</td></tr>';
+                    }
+                    $('#product-details-body').html(html);
+                })
+                .catch(err => {
+                    console.error('Error fetching invoice details:', err);
+                    $('#product-details-body').html('<tr><td colspan="3" class="px-6 py-4 text-center text-red-500">Error loading details</td></tr>');
+                });
+        });
+
+        // If editing or pre-selected
+        if ($('#id_invoice').val()) {
+            $('#id_invoice').trigger('change');
+        }
+    });
+</script>
+
+<style>
+    .select2-container .select2-selection--single {
+        height: 42px; border-color: #e5e7eb; border-radius: 0.5rem; display: flex; align-items: center;
+    }
+    .select2-container--default .select2-selection--single .select2-selection__rendered {
+        padding-left: 1rem; color: #374151; font-weight: 500;
+    }
+    .select2-container--default .select2-selection--single .select2-selection__arrow {
+        height: 40px;
+    }
+</style>
+{% endblock %}

@@ -88,6 +88,36 @@
                             {% endfor %}
                         </select>
                     </div>
+                    {% elif model_name == 'DeliveryNote' %}
+                    <div>
+                        <label class="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2">Delivery Status</label>
+                        <select name="status" class="w-full border-gray-200 rounded-lg text-sm font-medium focus:ring-indigo-500 focus:border-indigo-500">
+                            <option value="">All Statuses</option>
+                            <option value="PENDING" {% if request.GET.status == 'PENDING' %}selected{% endif %}>Pending</option>
+                            <option value="DELIVERED" {% if request.GET.status == 'DELIVERED' %}selected{% endif %}>Delivered</option>
+                            <option value="PARTIAL" {% if request.GET.status == 'PARTIAL' %}selected{% endif %}>Partial</option>
+                            <option value="FAILED" {% if request.GET.status == 'FAILED' %}selected{% endif %}>Failed</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2">Delivered By</label>
+                        <select name="delivered_by" class="w-full border-gray-200 rounded-lg text-sm font-medium focus:ring-indigo-500 focus:border-indigo-500">
+                            <option value="">All Personnel</option>
+                            <option value="SUMITH" {% if request.GET.delivered_by == 'SUMITH' %}selected{% endif %}>Sumith</option>
+                            <option value="ASANGA" {% if request.GET.delivered_by == 'ASANGA' %}selected{% endif %}>Asanga</option>
+                            <option value="CHAMINDA" {% if request.GET.delivered_by == 'CHAMINDA' %}selected{% endif %}>Chaminda</option>
+                            <option value="KESHAN" {% if request.GET.delivered_by == 'KESHAN' %}selected{% endif %}>Keshan</option>
+                            <option value="MANISTHA" {% if request.GET.delivered_by == 'MANISTHA' %}selected{% endif %}>Manistha</option>
+                            <option value="OTHER" {% if request.GET.delivered_by == 'OTHER' %}selected{% endif %}>Other</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2">Date Range</label>
+                        <div class="grid grid-cols-2 gap-2">
+                            <input type="date" name="date_from" class="text-xs border-gray-200 rounded-lg focus:ring-indigo-500 focus:border-indigo-500 p-2" value="{{ request.GET.date_from }}" placeholder="From">
+                            <input type="date" name="date_to" class="text-xs border-gray-200 rounded-lg focus:ring-indigo-500 focus:border-indigo-500 p-2" value="{{ request.GET.date_to }}" placeholder="To">
+                        </div>
+                    </div>
                     {% endif %}
                 </div>
                 <div class="px-5 py-4 bg-gray-50 border-t border-gray-100 flex gap-3">
