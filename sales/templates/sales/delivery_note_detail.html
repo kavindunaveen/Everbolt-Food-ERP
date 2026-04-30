@@ -112,7 +112,7 @@
     {% endif %}
 
     <!-- Activity Timeline -->
-    {% if audit_logs %}
+    {% if dn_audit_history %}
     <div class="bg-white shadow-xl shadow-gray-100/50 rounded-2xl border border-gray-100 overflow-hidden mb-8">
         <div class="px-6 py-4 bg-gray-50/50 border-b border-gray-100">
             <h3 class="text-sm font-bold text-gray-800 uppercase tracking-widest">Activity & Audit History</h3>
@@ -120,7 +120,7 @@
         <div class="p-6">
             <div class="flow-root">
                 <ul role="list" class="-mb-8">
-                    {% for log in audit_logs %}
+                    {% for log in dn_audit_history %}
                     <li>
                         <div class="relative pb-8">
                             {% if not forloop.last %}

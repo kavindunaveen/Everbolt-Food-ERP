@@ -9,10 +9,11 @@ from django.db import transaction
 from django.utils import timezone
 from django.db.models import Sum
 from decimal import Decimal
-from .models import Quotation, Invoice, DeliveryNote, DeliveryNoteItem
+from .models import Quotation, Invoice, DeliveryNote, DeliveryNoteItem, SalesAuditLog
 from .forms import QuotationForm, QuotationItemFormSet, InvoiceForm, InvoiceItemFormSet, DeliveryNoteForm
 from .services import issue_invoice, cancel_invoice, send_invoice_approval_email, log_sales_event, update_stock_reserves
 from users.models import SavedFilter
+from django.contrib.contenttypes.models import ContentType
 import csv
 from num2words import num2words
 
@@ -1187,10 +1188,8 @@ class DeliveryNoteDetailView(LoginRequiredMixin, PermissionRequiredMixin, Detail
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        from django.contrib.contenttypes.models import ContentType
-        from .models import SalesAuditLog
         ct = ContentType.objects.get_for_model(DeliveryNote)
-        context['audit_logs'] = SalesAuditLog.objects.filter(
+        context['dn_audit_history'] = SalesAuditLog.objects.filter(
             content_type=ct, 
             object_id=self.object.id
         ).order_by('-timestamp')
