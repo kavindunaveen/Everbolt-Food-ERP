@@ -35,7 +35,7 @@ class Quotation(models.Model):
                     last_seq = int(last_quote.quotation_number.split('_')[-1])
                     new_seq = last_seq + 1
                 else:
-                    new_seq = 1
+                    new_seq = 484
                 self.quotation_number = f"{prefix}{new_seq:05d}"
         super().save(*args, **kwargs)
 
@@ -105,7 +105,7 @@ class Invoice(models.Model):
                     last_seq = int(last_invoice.invoice_number.split('_')[-1])
                     new_seq = last_seq + 1
                 else:
-                    new_seq = 1
+                    new_seq = 315
                 self.invoice_number = f"{prefix}{new_seq:05d}"
         super().save(*args, **kwargs)
 
