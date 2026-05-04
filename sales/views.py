@@ -102,10 +102,19 @@ class SalesDashboardView(LoginRequiredMixin, TemplateView):
         context['recent_quotations'] = quotations.order_by('-creation_date')[:15]
         context['recent_invoices'] = invoices.order_by('-creation_date')[:15]
         
-        # Exclude cancelled invoices from the total amount stat
-        active_invoices = invoices.exclude(status='CANCELLED')
+        # Only include confirmed sales (ISSUED or PAID) for revenue stats
+        active_invoices = invoices.filter(status__in=['ISSUED', 'PAID'])
         context['total_invoice_count'] = active_invoices.count()
-        context['total_invoice_amount'] = active_invoices.aggregate(Sum('total_amount'))['total_amount__sum'] or Decimal('0.00')
+        sum_total = active_invoices.aggregate(Sum('total_amount'))['total_amount__sum'] or Decimal('0.00')
+        sum_tax = active_invoices.aggregate(Sum('tax_amount'))['tax_amount__sum'] or Decimal('0.00')
+        context['total_invoice_amount'] = sum_total - sum_tax
+        
+        try:
+            from users.models import SavedFilter
+            context['saved_filters'] = SavedFilter.objects.filter(user=self.request.user, model_name='SalesDashboard')
+        except ImportError:
+            context['saved_filters'] = []
+            
         return context
 
 class QuotationListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):

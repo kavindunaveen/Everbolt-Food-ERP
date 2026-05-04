@@ -37,18 +37,18 @@ class DashboardDataAPI(LoginRequiredMixin, View):
         total_packs = invoice_items.filter(product__stock_unit='pack').aggregate(Sum('quantity'))['quantity__sum'] or 0
         
         # Confectioneries Categories
-        confectionery_sales = invoice_items.filter(product__category__icontains='Confectionery').aggregate(Sum('line_total'))['line_total__sum'] or 0
-        overall_sales_total = invoice_items.aggregate(Sum('line_total'))['line_total__sum'] or 0
+        confectionery_sales = invoice_items.filter(product__category__icontains='Confectionery').annotate(ex_vat=F('line_total') - F('tax_amount')).aggregate(Sum('ex_vat'))['ex_vat__sum'] or 0
+        overall_sales_total = invoice_items.annotate(ex_vat=F('line_total') - F('tax_amount')).aggregate(Sum('ex_vat'))['ex_vat__sum'] or 0
 
         # Category Specific
         sugar_qty = invoice_items.filter(product__category__icontains='Sugar').aggregate(Sum('quantity'))['quantity__sum'] or 0
-        sugar_sales = invoice_items.filter(product__category__icontains='Sugar').aggregate(Sum('line_total'))['line_total__sum'] or 0
+        sugar_sales = invoice_items.filter(product__category__icontains='Sugar').annotate(ex_vat=F('line_total') - F('tax_amount')).aggregate(Sum('ex_vat'))['ex_vat__sum'] or 0
 
         creamer_qty = invoice_items.filter(product__category__icontains='Creamer').aggregate(Sum('quantity'))['quantity__sum'] or 0
-        creamer_sales = invoice_items.filter(product__category__icontains='Creamer').aggregate(Sum('line_total'))['line_total__sum'] or 0
+        creamer_sales = invoice_items.filter(product__category__icontains='Creamer').annotate(ex_vat=F('line_total') - F('tax_amount')).aggregate(Sum('ex_vat'))['ex_vat__sum'] or 0
 
         tea_qty = invoice_items.filter(product__category__icontains='Tea').aggregate(Sum('quantity'))['quantity__sum'] or 0
-        tea_sales = invoice_items.filter(product__category__icontains='Tea').aggregate(Sum('line_total'))['line_total__sum'] or 0
+        tea_sales = invoice_items.filter(product__category__icontains='Tea').annotate(ex_vat=F('line_total') - F('tax_amount')).aggregate(Sum('ex_vat'))['ex_vat__sum'] or 0
 
         # Monthly Trends
         months_names = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"]
@@ -65,7 +65,9 @@ class DashboardDataAPI(LoginRequiredMixin, View):
         }
 
         monthly_items = invoice_items.values('invoice__creation_date__month', 'product__category').annotate(
-            t_sales=Sum('line_total'),
+            ex_vat_sales=F('line_total') - F('tax_amount')
+        ).values('invoice__creation_date__month', 'product__category').annotate(
+            t_sales=Sum('ex_vat_sales'),
             t_qty=Sum('quantity')
         )
 
