@@ -251,7 +251,7 @@ class QuotationCreateView(LoginRequiredMixin, PermissionRequiredMixin, CreateVie
                 
                 self.object.tax_amount = tax
                 self.object.total_discount = tot_discount
-                self.object.total_amount = total.quantize(Decimal('1.'), rounding=ROUND_UP)
+                self.object.total_amount = total.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP).quantize(Decimal('1.'), rounding=ROUND_UP)
                 self.object.save()
             else:
                 return super().form_invalid(form)
@@ -317,7 +317,7 @@ class QuotationUpdateView(LoginRequiredMixin, PermissionRequiredMixin, UpdateVie
                 
                 self.object.tax_amount = tax
                 self.object.total_discount = tot_discount
-                self.object.total_amount = total.quantize(Decimal('1.'), rounding=ROUND_UP)
+                self.object.total_amount = total.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP).quantize(Decimal('1.'), rounding=ROUND_UP)
                 self.object.save()
             else:
                 return super().form_invalid(form)
@@ -398,7 +398,7 @@ class InvoiceCreateView(LoginRequiredMixin, PermissionRequiredMixin, CreateView)
                 
                 self.object.tax_amount = tax
                 self.object.total_discount = tot_discount
-                self.object.total_amount = total.quantize(Decimal('1.'), rounding=ROUND_UP)
+                self.object.total_amount = total.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP).quantize(Decimal('1.'), rounding=ROUND_UP)
                 self.object.save()
                 
                 log_sales_event(
@@ -506,7 +506,7 @@ class InvoiceUpdateView(LoginRequiredMixin, PermissionRequiredMixin, UpdateView)
                 
                 self.object.tax_amount = tax
                 self.object.total_discount = tot_discount
-                self.object.total_amount = total.quantize(Decimal('1.'), rounding=ROUND_UP)
+                self.object.total_amount = total.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP).quantize(Decimal('1.'), rounding=ROUND_UP)
                 self.object.save()
                 
                 update_stock_reserves(self.object)

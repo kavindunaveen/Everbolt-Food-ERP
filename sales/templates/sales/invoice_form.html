@@ -280,10 +280,10 @@
                     <thead class="bg-gray-50/30">
                         <tr>
                             <th class="px-3 py-3 w-full text-left text-[11px] font-bold text-gray-400 uppercase tracking-widest min-w-[250px]">Product</th>
-                            <th class="px-3 py-3 text-center text-[11px] font-bold text-gray-400 uppercase tracking-widest w-[80px]">Quantity</th>
-                            <th class="px-3 py-3 text-right text-[11px] font-bold text-gray-400 uppercase tracking-widest w-[110px]">Unit Price (Rs)</th>
-                            <th class="px-3 py-3 text-right text-[11px] font-bold text-gray-400 uppercase tracking-widest w-[110px]">Discount (Rs)</th>
-                            <th class="px-3 py-3 text-right text-[11px] font-bold text-gray-400 uppercase tracking-widest w-[110px]">Total (Rs)</th>
+                            <th class="px-3 py-3 text-center text-[11px] font-bold text-gray-400 uppercase tracking-widest w-[120px]">Quantity</th>
+                            <th class="px-3 py-3 text-right text-[11px] font-bold text-gray-400 uppercase tracking-widest w-[150px]">Unit Price (Rs)</th>
+                            <th class="px-3 py-3 text-right text-[11px] font-bold text-gray-400 uppercase tracking-widest w-[150px]">Discount (Rs)</th>
+                            <th class="px-3 py-3 text-right text-[11px] font-bold text-gray-400 uppercase tracking-widest w-[150px]">Total (Rs)</th>
                             <th class="px-3 py-3 text-center text-[11px] font-bold text-gray-400 uppercase tracking-widest w-[60px]">Actions</th>
                         </tr>
                     </thead>
@@ -297,26 +297,26 @@
                                     <div class="text-red-500 text-[10px] font-bold mt-1 uppercase">{{ item_form.product.errors|striptags }}</div>
                                 {% endif %}
                             </td>
-                            <td class="px-3 py-3 align-top w-[80px]">
+                            <td class="px-3 py-3 align-top w-[120px]">
                                 {{ item_form.quantity }}
                                 {% if item_form.quantity.errors %}
                                     <div class="text-red-500 text-[10px] font-bold mt-1 uppercase text-center">{{ item_form.quantity.errors|striptags }}</div>
                                 {% endif %}
                             </td>
-                            <td class="px-3 py-3 align-top w-[110px]">
+                            <td class="px-3 py-3 align-top w-[150px]">
                                 {{ item_form.unit_price }}
                                 {% if item_form.unit_price.errors %}
                                     <div class="text-red-500 text-[10px] font-bold mt-1 uppercase text-right">{{ item_form.unit_price.errors|striptags }}</div>
                                 {% endif %}
                             </td>
-                            <td class="px-3 py-3 align-top w-[110px]">
+                            <td class="px-3 py-3 align-top w-[150px]">
                                 {{ item_form.discount }}
                                 {% if item_form.discount.errors %}
                                     <div class="text-red-500 text-[10px] font-bold mt-1 uppercase text-right">{{ item_form.discount.errors|striptags }}</div>
                                 {% endif %}
                             </td>
-                            <td class="px-3 py-3 align-top w-[110px]">
-                                <input type="text" class="w-full px-3 py-2 border border-gray-100 rounded-md bg-gray-50 text-gray-900 font-bold text-sm text-right min-w-[100px] line-total" value="0.00" readonly tabindex="-1">
+                            <td class="px-3 py-3 align-top w-[150px]">
+                                <input type="text" class="w-full px-3 py-2 border border-gray-100 rounded-md bg-gray-50 text-gray-900 font-bold text-sm text-right min-w-[120px] line-total" value="0.00" readonly tabindex="-1">
                             </td>
                             <td class="px-3 py-3 text-center align-top w-[60px]">
                                 {% if item_form.instance.pk %}
@@ -336,6 +336,28 @@
                         {% endfor %}
                     </tbody>
                 </table>
+            </div>
+
+            <!-- Dynamic Calculation Summary Section -->
+            <div class="px-6 py-6 border-t border-gray-100 bg-gray-50/30">
+                <div class="flex flex-col items-end space-y-3">
+                    <div class="flex justify-between w-full max-w-md">
+                        <span class="text-xs font-bold text-gray-500 uppercase tracking-widest">Total Discount:</span>
+                        <span class="text-sm font-bold text-gray-900" id="summary-discount">Rs. 0.00</span>
+                    </div>
+                    <div class="flex justify-between w-full max-w-md">
+                        <span class="text-xs font-bold text-gray-500 uppercase tracking-widest">Total Value of Supply (Ex-VAT):</span>
+                        <span class="text-sm font-bold text-gray-900" id="summary-subtotal">Rs. 0.00</span>
+                    </div>
+                    <div class="flex justify-between w-full max-w-md">
+                        <span class="text-xs font-bold text-gray-500 uppercase tracking-widest">VAT Amount (@ 18%):</span>
+                        <span class="text-sm font-bold text-gray-900" id="summary-tax">Rs. 0.00</span>
+                    </div>
+                    <div class="flex justify-between w-full max-w-md pt-3 border-t border-gray-200">
+                        <span class="text-sm font-black text-gray-900 uppercase tracking-widest">Total Amount (Incl. VAT):</span>
+                        <span class="text-xl font-black text-emerald-600" id="summary-total">Rs. 0.00</span>
+                    </div>
+                </div>
             </div>
             
             <div class="px-6 py-6 bg-gray-50/50 flex flex-col md:flex-row justify-between items-center gap-4">
@@ -507,26 +529,26 @@
                     <div class="text-red-500 text-[10px] mt-1">{{ items.empty_form.product.errors|striptags }}</div>
                 {% endif %}
             </td>
-            <td class="px-3 py-3 w-[80px] align-top">
+            <td class="px-3 py-3 w-[120px] align-top">
                 {{ items.empty_form.quantity }}
                 {% if items.empty_form.quantity.errors %}
                     <div class="text-red-500 text-[10px] mt-1">{{ items.empty_form.quantity.errors|striptags }}</div>
                 {% endif %}
             </td>
-            <td class="px-3 py-3 w-[110px] align-top">
+            <td class="px-3 py-3 w-[150px] align-top">
                 {{ items.empty_form.unit_price }}
                 {% if items.empty_form.unit_price.errors %}
                     <div class="text-red-500 text-[10px] mt-1">{{ items.empty_form.unit_price.errors|striptags }}</div>
                 {% endif %}
             </td>
-            <td class="px-3 py-3 w-[110px] align-top">
+            <td class="px-3 py-3 w-[150px] align-top">
                 {{ items.empty_form.discount }}
                 {% if items.empty_form.discount.errors %}
                     <div class="text-red-500 text-[10px] mt-1">{{ items.empty_form.discount.errors|striptags }}</div>
                 {% endif %}
             </td>
-            <td class="px-3 py-3 w-[110px] align-top">
-                <input type="text" class="w-full px-3 py-2 border border-gray-100 rounded-md bg-gray-50 text-gray-900 font-bold text-sm text-right min-w-[100px] line-total" value="0.00" readonly tabindex="-1">
+            <td class="px-3 py-3 w-[150px] align-top">
+                <input type="text" class="w-full px-3 py-2 border border-gray-100 rounded-md bg-gray-50 text-gray-900 font-bold text-sm text-right min-w-[120px] line-total" value="0.00" readonly tabindex="-1">
             </td>
             <td class="px-3 py-3 text-center w-[60px] align-top">
                 <div class="hidden">{{ items.empty_form.DELETE }}</div>
@@ -699,6 +721,29 @@
             const price = parseFloat($(row).find('input[name$="-unit_price"]').val()) || 0;
             const discount = parseFloat($(row).find('input[name$="-discount"]').val()) || 0;
             $(row).find('.line-total').val(((qty * price) - discount).toFixed(2));
+            updateSummary();
+        }
+
+        function updateSummary() {
+            let totalDiscount = 0;
+            let subtotal = 0;
+            
+            $('.formset-row:visible').each(function() {
+                const qty = parseFloat($(this).find('input[name$="-quantity"]').val()) || 0;
+                const price = parseFloat($(this).find('input[name$="-unit_price"]').val()) || 0;
+                const discount = parseFloat($(this).find('input[name$="-discount"]').val()) || 0;
+                
+                totalDiscount += discount;
+                subtotal += (qty * price) - discount;
+            });
+            
+            const tax = subtotal * 0.18;
+            const total = Math.ceil(Math.round((subtotal + tax) * 100) / 100); // Round to 2 decimals then Ceiling
+            
+            $('#summary-discount').text('Rs. ' + totalDiscount.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}));
+            $('#summary-subtotal').text('Rs. ' + subtotal.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}));
+            $('#summary-tax').text('Rs. ' + tax.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}));
+            $('#summary-total').text('Rs. ' + total.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}));
         }
 
         // Run calculations on load for existing items
