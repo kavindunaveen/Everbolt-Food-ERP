@@ -66,7 +66,7 @@ class SalesDashboardView(LoginRequiredMixin, TemplateView):
         date_to = self.request.GET.get('date_to')
         salesperson_id = self.request.GET.get('salesperson')
         
-        if not self.request.user.has_perm('sales.approve_invoice'):
+        if self.request.user.role == 'SALES_OFFICER':
             quotations = Quotation.objects.filter(salesperson=self.request.user)
             invoices = Invoice.objects.filter(salesperson=self.request.user)
         else:
@@ -108,7 +108,7 @@ class QuotationListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
     def get_queryset(self):
         from django.db.models import Q
         qs = super().get_queryset().order_by('-creation_date')
-        if not self.request.user.has_perm('sales.approve_invoice'):
+        if self.request.user.role == 'SALES_OFFICER':
             qs = qs.filter(salesperson=self.request.user)
 
         status = self.request.GET.get('status')
@@ -158,7 +158,7 @@ class InvoiceListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
     def get_queryset(self):
         from django.db.models import Q
         qs = super().get_queryset().order_by('-creation_date')
-        if not self.request.user.has_perm('sales.approve_invoice'):
+        if self.request.user.role == 'SALES_OFFICER':
             qs = qs.filter(salesperson=self.request.user)
 
         status = self.request.GET.get('status')
