@@ -19,9 +19,9 @@ class Quotation(models.Model):
     valid_until = models.DateField()
     customer_po_number = models.CharField(max_length=50, blank=True, null=True)
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.DRAFT)
-    total_amount = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
-    tax_amount = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
-    total_discount = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
+    total_amount = models.DecimalField(max_digits=12, decimal_places=5, default=0.00000)
+    tax_amount = models.DecimalField(max_digits=12, decimal_places=5, default=0.00000)
+    total_discount = models.DecimalField(max_digits=12, decimal_places=5, default=0.00000)
     notes = models.TextField(blank=True, null=True)
     is_converted = models.BooleanField(default=False)
 
@@ -52,10 +52,10 @@ class QuotationItem(models.Model):
     quotation = models.ForeignKey(Quotation, related_name='items', on_delete=models.CASCADE)
     product = models.ForeignKey(Product, on_delete=models.PROTECT)
     quantity = models.PositiveIntegerField()
-    unit_price = models.DecimalField(max_digits=12, decimal_places=2)
-    discount = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
-    tax_amount = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
-    line_total = models.DecimalField(max_digits=12, decimal_places=2)
+    unit_price = models.DecimalField(max_digits=12, decimal_places=5)
+    discount = models.DecimalField(max_digits=12, decimal_places=5, default=0.00000)
+    tax_amount = models.DecimalField(max_digits=12, decimal_places=5, default=0.00000)
+    line_total = models.DecimalField(max_digits=12, decimal_places=5)
 
     @property
     def amount_ex_vat(self):
@@ -87,9 +87,9 @@ class Invoice(models.Model):
     due_date = models.DateField(blank=True, null=True)
     customer_po_number = models.CharField(max_length=50, blank=True, null=True)
     
-    total_amount = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
-    tax_amount = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
-    total_discount = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
+    total_amount = models.DecimalField(max_digits=12, decimal_places=5, default=0.00000)
+    tax_amount = models.DecimalField(max_digits=12, decimal_places=5, default=0.00000)
+    total_discount = models.DecimalField(max_digits=12, decimal_places=5, default=0.00000)
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.DRAFT)
     notes = models.TextField(blank=True, null=True)
     reviewer_notes = models.TextField(blank=True, null=True, help_text="Notes from the approver/manager")
@@ -127,10 +127,10 @@ class InvoiceItem(models.Model):
     invoice = models.ForeignKey(Invoice, related_name='items', on_delete=models.CASCADE)
     product = models.ForeignKey(Product, on_delete=models.PROTECT)
     quantity = models.PositiveIntegerField()
-    unit_price = models.DecimalField(max_digits=12, decimal_places=2)
-    discount = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
-    tax_amount = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
-    line_total = models.DecimalField(max_digits=12, decimal_places=2)
+    unit_price = models.DecimalField(max_digits=12, decimal_places=5)
+    discount = models.DecimalField(max_digits=12, decimal_places=5, default=0.00000)
+    tax_amount = models.DecimalField(max_digits=12, decimal_places=5, default=0.00000)
+    line_total = models.DecimalField(max_digits=12, decimal_places=5)
 
     @property
     def amount_ex_vat(self):

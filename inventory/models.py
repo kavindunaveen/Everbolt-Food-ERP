@@ -62,11 +62,11 @@ class Product(models.Model):
     allow_negative_stock = models.BooleanField(default=False)
     reorder_level = models.DecimalField(max_digits=12, decimal_places=3, default=0.000)
     
-    selling_price = models.DecimalField(max_digits=12, decimal_places=2)
-    price_tier_100 = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True, help_text="Price for <= 100 pcs")
-    price_tier_250 = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True, help_text="Price for <= 250 pcs")
-    price_tier_500 = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True, help_text="Price for >= 500 pcs")
-    custom_load_price = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
+    selling_price = models.DecimalField(max_digits=12, decimal_places=5)
+    price_tier_100 = models.DecimalField(max_digits=12, decimal_places=5, null=True, blank=True, help_text="Price for <= 100 pcs")
+    price_tier_250 = models.DecimalField(max_digits=12, decimal_places=5, null=True, blank=True, help_text="Price for <= 250 pcs")
+    price_tier_500 = models.DecimalField(max_digits=12, decimal_places=5, null=True, blank=True, help_text="Price for >= 500 pcs")
+    custom_load_price = models.DecimalField(max_digits=12, decimal_places=5, null=True, blank=True)
     tax_rate = models.DecimalField(max_digits=5, decimal_places=2, default=18.00) # Fixed 18% generic tax
     
     status = models.BooleanField(default=True, help_text="True if active")
