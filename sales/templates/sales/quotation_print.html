@@ -250,7 +250,7 @@
             const urlParams = new URLSearchParams(window.location.search);
             if (urlParams.has('download')) {
                 const element = document.getElementById('printable-area');
-                const filename = '{{ quotation.customer.company_name|default:quotation.customer.name }} - Quotation {{ quotation.quotation_number }}.pdf';
+                const filename = '{{ quotation.customer.company_name|default:quotation.customer.customer_name }} - Quotation {{ quotation.quotation_number }}.pdf';
                 
                 const opt = {
                     margin:       10,

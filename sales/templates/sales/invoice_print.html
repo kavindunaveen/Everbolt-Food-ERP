@@ -330,7 +330,7 @@
             const urlParams = new URLSearchParams(window.location.search);
             if (urlParams.has('download')) {
                 const element = document.getElementById('printable-area');
-                const filename = '{{ invoice.customer.company_name|default:invoice.customer.name }} - Invoice {{ invoice.invoice_number }}.pdf';
+                const filename = '{{ invoice.customer.company_name|default:invoice.customer.customer_name }} - Invoice {{ invoice.invoice_number }}.pdf';
                 
                 const opt = {
                     margin:       10,
