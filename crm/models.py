@@ -90,6 +90,27 @@ class Customer(models.Model):
     vat_enabled = models.BooleanField(default=True, help_text="Always compute 18% VAT")
     vat_number = models.CharField(max_length=50, blank=True, null=True)
     tin_number = models.CharField(max_length=50, blank=True, null=True)
+    nic = models.CharField(max_length=20, blank=True, null=True)
+
+    @property
+    def billing_address(self):
+        parts = []
+        if self.billing_address_line1: parts.append(self.billing_address_line1)
+        if self.billing_address_line2: parts.append(self.billing_address_line2)
+        if self.billing_city: parts.append(self.billing_city)
+        if self.billing_province: parts.append(self.get_billing_province_display())
+        if self.billing_zip_code: parts.append(self.billing_zip_code)
+        return "\n".join(parts)
+
+    @property
+    def delivery_address(self):
+        parts = []
+        if self.delivery_address_line1: parts.append(self.delivery_address_line1)
+        if self.delivery_address_line2: parts.append(self.delivery_address_line2)
+        if self.delivery_city: parts.append(self.delivery_city)
+        if self.delivery_province: parts.append(self.get_delivery_province_display())
+        if self.delivery_zip_code: parts.append(self.delivery_zip_code)
+        return "\n".join(parts)
 
     def save(self, *args, **kwargs):
         if not self.customer_code:

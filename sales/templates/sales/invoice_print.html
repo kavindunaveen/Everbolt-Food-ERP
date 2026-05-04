@@ -180,12 +180,7 @@
             <div class="box" style="min-height: 100px;">
                 <div style="font-weight:bold; margin-bottom: 2px;">Purchaser's TIN: <span style="font-weight:normal;">{{ invoice.customer.vat_number|default:"N/A" }}</span></div>
                 <div style="font-weight:bold; margin-bottom: 2px;">Purchaser's Name: <span style="font-weight:normal;">{{ invoice.customer.company_name|default:invoice.customer.customer_name }}</span></div>
-                <div style="font-weight:bold; margin-bottom: 2px;">Address: <br><span style="font-weight:normal;">
-                    {% if invoice.customer.billing_address_line1 %}{{ invoice.customer.billing_address_line1 }}<br>{% endif %}
-                    {% if invoice.customer.billing_address_line2 %}{{ invoice.customer.billing_address_line2 }}<br>{% endif %}
-                    {% if invoice.customer.billing_city %}{{ invoice.customer.billing_city }}{% if invoice.customer.billing_province %}, {% endif %}{% endif %}
-                    {% if invoice.customer.billing_province %}{{ invoice.customer.get_billing_province_display }}{% endif %}
-                </span></div>
+                <div style="font-weight:bold; margin-bottom: 2px;">Address: <br><span style="font-weight:normal;">{{ invoice.customer.billing_address|linebreaksbr }}</span></div>
                 <div style="font-weight:bold; margin-top: 5px;">Telephone No: <span style="font-weight:normal;">{{ invoice.customer.phone }}</span></div>
             </div>
         </div>
