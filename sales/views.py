@@ -8,7 +8,7 @@ from django.urls import reverse_lazy, reverse
 from django.db import transaction
 from django.utils import timezone
 from django.db.models import Sum
-from decimal import Decimal, ROUND_UP
+from decimal import Decimal, ROUND_UP, ROUND_HALF_UP
 from .models import Quotation, Invoice, DeliveryNote, DeliveryNoteItem, SalesAuditLog
 from .forms import QuotationForm, QuotationItemFormSet, InvoiceForm, InvoiceItemFormSet, DeliveryNoteForm
 from .services import issue_invoice, cancel_invoice, send_invoice_approval_email, log_sales_event, update_stock_reserves
@@ -19,28 +19,38 @@ from num2words import num2words
 
 def get_next_invoice_number():
     prefix = timezone.now().strftime('%y%b').upper() + "_EBFR_"
-    existing = Invoice.objects.filter(invoice_number__startswith=prefix).values_list('invoice_number', flat=True)
+    # Find the maximum number across ALL invoices to ensure continuity
+    existing = Invoice.objects.all().values_list('invoice_number', flat=True)
     used = []
     for num in existing:
         try:
-            used.append(int(num.split('_')[-1]))
-        except ValueError:
+            parts = num.split('_')
+            if parts:
+                used.append(int(parts[-1]))
+        except (ValueError, IndexError):
             pass
-    next_num = 1
+    
+    start_num = 315
+    next_num = start_num
     while next_num in used:
         next_num += 1
     return f"{prefix}{next_num:05d}"
     
 def get_next_quotation_number():
     prefix = timezone.now().strftime('%y%b').upper() + "_EBFR_QUO_"
-    existing = Quotation.objects.filter(quotation_number__startswith=prefix).values_list('quotation_number', flat=True)
+    # Find the maximum number across ALL quotations to ensure continuity
+    existing = Quotation.objects.all().values_list('quotation_number', flat=True)
     used = []
     for num in existing:
         try:
-            used.append(int(num.split('_')[-1]))
-        except ValueError:
+            parts = num.split('_')
+            if parts:
+                used.append(int(parts[-1]))
+        except (ValueError, IndexError):
             pass
-    next_num = 1
+            
+    start_num = 484
+    next_num = start_num
     while next_num in used:
         next_num += 1
     return f"{prefix}{next_num:05d}"
