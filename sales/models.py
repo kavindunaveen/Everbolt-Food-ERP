@@ -22,6 +22,8 @@ class Quotation(models.Model):
     total_amount = models.DecimalField(max_digits=12, decimal_places=5, default=0.00000)
     tax_amount = models.DecimalField(max_digits=12, decimal_places=5, default=0.00000)
     total_discount = models.DecimalField(max_digits=12, decimal_places=5, default=0.00000)
+    custom_discount_type = models.CharField(max_length=10, choices=[('AMOUNT', 'Amount'), ('PERCENT', 'Percentage')], default='AMOUNT')
+    custom_discount_value = models.DecimalField(max_digits=12, decimal_places=5, default=0.00000)
     notes = models.TextField(blank=True, null=True)
     is_converted = models.BooleanField(default=False)
 
@@ -53,9 +55,18 @@ class QuotationItem(models.Model):
     product = models.ForeignKey(Product, on_delete=models.PROTECT)
     quantity = models.PositiveIntegerField()
     unit_price = models.DecimalField(max_digits=12, decimal_places=5)
+    discount_type = models.CharField(max_length=10, choices=[('AMOUNT', 'Amount'), ('PERCENT', 'Percentage')], default='AMOUNT')
     discount = models.DecimalField(max_digits=12, decimal_places=5, default=0.00000)
     tax_amount = models.DecimalField(max_digits=12, decimal_places=5, default=0.00000)
     line_total = models.DecimalField(max_digits=12, decimal_places=5)
+
+    @property
+    def get_discount_amount(self):
+        from decimal import Decimal
+        val = self.discount or Decimal('0.00')
+        if self.discount_type == 'PERCENT':
+            return (self.quantity * self.unit_price) * (val / Decimal('100.0'))
+        return val
 
     @property
     def amount_ex_vat(self):
@@ -90,6 +101,8 @@ class Invoice(models.Model):
     total_amount = models.DecimalField(max_digits=12, decimal_places=5, default=0.00000)
     tax_amount = models.DecimalField(max_digits=12, decimal_places=5, default=0.00000)
     total_discount = models.DecimalField(max_digits=12, decimal_places=5, default=0.00000)
+    custom_discount_type = models.CharField(max_length=10, choices=[('AMOUNT', 'Amount'), ('PERCENT', 'Percentage')], default='AMOUNT')
+    custom_discount_value = models.DecimalField(max_digits=12, decimal_places=5, default=0.00000)
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.DRAFT)
     notes = models.TextField(blank=True, null=True)
     reviewer_notes = models.TextField(blank=True, null=True, help_text="Notes from the approver/manager")
@@ -128,9 +141,18 @@ class InvoiceItem(models.Model):
     product = models.ForeignKey(Product, on_delete=models.PROTECT)
     quantity = models.PositiveIntegerField()
     unit_price = models.DecimalField(max_digits=12, decimal_places=5)
+    discount_type = models.CharField(max_length=10, choices=[('AMOUNT', 'Amount'), ('PERCENT', 'Percentage')], default='AMOUNT')
     discount = models.DecimalField(max_digits=12, decimal_places=5, default=0.00000)
     tax_amount = models.DecimalField(max_digits=12, decimal_places=5, default=0.00000)
     line_total = models.DecimalField(max_digits=12, decimal_places=5)
+
+    @property
+    def get_discount_amount(self):
+        from decimal import Decimal
+        val = self.discount or Decimal('0.00')
+        if self.discount_type == 'PERCENT':
+            return (self.quantity * self.unit_price) * (val / Decimal('100.0'))
+        return val
 
     @property
     def amount_ex_vat(self):

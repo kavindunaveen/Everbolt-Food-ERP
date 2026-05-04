@@ -252,21 +252,40 @@ class QuotationCreateView(LoginRequiredMixin, PermissionRequiredMixin, CreateVie
                 tot_discount = 0
                 for item in saved_items:
                     item.quotation = self.object
-                    discount = item.discount or Decimal('0.00')
+                    discount_amt = item.get_discount_amount
                     if self.object.customer.vat_enabled:
-                        item.tax_amount = ((item.quantity * item.unit_price) - discount) * Decimal('0.18')
+                        item.tax_amount = ((item.quantity * item.unit_price) - discount_amt) * Decimal('0.18')
                     else:
                         item.tax_amount = Decimal('0.00')
                         
-                    item.line_total = (item.quantity * item.unit_price) - discount + item.tax_amount
+                    item.line_total = (item.quantity * item.unit_price) - discount_amt + item.tax_amount
                     item.save()
                     
-                    total += item.line_total
-                    tax += item.tax_amount
-                    tot_discount += discount
-                
                 for obj in items.deleted_objects:
                     obj.delete()
+                    
+                # Calculate aggregated values for quotation
+                gross_total = sum((item.quantity * item.unit_price) for item in self.object.items.all())
+                line_discount = sum(item.get_discount_amount for item in self.object.items.all())
+                subtotal = gross_total - line_discount
+                
+                custom_val = self.object.custom_discount_value or Decimal('0.00')
+                if self.object.custom_discount_type == 'PERCENT':
+                    global_discount = subtotal * (custom_val / Decimal('100.0'))
+                else:
+                    global_discount = custom_val
+                    
+                tot_discount = line_discount + global_discount
+                subtotal -= global_discount
+                if subtotal < Decimal('0.00'):
+                    subtotal = Decimal('0.00')
+                    
+                if self.object.customer.vat_enabled:
+                    tax = subtotal * Decimal('0.18')
+                else:
+                    tax = Decimal('0.00')
+                
+                total = subtotal + tax
                 
                 self.object.tax_amount = tax
                 self.object.total_discount = tot_discount
@@ -313,26 +332,37 @@ class QuotationUpdateView(LoginRequiredMixin, PermissionRequiredMixin, UpdateVie
                 tot_discount = 0
                 for item in saved_items:
                     item.quotation = self.object
-                    discount = item.discount or Decimal('0.00')
+                    discount_amt = item.get_discount_amount
                     if self.object.customer.vat_enabled:
-                        item.tax_amount = ((item.quantity * item.unit_price) - discount) * Decimal('0.18')
+                        item.tax_amount = ((item.quantity * item.unit_price) - discount_amt) * Decimal('0.18')
                     else:
                         item.tax_amount = Decimal('0.00')
                         
-                    item.line_total = (item.quantity * item.unit_price) - discount + item.tax_amount
+                    item.line_total = (item.quantity * item.unit_price) - discount_amt + item.tax_amount
                     item.save()
                     
                 # Re-calculate totals from ALL items associated with this quotation
-                for item in self.object.items.all():
-                    total += item.line_total
-                    tax += item.tax_amount
-                    tot_discount += item.discount or Decimal('0.00')
+                gross_total = sum((item.quantity * item.unit_price) for item in self.object.items.all())
+                line_discount = sum(item.get_discount_amount for item in self.object.items.all())
+                subtotal = gross_total - line_discount
                 
-                for obj in items.deleted_objects:
-                    obj.delete()
-                    total -= obj.line_total
-                    tax -= obj.tax_amount
-                    tot_discount -= obj.discount or Decimal('0.00')
+                custom_val = self.object.custom_discount_value or Decimal('0.00')
+                if self.object.custom_discount_type == 'PERCENT':
+                    global_discount = subtotal * (custom_val / Decimal('100.0'))
+                else:
+                    global_discount = custom_val
+                    
+                tot_discount = line_discount + global_discount
+                subtotal -= global_discount
+                if subtotal < Decimal('0.00'):
+                    subtotal = Decimal('0.00')
+                    
+                if self.object.customer.vat_enabled:
+                    tax = subtotal * Decimal('0.18')
+                else:
+                    tax = Decimal('0.00')
+                
+                total = subtotal + tax
                 
                 self.object.tax_amount = tax
                 self.object.total_discount = tot_discount
@@ -399,21 +429,40 @@ class InvoiceCreateView(LoginRequiredMixin, PermissionRequiredMixin, CreateView)
                 tot_discount = 0
                 for item in saved_items:
                     item.invoice = self.object
-                    discount = item.discount or Decimal('0.00')
+                    discount_amt = item.get_discount_amount
                     if self.object.customer.vat_enabled:
-                        item.tax_amount = ((item.quantity * item.unit_price) - discount) * Decimal('0.18')
+                        item.tax_amount = ((item.quantity * item.unit_price) - discount_amt) * Decimal('0.18')
                     else:
                         item.tax_amount = Decimal('0.00')
                         
-                    item.line_total = (item.quantity * item.unit_price) - discount + item.tax_amount
+                    item.line_total = (item.quantity * item.unit_price) - discount_amt + item.tax_amount
                     item.save()
                     
-                    total += item.line_total
-                    tax += item.tax_amount
-                    tot_discount += discount
-                
                 for obj in items.deleted_objects:
                     obj.delete()
+                
+                # Calculate aggregated values for invoice
+                gross_total = sum((item.quantity * item.unit_price) for item in self.object.items.all())
+                line_discount = sum(item.get_discount_amount for item in self.object.items.all())
+                subtotal = gross_total - line_discount
+                
+                custom_val = self.object.custom_discount_value or Decimal('0.00')
+                if self.object.custom_discount_type == 'PERCENT':
+                    global_discount = subtotal * (custom_val / Decimal('100.0'))
+                else:
+                    global_discount = custom_val
+                    
+                tot_discount = line_discount + global_discount
+                subtotal -= global_discount
+                if subtotal < Decimal('0.00'):
+                    subtotal = Decimal('0.00')
+                    
+                if self.object.customer.vat_enabled:
+                    tax = subtotal * Decimal('0.18')
+                else:
+                    tax = Decimal('0.00')
+                
+                total = subtotal + tax
                 
                 self.object.tax_amount = tax
                 self.object.total_discount = tot_discount
@@ -502,26 +551,40 @@ class InvoiceUpdateView(LoginRequiredMixin, PermissionRequiredMixin, UpdateView)
                 tot_discount = 0
                 for item in saved_items:
                     item.invoice = self.object
-                    discount = item.discount or Decimal('0.00')
+                    discount_amt = item.get_discount_amount
                     if self.object.customer.vat_enabled:
-                        item.tax_amount = ((item.quantity * item.unit_price) - discount) * Decimal('0.18')
+                        item.tax_amount = ((item.quantity * item.unit_price) - discount_amt) * Decimal('0.18')
                     else:
                         item.tax_amount = Decimal('0.00')
                         
-                    item.line_total = (item.quantity * item.unit_price) - discount + item.tax_amount
+                    item.line_total = (item.quantity * item.unit_price) - discount_amt + item.tax_amount
                     item.save()
                     
-                # Re-calculate totals from ALL items
-                for item in self.object.items.all():
-                    total += item.line_total
-                    tax += item.tax_amount
-                    tot_discount += item.discount or Decimal('0.00')
-                
                 for obj in items.deleted_objects:
                     obj.delete()
-                    total -= obj.line_total
-                    tax -= obj.tax_amount
-                    tot_discount -= obj.discount or Decimal('0.00')
+                    
+                # Calculate aggregated values for invoice
+                gross_total = sum((item.quantity * item.unit_price) for item in self.object.items.all())
+                line_discount = sum(item.get_discount_amount for item in self.object.items.all())
+                subtotal = gross_total - line_discount
+                
+                custom_val = self.object.custom_discount_value or Decimal('0.00')
+                if self.object.custom_discount_type == 'PERCENT':
+                    global_discount = subtotal * (custom_val / Decimal('100.0'))
+                else:
+                    global_discount = custom_val
+                    
+                tot_discount = line_discount + global_discount
+                subtotal -= global_discount
+                if subtotal < Decimal('0.00'):
+                    subtotal = Decimal('0.00')
+                    
+                if self.object.customer.vat_enabled:
+                    tax = subtotal * Decimal('0.18')
+                else:
+                    tax = Decimal('0.00')
+                
+                total = subtotal + tax
                 
                 self.object.tax_amount = tax
                 self.object.total_discount = tot_discount
@@ -1072,6 +1135,9 @@ def convert_quotation_view(request, pk):
             invoice_number=get_next_invoice_number(),
             total_amount=quotation.total_amount,
             tax_amount=quotation.tax_amount,
+            total_discount=quotation.total_discount,
+            custom_discount_type=quotation.custom_discount_type,
+            custom_discount_value=quotation.custom_discount_value,
             notes=f"Converted from Quotation {quotation.quotation_number}. " + (quotation.notes or ""),
             status='DRAFT'
         )
@@ -1084,6 +1150,8 @@ def convert_quotation_view(request, pk):
                 product=q_item.product,
                 quantity=q_item.quantity,
                 unit_price=q_item.unit_price,
+                discount_type=q_item.discount_type,
+                discount=q_item.discount,
                 tax_amount=q_item.tax_amount,
                 line_total=q_item.line_total
             )

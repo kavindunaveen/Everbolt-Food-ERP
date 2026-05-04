@@ -8,7 +8,7 @@
     <style>
         @page {
             size: 24.13cm 30.48cm;
-            margin: 0;
+            margin: 10mm;
         }
         body {
             font-family: 'Courier New', Courier, monospace;
@@ -25,9 +25,9 @@
             margin: 0;
             padding: 5mm;
             box-sizing: border-box;
-            height: 30.48cm;
             display: flex;
             flex-direction: column;
+            min-height: 100vh;
         }
         h1 {
             text-align: center;
@@ -122,10 +122,10 @@
             var element = document.querySelector('.container');
             var filename = 'Invoice_' + invoiceNo + '.pdf';
             var opt = {
-                margin:       0,
+                margin:       10,
                 filename:     filename,
                 image:        { type: 'jpeg', quality: 0.98 },
-                html2canvas:  { scale: 2, useCORS: true },
+                html2canvas:  { scale: 2, useCORS: true, windowWidth: 1024 },
                 jsPDF:        { unit: 'mm', format: [241.3, 304.8], orientation: 'portrait' }
             };
 
@@ -239,7 +239,9 @@
                     <td class="text-center">{{ item.quantity }}</td>
                     <td class="text-center">{{ item.product.get_selling_unit_display }}</td>
                     <td class="text-right">{{ item.unit_price|floatformat:2 }}</td>
-                    <td class="text-right">{{ item.discount|default:0|floatformat:2 }}</td>
+                    <td class="text-right">
+                        {{ item.discount|default:0|floatformat:2 }}{% if item.discount_type == 'PERCENT' %}%{% endif %}
+                    </td>
                     <td class="text-right">
                         {{ item.amount_ex_vat|floatformat:2 }}
                     </td>
@@ -322,5 +324,28 @@
             </tr>
         </table>
     </div>
+    
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.has('download')) {
+                const element = document.getElementById('printable-area');
+                const filename = '{{ invoice.customer.company_name|default:invoice.customer.name }} - Invoice {{ invoice.invoice_number }}.pdf';
+                
+                const opt = {
+                    margin:       10,
+                    filename:     filename,
+                    image:        { type: 'jpeg', quality: 0.98 },
+                    html2canvas:  { scale: 2, useCORS: true },
+                    jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+                };
+                html2pdf().from(element).set(opt).save().then(function() {
+                    setTimeout(() => { window.close(); }, 1000);
+                });
+            } else {
+                window.print();
+            }
+        });
+    </script>
 </body>
 </html>

@@ -155,6 +155,12 @@
                 <button type="button" @click="showEditModal = true" class="px-4 py-2 bg-white border border-gray-300 text-gray-700 text-sm font-bold rounded-sm hover:bg-gray-50 transition-colors shadow-sm">Request Edit</button>
                 <button type="button" @click="showCancelModal = true" class="px-4 py-2 bg-white border border-gray-300 text-gray-700 text-sm font-bold rounded-sm hover:bg-gray-50 transition-colors shadow-sm">Request Cancellation</button>
             {% endif %}
+            {% if form.instance.pk %}
+                <a href="{% url 'invoice_print' form.instance.pk %}?download=1" target="_blank" class="px-4 py-2 bg-[#714B67] border border-[#5C3A53] text-white text-sm font-bold rounded-sm hover:bg-[#5C3A53] transition-colors shadow-sm flex items-center gap-2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                    Download PDF
+                </a>
+            {% endif %}
             
             {% if form.instance.status == 'ISSUED' or form.instance.status == 'PAID' %}
                 <a href="{% url 'invoice_print' form.instance.pk %}" target="_blank" class="px-4 py-2 bg-white border border-gray-300 text-gray-700 text-sm font-bold rounded-sm hover:bg-gray-50 transition-colors shadow-sm">Print</a>
@@ -267,6 +273,10 @@
                         {{ form.due_date }}
                         {% if form.due_date.errors %}<p class="text-red-500 text-[10px] font-bold mt-1 uppercase">{{ form.due_date.errors.0 }}</p>{% endif %}
                     </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Payment Term</label>
+                        <input type="text" id="customer-payment-term" readonly class="w-full px-3 py-2 border border-gray-100 rounded-lg text-sm bg-gray-50 text-gray-600 font-bold shadow-inner" placeholder="-">
+                    </div>
                     <div class="md:col-span-2 lg:col-span-4">
                         <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Internal Notes</label>
                         {{ form.notes }}
@@ -276,6 +286,17 @@
         </div>
 
         <!-- Line Items Formset -->
+        <style>
+        /* Remove arrows from number inputs */
+        .hide-arrows::-webkit-inner-spin-button, 
+        .hide-arrows::-webkit-outer-spin-button { 
+            -webkit-appearance: none; 
+            margin: 0; 
+        }
+        .hide-arrows {
+            -moz-appearance: textfield; /* Firefox */
+        }
+        </style>
         <div class="bg-white shadow-xl shadow-gray-100/50 rounded-2xl border border-gray-100 overflow-hidden">
             <div class="px-6 py-4 bg-gray-50/50 border-b border-gray-100 flex justify-between items-center">
                 <h3 class="text-sm font-bold text-gray-800 uppercase tracking-widest">Order Items</h3>
@@ -287,46 +308,56 @@
                 <table class="min-w-full divide-y divide-gray-100">
                     <thead class="bg-gray-50/30">
                         <tr>
-                            <th class="px-3 py-3 w-full text-left text-[11px] font-bold text-gray-400 uppercase tracking-widest min-w-[250px]">Product</th>
-                            <th class="px-3 py-3 text-center text-[11px] font-bold text-gray-400 uppercase tracking-widest w-[120px]">Quantity</th>
-                            <th class="px-3 py-3 text-right text-[11px] font-bold text-gray-400 uppercase tracking-widest w-[150px]">Unit Price (Rs)</th>
-                            <th class="px-3 py-3 text-right text-[11px] font-bold text-gray-400 uppercase tracking-widest w-[150px]">Discount (Rs)</th>
-                            <th class="px-3 py-3 text-right text-[11px] font-bold text-gray-400 uppercase tracking-widest w-[150px]">Total (Rs)</th>
-                            <th class="px-3 py-3 text-center text-[11px] font-bold text-gray-400 uppercase tracking-widest w-[60px]">Actions</th>
+                            <th class="px-2 py-3 w-[35%] text-left text-[11px] font-bold text-gray-400 uppercase tracking-widest">Product</th>
+                            <th class="px-2 py-3 text-center text-[11px] font-bold text-gray-400 uppercase tracking-widest w-[12%]">Quantity</th>
+                            <th class="px-2 py-3 text-right text-[11px] font-bold text-gray-400 uppercase tracking-widest w-[15%]">Unit Price (Rs)</th>
+                            <th class="px-2 py-3 text-right text-[11px] font-bold text-gray-400 uppercase tracking-widest w-[15%]" style="padding-top: 4px; padding-bottom: 4px;">
+                                <div class="flex flex-row items-center justify-end gap-2">
+                                    <span>Discount</span>
+                                    <div class="inline-flex bg-white/50 border border-gray-200 rounded-lg p-0.5" id="item-discount-toggle">
+                                        <button type="button" class="type-btn px-2 py-0.5 text-[10px] font-bold rounded-md bg-gray-800 shadow-md text-white transition-all" data-value="AMOUNT">Rs</button>
+                                        <button type="button" class="type-btn px-2 py-0.5 text-[10px] font-bold rounded-md text-gray-500 hover:text-gray-700 bg-transparent transition-all" data-value="PERCENT">%</button>
+                                    </div>
+                                    <input type="hidden" id="global_item_discount_type" value="AMOUNT">
+                                </div>
+                            </th>
+                            <th class="px-2 py-3 text-right text-[11px] font-bold text-gray-400 uppercase tracking-widest w-[15%]">Total (Rs)</th>
+                            <th class="px-2 py-3 text-center text-[11px] font-bold text-gray-400 uppercase tracking-widest w-[8%]">Actions</th>
                         </tr>
                     </thead>
                     <tbody id="formset-container" class="divide-y divide-gray-50">
                         {% for item_form in items %}
                         <tr class="formset-row hover:bg-gray-50/30 transition-colors">
                             {{ item_form.id }}
-                            <td class="px-3 py-3 w-full min-w-[250px]">
+                            <td class="px-2 py-3 w-[35%] align-top">
                                 {{ item_form.product }}
                                 {% if item_form.product.errors %}
                                     <div class="text-red-500 text-[10px] font-bold mt-1 uppercase">{{ item_form.product.errors|striptags }}</div>
                                 {% endif %}
                             </td>
-                            <td class="px-3 py-3 align-top w-[120px]">
+                            <td class="px-2 py-3 align-top w-[12%]">
                                 {{ item_form.quantity }}
                                 {% if item_form.quantity.errors %}
                                     <div class="text-red-500 text-[10px] font-bold mt-1 uppercase text-center">{{ item_form.quantity.errors|striptags }}</div>
                                 {% endif %}
                             </td>
-                            <td class="px-3 py-3 align-top w-[150px]">
+                            <td class="px-2 py-3 align-top w-[15%]">
                                 {{ item_form.unit_price }}
                                 {% if item_form.unit_price.errors %}
                                     <div class="text-red-500 text-[10px] font-bold mt-1 uppercase text-right">{{ item_form.unit_price.errors|striptags }}</div>
                                 {% endif %}
                             </td>
-                            <td class="px-3 py-3 align-top w-[150px]">
+                            <td class="px-2 py-3 align-top w-[15%]">
+                                {{ item_form.discount_type }}
                                 {{ item_form.discount }}
                                 {% if item_form.discount.errors %}
                                     <div class="text-red-500 text-[10px] font-bold mt-1 uppercase text-right">{{ item_form.discount.errors|striptags }}</div>
                                 {% endif %}
                             </td>
-                            <td class="px-3 py-3 align-top w-[150px]">
-                                <input type="text" class="w-full px-3 py-2 border border-gray-100 rounded-md bg-gray-50 text-gray-900 font-bold text-sm text-right min-w-[120px] line-total" value="0.00" readonly tabindex="-1">
+                            <td class="px-2 py-3 align-top w-[15%]">
+                                <input type="text" class="w-full px-2 py-2 border border-gray-100 rounded-md bg-gray-50 text-gray-900 font-bold text-sm text-right hide-arrows line-total" value="0.00" readonly tabindex="-1">
                             </td>
-                            <td class="px-3 py-3 text-center align-top w-[60px]">
+                            <td class="px-2 py-3 text-center align-top w-[8%]">
                                 {% if item_form.instance.pk %}
                                     <div class="flex items-center justify-center">
                                         {{ item_form.DELETE }}
@@ -349,6 +380,19 @@
             <!-- Dynamic Calculation Summary Section -->
             <div class="px-6 py-6 border-t border-gray-100 bg-gray-50/30">
                 <div class="flex flex-col items-end space-y-3">
+                    <div class="flex justify-between w-full max-w-md items-center">
+                        <span class="text-xs font-bold text-gray-500 uppercase tracking-widest">Global Discount:</span>
+                        <div class="flex items-center gap-2">
+                            <div class="inline-flex bg-gray-100 rounded-lg p-0.5 border border-gray-200" id="global-discount-toggle">
+                                <button type="button" class="type-btn px-3 py-1.5 text-[11px] font-bold rounded-md bg-gray-800 shadow-md text-white transition-all" data-value="AMOUNT">Rs</button>
+                                <button type="button" class="type-btn px-3 py-1.5 text-[11px] font-bold rounded-md text-gray-500 hover:text-gray-700 bg-transparent transition-all" data-value="PERCENT">%</button>
+                            </div>
+                            <div class="hidden">{{ form.custom_discount_type }}</div>
+                            <div class="w-32">
+                                {{ form.custom_discount_value }}
+                            </div>
+                        </div>
+                    </div>
                     <div class="flex justify-between w-full max-w-md">
                         <span class="text-xs font-bold text-gray-500 uppercase tracking-widest">Total Discount:</span>
                         <span class="text-sm font-bold text-gray-900" id="summary-discount">Rs. 0.00</span>
@@ -531,34 +575,35 @@
     <tbody id="empty-row">
         <tr class="formset-row">
             {{ items.empty_form.id }}
-            <td class="px-3 py-3 w-full min-w-[250px]">
+            <td class="px-2 py-3 w-[35%] align-top">
                 {{ items.empty_form.product }}
                 {% if items.empty_form.product.errors %}
                     <div class="text-red-500 text-[10px] mt-1">{{ items.empty_form.product.errors|striptags }}</div>
                 {% endif %}
             </td>
-            <td class="px-3 py-3 w-[120px] align-top">
+            <td class="px-2 py-3 w-[12%] align-top">
                 {{ items.empty_form.quantity }}
                 {% if items.empty_form.quantity.errors %}
                     <div class="text-red-500 text-[10px] mt-1">{{ items.empty_form.quantity.errors|striptags }}</div>
                 {% endif %}
             </td>
-            <td class="px-3 py-3 w-[150px] align-top">
+            <td class="px-2 py-3 w-[15%] align-top">
                 {{ items.empty_form.unit_price }}
                 {% if items.empty_form.unit_price.errors %}
                     <div class="text-red-500 text-[10px] mt-1">{{ items.empty_form.unit_price.errors|striptags }}</div>
                 {% endif %}
             </td>
-            <td class="px-3 py-3 w-[150px] align-top">
+            <td class="px-2 py-3 w-[15%] align-top">
+                {{ items.empty_form.discount_type }}
                 {{ items.empty_form.discount }}
                 {% if items.empty_form.discount.errors %}
                     <div class="text-red-500 text-[10px] mt-1">{{ items.empty_form.discount.errors|striptags }}</div>
                 {% endif %}
             </td>
-            <td class="px-3 py-3 w-[150px] align-top">
-                <input type="text" class="w-full px-3 py-2 border border-gray-100 rounded-md bg-gray-50 text-gray-900 font-bold text-sm text-right min-w-[120px] line-total" value="0.00" readonly tabindex="-1">
+            <td class="px-2 py-3 w-[15%] align-top">
+                <input type="text" class="w-full px-2 py-2 border border-gray-100 rounded-md bg-gray-50 text-gray-900 font-bold text-sm text-right hide-arrows line-total" value="0.00" readonly tabindex="-1">
             </td>
-            <td class="px-3 py-3 text-center w-[60px] align-top">
+            <td class="px-2 py-3 text-center w-[8%] align-top">
                 <div class="hidden">{{ items.empty_form.DELETE }}</div>
                 <button type="button" class="remove-row px-3 py-2 bg-red-100 text-red-600 hover:bg-red-200 rounded-md transition-colors" title="Remove Line">
                     <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
@@ -675,6 +720,14 @@
             if(!customerId) return;
             
             var terms = customerTerms[customerId];
+            
+            if (terms) {
+                var displayTerm = terms.replace('CREDIT_', 'Credit ').replace('CASH', 'Cash').replace('COD', 'Cash On Delivery');
+                $('#customer-payment-term').val(displayTerm);
+            } else {
+                $('#customer-payment-term').val('-');
+            }
+            
             var days = 0;
             
             if(invoiceType === 'COD') {
@@ -727,8 +780,17 @@
         function calculateRowTotal(row) {
             const qty = parseFloat($(row).find('input[name$="-quantity"]').val()) || 0;
             const price = parseFloat($(row).find('input[name$="-unit_price"]').val()) || 0;
-            const discount = parseFloat($(row).find('input[name$="-discount"]').val()) || 0;
-            $(row).find('.line-total').val(((qty * price) - discount).toFixed(2));
+            const discountVal = parseFloat($(row).find('input[name$="-discount"]').val()) || 0;
+            const discountType = $(row).find('input[name$="-discount_type"]').val() || $('#global_item_discount_type').val() || 'AMOUNT';
+            
+            let discountAmount = 0;
+            if (discountType === 'PERCENT') {
+                discountAmount = (qty * price) * (discountVal / 100.0);
+            } else {
+                discountAmount = discountVal;
+            }
+            
+            $(row).find('.line-total').val(((qty * price) - discountAmount).toFixed(2));
             updateSummary();
         }
 
@@ -739,11 +801,34 @@
             $('.formset-row:visible').each(function() {
                 const qty = parseFloat($(this).find('input[name$="-quantity"]').val()) || 0;
                 const price = parseFloat($(this).find('input[name$="-unit_price"]').val()) || 0;
-                const discount = parseFloat($(this).find('input[name$="-discount"]').val()) || 0;
+                const discountVal = parseFloat($(this).find('input[name$="-discount"]').val()) || 0;
+                const discountType = $(this).find('input[name$="-discount_type"]').val() || $('#global_item_discount_type').val() || 'AMOUNT';
                 
-                totalDiscount += discount;
-                subtotal += (qty * price) - discount;
+                let discountAmount = 0;
+                if (discountType === 'PERCENT') {
+                    discountAmount = (qty * price) * (discountVal / 100.0);
+                } else {
+                    discountAmount = discountVal;
+                }
+                
+                totalDiscount += discountAmount;
+                subtotal += (qty * price) - discountAmount;
             });
+            
+            // Global Discount calculation
+            const customDiscountVal = parseFloat($('#id_custom_discount_value').val()) || 0;
+            const customDiscountType = $('#id_custom_discount_type').val() || 'AMOUNT';
+            let globalDiscount = 0;
+            
+            if (customDiscountType === 'PERCENT') {
+                globalDiscount = subtotal * (customDiscountVal / 100.0);
+            } else {
+                globalDiscount = customDiscountVal;
+            }
+            
+            totalDiscount += globalDiscount;
+            subtotal -= globalDiscount;
+            if (subtotal < 0) subtotal = 0;
             
             const tax = subtotal * 0.18;
             const total = Math.ceil(Math.round((subtotal + tax) * 100) / 100); // Round to 2 decimals then Ceiling
@@ -756,7 +841,55 @@
 
         // Run calculations on load for existing items
         $('.formset-row').each(function() {
+            ['quantity', 'unit_price', 'discount'].forEach(field => {
+                const input = $(this).find(`input[name$="-${field}"]`);
+                if (input.val()) {
+                    input.val(parseFloat(input.val()).toFixed(2));
+                }
+            });
             calculateRowTotal(this);
+        });
+        
+        // Initial setup for the global table dropdown based on the first row's value
+        const initialType = $('input[name$="-discount_type"]').first().val();
+        if (initialType) {
+            $('#global_item_discount_type').val(initialType);
+        }
+        
+        // Discount toggles logic
+        function setupToggle(toggleId, inputId, isRowLevel) {
+            const container = $(`#${toggleId}`);
+            const input = $(`#${inputId}`);
+            
+            function updateUI(val) {
+                container.find('.type-btn').removeClass('bg-gray-800 shadow-md text-white').addClass('text-gray-500 hover:text-gray-700 bg-transparent');
+                container.find(`.type-btn[data-value="${val}"]`).removeClass('text-gray-500 hover:text-gray-700 bg-transparent').addClass('bg-gray-800 shadow-md text-white');
+            }
+            
+            // Init
+            if(input.val()) updateUI(input.val());
+            
+            // Click
+            container.find('.type-btn').on('click', function() {
+                const val = $(this).data('value');
+                input.val(val).trigger('change');
+                updateUI(val);
+                
+                if(isRowLevel) {
+                    $('input[name$="-discount_type"]').val(val);
+                    $('.formset-row:visible').each(function() {
+                        calculateRowTotal(this);
+                    });
+                }
+            });
+        }
+        
+        setupToggle('item-discount-toggle', 'global_item_discount_type', true);
+        setupToggle('global-discount-toggle', 'id_custom_discount_type', false);
+        
+        // Listen to global discount changes
+        $('#id_custom_discount_value, #id_custom_discount_type').on('input change', function() {
+            updateSummary();
         });
 
         // Add Product Line cloning logic
@@ -815,7 +948,7 @@
                         }
                     }
                     
-                    priceInput.val(targetPrice);
+                    priceInput.val(parseFloat(targetPrice).toFixed(2));
                     
                     if (data.current_stock === 0) {
                         alert("Warning: This product is completely out of stock!");
@@ -826,7 +959,7 @@
         });
 
         // Live calculation triggers on input changes
-        $(document).on('input', 'input[name$="-quantity"], input[name$="-unit_price"], input[name$="-discount"]', function() {
+        $(document).on('input change', 'input[name$="-quantity"], input[name$="-unit_price"], input[name$="-discount"]', function() {
             const row = $(this).closest('tr');
             
             // Auto Update tier pricing if triggered by quantity change

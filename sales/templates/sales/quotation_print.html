@@ -8,7 +8,15 @@
     <style>
         @page { size: 24.13cm 30.48cm; margin: 10mm; }
         body { font-family: 'Courier New', Courier, monospace; font-size: 12pt; color: #000; background: #fff; margin: 0; padding: 0; }
-        .container { width: 100%; margin: 0 auto; }
+        .container { 
+            width: 100%; 
+            margin: 0 auto; 
+            padding: 5mm;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
         h1 { text-align: center; font-size: 18pt; border: 2px solid #000; padding: 5px; display: inline-block; margin: 0; text-transform: uppercase; }
         table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
         th, td { border: 1px solid #000; padding: 6px; vertical-align: top; }
@@ -50,10 +58,10 @@
             var element = document.querySelector('.container');
             var filename = 'Quotation_' + quotationNo + '.pdf';
             var opt = {
-                margin:       [15, 15, 15, 15],
+                margin:       10,
                 filename:     filename,
                 image:        { type: 'jpeg', quality: 0.98 },
-                html2canvas:  { scale: 2, useCORS: true },
+                html2canvas:  { scale: 2, useCORS: true, windowWidth: 1024 },
                 jsPDF:        { unit: 'mm', format: [241.3, 304.8], orientation: 'portrait' }
             };
 
@@ -75,7 +83,7 @@
         }
     </script>
 
-    <div class="container">
+    <div class="container" id="printable-area">
         <div class="flex-row" style="align-items: center; margin-bottom: 10px;">
             <div>
                 <img src="{% static 'sales/img/logo.png' %}" alt="Company Logo" style="max-height: 50px; width: auto;" onerror="this.onerror=null; this.src='https://via.placeholder.com/150x50?text=LOGO';">
@@ -156,7 +164,9 @@
                     <td>{{ item.product.name }}</td>
                     <td class="text-center">{{ item.quantity }}</td>
                     <td class="text-right">{{ item.unit_price|floatformat:2 }}</td>
-                    <td class="text-right">{{ item.discount|default:0|floatformat:2 }}</td>
+                    <td class="text-right">
+                        {{ item.discount|default:0|floatformat:2 }}{% if item.discount_type == 'PERCENT' %}%{% endif %}
+                    </td>
                     <td class="text-right">
                         {{ item.amount_ex_vat|floatformat:2 }}
                     </td>
@@ -235,5 +245,27 @@
             </tr>
         </table>
     </div>
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.has('download')) {
+                const element = document.getElementById('printable-area');
+                const filename = '{{ quotation.customer.company_name|default:quotation.customer.name }} - Quotation {{ quotation.quotation_number }}.pdf';
+                
+                const opt = {
+                    margin:       10,
+                    filename:     filename,
+                    image:        { type: 'jpeg', quality: 0.98 },
+                    html2canvas:  { scale: 2, useCORS: true },
+                    jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+                };
+                html2pdf().from(element).set(opt).save().then(function() {
+                    setTimeout(() => { window.close(); }, 1000);
+                });
+            } else {
+                window.print();
+            }
+        });
+    </script>
 </body>
 </html>
