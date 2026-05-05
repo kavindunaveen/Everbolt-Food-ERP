@@ -1127,6 +1127,10 @@ def convert_quotation_view(request, pk):
         messages.warning(request, "This quotation has already been converted to an invoice.")
         return redirect('quotation_list')
         
+    if quotation.items.filter(product__isnull=True).exists():
+        messages.error(request, "This quotation contains custom items. You must edit the quotation and link official products from the inventory before converting it to an invoice.")
+        return redirect('quotation_list')
+        
     with transaction.atomic():
         # Create Invoice Header
         invoice = Invoice.objects.create(

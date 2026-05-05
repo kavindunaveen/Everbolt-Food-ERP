@@ -297,6 +297,7 @@
                             {{ item_form.id }}
                             <td class="px-2 py-3 w-[35%] align-top">
                                 {{ item_form.product }}
+                                {{ item_form.custom_product_name }}
                                 {% if item_form.product.errors %}
                                     <div class="text-red-500 text-[10px] font-bold mt-1 uppercase">{{ item_form.product.errors|striptags }}</div>
                                 {% endif %}
@@ -457,6 +458,7 @@
             {{ items.empty_form.id }}
             <td class="px-2 py-3 w-[35%] align-top">
                 {{ items.empty_form.product }}
+                {{ items.empty_form.custom_product_name }}
                 {% if items.empty_form.product.errors %}
                     <div class="text-red-500 text-[10px] mt-1">{{ items.empty_form.product.errors|striptags }}</div>
                 {% endif %}
@@ -532,11 +534,39 @@
                     placeholder: 'Select...',
                     allowClear: true
                 };
+
+                if ($(this).attr('name') && $(this).attr('name').endsWith('-product')) {
+                    options.tags = true;
+                    options.createTag = function (params) {
+                        var term = $.trim(params.term);
+                        if (term === '') { return null; }
+                        return {
+                            id: term,
+                            text: term,
+                            newTag: true
+                        };
+                    };
+                }
                 
                 $(this).select2(options);
             });
         }
         initSelects(document.body);
+
+        $('form').on('submit', function() {
+            $('.formset-row').each(function() {
+                let productSelect = $(this).find('select[name$="-product"]');
+                let customNameInput = $(this).find('input[name$="-custom_product_name"]');
+                let val = productSelect.val();
+                
+                if (val && isNaN(parseInt(val))) {
+                    customNameInput.val(val);
+                    productSelect.find('option:selected').val('');
+                } else {
+                    customNameInput.val('');
+                }
+            });
+        });
 
         // Calculate Line Total
         function calculateRowTotal(row) {
@@ -676,7 +706,7 @@
         // Event delegation for Product Selection changes
         $(document).on('change', 'select[name$="-product"]', function() {
             const value = $(this).val();
-            if (!value) return;
+            if (!value || isNaN(parseInt(value))) return;
             const row = $(this).closest('tr');
             
             fetch(`/inventory/api/${value}/`)

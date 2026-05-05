@@ -18,14 +18,25 @@ class QuotationForm(forms.ModelForm):
 class QuotationItemForm(forms.ModelForm):
     class Meta:
         model = QuotationItem
-        fields = ['product', 'quantity', 'unit_price', 'discount_type', 'discount']
+        fields = ['product', 'custom_product_name', 'quantity', 'unit_price', 'discount_type', 'discount']
         widgets = {
+            'custom_product_name': forms.HiddenInput(),
             'product': forms.Select(attrs={'class': 'w-full px-3 py-2 border border-gray-300 rounded-md font-medium text-sm'}),
             'quantity': forms.NumberInput(attrs={'class': 'w-full px-2 py-2 border border-gray-300 rounded-md text-center font-bold text-sm hide-arrows', 'step': '0.01'}),
             'unit_price': forms.NumberInput(attrs={'class': 'w-full px-2 py-2 border border-gray-300 rounded-md text-right font-bold text-sm hide-arrows', 'step': '0.01'}),
             'discount_type': forms.HiddenInput(),
             'discount': forms.NumberInput(attrs={'class': 'w-full px-2 py-2 border border-gray-300 rounded-md text-right font-bold text-sm hide-arrows', 'step': '0.01'}),
         }
+
+    def clean(self):
+        cleaned_data = super().clean()
+        product = cleaned_data.get('product')
+        custom_product_name = cleaned_data.get('custom_product_name')
+        
+        if not product and not custom_product_name and not self.cleaned_data.get('DELETE'):
+            raise forms.ValidationError("You must select a product or enter a custom product name.")
+        
+        return cleaned_data
 
 QuotationItemFormSet = inlineformset_factory(
     Quotation, QuotationItem, form=QuotationItemForm,

@@ -52,7 +52,8 @@ class Quotation(models.Model):
 
 class QuotationItem(models.Model):
     quotation = models.ForeignKey(Quotation, related_name='items', on_delete=models.CASCADE)
-    product = models.ForeignKey(Product, on_delete=models.PROTECT)
+    product = models.ForeignKey(Product, on_delete=models.PROTECT, null=True, blank=True)
+    custom_product_name = models.CharField(max_length=255, blank=True, null=True)
     quantity = models.PositiveIntegerField()
     unit_price = models.DecimalField(max_digits=12, decimal_places=5)
     discount_type = models.CharField(max_length=10, choices=[('AMOUNT', 'Amount'), ('PERCENT', 'Percentage')], default='AMOUNT')
