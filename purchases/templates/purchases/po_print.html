@@ -114,8 +114,12 @@
             <tr>
                 <td>{{ item.material_code }}</td>
                 <td>
-                    {{ item.category }}
-                    {% if item.sub_category %}<br><span class="text-xs text-gray-600">({{ item.sub_category }})</span>{% endif %}
+                    {% if item.category|lower == 'other' and item.sub_category %}
+                        {{ item.sub_category }}
+                    {% else %}
+                        {{ item.category|title }}
+                        {% if item.sub_category %}<br><span class="text-xs text-gray-600">({{ item.sub_category }})</span>{% endif %}
+                    {% endif %}
                 </td>
                 <td class="text-right">{{ item.qty|floatformat:0 }}</td>
                 <td class="text-right">{{ item.unit_price|floatformat:2 }}</td>

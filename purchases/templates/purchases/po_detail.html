@@ -103,8 +103,20 @@
                 <tbody class="bg-white divide-y divide-gray-200">
                     {% for item in po.items.all %}
                     <tr>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{{ item.category }}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ item.sub_category|default:"-" }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                            {% if item.category|lower == 'other' and item.sub_category %}
+                                {{ item.sub_category }}
+                            {% else %}
+                                {{ item.category|title }}
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {% if item.category|lower == 'other' and item.sub_category %}
+                                -
+                            {% else %}
+                                {{ item.sub_category|default:"-" }}
+                            {% endif %}
+                        </td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm font-mono text-gray-500">{{ item.material_code }}</td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ item.unit }}</td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-center font-bold text-gray-900">{{ item.qty|floatformat:0 }}</td>
