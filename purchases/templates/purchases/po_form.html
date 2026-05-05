@@ -429,9 +429,7 @@ function poForm(type) {
         updateRawCode(index) {
             let item = this.items[index];
             if (['herbs', 'flavours', 'other'].includes(item.category)) {
-                // Generate based on manual name safely
-                let cleanName = (item.sub_category || '').replace(/[^a-zA-Z0-9]/g, '').toLowerCase() || 'xxxx';
-                item.material_code = `RM-${cleanName}`;
+                item.material_code = 'Auto-generated';
             } else {
                 item.material_code = this.rawCodes[item.category] || '';
                 item.sub_category = ''; // reset manual field

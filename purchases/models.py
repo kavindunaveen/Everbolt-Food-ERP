@@ -138,15 +138,12 @@ class PurchaseOrderItem(models.Model):
 
     def save(self, *args, **kwargs):
         # Auto-generate material code for PM if not provided
-        if self.po.po_type == POType.PACKING_MATERIAL and not self.material_code.startswith('PM-'):
+        if self.po.po_type == POType.PACKING_MATERIAL and (not self.material_code or self.material_code == 'Auto-generated'):
             prefix = "PM-"
             with transaction.atomic():
-                # Get last PM- code in the entire system to ensure sequential uniqueness
                 last_item = PurchaseOrderItem.objects.select_for_update().filter(material_code__startswith=prefix).order_by('-id').first()
                 if last_item:
                     try:
-                        # Ensure we parse properly, sometimes code could be PM-0001
-                        # We just take the last 4 characters and try to int it.
                         last_seq_str = last_item.material_code.split('-')[-1]
                         last_seq = int(last_seq_str)
                         new_seq = last_seq + 1
@@ -155,6 +152,28 @@ class PurchaseOrderItem(models.Model):
                 else:
                     new_seq = 1
                 self.material_code = f"{prefix}{new_seq:04d}"
+        
+        # Auto-generate material code for custom RM
+        elif self.po.po_type == POType.RAW_MATERIAL and self.material_code == 'Auto-generated':
+            cat_map = {
+                'herbs': 'RM-HRB-',
+                'flavours': 'RM-FLV-',
+                'other': 'RM-OTH-'
+            }
+            prefix = cat_map.get(self.category, 'RM-CUST-')
+            with transaction.atomic():
+                last_item = PurchaseOrderItem.objects.select_for_update().filter(material_code__startswith=prefix).order_by('-id').first()
+                if last_item:
+                    try:
+                        last_seq_str = last_item.material_code.split('-')[-1]
+                        last_seq = int(last_seq_str)
+                        new_seq = last_seq + 1
+                    except ValueError:
+                        new_seq = 1
+                else:
+                    new_seq = 1
+                self.material_code = f"{prefix}{new_seq:04d}"
+
         super().save(*args, **kwargs)
 
     def __str__(self):
