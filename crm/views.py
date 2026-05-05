@@ -68,9 +68,17 @@ class CustomerUpdateView(LoginRequiredMixin, PermissionRequiredMixin, UpdateView
     def form_valid(self, form):
         if form.has_changed():
             changed_fields = []
+            from django.forms.models import ModelChoiceField
             for field in form.changed_data:
                 old_val = form.initial.get(field, 'None')
                 new_val = form.cleaned_data.get(field, 'None')
+                
+                if isinstance(form.fields[field], ModelChoiceField):
+                    if old_val and old_val != 'None':
+                        old_obj = form.fields[field].queryset.filter(pk=old_val).first()
+                        if old_obj:
+                            old_val = str(old_obj)
+                            
                 changed_fields.append(f"{field.replace('_', ' ').capitalize()} changed from '{old_val}' to '{new_val}'")
             CustomerChangeLog.objects.create(
                 customer=self.object,

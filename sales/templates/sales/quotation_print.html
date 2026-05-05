@@ -125,7 +125,7 @@
         <div class="flex-row" style="margin-bottom: 15px;">
             <div class="box" style="width: 24%;">
                 <strong>Sales Officer:</strong><br>
-                {% if quotation.customer.assigned_sales_officer %}{{ quotation.customer.assigned_sales_officer.get_full_name|default:quotation.customer.assigned_sales_officer.username|title }}{% else %}{{ quotation.salesperson.get_full_name|default:quotation.salesperson.username|title }}{% endif %}
+                {{ quotation.salesperson.get_full_name|default:quotation.salesperson.username|title }}
             </div>
             <div class="box" style="width: 24%;">
                 <strong>Payment Term:</strong><br>
@@ -222,7 +222,7 @@
                 <td style="border:none; text-align:center; vertical-align: top; padding: 0 5px;">
                     <div style="border-top: 1px solid #000; padding-top: 5px;">
                         Prepared By<br>
-                        <span style="font-size: 0.9em;">({% if quotation.customer.assigned_sales_officer %}{{ quotation.customer.assigned_sales_officer.get_full_name|default:quotation.customer.assigned_sales_officer.username|title }}{% else %}{{ quotation.salesperson.get_full_name|default:quotation.salesperson.username|title }}{% endif %})</span>
+                        <span style="font-size: 0.9em;">({{ quotation.salesperson.get_full_name|default:quotation.salesperson.username|title }})</span>
                     </div>
                 </td>
                 <td style="border:none; text-align:center; vertical-align: top; padding: 0 5px;">

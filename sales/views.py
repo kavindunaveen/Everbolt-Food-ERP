@@ -237,7 +237,7 @@ class QuotationCreateView(LoginRequiredMixin, PermissionRequiredMixin, CreateVie
         items = context['items']
         with transaction.atomic():
             self.object = form.save(commit=False)
-            self.object.salesperson = self.request.user
+            self.object.salesperson = self.object.customer.assigned_sales_officer or self.request.user
             # Generate sequential gap-filling number
             self.object.quotation_number = get_next_quotation_number()
             
@@ -399,7 +399,7 @@ class InvoiceCreateView(LoginRequiredMixin, PermissionRequiredMixin, CreateView)
         items = context['items']
         with transaction.atomic():
             self.object = form.save(commit=False)
-            self.object.salesperson = self.request.user
+            self.object.salesperson = self.object.customer.assigned_sales_officer or self.request.user
             self.object.invoice_number = get_next_invoice_number()
             
             # Block or Mark for approval based on customer status
@@ -1131,7 +1131,7 @@ def convert_quotation_view(request, pk):
         # Create Invoice Header
         invoice = Invoice.objects.create(
             customer=quotation.customer,
-            salesperson=request.user,
+            salesperson=quotation.customer.assigned_sales_officer or request.user,
             invoice_number=get_next_invoice_number(),
             total_amount=quotation.total_amount,
             tax_amount=quotation.tax_amount,
