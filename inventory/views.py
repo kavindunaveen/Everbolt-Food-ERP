@@ -79,38 +79,117 @@ class ProductDeleteView(LoginRequiredMixin, PermissionRequiredMixin, DeleteView)
     success_url = reverse_lazy('product_list')
     permission_required = 'inventory.delete_product'
 
+def generate_products_excel(products=None, is_template=False):
+    import openpyxl
+    from openpyxl.worksheet.datavalidation import DataValidation
+    from openpyxl.utils import get_column_letter
+
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = "Products Export" if not is_template else "Products Import"
+    
+    headers = [
+        'System ID', 'Product ID', 'Action', 'Name', 
+        'Category', 'Brand', 'Tea Type', 'Packet Size', 'Stock Unit', 'Selling Unit',
+        'Inventory Class', 'Production Type',
+        'Selling Price', 'Custom Load Price',
+        'Reorder Level', 'Track Stock', 'Allow Negative Stock', 'Tax Rate', 'Status',
+        'Current Stock'
+    ]
+    ws.append(headers)
+
+    column_widths = {
+        'System ID': 12, 'Product ID': 15, 'Action': 12, 'Name': 35,
+        'Category': 18, 'Brand': 15, 'Tea Type': 18, 'Packet Size': 15,
+        'Stock Unit': 12, 'Selling Unit': 12, 'Inventory Class': 18,
+        'Production Type': 22, 'Selling Price': 15, 'Custom Load Price': 18,
+        'Reorder Level': 15, 'Track Stock': 15, 'Allow Negative Stock': 22,
+        'Tax Rate': 12, 'Status': 10, 'Current Stock': 15
+    }
+
+    for col_idx, header in enumerate(headers, 1):
+        col_letter = get_column_letter(col_idx)
+        ws.column_dimensions[col_letter].width = column_widths.get(header, 15)
+
+    if is_template and not products:
+        ws.append([
+            '', '', 'SAVE', 'Sample Product Name', 
+            'Tea', 'Everbolt', 'Herbal Tea', '500g', 'pcs', 'pcs',
+            'FINISHED', 'Direct Packing',
+            '1500.00', '', 
+            '10.00', 'TRUE', 'FALSE', '18.00', 'TRUE',
+            '100'
+        ])
+    elif products:
+        for p in products:
+            ws.append([
+                str(p.id), p.product_id, 'SAVE', p.name,
+                p.category,
+                p.brand,
+                p.tea_type or '',
+                p.packet_size or '', p.stock_unit, p.selling_unit,
+                p.inventory_class, p.product_type,
+                str(p.selling_price), str(p.custom_load_price) if p.custom_load_price else '',
+                str(p.reorder_level), str(p.track_stock), str(p.allow_negative_stock), str(p.tax_rate), str(p.status),
+                str(p.current_stock)
+            ])
+
+    action_dv = DataValidation(type="list", formula1='"SAVE,DELETE"', allow_blank=True)
+    category_dv = DataValidation(type="list", formula1=f'"{",".join([c[0] for c in Product.CategoryChoices.choices])}"', allow_blank=True)
+    brand_dv = DataValidation(type="list", formula1=f'"{",".join([c[0] for c in Product.BrandChoices.choices])}"', allow_blank=True)
+    tea_type_dv = DataValidation(type="list", formula1=f'"{",".join([c[0] for c in Product.TeaTypeChoices.choices])}"', allow_blank=True)
+    unit_dv = DataValidation(type="list", formula1=f'"{",".join([c[0] for c in Product.UnitTypes.choices])}"', allow_blank=True)
+    inv_class_dv = DataValidation(type="list", formula1=f'"{",".join([c[0] for c in Product.InventoryClasses.choices])}"', allow_blank=True)
+    prod_type_dv = DataValidation(type="list", formula1=f'"{",".join([c[0] for c in Product.ProductTypes.choices])}"', allow_blank=True)
+    boolean_dv = DataValidation(type="list", formula1='"TRUE,FALSE"', allow_blank=True)
+
+    # Allow custom text for these specific dropdowns
+    category_dv.showErrorMessage = False
+    brand_dv.showErrorMessage = False
+    prod_type_dv.showErrorMessage = False
+
+    dvs = [action_dv, category_dv, brand_dv, tea_type_dv, unit_dv, inv_class_dv, prod_type_dv, boolean_dv]
+    for dv in dvs:
+        ws.add_data_validation(dv)
+
+    def apply_validation(dv, col_name):
+        col_idx = headers.index(col_name) + 1
+        col_letter = get_column_letter(col_idx)
+        dv.add(f'{col_letter}2:{col_letter}1048576')
+
+    apply_validation(action_dv, 'Action')
+    apply_validation(category_dv, 'Category')
+    apply_validation(brand_dv, 'Brand')
+    apply_validation(tea_type_dv, 'Tea Type')
+    apply_validation(unit_dv, 'Stock Unit')
+    apply_validation(unit_dv, 'Selling Unit')
+    apply_validation(inv_class_dv, 'Inventory Class')
+    apply_validation(prod_type_dv, 'Production Type')
+    apply_validation(boolean_dv, 'Track Stock')
+    apply_validation(boolean_dv, 'Allow Negative Stock')
+    apply_validation(boolean_dv, 'Status')
+
+    return wb
+
+@login_required
+def export_all_products(request):
+    products = Product.objects.all()
+    wb = generate_products_excel(products=products, is_template=False)
+    response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    response['Content-Disposition'] = 'attachment; filename="all_products_export.xlsx"'
+    wb.save(response)
+    return response
+
 @login_required
 def bulk_export_products(request):
     if request.method == 'POST':
         product_ids = request.POST.getlist('selected_products')
         products = Product.objects.filter(id__in=product_ids)
         
-        response = HttpResponse(content_type='text/csv')
-        response['Content-Disposition'] = 'attachment; filename="products_export.csv"'
-        
-        writer = csv.writer(response)
-        writer.writerow([
-            'System ID', 'Product ID', 'Name', 
-            'Category', 'Brand', 'Tea Type', 'Packet Size', 'Stock Unit', 'Selling Unit',
-            'Inventory Class', 'Production Type',
-            'Selling Price', 'Custom Load Price',
-            'Reorder Level', 'Track Stock', 'Allow Negative Stock', 'Tax Rate', 'Status',
-            'Current Stock'
-        ])
-        
-        for p in products:
-            writer.writerow([
-                p.id, p.product_id, p.name,
-                p.category,
-                p.brand,
-                p.tea_type or '',
-                p.packet_size or '', p.stock_unit, p.selling_unit,
-                p.inventory_class, p.product_type,
-                p.selling_price, p.custom_load_price or '',
-                p.reorder_level, p.track_stock, p.allow_negative_stock, p.tax_rate, p.status,
-                p.current_stock
-            ])
-            
+        wb = generate_products_excel(products=products, is_template=False)
+        response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+        response['Content-Disposition'] = 'attachment; filename="products_export.xlsx"'
+        wb.save(response)
         return response
     return redirect('product_list')
 
@@ -131,27 +210,55 @@ class ProductImportView(LoginRequiredMixin, PermissionRequiredMixin, View):
 
     def post(self, request):
         if 'import_file' not in request.FILES:
-            messages.error(request, 'Please upload a valid CSV file.')
+            messages.error(request, 'Please upload a valid Excel file.')
             return redirect('product_import')
             
-        csv_file = request.FILES['import_file']
-        if not csv_file.name.endswith('.csv'):
-            messages.error(request, 'File must be a CSV file.')
+        excel_file = request.FILES['import_file']
+        if not excel_file.name.endswith('.xlsx'):
+            messages.error(request, 'File must be an Excel (.xlsx) file.')
             return redirect('product_import')
 
         try:
-            # Decode file
-            dataset = csv_file.read().decode('utf-8-sig').splitlines()
-            reader = csv.DictReader(dataset)
+            import openpyxl
+            wb = openpyxl.load_workbook(excel_file, data_only=True)
+            ws = wb.active
             
             created_count = 0
             updated_count = 0
+            deleted_count = 0
             
-            for row in reader:
+            headers = []
+            rows = []
+            for i, row in enumerate(ws.iter_rows(values_only=True)):
+                if i == 0:
+                    headers = [str(cell).strip() if cell is not None else "" for cell in row]
+                else:
+                    if not any(row): continue
+                    row_dict = {}
+                    for j, cell in enumerate(row):
+                        if j < len(headers):
+                            row_dict[headers[j]] = str(cell).strip() if cell is not None else ""
+                    rows.append(row_dict)
+            
+            for row in rows:
                 sys_id = row.get('System ID')
                 prod_id = row.get('Product ID')
+                action = row.get('Action', '').upper()
                 name = row.get('Name')
                 
+                # Handle DELETE
+                if action == 'DELETE':
+                    product = None
+                    if sys_id and sys_id.strip():
+                        product = Product.objects.filter(id=sys_id).first()
+                    elif prod_id and prod_id.strip():
+                        product = Product.objects.filter(product_id=prod_id).first()
+                    
+                    if product:
+                        product.delete()
+                        deleted_count += 1
+                    continue
+
                 if not name:
                     continue
                     
@@ -245,7 +352,7 @@ class ProductImportView(LoginRequiredMixin, PermissionRequiredMixin, View):
                     except Exception as ex:
                         pass # Ignore invalid stock values
                         
-            messages.success(request, f"Import successful: {created_count} created, {updated_count} updated.")
+            messages.success(request, f"Import successful: {created_count} created, {updated_count} updated, {deleted_count} deleted.")
             return redirect('product_list')
         except Exception as e:
             messages.error(request, f"Error processing file: {str(e)}")
@@ -253,26 +360,10 @@ class ProductImportView(LoginRequiredMixin, PermissionRequiredMixin, View):
 
 @login_required
 def download_import_template(request):
-    response = HttpResponse(content_type='text/csv')
-    response['Content-Disposition'] = 'attachment; filename="product_import_template.csv"'
-    writer = csv.writer(response)
-    writer.writerow([
-        'System ID', 'Product ID', 'Name', 
-        'Category', 'Brand', 'Tea Type', 'Packet Size', 'Stock Unit', 'Selling Unit',
-        'Inventory Class', 'Production Type',
-        'Selling Price', 'Custom Load Price',
-        'Reorder Level', 'Track Stock', 'Allow Negative Stock', 'Tax Rate', 'Status',
-        'Current Stock'
-    ])
-    # Give an example row to help the user understand
-    writer.writerow([
-        '', '', 'Sample Product Name', 
-        'Tea', 'Everbolt', 'Herbal Tea', '500g', 'pcs', 'pcs',
-        'FINISHED', 'MANUFACTURED',
-        '1500.00', '', 
-        '10.00', 'TRUE', 'FALSE', '18.00', 'TRUE',
-        '100'
-    ])
+    wb = generate_products_excel(products=None, is_template=True)
+    response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    response['Content-Disposition'] = 'attachment; filename="product_import_template.xlsx"'
+    wb.save(response)
     return response
 
 # Stock Adjustment Views

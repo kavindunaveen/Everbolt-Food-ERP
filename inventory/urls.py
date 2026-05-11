@@ -10,6 +10,7 @@ urlpatterns = [
     
     # Bulk Operations
     path('bulk-export/', views.bulk_export_products, name='product_bulk_export'),
+    path('export-all/', views.export_all_products, name='export_all_products'),
     path('bulk-delete/', views.bulk_delete_products, name='product_bulk_delete'),
     path('import/', views.ProductImportView.as_view(), name='product_import'),
     path('import/template/', views.download_import_template, name='product_import_template'),

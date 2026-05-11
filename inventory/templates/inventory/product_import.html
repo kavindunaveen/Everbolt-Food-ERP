@@ -7,7 +7,7 @@
     <div class="mb-6 flex justify-between items-center">
         <div>
             <h1 class="text-2xl font-bold text-gray-900 border-b-4 border-blue-500 inline-block pb-1">Import Products</h1>
-            <p class="mt-2 text-sm text-gray-600">Upload a CSV file to bulk create or update products.</p>
+            <p class="mt-2 text-sm text-gray-600">Upload an Excel (.xlsx) file to bulk create, update, or delete products.</p>
         </div>
         <a href="{% url 'product_list' %}" class="text-blue-600 hover:text-blue-800 text-sm font-medium">&larr; Back to Products</a>
     </div>
@@ -24,17 +24,17 @@
                 <h3 class="text-sm font-medium text-blue-800">Formatting Instructions</h3>
                 <div class="mt-2 text-sm text-blue-700">
                     <ul class="list-disc pl-5 space-y-1">
-                        <li>The file must be in <strong>.csv</strong> format.</li>
+                        <li>The file must be in <strong>.xlsx</strong> (Excel) format.</li>
                         <li>Required columns for new products: <strong>Name</strong>, <strong>Selling Price</strong>.</li>
                         <li>To update existing products, include the <strong>System ID</strong>, <strong>Product ID</strong>, or <strong>SKU</strong>. The system will match and update the existing record.</li>
-                        <li>Using the "Export Selected" feature from the products list gives you a perfect template to edit and re-upload!</li>
+                        <li>You can download the template below to ensure proper data validation formatting.</li>
                     </ul>
                     <div class="mt-4">
                         <a href="{% url 'product_import_template' %}" class="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors">
                             <svg class="-ml-0.5 mr-2 h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
                             </svg>
-                            Download CSV Template
+                            Download Excel Template
                         </a>
                     </div>
                 </div>
@@ -58,12 +58,12 @@
                         <div class="flex text-sm text-gray-600 justify-center">
                             <label for="file-upload" class="relative cursor-pointer bg-white rounded-md font-medium text-blue-600 hover:text-blue-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-blue-500">
                                 <span>Upload a file</span>
-                                <input id="file-upload" name="import_file" type="file" class="sr-only" accept=".csv" required>
+                                <input id="file-upload" name="import_file" type="file" class="sr-only" accept=".xlsx" required>
                             </label>
                             <p class="pl-1">or drag and drop</p>
                         </div>
                         <p class="text-xs text-gray-500">
-                            CSV files up to 10MB
+                            Excel files up to 10MB
                         </p>
                     </div>
                 </div>

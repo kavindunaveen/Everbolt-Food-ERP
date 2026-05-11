@@ -197,6 +197,90 @@
 
 <script>
     document.addEventListener('DOMContentLoaded', function() {
+        // Dropdown setup for Brand, Category, Product Type
+        function setupOtherDropdown(inputId, predefinedChoices) {
+            const input = document.getElementById(inputId);
+            if (!input) return;
+
+            const wrapper = document.createElement('div');
+            wrapper.className = 'relative w-full';
+            input.parentNode.insertBefore(wrapper, input);
+            
+            const select = document.createElement('select');
+            select.className = input.className;
+            
+            let isCustom = true;
+            predefinedChoices.forEach(choice => {
+                const opt = document.createElement('option');
+                opt.value = choice[0];
+                opt.textContent = choice[1];
+                if (input.value === choice[0]) {
+                    opt.selected = true;
+                    isCustom = false;
+                }
+                select.appendChild(opt);
+            });
+            
+            const otherOpt = document.createElement('option');
+            otherOpt.value = 'Other';
+            otherOpt.textContent = 'Other...';
+            // If the input has a value that isn't in predefinedChoices, it's custom.
+            if (isCustom && input.value) {
+                otherOpt.selected = true;
+            } else if (!input.value && predefinedChoices.length > 0) {
+                // If it's empty, default to the first choice
+                select.value = predefinedChoices[0][0];
+                isCustom = false;
+            }
+            select.appendChild(otherOpt);
+            
+            wrapper.appendChild(select);
+            wrapper.appendChild(input);
+            
+            input.classList.add('mt-2');
+            input.placeholder = 'Enter custom value...';
+            
+            function update() {
+                if (select.value === 'Other') {
+                    input.style.display = 'block';
+                    if (!isCustom) {
+                        input.value = '';
+                    }
+                } else {
+                    input.style.display = 'none';
+                    input.value = select.value;
+                }
+                isCustom = (select.value === 'Other');
+                input.dispatchEvent(new Event('change'));
+            }
+            
+            select.addEventListener('change', update);
+            
+            if (select.value === 'Other') {
+                input.style.display = 'block';
+            } else {
+                input.style.display = 'none';
+                input.value = select.value;
+            }
+        }
+
+        const brands = [['Everbolt', 'Everbolt'], ['Everleaf', 'Everleaf']];
+        const categories = [
+            ['Confectionery', 'Confectionery'], ['Dried Fruits', 'Dried Fruits'],
+            ['Dried Vegetables', 'Dried Vegetables'], ['Spices', 'Spices'],
+            ['Tea', 'Tea'], ['Kithul', 'Kithul']
+        ];
+        const productTypes = [
+            ['Direct Packing', 'Direct Packing'], ['Blended Tea Products', 'Blended Tea Products'],
+            ['Confectionery Packing', 'Confectionery Packing'], ['Repacking', 'Repacking'],
+            ['Trading Products', 'Trading Products']
+        ];
+
+        setupOtherDropdown('id_brand', brands);
+        setupOtherDropdown('id_category', categories);
+        setupOtherDropdown('id_product_type', productTypes);
+
+        // Existing Tea Type logic
         const categoryField = document.getElementById('id_category');
         const teaTypeContainer = document.getElementById('tea-type-container');
         
@@ -210,7 +294,7 @@
         
         if (categoryField) {
             categoryField.addEventListener('change', toggleTeaType);
-            toggleTeaType();
+            toggleTeaType(); // Run once on load
         }
     });
 </script>

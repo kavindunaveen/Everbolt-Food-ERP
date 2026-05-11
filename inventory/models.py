@@ -47,8 +47,8 @@ class Product(models.Model):
 
     product_id = models.CharField(max_length=50, unique=True, blank=True)
     name = models.CharField(max_length=200)
-    brand = models.CharField(max_length=50, choices=BrandChoices.choices, default=BrandChoices.EVERBOLT)
-    category = models.CharField(max_length=50, choices=CategoryChoices.choices, default=CategoryChoices.CONFECTIONERY)
+    brand = models.CharField(max_length=50, default=BrandChoices.EVERBOLT)
+    category = models.CharField(max_length=50, default=CategoryChoices.CONFECTIONERY)
     tea_type = models.CharField(max_length=50, choices=TeaTypeChoices.choices, blank=True, null=True)
     
     packet_size = models.CharField(max_length=100, blank=True, null=True)
@@ -56,7 +56,7 @@ class Product(models.Model):
     selling_unit = models.CharField(max_length=20, choices=UnitTypes.choices, default=UnitTypes.PCS)
     
     inventory_class = models.CharField(max_length=50, choices=InventoryClasses.choices, default=InventoryClasses.FINISHED)
-    product_type = models.CharField(max_length=50, choices=ProductTypes.choices, default=ProductTypes.DIRECT_PACKING, verbose_name="Production Type")
+    product_type = models.CharField(max_length=50, default=ProductTypes.DIRECT_PACKING, verbose_name="Production Type")
     
     track_stock = models.BooleanField(default=True)
     allow_negative_stock = models.BooleanField(default=False)
@@ -116,6 +116,15 @@ class Product(models.Model):
 
     def __str__(self):
         return f"[{self.product_id}] {self.name}"
+
+    def get_brand_display(self):
+        return dict(self.BrandChoices.choices).get(self.brand, self.brand)
+
+    def get_category_display(self):
+        return dict(self.CategoryChoices.choices).get(self.category, self.category)
+
+    def get_product_type_display(self):
+        return dict(self.ProductTypes.choices).get(self.product_type, self.product_type)
 
 class StockLedger(models.Model):
     class TransactionTypes(models.TextChoices):
