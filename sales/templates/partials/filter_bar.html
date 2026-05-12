@@ -62,6 +62,15 @@
                             {% endif %}
                         </select>
                     </div>
+                    {% if model_name == 'Invoice' %}
+                    <div>
+                        <label class="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2">Returned Status</label>
+                        <label class="flex items-center space-x-2 text-sm text-gray-700">
+                            <input type="checkbox" name="is_returned" value="true" {% if request.GET.is_returned == 'true' %}checked{% endif %} class="rounded border-gray-300 text-indigo-600 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+                            <span>Show Returned Invoices Only</span>
+                        </label>
+                    </div>
+                    {% endif %}
                     <div>
                         <label class="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2">Date Range</label>
                         <div class="grid grid-cols-2 gap-2">

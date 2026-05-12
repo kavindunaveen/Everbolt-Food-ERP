@@ -205,6 +205,10 @@ class InvoiceListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
         if salesperson_id:
             qs = qs.filter(salesperson_id=salesperson_id)
 
+        is_returned = self.request.GET.get('is_returned')
+        if is_returned == 'true':
+            qs = qs.filter(status__in=['CANCELLED', 'CANCEL_PENDING'], cancellation_reason__icontains='Customer Return')
+
         return qs
 
     def get_context_data(self, **kwargs):
@@ -664,6 +668,7 @@ class InvoiceExportView(LoginRequiredMixin, PermissionRequiredMixin, View):
         date_to = request.GET.get('date_to')
         salesperson_id = request.GET.get('salesperson')
         status = request.GET.get('status')
+        is_returned = request.GET.get('is_returned')
         
         from django.db.models import Q
         if q:
@@ -679,6 +684,8 @@ class InvoiceExportView(LoginRequiredMixin, PermissionRequiredMixin, View):
             invoices = invoices.filter(salesperson_id=salesperson_id)
         if status:
             invoices = invoices.filter(status=status)
+        if is_returned == 'true':
+            invoices = invoices.filter(status__in=['CANCELLED', 'CANCEL_PENDING'], cancellation_reason__icontains='Customer Return')
             
         for inv in invoices.order_by('-creation_date'):
             writer.writerow([inv.invoice_number, inv.get_invoice_type_display(), inv.customer.customer_name, inv.salesperson.username.title() if inv.salesperson else 'N/A', inv.get_status_display(), inv.delivery_date, inv.total_amount])
@@ -751,7 +758,16 @@ def cancel_invoice_view(request, pk):
             messages.error(request, "Only Issued invoices can be cancelled.")
             return redirect('invoice_list')
             
-        reason = request.POST.get('cancellation_reason')
+        reason_type = request.POST.get('cancellation_reason_type', '')
+        reason_text = request.POST.get('cancellation_reason', '')
+        
+        if reason_type == 'Other':
+            reason = reason_text
+        elif reason_type:
+            reason = f"{reason_type}: {reason_text}" if reason_text else reason_type
+        else:
+            reason = reason_text
+            
         approver_id = request.POST.get('designated_approver')
         if not reason or not approver_id:
             messages.error(request, "Reason and Approver are required.")

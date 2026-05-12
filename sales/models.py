@@ -110,6 +110,32 @@ class Invoice(models.Model):
     cancellation_reason = models.TextField(blank=True, null=True)
 
     def save(self, *args, **kwargs):
+        from datetime import timedelta
+        
+        # Automatically set due date based on payment terms and invoice type
+        days = 0
+        if self.invoice_type == 'COD':
+            days = 14
+        elif self.invoice_type == 'CREDIT':
+            terms = self.customer.payment_terms
+            if terms == 'COD':
+                days = 14
+            elif terms and terms.startswith('CREDIT_'):
+                try:
+                    days = int(terms.split('_')[1])
+                except (IndexError, ValueError):
+                    days = 30
+            elif terms == 'CASH':
+                days = 0
+            else:
+                days = 30
+                
+        base_date = timezone.now().date()
+        if self.pk and self.creation_date:
+            base_date = self.creation_date.date()
+            
+        self.due_date = base_date + timedelta(days=days)
+
         if not self.invoice_number:
             now = timezone.now()
             prefix = now.strftime("%y%b").upper() + "_EBFR_"
