@@ -704,7 +704,7 @@
                     if (data.error) return;
                     
                     // Store pricing tiers
-                    row.data('price_tier_100', data.price_tier_100 || data.selling_price);
+                    row.data('selling_price', data.selling_price);
                     row.data('price_tier_250', data.price_tier_250 || data.selling_price);
                     row.data('price_tier_500', data.price_tier_500 || data.selling_price);
                     row.data('auto_pricing_enabled', true);
@@ -719,14 +719,12 @@
                     let qty = parseFloat(qtyInput.val()) || 1;
                     let targetPrice = data.selling_price;
                     
-                    if (data.price_tier_100) {
-                        if (qty >= 500) {
-                            targetPrice = data.price_tier_500;
-                        } else if (qty > 100) {
-                            targetPrice = data.price_tier_250;
-                        } else {
-                            targetPrice = data.price_tier_100;
-                        }
+                    if (qty >= 500 && data.price_tier_500) {
+                        targetPrice = data.price_tier_500;
+                    } else if (qty >= 250 && data.price_tier_250) {
+                        targetPrice = data.price_tier_250;
+                    } else {
+                        targetPrice = data.selling_price;
                     }
                     
                     priceInput.val(parseFloat(targetPrice).toFixed(2));
@@ -743,21 +741,20 @@
         $(document).on('input change', 'input[name$="-quantity"], input[name$="-unit_price"], input[name$="-discount"]', function() {
             const row = $(this).closest('tr');
             
-            // Auto Update tier pricing if triggered by quantity change
             if ($(this).attr('name').endsWith('-quantity') && row.data('auto_pricing_enabled')) {
                 const qty = parseFloat($(this).val()) || 0;
-                const p100 = row.data('price_tier_100');
                 const p250 = row.data('price_tier_250');
                 const p500 = row.data('price_tier_500');
                 
-                if (p100 && p250 && p500) {
+                if (p250 && p500) {
                     const priceInput = row.find('input[name$="-unit_price"]');
+                    const basePrice = row.data('selling_price');
                     if (qty >= 500) {
                         priceInput.val(p500);
-                    } else if (qty > 100) {
+                    } else if (qty >= 250) {
                         priceInput.val(p250);
                     } else {
-                        priceInput.val(p100);
+                        priceInput.val(basePrice);
                     }
                 }
             }
