@@ -55,10 +55,18 @@ class Supplier(models.Model):
     province = models.CharField(max_length=100, choices=ProvinceChoices.choices)
     zip_code = models.CharField(max_length=20, blank=True, null=True)
     
-    # Contact number with numbers only validation
+    # Contact number with exactly 10 digits validation
     contact_number = models.CharField(
-        max_length=20, 
-        validators=[RegexValidator(regex=r'^\d+$', message='Contact number must contain only digits.')]
+        max_length=10, 
+        validators=[RegexValidator(regex=r'^\d{10}$', message='Contact number must be exactly 10 digits.')]
+    )
+    
+    alternate_contact_number = models.CharField(
+        max_length=10, 
+        blank=True, 
+        null=True,
+        validators=[RegexValidator(regex=r'^\d{10}$', message='Contact number must be exactly 10 digits.')],
+        help_text="Optional secondary contact number"
     )
     
     email = models.EmailField(blank=True, null=True)

@@ -123,19 +123,15 @@
         </div>
 
         <div class="flex-row" style="margin-bottom: 15px;">
-            <div class="box" style="width: 24%;">
+            <div class="box" style="width: 32%;">
                 <strong>Sales Officer:</strong><br>
                 {{ quotation.salesperson.get_full_name|default:quotation.salesperson.username|title }}
             </div>
-            <div class="box" style="width: 24%;">
+            <div class="box" style="width: 32%;">
                 <strong>Payment Term:</strong><br>
                 {{ quotation.customer.get_payment_terms_display }}
             </div>
-            <div class="box" style="width: 24%;">
-                <strong>Customer PO Number:</strong><br>
-                {{ quotation.customer_po_number|default:"-" }}
-            </div>
-            <div class="box" style="width: 24%;">
+            <div class="box" style="width: 32%;">
                 <strong>Due Date:</strong><br>
                 {{ quotation.valid_until|date:"Y-m-d"|default:"-" }}
             </div>

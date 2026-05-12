@@ -7,7 +7,7 @@ class SupplierForm(forms.ModelForm):
         fields = [
             'supplier_name', 'supplier_type', 'custom_supplier_type',
             'address_line1', 'address_line2', 'city', 'province', 'zip_code',
-            'contact_number', 'email', 
+            'contact_number', 'alternate_contact_number', 'email', 
             'bank_name', 'bank_branch', 'bank_account_no', 'vat_reg_num'
         ]
         widgets = {
@@ -19,7 +19,8 @@ class SupplierForm(forms.ModelForm):
             'city': forms.TextInput(attrs={'placeholder': 'City / Town'}),
             'province': forms.Select(attrs={'class': 'select2-dropdown'}),
             'zip_code': forms.TextInput(attrs={'placeholder': 'Postal code'}),
-            'contact_number': forms.NumberInput(attrs={'placeholder': 'Enter contact number (no letters)'}),
+            'contact_number': forms.TextInput(attrs={'type': 'tel', 'maxlength': '10', 'placeholder': 'Enter 10 digit number'}),
+            'alternate_contact_number': forms.TextInput(attrs={'type': 'tel', 'maxlength': '10', 'placeholder': 'Enter 10 digit number'}),
             'email': forms.EmailInput(attrs={'placeholder': 'Enter valid email address'}),
             'bank_name': forms.Select(attrs={'class': 'select2-dropdown', 'data-placeholder': 'Select Commercial Bank...'}),
             'bank_branch': forms.Select(attrs={'class': 'select2-tags', 'data-placeholder': 'Type or select a branch...'}),
@@ -43,6 +44,12 @@ class SupplierForm(forms.ModelForm):
         # posted value is in self.fields['bank_branch'].choices if we set it. Wait, Django CharField 
         # doesn't natively check choices unless it is a ChoiceField. But the Select widget requires choices.
         self.fields['bank_branch'].widget.choices = branch_choices
+
+        # Apply premium UI styling to all fields
+        for field_name, field in self.fields.items():
+            current_class = field.widget.attrs.get('class', '')
+            if 'select2' not in current_class and getattr(field.widget, 'input_type', '') != 'checkbox':
+                field.widget.attrs['class'] = (current_class + ' w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm shadow-sm').strip()
 
     def clean(self):
         cleaned_data = super().clean()

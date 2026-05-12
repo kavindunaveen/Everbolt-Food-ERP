@@ -96,15 +96,19 @@
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div class="col-span-1">
                         <label for="{{ form.contact_number.id_for_label }}">Contact Number *</label>
-                        <!-- Alpine @keydown restricts input strictly to numbers and control keys -->
-                        <div x-data>
-                            {{ form.contact_number }}
-                        </div>
-                        <p class="text-xs text-gray-500 mt-1">Numbers only.</p>
+                        {{ form.contact_number }}
+                        <p class="text-xs text-gray-500 mt-1">10 digits only.</p>
                         <p class="text-xs text-red-500 mt-1">{{ form.contact_number.errors.as_text }}</p>
                     </div>
 
                     <div class="col-span-1">
+                        <label for="{{ form.alternate_contact_number.id_for_label }}">Alternate Contact (Optional)</label>
+                        {{ form.alternate_contact_number }}
+                        <p class="text-xs text-gray-500 mt-1">10 digits only.</p>
+                        <p class="text-xs text-red-500 mt-1">{{ form.alternate_contact_number.errors.as_text }}</p>
+                    </div>
+
+                    <div class="col-span-1 md:col-span-2">
                         <label for="{{ form.email.id_for_label }}">Email</label>
                         {{ form.email }}
                         <p class="text-xs text-red-500 mt-1">{{ form.email.errors.as_text }}</p>
@@ -201,23 +205,30 @@
 <script>
     // Document layout enhancements for numeric-only inputs
     document.addEventListener('DOMContentLoaded', () => {
-        const numberInput = document.getElementById('{{ form.contact_number.id_for_label }}');
-        if (numberInput) {
-            numberInput.addEventListener('keydown', (e) => {
-                // Allow: backspace, delete, tab, escape, enter and .
-                if ([46, 8, 9, 27, 13, 110, 190].indexOf(e.keyCode) !== -1 ||
-                     // Allow: Ctrl+A, Command+A
-                    (e.keyCode === 65 && (e.ctrlKey === true || e.metaKey === true)) || 
-                     // Allow: home, end, left, right, down, up
-                    (e.keyCode >= 35 && e.keyCode <= 40)) {
-                         return; // let it happen
-                }
-                // Ensure that it is a number and stop the keypress
-                if ((e.shiftKey || (e.keyCode < 48 || e.keyCode > 57)) && (e.keyCode < 96 || e.keyCode > 105)) {
-                    e.preventDefault();
-                }
-            });
-        }
+        const numberInputs = [
+            document.getElementById('{{ form.contact_number.id_for_label }}'),
+            document.getElementById('{{ form.alternate_contact_number.id_for_label }}')
+        ];
+        
+        numberInputs.forEach(input => {
+            if (input) {
+                input.addEventListener('keydown', (e) => {
+                    // Allow: backspace, delete, tab, escape, enter
+                    // Removed 110 and 190 to prevent decimal points
+                    if ([46, 8, 9, 27, 13].indexOf(e.keyCode) !== -1 ||
+                         // Allow: Ctrl+A, Command+A
+                        (e.keyCode === 65 && (e.ctrlKey === true || e.metaKey === true)) || 
+                         // Allow: home, end, left, right, down, up
+                        (e.keyCode >= 35 && e.keyCode <= 40)) {
+                             return; // let it happen
+                    }
+                    // Ensure that it is a number and stop the keypress
+                    if ((e.shiftKey || (e.keyCode < 48 || e.keyCode > 57)) && (e.keyCode < 96 || e.keyCode > 105)) {
+                        e.preventDefault();
+                    }
+                });
+            }
+        });
     });
 
     // Alpine.js component for managing state

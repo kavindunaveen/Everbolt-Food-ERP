@@ -220,7 +220,7 @@
                 <h3 class="text-sm font-bold text-gray-800 uppercase tracking-widest">Customer & Timeline</h3>
             </div>
             <div class="p-6">
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6">
                     <div class="lg:col-span-1">
                         <div class="flex justify-between items-center mb-2">
                             <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider">Customer <span class="text-red-500">*</span></label>
@@ -239,12 +239,7 @@
                         {{ form.valid_until }}
                         {% if form.valid_until.errors %}<p class="text-red-500 text-[10px] font-bold mt-1 uppercase">{{ form.valid_until.errors.0 }}</p>{% endif %}
                     </div>
-                    <div>
-                        <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Customer PO #</label>
-                        {{ form.customer_po_number }}
-                        {% if form.customer_po_number.errors %}<p class="text-red-500 text-[10px] font-bold mt-1 uppercase">{{ form.customer_po_number.errors.0 }}</p>{% endif %}
-                    </div>
-                    <div class="md:col-span-2 lg:col-span-3">
+                    <div class="md:col-span-2 lg:col-span-2">
                         <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Terms & Notes</label>
                         {{ form.notes }}
                     </div>

@@ -8,7 +8,7 @@
         </div>
         <input type="text" name="q" placeholder="{{ search_placeholder|default:'Search...' }}" value="{{ request.GET.q }}" class="flex-grow py-2.5 pr-3 border-none focus:ring-0 text-sm bg-transparent outline-none w-[220px] font-medium text-gray-700" @keydown.enter.prevent="submitForm">
 
-        {% if request.GET.q or request.GET.status or request.GET.date_from or request.GET.date_to or request.GET.salesperson or request.GET.category %}
+        {% if request.GET.q or request.GET.status or request.GET.date_from or request.GET.date_to or request.GET.salesperson or request.GET.category or request.GET.supplier_type or request.GET.province %}
         <a href="?" class="p-1.5 mr-1 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors" title="Clear All Filters">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
         </a>
@@ -85,6 +85,25 @@
                             <option value="">All Categories</option>
                             {% for cat_val, cat_label in categories %}
                                 <option value="{{ cat_val }}" {% if request.GET.category == cat_val %}selected{% endif %}>{{ cat_label }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    {% elif model_name == 'Supplier' %}
+                    <div>
+                        <label class="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2">Supplier Type</label>
+                        <select name="supplier_type" class="w-full border-gray-200 rounded-lg text-sm font-medium focus:ring-indigo-500 focus:border-indigo-500">
+                            <option value="">All Types</option>
+                            {% for val, label in supplier_types %}
+                                <option value="{{ val }}" {% if request.GET.supplier_type == val %}selected{% endif %}>{{ label }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2">Province</label>
+                        <select name="province" class="w-full border-gray-200 rounded-lg text-sm font-medium focus:ring-indigo-500 focus:border-indigo-500">
+                            <option value="">All Provinces</option>
+                            {% for val, label in provinces %}
+                                <option value="{{ val }}" {% if request.GET.province == val %}selected{% endif %}>{{ label }}</option>
                             {% endfor %}
                         </select>
                     </div>

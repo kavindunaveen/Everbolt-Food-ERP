@@ -4,7 +4,7 @@ from django.views.generic import ListView, CreateView, UpdateView, DetailView, D
 from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
 from django.contrib import messages
 from django.db.models import Q
-from .models import Supplier
+from .models import Supplier, SupplierType, ProvinceChoices
 from .forms import SupplierForm
 
 class SupplierListView(LoginRequiredMixin, ListView):
@@ -29,12 +29,18 @@ class SupplierListView(LoginRequiredMixin, ListView):
         if supplier_type:
             qs = qs.filter(supplier_type=supplier_type)
             
+        province = self.request.GET.get('province')
+        if province:
+            qs = qs.filter(province=province)
+            
         return qs
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         # For the new filter_bar.html component
         context['model_name'] = 'Supplier'
+        context['supplier_types'] = SupplierType.choices
+        context['provinces'] = ProvinceChoices.choices
         if hasattr(self.request.user, 'saved_filters'):
             context['saved_filters'] = self.request.user.saved_filters.filter(model_name='Supplier')
         return context
