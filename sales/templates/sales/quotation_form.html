@@ -692,73 +692,74 @@
             totalFormsInput.val(totalForms + 1);
         });
 
+        // Helper: apply tier price based on qty and stored tiers on a row
+        function applyTierPrice(row, qty) {
+            const basePrice = row.data('selling_price');
+            const p250 = row.data('price_tier_250');
+            const p500 = row.data('price_tier_500');
+            if (!row.data('auto_pricing_enabled')) return;
+            const priceInput = row.find('input[name$="-unit_price"]');
+            if (qty >= 500 && p500) {
+                priceInput.val(parseFloat(p500).toFixed(2));
+            } else if (qty >= 250 && p250) {
+                priceInput.val(parseFloat(p250).toFixed(2));
+            } else if (basePrice) {
+                priceInput.val(parseFloat(basePrice).toFixed(2));
+            }
+        }
+
         // Event delegation for Product Selection changes
         $(document).on('change', 'select[name$="-product"]', function() {
             const value = $(this).val();
-            if (!value || isNaN(parseInt(value))) return;
             const row = $(this).closest('tr');
-            
+
+            // If product cleared, reset the row
+            if (!value || isNaN(parseInt(value))) {
+                row.removeData('selling_price price_tier_250 price_tier_500 auto_pricing_enabled');
+                row.find('input[name$="-unit_price"]').val('');
+                row.find('input[name$="-quantity"]').val('');
+                row.find('.line-total').val('0.00');
+                updateSummary();
+                return;
+            }
+
             fetch(`/inventory/api/${value}/`)
                 .then(response => response.json())
                 .then(data => {
                     if (data.error) return;
-                    
-                    // Store pricing tiers
+
+                    // Store ALL pricing tiers on the row element
                     row.data('selling_price', data.selling_price);
                     row.data('price_tier_250', data.price_tier_250 || data.selling_price);
                     row.data('price_tier_500', data.price_tier_500 || data.selling_price);
                     row.data('auto_pricing_enabled', true);
-                    
-                    const priceInput = row.find('input[name$="-unit_price"]');
+
                     const qtyInput = row.find('input[name$="-quantity"]');
-                    
-                    if (qtyInput.length && (!qtyInput.val() || qtyInput.val() == '0')) {
+                    if (!qtyInput.val() || parseFloat(qtyInput.val()) === 0) {
                         qtyInput.val(1);
                     }
-                    
-                    let qty = parseFloat(qtyInput.val()) || 1;
-                    let targetPrice = data.selling_price;
-                    
-                    if (qty >= 500 && data.price_tier_500) {
-                        targetPrice = data.price_tier_500;
-                    } else if (qty >= 250 && data.price_tier_250) {
-                        targetPrice = data.price_tier_250;
-                    } else {
-                        targetPrice = data.selling_price;
-                    }
-                    
-                    priceInput.val(parseFloat(targetPrice).toFixed(2));
-                    
+
+                    const qty = parseFloat(qtyInput.val()) || 1;
+                    applyTierPrice(row, qty);
+
                     if (data.current_stock === 0) {
-                        console.warn("Product out of stock. (Permitted for quotation)");
+                        console.warn('Product out of stock. (Permitted for quotation)');
                     }
                     calculateRowTotal(row[0]);
                 })
-                .catch(err => console.error("Error fetching product data:", err));
+                .catch(err => console.error('Error fetching product data:', err));
         });
 
         // Live calculation triggers on input changes
         $(document).on('input change', 'input[name$="-quantity"], input[name$="-unit_price"], input[name$="-discount"]', function() {
             const row = $(this).closest('tr');
-            
-            if ($(this).attr('name').endsWith('-quantity') && row.data('auto_pricing_enabled')) {
+
+            // Auto-update tier price when quantity changes
+            if ($(this).attr('name') && $(this).attr('name').endsWith('-quantity')) {
                 const qty = parseFloat($(this).val()) || 0;
-                const p250 = row.data('price_tier_250');
-                const p500 = row.data('price_tier_500');
-                
-                if (p250 && p500) {
-                    const priceInput = row.find('input[name$="-unit_price"]');
-                    const basePrice = row.data('selling_price');
-                    if (qty >= 500) {
-                        priceInput.val(p500);
-                    } else if (qty >= 250) {
-                        priceInput.val(p250);
-                    } else {
-                        priceInput.val(basePrice);
-                    }
-                }
+                applyTierPrice(row, qty);
             }
-            
+
             calculateRowTotal(row[0]);
         });
 
@@ -767,14 +768,14 @@
             const row = $(this).closest('tr');
             const deleteCheckbox = row.find('input[type="checkbox"][id$="-DELETE"]');
             if (deleteCheckbox.length > 0) {
+                // Existing DB row: mark for deletion and hide
                 deleteCheckbox.prop('checked', true);
-                row.hide();
-                row.removeClass('formset-row'); // Remove from visible calculation class
+                row.hide().removeClass('formset-row');
             } else {
+                // New unsaved row: fully remove and fix the TOTAL_FORMS count
                 row.remove();
-                // Update total forms count
                 const totalForms = $('#id_' + prefix + '-TOTAL_FORMS');
-                totalForms.val(parseInt(totalForms.val()) - 1);
+                totalForms.val(Math.max(0, parseInt(totalForms.val()) - 1));
             }
             updateSummary();
         });
