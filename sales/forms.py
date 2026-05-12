@@ -87,17 +87,21 @@ InvoiceItemFormSet = inlineformset_factory(
 class DeliveryNoteForm(forms.ModelForm):
     class Meta:
         model = DeliveryNote
-        fields = ['invoice', 'customer_name', 'delivery_address', 'delivery_date', 'delivered_by', 'other_delivery_person', 'remarks']
+        fields = ['invoice', 'customer_name', 'delivery_address', 'delivery_date', 'delivered_by', 'remarks']
         widgets = {
             'invoice': forms.Select(attrs={'class': 'w-full select2-ajax-invoice'}),
             'customer_name': forms.TextInput(attrs={'class': 'w-full px-3 py-2 border rounded-md bg-gray-50', 'readonly': 'readonly'}),
             'delivery_address': forms.Textarea(attrs={'class': 'w-full px-3 py-2 border rounded-md bg-gray-50', 'rows': 2, 'readonly': 'readonly'}),
             'delivery_date': forms.DateInput(attrs={'type': 'date', 'class': 'w-full px-3 py-2 border rounded-md bg-gray-50', 'readonly': 'readonly'}),
             'delivered_by': forms.Select(attrs={'class': 'w-full px-3 py-2 border rounded-md'}),
-            'other_delivery_person': forms.TextInput(attrs={'class': 'w-full px-3 py-2 border rounded-md', 'placeholder': 'Enter name if Other'}),
             'remarks': forms.Textarea(attrs={'class': 'w-full px-3 py-2 border rounded-md', 'rows': 3}),
         }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields['invoice'].queryset = Invoice.objects.filter(status='ISSUED')
+        
+        from users.models import User
+        if 'delivered_by' in self.fields:
+            self.fields['delivered_by'].queryset = User.objects.filter(is_active=True, is_delivery_officer=True)
+            self.fields['delivered_by'].empty_label = "--- Select Delivery Officer ---"

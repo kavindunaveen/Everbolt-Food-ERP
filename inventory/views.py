@@ -174,6 +174,12 @@ def generate_products_excel(products=None, is_template=False):
 @login_required
 def export_all_products(request):
     products = Product.objects.all()
+    q = request.GET.get('q')
+    category = request.GET.get('category')
+    if q:
+        products = products.filter(Q(name__icontains=q) | Q(product_id__icontains=q))
+    if category:
+        products = products.filter(category=category)
     wb = generate_products_excel(products=products, is_template=False)
     response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
     response['Content-Disposition'] = 'attachment; filename="all_products_export.xlsx"'

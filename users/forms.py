@@ -68,7 +68,7 @@ class CustomUserCreationForm(UserCreationForm, MatrixPermissionMixin):
 
     class Meta:
         model = User
-        fields = ('username', 'email', 'first_name', 'last_name', 'role', 'contact_number', 'assigned_area', 'user_permissions')
+        fields = ('username', 'email', 'first_name', 'last_name', 'role', 'contact_number', 'assigned_area', 'is_delivery_officer', 'user_permissions')
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -91,7 +91,7 @@ class CustomUserChangeForm(UserChangeForm, MatrixPermissionMixin):
 
     class Meta:
         model = User
-        fields = ('username', 'email', 'first_name', 'last_name', 'role', 'contact_number', 'assigned_area', 'is_active', 'user_permissions')
+        fields = ('username', 'email', 'first_name', 'last_name', 'role', 'contact_number', 'assigned_area', 'is_delivery_officer', 'is_active', 'user_permissions')
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

@@ -122,12 +122,9 @@
                         <label class="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2">Delivered By</label>
                         <select name="delivered_by" class="w-full border-gray-200 rounded-lg text-sm font-medium focus:ring-indigo-500 focus:border-indigo-500">
                             <option value="">All Personnel</option>
-                            <option value="SUMITH" {% if request.GET.delivered_by == 'SUMITH' %}selected{% endif %}>Sumith</option>
-                            <option value="ASANGA" {% if request.GET.delivered_by == 'ASANGA' %}selected{% endif %}>Asanga</option>
-                            <option value="CHAMINDA" {% if request.GET.delivered_by == 'CHAMINDA' %}selected{% endif %}>Chaminda</option>
-                            <option value="KESHAN" {% if request.GET.delivered_by == 'KESHAN' %}selected{% endif %}>Keshan</option>
-                            <option value="MANISTHA" {% if request.GET.delivered_by == 'MANISTHA' %}selected{% endif %}>Manistha</option>
-                            <option value="OTHER" {% if request.GET.delivered_by == 'OTHER' %}selected{% endif %}>Other</option>
+                            {% for officer in delivery_officers %}
+                                <option value="{{ officer.id }}" {% if request.GET.delivered_by|stringformat:"s" == officer.id|stringformat:"s" %}selected{% endif %}>{{ officer.username|title }}</option>
+                            {% endfor %}
                         </select>
                     </div>
                     <div>

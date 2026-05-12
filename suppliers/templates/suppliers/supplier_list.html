@@ -17,6 +17,10 @@
         <h1 class="text-2xl font-bold text-gray-900 border-b-4 border-indigo-500 inline-block pb-1">Suppliers</h1>
         <div class="flex space-x-3">
             {% include 'partials/filter_bar.html' with search_placeholder="Search suppliers..." %}
+            <a href="{% url 'supplier_export' %}?{{ request.GET.urlencode }}" class="bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium py-2 px-4 rounded-lg shadow-sm border border-gray-300 transition duration-150 inline-flex items-center">
+                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                Export CSV
+            </a>
             <a href="{% url 'supplier_create' %}" class="btn-premium btn-primary bg-indigo-600 hover:bg-indigo-700 shadow-indigo-600/20">
                 + New Supplier
             </a>

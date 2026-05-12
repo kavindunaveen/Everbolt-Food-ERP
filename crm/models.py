@@ -129,6 +129,8 @@ class Customer(models.Model):
         super().save(*args, **kwargs)
 
     def __str__(self):
+        if self.company_name and self.customer_name and self.company_name != self.customer_name:
+            return f"{self.customer_name} - {self.company_name}"
         return f"{self.company_name or self.customer_name}"
 
 class CustomerChangeLog(models.Model):

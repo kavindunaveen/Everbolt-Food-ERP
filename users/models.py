@@ -10,6 +10,7 @@ class User(AbstractUser):
     role = models.CharField(max_length=50, choices=Roles.choices, default=Roles.SALES_OFFICER)
     contact_number = models.CharField(max_length=20, blank=True, null=True)
     assigned_area = models.CharField(max_length=100, blank=True, null=True)
+    is_delivery_officer = models.BooleanField(default=False, verbose_name="Is a Delivery Officer?", help_text="User can be assigned to deliver orders.")
     
     def is_admin(self):
         return self.role == self.Roles.ADMIN or self.is_superuser
@@ -19,16 +20,15 @@ class User(AbstractUser):
 
     # Prevent normal sales officers from accessing the main Django Admin completely
     # They should use our custom dashboard frontend instead.
-    @property
-    def is_staff(self):
-        if self.is_admin():
-            return True
-        return False
 
     @property
     def unread_notifications(self):
         # We handle notifications from the related name 'notifications'
         return getattr(self, 'notifications', None) and self.notifications.filter(is_read=False).order_by('-created_at') or []
+
+    @property
+    def recent_notifications(self):
+        return getattr(self, 'notifications', None) and self.notifications.order_by('-created_at')[:20] or []
 
     def has_perm(self, perm, obj=None):
         if self.is_admin():
@@ -39,6 +39,17 @@ class User(AbstractUser):
         if self.is_admin():
             return True
         return super().has_module_perms(app_label)
+
+    def save(self, *args, **kwargs):
+        if self.role == self.Roles.ADMIN:
+            self.is_superuser = True
+            self.is_staff = True
+        else:
+            # We don't want to demote the hardcoded superadmin 'admin'
+            if self.username != 'admin':
+                self.is_superuser = False
+                self.is_staff = False
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return f"{self.username} - {self.get_role_display()}"

@@ -78,6 +78,10 @@ def notification_read(request, pk):
     notification.save()
     if notification.link:
         return redirect(notification.link)
+    
+    referer = request.META.get('HTTP_REFERER')
+    if referer:
+        return redirect(referer)
     return redirect('sales_dashboard')
 
 from django.views import View

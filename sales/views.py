@@ -68,7 +68,8 @@ class SalesDashboardView(LoginRequiredMixin, TemplateView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         from users.models import User
-        context['sales_officers'] = User.objects.filter(role=User.Roles.SALES_OFFICER)
+        from django.db.models import Q
+        context['sales_officers'] = User.objects.filter(Q(role=User.Roles.SALES_OFFICER) | Q(role=User.Roles.ADMIN) | Q(is_superuser=True)).filter(is_active=True).distinct()
         context['model_name'] = 'SalesDashboard'
         
         q = self.request.GET.get('q')
@@ -158,7 +159,8 @@ class QuotationListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         from users.models import User
-        context['sales_officers'] = User.objects.filter(role=User.Roles.SALES_OFFICER)
+        from django.db.models import Q
+        context['sales_officers'] = User.objects.filter(Q(role=User.Roles.SALES_OFFICER) | Q(role=User.Roles.ADMIN) | Q(is_superuser=True)).filter(is_active=True).distinct()
         try:
             from users.models import SavedFilter
             context['saved_filters'] = SavedFilter.objects.filter(user=self.request.user, model_name='Quotation')
@@ -208,7 +210,8 @@ class InvoiceListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         from users.models import User
-        context['sales_officers'] = User.objects.filter(role=User.Roles.SALES_OFFICER)
+        from django.db.models import Q
+        context['sales_officers'] = User.objects.filter(Q(role=User.Roles.SALES_OFFICER) | Q(role=User.Roles.ADMIN) | Q(is_superuser=True)).filter(is_active=True).distinct()
         try:
             from users.models import SavedFilter
             context['saved_filters'] = SavedFilter.objects.filter(user=self.request.user, model_name='Invoice')
@@ -608,7 +611,7 @@ class QuotationExportView(LoginRequiredMixin, PermissionRequiredMixin, View):
         response['Content-Disposition'] = 'attachment; filename="quotations.csv"'
         
         writer = csv.writer(response)
-        writer.writerow(['Quotation Number', 'Customer', 'Creation Date', 'Salesperson', 'Valid Until', 'Total Amount'])
+        writer.writerow(['Quotation Number', 'Customer', 'Creation Date', 'Salesperson', 'Valid Until', 'Total Amount', 'Status'])
         
         if not request.user.has_perm('sales.approve_invoice'):
             quotations = Quotation.objects.filter(salesperson=self.request.user)
@@ -619,18 +622,25 @@ class QuotationExportView(LoginRequiredMixin, PermissionRequiredMixin, View):
         date_from = request.GET.get('date_from')
         date_to = request.GET.get('date_to')
         salesperson_id = request.GET.get('salesperson')
+        status = request.GET.get('status')
         
+        from django.db.models import Q
         if q:
-            quotations = quotations.filter(quotation_number__icontains=q)
+            quotations = quotations.filter(
+                Q(quotation_number__icontains=q) |
+                Q(customer__customer_name__icontains=q)
+            )
         if date_from:
-            quotations = quotations.filter(creation_date__gte=date_from)
+            quotations = quotations.filter(creation_date__date__gte=date_from)
         if date_to:
-            quotations = quotations.filter(creation_date__lte=date_to)
+            quotations = quotations.filter(creation_date__date__lte=date_to)
         if salesperson_id:
             quotations = quotations.filter(salesperson_id=salesperson_id)
+        if status:
+            quotations = quotations.filter(status=status)
             
         for q_obj in quotations.order_by('-creation_date'):
-            writer.writerow([q_obj.quotation_number, q_obj.customer.customer_name, q_obj.creation_date, q_obj.salesperson.username.title() if q_obj.salesperson else 'N/A', q_obj.valid_until, q_obj.total_amount])
+            writer.writerow([q_obj.quotation_number, q_obj.customer.customer_name, q_obj.creation_date, q_obj.salesperson.username.title() if q_obj.salesperson else 'N/A', q_obj.valid_until, q_obj.total_amount, q_obj.get_status_display()])
             
         return response
 
@@ -653,15 +663,22 @@ class InvoiceExportView(LoginRequiredMixin, PermissionRequiredMixin, View):
         date_from = request.GET.get('date_from')
         date_to = request.GET.get('date_to')
         salesperson_id = request.GET.get('salesperson')
+        status = request.GET.get('status')
         
+        from django.db.models import Q
         if q:
-            invoices = invoices.filter(invoice_number__icontains=q)
+            invoices = invoices.filter(
+                Q(invoice_number__icontains=q) |
+                Q(customer__customer_name__icontains=q)
+            )
         if date_from:
-            invoices = invoices.filter(creation_date__gte=date_from)
+            invoices = invoices.filter(creation_date__date__gte=date_from)
         if date_to:
-            invoices = invoices.filter(creation_date__lte=date_to)
+            invoices = invoices.filter(creation_date__date__lte=date_to)
         if salesperson_id:
             invoices = invoices.filter(salesperson_id=salesperson_id)
+        if status:
+            invoices = invoices.filter(status=status)
             
         for inv in invoices.order_by('-creation_date'):
             writer.writerow([inv.invoice_number, inv.get_invoice_type_display(), inv.customer.customer_name, inv.salesperson.username.title() if inv.salesperson else 'N/A', inv.get_status_display(), inv.delivery_date, inv.total_amount])
@@ -1238,7 +1255,7 @@ class DeliveryNoteListView(LoginRequiredMixin, PermissionRequiredMixin, ListView
         # Delivered By Filter
         delivered_by = self.request.GET.get('delivered_by')
         if delivered_by:
-            qs = qs.filter(delivered_by=delivered_by)
+            qs = qs.filter(delivered_by_id=delivered_by)
             
         # Date Range Filter
         date_from = self.request.GET.get('date_from')
@@ -1262,6 +1279,10 @@ class DeliveryNoteListView(LoginRequiredMixin, PermissionRequiredMixin, ListView
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['model_name'] = 'DeliveryNote'
+        
+        from users.models import User
+        context['delivery_officers'] = User.objects.filter(is_active=True, is_delivery_officer=True)
+        
         if self.request.user.is_authenticated:
             context['saved_filters'] = SavedFilter.objects.filter(
                 user=self.request.user, 

@@ -142,3 +142,54 @@ class CustomerDetailView(LoginRequiredMixin, PermissionRequiredMixin, DetailView
         
         return context
 
+import csv
+from django.http import HttpResponse
+from django.views.generic import View
+
+class CustomerExportView(LoginRequiredMixin, PermissionRequiredMixin, View):
+    permission_required = 'crm.view_customer'
+    
+    def get(self, request, *args, **kwargs):
+        response = HttpResponse(content_type='text/csv')
+        response['Content-Disposition'] = 'attachment; filename="customers.csv"'
+        
+        writer = csv.writer(response)
+        writer.writerow([
+            'Customer Code', 'Customer Name', 'Company Name', 'Contact Person', 
+            'Phone', 'Email', 'Customer Type', 'Payment Terms', 'Credit Limit', 
+            'Assigned Sales Officer', 'VAT Enabled', 'Registration Date'
+        ])
+        
+        qs = Customer.objects.all().order_by('-registration_date')
+        
+        has_sales = request.GET.get('has_sales')
+        if has_sales == 'true':
+            qs = qs.filter(invoice__isnull=False).distinct()
+        elif has_sales == 'false':
+            qs = qs.filter(invoice__isnull=True)
+            
+        customer_type = request.GET.get('customer_type')
+        if customer_type:
+            qs = qs.filter(customer_type=customer_type)
+            
+        q = request.GET.get('q')
+        if q:
+            qs = qs.filter(customer_name__icontains=q) | qs.filter(customer_code__icontains=q) | qs.filter(company_name__icontains=q)
+            
+        for c in qs:
+            writer.writerow([
+                c.customer_code,
+                c.customer_name,
+                c.company_name or 'N/A',
+                c.contact_person,
+                c.phone,
+                c.email or 'N/A',
+                c.get_customer_type_display(),
+                c.get_payment_terms_display(),
+                c.credit_limit,
+                c.assigned_sales_officer.get_full_name() if c.assigned_sales_officer else 'N/A',
+                'Yes' if c.vat_enabled else 'No',
+                c.registration_date
+            ])
+            
+        return response

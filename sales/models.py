@@ -227,14 +227,6 @@ class DeliveryNote(models.Model):
         PARTIAL = 'PARTIAL', 'Partial'
         FAILED = 'FAILED', 'Failed'
 
-    class DeliveryPerson(models.TextChoices):
-        SUMITH = 'SUMITH', 'Sumith'
-        ASANGA = 'ASANGA', 'Asanga'
-        CHAMINDA = 'CHAMINDA', 'Chaminda'
-        KESHAN = 'KESHAN', 'Keshan'
-        MANISTHA = 'MANISTHA', 'Manistha'
-        OTHER = 'OTHER', 'Other'
-
     dn_number = models.CharField(max_length=50, unique=True)
     invoice = models.ForeignKey(Invoice, on_delete=models.CASCADE, related_name='delivery_notes')
     
@@ -243,8 +235,7 @@ class DeliveryNote(models.Model):
     delivery_address = models.TextField()
     delivery_date = models.DateField()
     
-    delivered_by = models.CharField(max_length=50, choices=DeliveryPerson.choices)
-    other_delivery_person = models.CharField(max_length=150, blank=True, null=True, help_text="Fill if 'Other' is selected")
+    delivered_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name='deliveries')
     
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.PENDING)
     remarks = models.TextField(blank=True, null=True)

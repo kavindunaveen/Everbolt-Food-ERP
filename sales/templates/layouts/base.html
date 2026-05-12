@@ -127,10 +127,10 @@
                                     <h3 class="text-xs font-bold text-gray-900 uppercase tracking-wider">Notifications</h3>
                                 </div>
                                 <div class="max-h-80 overflow-y-auto">
-                                {% for notif in user.unread_notifications %}
-                                    <a href="{% url 'notification_read' notif.pk %}" class="block px-4 py-3 hover:bg-red-50 transition duration-150 ease-in-out {% if not notif.is_read %}bg-white{% endif %}">
-                                        <p class="text-sm font-medium text-gray-900">{{ notif.title }}</p>
-                                        <p class="text-xs text-gray-500 mt-1 line-clamp-2">{{ notif.message }}</p>
+                                {% for notif in user.recent_notifications %}
+                                    <a href="{% url 'notification_read' notif.pk %}" class="block px-4 py-3 transition duration-150 ease-in-out {% if notif.is_read %}bg-gray-50 hover:bg-gray-100 opacity-75{% else %}bg-white hover:bg-red-50 border-l-4 border-red-500{% endif %}">
+                                        <p class="text-sm {% if notif.is_read %}font-medium text-gray-600{% else %}font-bold text-gray-900{% endif %}">{{ notif.title }}</p>
+                                        <p class="text-xs {% if notif.is_read %}text-gray-400{% else %}text-gray-600{% endif %} mt-1 line-clamp-2">{{ notif.message }}</p>
                                         <p class="text-[10px] text-gray-400 mt-2 font-medium">{{ notif.created_at|timesince }} ago</p>
                                     </a>
                                 {% empty %}

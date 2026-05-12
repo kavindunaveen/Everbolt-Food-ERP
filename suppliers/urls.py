@@ -7,4 +7,5 @@ urlpatterns = [
     path('<int:pk>/', views.SupplierDetailView.as_view(), name='supplier_detail'),
     path('<int:pk>/edit/', views.SupplierUpdateView.as_view(), name='supplier_update'),
     path('<int:pk>/delete/', views.SupplierDeleteView.as_view(), name='supplier_delete'),
+    path('export/', views.SupplierExportView.as_view(), name='supplier_export'),
 ]
