@@ -320,18 +320,12 @@
                                 <input type="text" class="w-full px-2 py-2 border border-gray-100 rounded-md bg-gray-50 text-gray-900 font-bold text-sm text-right hide-arrows line-total" value="0.00" readonly tabindex="-1">
                             </td>
                             <td class="px-2 py-3 text-center align-top w-[8%]">
-                                {% if item_form.instance.pk %}
-                                    <div class="flex items-center justify-center">
-                                        {{ item_form.DELETE }}
-                                        <label for="{{ item_form.DELETE.id_for_label }}" class="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors cursor-pointer" title="Delete">
-                                            <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
-                                        </label>
-                                    </div>
-                                {% else %}
-                                    <button type="button" class="remove-row p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors" title="Remove">
+                                <div class="flex items-center justify-center">
+                                    <div class="hidden">{{ item_form.DELETE }}</div>
+                                    <button type="button" class="remove-row p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors" title="Remove Line">
                                         <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
                                     </button>
-                                {% endif %}
+                                </div>
                             </td>
                         </tr>
                         {% endfor %}
@@ -778,9 +772,14 @@
             if (deleteCheckbox.length > 0) {
                 deleteCheckbox.prop('checked', true);
                 row.hide();
+                row.removeClass('formset-row'); // Remove from visible calculation class
             } else {
                 row.remove();
+                // Update total forms count
+                const totalForms = $('#id_' + prefix + '-TOTAL_FORMS');
+                totalForms.val(parseInt(totalForms.val()) - 1);
             }
+            updateSummary();
         });
     });
 </script>
