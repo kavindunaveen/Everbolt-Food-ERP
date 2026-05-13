@@ -1296,17 +1296,33 @@ class DeliveryNoteCreateView(LoginRequiredMixin, PermissionRequiredMixin, Create
 
     def form_valid(self, form):
         with transaction.atomic():
-            self.object = form.save()
-            # Copy items from invoice to DN items
+            self.object = form.save(commit=False)
             invoice = self.object.invoice
+
+            # Fix #8: Only allow DN creation against ISSUED invoices
+            if invoice.status != 'ISSUED':
+                form.add_error(
+                    'invoice',
+                    f"Delivery Notes can only be created for ISSUED invoices. "
+                    f"'{invoice.invoice_number}' is currently {invoice.get_status_display()}."
+                )
+                return self.form_invalid(form)
+
+            self.object.save()
+
+            # Fix #9: Copy items with invoiced_quantity stored as a cap.
+            # Delivery quantity is set to the full invoiced amount by default
+            # (user can reduce it for partial delivery, but never exceed it).
             for item in invoice.items.all():
                 DeliveryNoteItem.objects.create(
                     delivery_note=self.object,
                     product=item.product,
-                    quantity=item.quantity
+                    quantity=item.quantity,           # delivered qty (default = full)
+                    invoiced_quantity=item.quantity,  # hard cap — never exceed this
                 )
+
             messages.success(self.request, f"Delivery Note {self.object.dn_number} created successfully.")
-            
+
             log_sales_event(
                 obj=self.object,
                 user=self.request.user,
@@ -1314,8 +1330,9 @@ class DeliveryNoteCreateView(LoginRequiredMixin, PermissionRequiredMixin, Create
                 new_value=self.object.get_status_display(),
                 notes=f"Linked to Invoice {invoice.invoice_number}"
             )
-            
+
             return super().form_valid(form)
+
 
 @login_required
 def get_invoice_details(request, pk):

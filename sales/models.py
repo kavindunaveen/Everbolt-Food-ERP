@@ -80,8 +80,9 @@ class QuotationItem(models.Model):
 
 class Invoice(models.Model):
     class Type(models.TextChoices):
+        CASH   = 'CASH',   'Cash'
+        COD    = 'COD',    'Cash On Delivery'
         CREDIT = 'CREDIT', 'Credit Invoice'
-        COD = 'COD', 'Cash On Delivery'
 
     class Status(models.TextChoices):
         DRAFT = 'DRAFT', 'Draft'
@@ -124,6 +125,8 @@ class Invoice(models.Model):
             days = 0
             if self.invoice_type == 'COD':
                 days = 14
+            elif self.invoice_type == 'CASH':
+                days = 0  # Due immediately on cash sales
             elif self.invoice_type == 'CREDIT':
                 terms = self.customer.payment_terms
                 if terms == 'COD':
@@ -351,7 +354,21 @@ class DeliveryNote(models.Model):
 class DeliveryNoteItem(models.Model):
     delivery_note = models.ForeignKey(DeliveryNote, related_name='items', on_delete=models.CASCADE)
     product = models.ForeignKey(Product, on_delete=models.PROTECT)
-    quantity = models.PositiveIntegerField()
+    quantity = models.PositiveIntegerField(help_text="Actual quantity delivered in this DN")
+    invoiced_quantity = models.PositiveIntegerField(
+        default=0,
+        help_text="Original invoiced quantity — used to cap delivery and track partial delivery"
+    )
+
+    @property
+    def is_partial(self):
+        """True if less than the full invoiced quantity was delivered."""
+        return self.quantity < self.invoiced_quantity
+
+    @property
+    def is_over_delivered(self):
+        """True if DN quantity exceeds what was invoiced — should never happen."""
+        return self.quantity > self.invoiced_quantity
 
     def __str__(self):
-        return f"{self.product.name} ({self.quantity})"
+        return f"{self.product.name} ({self.quantity}/{self.invoiced_quantity})"

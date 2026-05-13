@@ -710,7 +710,7 @@
         
         function calculateDueDate() {
             var customerId = $('#id_customer').val();
-            var invoiceType = $('#id_invoice_type').val(); // COD or CREDIT
+            var invoiceType = $('#id_invoice_type').val(); // CASH, COD, or CREDIT
             if(!customerId) return;
             
             var terms = customerTerms[customerId];
@@ -724,7 +724,9 @@
             
             var days = 0;
             
-            if(invoiceType === 'COD') {
+            if(invoiceType === 'CASH') {
+                days = 0; // Due immediately
+            } else if(invoiceType === 'COD') {
                 days = 14;
             } else if (invoiceType === 'CREDIT') {
                 if (terms === 'COD') {
