@@ -216,31 +216,75 @@ class Return(models.Model):
         DAMAGED = 'DAMAGED', 'Damaged / Unsellable'
 
     return_number = models.CharField(max_length=50, unique=True, blank=True)
-    original_invoice = models.ForeignKey(Invoice, on_delete=models.PROTECT)
+    original_invoice = models.ForeignKey(Invoice, on_delete=models.PROTECT, related_name='returns')
     returned_product = models.ForeignKey(Product, on_delete=models.PROTECT)
     quantity = models.PositiveIntegerField()
+    unit_price = models.DecimalField(max_digits=12, decimal_places=5, default=0.00000,
+                                     help_text="Price per unit at time of return (used for credit note value)")
     reason = models.CharField(max_length=50, choices=ReturnReason.choices)
     condition = models.CharField(max_length=50, choices=Condition.choices)
-    
+    notes = models.TextField(blank=True, null=True)
+
     credit_note_issued = models.BooleanField(default=False)
     stock_updated = models.BooleanField(default=False, help_text="True if stock was added back")
+    created_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True)
     created_date = models.DateTimeField(auto_now_add=True, null=True, blank=True)
+
+    @property
+    def credit_value(self):
+        from decimal import Decimal
+        return Decimal(self.quantity) * Decimal(self.unit_price)
 
     def save(self, *args, **kwargs):
         if not self.return_number:
-            last_return = Return.objects.order_by('-id').first()
-            if last_return and last_return.return_number.startswith('RTN-'):
+            all_nums = Return.objects.values_list('return_number', flat=True)
+            max_seq = 0
+            for num in all_nums:
                 try:
-                    seq = int(last_return.return_number.split('-')[-1]) + 1
-                except ValueError:
-                    seq = 1
-            else:
-                seq = 1
-            self.return_number = f"RTN-{seq:04d}"
+                    seq = int(num.split('-')[-1])
+                    if seq > max_seq:
+                        max_seq = seq
+                except (ValueError, IndexError):
+                    pass
+            self.return_number = f"RTN-{max_seq + 1:04d}"
         super().save(*args, **kwargs)
 
     def __str__(self):
         return self.return_number
+
+
+class CreditNote(models.Model):
+    credit_note_number = models.CharField(max_length=50, unique=True, blank=True)
+    return_record = models.OneToOneField(Return, on_delete=models.PROTECT, related_name='credit_note')
+    original_invoice = models.ForeignKey(Invoice, on_delete=models.PROTECT, related_name='credit_notes')
+    customer = models.ForeignKey('crm.Customer', on_delete=models.PROTECT)
+
+    product = models.ForeignKey(Product, on_delete=models.PROTECT)
+    quantity = models.PositiveIntegerField()
+    unit_price = models.DecimalField(max_digits=12, decimal_places=5)
+    credit_amount = models.DecimalField(max_digits=12, decimal_places=5)
+
+    issued_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True)
+    issued_date = models.DateTimeField(auto_now_add=True)
+    notes = models.TextField(blank=True, null=True)
+
+    def save(self, *args, **kwargs):
+        if not self.credit_note_number:
+            all_nums = CreditNote.objects.values_list('credit_note_number', flat=True)
+            max_seq = 0
+            for num in all_nums:
+                try:
+                    seq = int(num.split('-')[-1])
+                    if seq > max_seq:
+                        max_seq = seq
+                except (ValueError, IndexError):
+                    pass
+            self.credit_note_number = f"CN-{max_seq + 1:04d}"
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return self.credit_note_number
+
 from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
 

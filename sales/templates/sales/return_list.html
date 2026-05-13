@@ -1,0 +1,90 @@
+{% extends 'layouts/base.html' %}
+{% block title %}Returns | Everbolt ERP{% endblock %}
+{% block content %}
+<div class="px-4 py-6 sm:px-0">
+    <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
+        <div>
+            <h1 class="text-3xl font-extrabold text-gray-900 tracking-tight">Customer Returns</h1>
+            <p class="text-sm text-gray-500 mt-1">All returned items and their processing status.</p>
+        </div>
+        <a href="{% url 'credit_note_list' %}" class="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50 shadow-sm">
+            View Credit Notes
+        </a>
+    </div>
+
+    <!-- Search / Filter -->
+    <form method="get" class="mb-5 flex gap-3 flex-wrap">
+        <input type="text" name="q" value="{{ request.GET.q }}" placeholder="Search by return#, invoice#, product..."
+               class="px-3 py-2 border border-gray-300 rounded-lg text-sm w-72 focus:ring-emerald-500 focus:border-emerald-500">
+        <select name="status" class="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-emerald-500 focus:border-emerald-500">
+            <option value="">All Status</option>
+            <option value="pending" {% if request.GET.status == 'pending' %}selected{% endif %}>Pending</option>
+            <option value="processed" {% if request.GET.status == 'processed' %}selected{% endif %}>Processed</option>
+        </select>
+        <button type="submit" class="px-4 py-2 bg-emerald-600 text-white text-sm font-bold rounded-lg hover:bg-emerald-700">Filter</button>
+        <a href="{% url 'return_list' %}" class="px-4 py-2 border border-gray-200 text-sm font-medium rounded-lg text-gray-600 bg-white hover:bg-gray-50">Reset</a>
+    </form>
+
+    <div class="bg-white shadow-md rounded-2xl border border-gray-100 overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-100">
+                <thead class="bg-gray-50/50">
+                    <tr>
+                        <th class="px-6 py-4 text-left text-[11px] font-bold text-gray-400 uppercase tracking-widest">Return #</th>
+                        <th class="px-6 py-4 text-left text-[11px] font-bold text-gray-400 uppercase tracking-widest">Invoice</th>
+                        <th class="px-6 py-4 text-left text-[11px] font-bold text-gray-400 uppercase tracking-widest">Product</th>
+                        <th class="px-6 py-4 text-left text-[11px] font-bold text-gray-400 uppercase tracking-widest">Qty</th>
+                        <th class="px-6 py-4 text-left text-[11px] font-bold text-gray-400 uppercase tracking-widest">Credit Value</th>
+                        <th class="px-6 py-4 text-left text-[11px] font-bold text-gray-400 uppercase tracking-widest">Reason</th>
+                        <th class="px-6 py-4 text-left text-[11px] font-bold text-gray-400 uppercase tracking-widest">Condition</th>
+                        <th class="px-6 py-4 text-left text-[11px] font-bold text-gray-400 uppercase tracking-widest">Status</th>
+                        <th class="px-6 py-4 text-left text-[11px] font-bold text-gray-400 uppercase tracking-widest">Date</th>
+                        <th class="px-6 py-4 text-center text-[11px] font-bold text-gray-400 uppercase tracking-widest">Credit Note</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-100">
+                    {% for ret in returns %}
+                    <tr class="hover:bg-gray-50 transition-colors">
+                        <td class="px-6 py-4 text-sm font-bold text-emerald-700">{{ ret.return_number }}</td>
+                        <td class="px-6 py-4 text-sm text-gray-700">{{ ret.original_invoice.invoice_number }}</td>
+                        <td class="px-6 py-4 text-sm text-gray-700">{{ ret.returned_product.name }}</td>
+                        <td class="px-6 py-4 text-sm text-gray-700">{{ ret.quantity }}</td>
+                        <td class="px-6 py-4 text-sm font-semibold text-gray-900">Rs {{ ret.credit_value|floatformat:2 }}</td>
+                        <td class="px-6 py-4 text-sm text-gray-600">{{ ret.get_reason_display }}</td>
+                        <td class="px-6 py-4 text-sm text-gray-600">{{ ret.get_condition_display }}</td>
+                        <td class="px-6 py-4">
+                            {% if ret.stock_updated %}
+                            <span class="px-2.5 py-1 text-[10px] font-bold rounded-md bg-emerald-100 text-emerald-700 uppercase">Processed</span>
+                            {% else %}
+                            <span class="px-2.5 py-1 text-[10px] font-bold rounded-md bg-amber-100 text-amber-700 uppercase">Pending</span>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4 text-sm text-gray-500">{{ ret.created_date|date:"M d, Y" }}</td>
+                        <td class="px-6 py-4 text-center">
+                            {% if ret.credit_note_issued %}
+                            <a href="{% url 'credit_note_print' ret.credit_note.pk %}" target="_blank"
+                               class="text-xs font-bold text-blue-600 hover:underline">{{ ret.credit_note.credit_note_number }}</a>
+                            {% else %}
+                            <span class="text-xs text-gray-400">—</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="10" class="px-6 py-20 text-center text-gray-400">
+                            <div class="text-5xl mb-3">📦</div>
+                            <p class="text-sm font-medium">No returns found.</p>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% if is_paginated %}
+        <div class="px-6 py-4 bg-gray-50/50 border-t border-gray-100">
+            {% include 'partials/pagination.html' %}
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

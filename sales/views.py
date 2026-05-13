@@ -9,9 +9,9 @@ from django.db import transaction
 from django.utils import timezone
 from django.db.models import Sum
 from decimal import Decimal, ROUND_UP, ROUND_HALF_UP
-from .models import Quotation, Invoice, DeliveryNote, DeliveryNoteItem, SalesAuditLog
+from .models import Quotation, Invoice, DeliveryNote, DeliveryNoteItem, SalesAuditLog, Return, CreditNote
 from .forms import QuotationForm, QuotationItemFormSet, InvoiceForm, InvoiceItemFormSet, DeliveryNoteForm
-from .services import issue_invoice, cancel_invoice, send_invoice_approval_email, log_sales_event, update_stock_reserves
+from .services import issue_invoice, cancel_invoice, send_invoice_approval_email, log_sales_event, update_stock_reserves, process_return
 from users.models import SavedFilter
 from django.contrib.contenttypes.models import ContentType
 import csv
@@ -1368,3 +1368,114 @@ def update_dn_status(request, pk):
             
             messages.success(request, f"Status of {dn.dn_number} updated to {dn.get_status_display()}.")
     return redirect('delivery_note_list')
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# RETURNS & CREDIT NOTES
+# ─────────────────────────────────────────────────────────────────────────────
+
+class ReturnListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
+    model = Return
+    template_name = 'sales/return_list.html'
+    context_object_name = 'returns'
+    paginate_by = 20
+    permission_required = 'sales.view_return'
+
+    def get_queryset(self):
+        qs = Return.objects.select_related('original_invoice', 'returned_product', 'created_by').order_by('-created_date')
+        q = self.request.GET.get('q')
+        if q:
+            from django.db.models import Q
+            qs = qs.filter(
+                Q(return_number__icontains=q) |
+                Q(original_invoice__invoice_number__icontains=q) |
+                Q(returned_product__name__icontains=q)
+            )
+        status = self.request.GET.get('status')
+        if status == 'processed':
+            qs = qs.filter(stock_updated=True)
+        elif status == 'pending':
+            qs = qs.filter(stock_updated=False)
+        return qs
+
+
+@login_required
+@permission_required('sales.add_return', raise_exception=True)
+def return_create_view(request, invoice_pk):
+    """Create a Return against a specific ISSUED invoice."""
+    invoice = get_object_or_404(Invoice, pk=invoice_pk)
+
+    if invoice.status not in ['ISSUED', 'PAID']:
+        messages.error(request, "Returns can only be raised against Issued or Paid invoices.")
+        return redirect('invoice_list')
+
+    if request.method == 'POST':
+        product_id = request.POST.get('returned_product')
+        quantity = int(request.POST.get('quantity', 0))
+        unit_price = request.POST.get('unit_price', '0')
+        reason = request.POST.get('reason')
+        condition = request.POST.get('condition')
+        notes = request.POST.get('notes', '')
+
+        from inventory.models import Product
+        product = get_object_or_404(Product, pk=product_id)
+
+        if quantity <= 0:
+            messages.error(request, "Quantity must be greater than zero.")
+        else:
+            ret = Return.objects.create(
+                original_invoice=invoice,
+                returned_product=product,
+                quantity=quantity,
+                unit_price=unit_price,
+                reason=reason,
+                condition=condition,
+                notes=notes,
+                created_by=request.user,
+            )
+            # Immediately process: restore stock + generate credit note
+            try:
+                credit_note = process_return(ret, request.user)
+                messages.success(
+                    request,
+                    f"Return {ret.return_number} processed. Stock restored. "
+                    f"Credit Note {credit_note.credit_note_number} issued (Rs {credit_note.credit_amount})."
+                )
+                return redirect('credit_note_print', pk=credit_note.pk)
+            except Exception as e:
+                messages.error(request, f"Error processing return: {e}")
+
+    return render(request, 'sales/return_form.html', {
+        'invoice': invoice,
+        'invoice_items': invoice.items.select_related('product').all(),
+        'return_reasons': Return.ReturnReason.choices,
+        'conditions': Return.Condition.choices,
+    })
+
+
+class CreditNoteListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
+    model = CreditNote
+    template_name = 'sales/credit_note_list.html'
+    context_object_name = 'credit_notes'
+    paginate_by = 20
+    permission_required = 'sales.view_return'
+
+    def get_queryset(self):
+        qs = CreditNote.objects.select_related('customer', 'product', 'original_invoice').order_by('-issued_date')
+        q = self.request.GET.get('q')
+        if q:
+            from django.db.models import Q
+            qs = qs.filter(
+                Q(credit_note_number__icontains=q) |
+                Q(original_invoice__invoice_number__icontains=q) |
+                Q(customer__customer_name__icontains=q)
+            )
+        return qs
+
+
+@login_required
+def credit_note_print_view(request, pk):
+    """Printable Credit Note view."""
+    cn = get_object_or_404(CreditNote, pk=pk)
+    return render(request, 'sales/credit_note_print.html', {'cn': cn})
+

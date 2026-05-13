@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Credit Note {{ cn.credit_note_number }}</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Helvetica Neue', Arial, sans-serif; font-size: 12px; color: #1a1a1a; background: #fff; padding: 40px; }
+        .header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 3px solid #059669; padding-bottom: 20px; margin-bottom: 25px; }
+        .company-name { font-size: 22px; font-weight: 900; color: #059669; letter-spacing: -0.5px; }
+        .company-sub { font-size: 10px; color: #6b7280; margin-top: 3px; }
+        .cn-badge { text-align: right; }
+        .cn-badge .label { font-size: 9px; font-weight: 700; color: #6b7280; text-transform: uppercase; letter-spacing: 1px; }
+        .cn-badge .number { font-size: 22px; font-weight: 900; color: #1d4ed8; }
+        .cn-badge .date { font-size: 10px; color: #6b7280; margin-top: 2px; }
+        .notice { background: #dbeafe; border-left: 4px solid #1d4ed8; padding: 10px 14px; border-radius: 6px; margin-bottom: 22px; }
+        .notice strong { color: #1d4ed8; font-size: 11px; }
+        .notice p { color: #1e40af; font-size: 10px; margin-top: 3px; }
+        .section-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 25px; margin-bottom: 25px; }
+        .info-block label { font-size: 9px; font-weight: 700; color: #9ca3af; text-transform: uppercase; letter-spacing: 1px; display: block; margin-bottom: 4px; }
+        .info-block p { font-size: 12px; font-weight: 600; color: #111827; }
+        .info-block .sub { font-size: 10px; color: #6b7280; font-weight: 400; }
+        table { width: 100%; border-collapse: collapse; margin-bottom: 25px; }
+        th { background: #f9fafb; text-align: left; padding: 10px 12px; font-size: 9px; font-weight: 700; color: #6b7280; text-transform: uppercase; letter-spacing: 1px; border-bottom: 2px solid #e5e7eb; }
+        td { padding: 12px; font-size: 11px; color: #374151; border-bottom: 1px solid #f3f4f6; }
+        td.right, th.right { text-align: right; }
+        .total-row td { font-weight: 900; font-size: 13px; background: #f0fdf4; color: #065f46; border-top: 2px solid #059669; border-bottom: none; }
+        .footer { margin-top: 30px; border-top: 1px solid #e5e7eb; padding-top: 15px; display: flex; justify-content: space-between; align-items: flex-end; }
+        .footer .sig { font-size: 10px; color: #9ca3af; }
+        .footer .sig strong { color: #374151; display: block; margin-top: 25px; font-size: 11px; }
+        .ref-box { background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 8px; padding: 10px 14px; margin-bottom: 20px; font-size: 10px; color: #6b7280; }
+        .ref-box span { color: #374151; font-weight: 600; }
+        @media print {
+            body { padding: 20px; }
+            .no-print { display: none; }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div>
+            <div class="company-name">Everbolt Foods</div>
+            <div class="company-sub">No. 123, Main Street, Colombo | Tel: +94 11 234 5678</div>
+        </div>
+        <div class="cn-badge">
+            <div class="label">Credit Note</div>
+            <div class="number">{{ cn.credit_note_number }}</div>
+            <div class="date">Issued: {{ cn.issued_date|date:"d M Y" }}</div>
+        </div>
+    </div>
+
+    <div class="notice">
+        <strong>&#9432; CREDIT NOTE — NOT A TAX INVOICE</strong>
+        <p>This credit note is issued in relation to a customer return. It represents a credit against the original invoice and may be applied to future purchases.</p>
+    </div>
+
+    <div class="ref-box">
+        Original Invoice: <span>{{ cn.original_invoice.invoice_number }}</span> &nbsp;|&nbsp;
+        Return Reference: <span>{{ cn.return_record.return_number }}</span> &nbsp;|&nbsp;
+        Return Reason: <span>{{ cn.return_record.get_reason_display }}</span> &nbsp;|&nbsp;
+        Product Condition: <span>{{ cn.return_record.get_condition_display }}</span>
+    </div>
+
+    <div class="section-grid">
+        <div class="info-block">
+            <label>Customer</label>
+            <p>{{ cn.customer.customer_name }}</p>
+            <p class="sub">{{ cn.customer.company_name }}</p>
+            <p class="sub">{{ cn.customer.phone_number }}</p>
+        </div>
+        <div class="info-block">
+            <label>Issued By</label>
+            <p>{{ cn.issued_by.get_full_name|default:cn.issued_by.username }}</p>
+            <p class="sub">Everbolt Foods — Sales</p>
+        </div>
+    </div>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Product</th>
+                <th>Product Code</th>
+                <th class="right">Qty Returned</th>
+                <th class="right">Unit Price (Rs)</th>
+                <th class="right">Credit Amount (Rs)</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>{{ cn.product.name }}</td>
+                <td>{{ cn.product.product_id }}</td>
+                <td class="right">{{ cn.quantity }}</td>
+                <td class="right">{{ cn.unit_price|floatformat:2 }}</td>
+                <td class="right">{{ cn.credit_amount|floatformat:2 }}</td>
+            </tr>
+            <tr class="total-row">
+                <td colspan="4">Total Credit Value</td>
+                <td class="right">Rs {{ cn.credit_amount|floatformat:2 }}</td>
+            </tr>
+        </tbody>
+    </table>
+
+    {% if cn.notes %}
+    <div class="ref-box">
+        <strong>Notes:</strong> {{ cn.notes }}
+    </div>
+    {% endif %}
+
+    <div class="footer">
+        <div class="sig">
+            <span>Issued By</span>
+            <strong>{{ cn.issued_by.get_full_name|default:cn.issued_by.username }}</strong>
+        </div>
+        <div class="sig" style="text-align:right;">
+            <span>Authorized Signature</span>
+            <strong>____________________________</strong>
+        </div>
+    </div>
+
+    <div class="no-print" style="text-align:center; margin-top:30px;">
+        <button onclick="window.print()" style="padding:10px 28px;background:#059669;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;">
+            🖨️ Print Credit Note
+        </button>
+        <a href="javascript:window.close()" style="margin-left:12px;color:#6b7280;font-size:12px;">Close</a>
+    </div>
+</body>
+</html>

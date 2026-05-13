@@ -1,0 +1,72 @@
+{% extends 'layouts/base.html' %}
+{% block title %}Credit Notes | Everbolt ERP{% endblock %}
+{% block content %}
+<div class="px-4 py-6 sm:px-0">
+    <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
+        <div>
+            <h1 class="text-3xl font-extrabold text-gray-900">Credit Notes</h1>
+            <p class="text-sm text-gray-500 mt-1">All issued credit notes linked to customer returns.</p>
+        </div>
+        <a href="{% url 'return_list' %}" class="px-4 py-2 border border-gray-300 text-sm font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50 shadow-sm">
+            View Returns
+        </a>
+    </div>
+
+    <form method="get" class="mb-5 flex gap-3">
+        <input type="text" name="q" value="{{ request.GET.q }}" placeholder="Search by CN#, invoice#, customer..."
+               class="px-3 py-2 border border-gray-300 rounded-lg text-sm w-72 focus:ring-emerald-500 focus:border-emerald-500">
+        <button type="submit" class="px-4 py-2 bg-emerald-600 text-white text-sm font-bold rounded-lg hover:bg-emerald-700">Filter</button>
+        <a href="{% url 'credit_note_list' %}" class="px-4 py-2 border border-gray-200 text-sm font-medium rounded-lg text-gray-600 bg-white hover:bg-gray-50">Reset</a>
+    </form>
+
+    <div class="bg-white shadow-md rounded-2xl border border-gray-100 overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-100">
+                <thead class="bg-gray-50/50">
+                    <tr>
+                        <th class="px-6 py-4 text-left text-[11px] font-bold text-gray-400 uppercase tracking-widest">Credit Note #</th>
+                        <th class="px-6 py-4 text-left text-[11px] font-bold text-gray-400 uppercase tracking-widest">Original Invoice</th>
+                        <th class="px-6 py-4 text-left text-[11px] font-bold text-gray-400 uppercase tracking-widest">Customer</th>
+                        <th class="px-6 py-4 text-left text-[11px] font-bold text-gray-400 uppercase tracking-widest">Product</th>
+                        <th class="px-6 py-4 text-left text-[11px] font-bold text-gray-400 uppercase tracking-widest">Qty</th>
+                        <th class="px-6 py-4 text-right text-[11px] font-bold text-gray-400 uppercase tracking-widest">Credit Amount</th>
+                        <th class="px-6 py-4 text-left text-[11px] font-bold text-gray-400 uppercase tracking-widest">Issued By</th>
+                        <th class="px-6 py-4 text-left text-[11px] font-bold text-gray-400 uppercase tracking-widest">Date</th>
+                        <th class="px-6 py-4 text-center text-[11px] font-bold text-gray-400 uppercase tracking-widest">Print</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-100">
+                    {% for cn in credit_notes %}
+                    <tr class="hover:bg-gray-50 transition-colors">
+                        <td class="px-6 py-4 text-sm font-bold text-blue-700">{{ cn.credit_note_number }}</td>
+                        <td class="px-6 py-4 text-sm text-gray-700">{{ cn.original_invoice.invoice_number }}</td>
+                        <td class="px-6 py-4 text-sm text-gray-700">{{ cn.customer.customer_name }}</td>
+                        <td class="px-6 py-4 text-sm text-gray-700">{{ cn.product.name }}</td>
+                        <td class="px-6 py-4 text-sm text-gray-700">{{ cn.quantity }}</td>
+                        <td class="px-6 py-4 text-right text-sm font-bold text-gray-900">Rs {{ cn.credit_amount|floatformat:2 }}</td>
+                        <td class="px-6 py-4 text-sm text-gray-600">{{ cn.issued_by.get_full_name|default:cn.issued_by.username }}</td>
+                        <td class="px-6 py-4 text-sm text-gray-500">{{ cn.issued_date|date:"M d, Y" }}</td>
+                        <td class="px-6 py-4 text-center">
+                            <a href="{% url 'credit_note_print' cn.pk %}" target="_blank"
+                               class="text-xs font-bold text-blue-600 hover:underline">Print</a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="9" class="px-6 py-20 text-center text-gray-400">
+                            <div class="text-5xl mb-3">📄</div>
+                            <p class="text-sm font-medium">No credit notes issued yet.</p>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% if is_paginated %}
+        <div class="px-6 py-4 bg-gray-50/50 border-t border-gray-100">
+            {% include 'partials/pagination.html' %}
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

@@ -6,7 +6,7 @@ from users.models import User
 from inventory.models import StockLedger, Product, StockReserve
 from django.utils import timezone
 from datetime import timedelta
-from .models import SalesAuditLog
+from .models import SalesAuditLog, Return, CreditNote
 
 def update_stock_reserves(invoice):
     """
@@ -205,3 +205,78 @@ def send_invoice_approval_email(invoice, request):
         )
     except Exception as e:
         print(f"Failed to send email notification: {str(e)}")
+
+
+def process_return(return_obj, user):
+    """
+    Processes a customer return:
+      1. Restores stock to inventory via StockLedger (SALES_RET).
+      2. Updates Product.current_stock cache.
+      3. Marks Return.stock_updated = True.
+      4. Generates a CreditNote record automatically.
+      5. Marks Return.credit_note_issued = True.
+    All operations run in a single atomic transaction.
+    """
+    if return_obj.stock_updated:
+        raise ValueError(f"Return {return_obj.return_number} has already been processed.")
+
+    with transaction.atomic():
+        product = Product.objects.select_for_update().get(pk=return_obj.returned_product.pk)
+        qty = return_obj.quantity
+
+        # 1. Write stock ledger entry
+        StockLedger.objects.create(
+            product=product,
+            tx_type=StockLedger.TransactionTypes.SALES_RET,
+            qty_in=qty,
+            qty_out=0,
+            reference_type='RTN',
+            reference_id=return_obj.pk,
+            reference_number=return_obj.return_number,
+            remarks=(
+                f"Customer Return {return_obj.return_number} | "
+                f"Invoice: {return_obj.original_invoice.invoice_number} | "
+                f"Condition: {return_obj.get_condition_display()}"
+            ),
+            user=user,
+        )
+
+        # 2. Update product stock cache
+        product.current_stock += qty
+        product.save(update_fields=['current_stock'])
+
+        # 3. Mark return as stock-updated
+        return_obj.stock_updated = True
+
+        # 4. Generate Credit Note
+        credit_amount = return_obj.credit_value
+        credit_note = CreditNote.objects.create(
+            return_record=return_obj,
+            original_invoice=return_obj.original_invoice,
+            customer=return_obj.original_invoice.customer,
+            product=return_obj.returned_product,
+            quantity=qty,
+            unit_price=return_obj.unit_price,
+            credit_amount=credit_amount,
+            issued_by=user,
+            notes=f"Auto-generated for return {return_obj.return_number}. Reason: {return_obj.get_reason_display()}.",
+        )
+
+        # 5. Mark credit note as issued on the return
+        return_obj.credit_note_issued = True
+        return_obj.save(update_fields=['stock_updated', 'credit_note_issued'])
+
+        # Audit log
+        log_sales_event(
+            obj=return_obj.original_invoice,
+            user=user,
+            action="Customer Return Processed",
+            new_value=return_obj.return_number,
+            notes=(
+                f"Returned {qty} x {product.name}. "
+                f"Stock restored. Credit Note {credit_note.credit_note_number} issued. "
+                f"Credit Value: Rs {credit_amount}."
+            ),
+        )
+
+    return credit_note
