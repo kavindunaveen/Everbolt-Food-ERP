@@ -98,14 +98,15 @@ def grn_receive_po(request, po_id):
             from inventory.models import Product, StockLedger
             
             with transaction.atomic():
-                # Create the GRN Header
+                # Create the GRN Header — use supplier_fk (FK to Supplier model)
                 grn = GRN.objects.create(
                     po=po,
-                    supplier=po.supplier.supplier_name, # Stored as text for fallback
+                    supplier_fk=po.supplier,           # Proper FK linkage
+                    supplier=po.supplier.supplier_name, # Legacy text snapshot (auto-synced in save())
                     date=request.POST.get('date', data.get('date')),
                     ref_number=data.get('ref_number', ''),
                     remarks=data.get('remarks', ''),
-                    status=GRN.StatusChoices.DRAFT,  # Can auto-confirm or leave as draft
+                    status=GRN.StatusChoices.DRAFT,
                     created_by=request.user
                 )
 

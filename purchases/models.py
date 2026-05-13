@@ -11,7 +11,19 @@ class GRN(models.Model):
 
     grn_number = models.CharField(max_length=50, unique=True, blank=True)
     po = models.ForeignKey('PurchaseOrder', on_delete=models.SET_NULL, null=True, blank=True, related_name='grns')
-    supplier = models.CharField(max_length=200) # Kept for backward compatibility
+
+    # supplier_fk is the live FK to the Supplier model — use this for all filtering/reporting.
+    # supplier (CharField below) is kept as a read-only snapshot for backward compatibility.
+    supplier_fk = models.ForeignKey(
+        'suppliers.Supplier',
+        on_delete=models.SET_NULL,
+        null=True, blank=True,
+        related_name='grns',
+        verbose_name='Supplier'
+    )
+    supplier = models.CharField(max_length=200, blank=True,
+                                help_text="Legacy text snapshot — do not edit manually")
+
     date = models.DateField()
     ref_number = models.CharField(max_length=100, blank=True, null=True, help_text="Supplier Invoice Number")
     remarks = models.TextField(blank=True, null=True)
@@ -22,20 +34,25 @@ class GRN(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     def save(self, *args, **kwargs):
+        # Keep the text snapshot in sync with the FK whenever possible
+        if self.supplier_fk and not self.supplier:
+            self.supplier = self.supplier_fk.supplier_name
         if not self.grn_number:
-            last_grn = GRN.objects.order_by('-id').first()
-            if last_grn and last_grn.grn_number.startswith('GRN-'):
+            all_nums = GRN.objects.values_list('grn_number', flat=True)
+            max_seq = 0
+            for num in all_nums:
                 try:
-                    seq = int(last_grn.grn_number.split('-')[-1]) + 1
-                except ValueError:
-                    seq = 1
-            else:
-                seq = 1
-            self.grn_number = f"GRN-{seq:04d}"
+                    seq = int(num.split('-')[-1])
+                    if seq > max_seq:
+                        max_seq = seq
+                except (ValueError, IndexError):
+                    pass
+            self.grn_number = f"GRN-{max_seq + 1:04d}"
         super().save(*args, **kwargs)
 
     def __str__(self):
-        return f"{self.grn_number} - {self.supplier}"
+        name = self.supplier_fk.supplier_name if self.supplier_fk else self.supplier
+        return f"{self.grn_number} - {name}"
 
 class GRNItem(models.Model):
     grn = models.ForeignKey(GRN, on_delete=models.CASCADE, related_name='items')
