@@ -29,16 +29,21 @@ class Quotation(models.Model):
 
     def save(self, *args, **kwargs):
         if not self.quotation_number:
-            now = timezone.now()
-            prefix = now.strftime("%y%b").upper() + "_EBFQ_"
+            # Yearly prefix e.g. "26_EBFQ_" — does not change monthly.
+            # Sequence is the global max across ALL quotations (all years/prefixes)
+            # so it never resets or produces duplicates.
+            year_prefix = timezone.now().strftime("%y") + "_EBFQ_"
             with transaction.atomic():
-                last_quote = Quotation.objects.select_for_update().filter(quotation_number__startswith=prefix).order_by('-quotation_number').first()
-                if last_quote:
-                    last_seq = int(last_quote.quotation_number.split('_')[-1])
-                    new_seq = last_seq + 1
-                else:
-                    new_seq = 484
-                self.quotation_number = f"{prefix}{new_seq:05d}"
+                all_numbers = Quotation.objects.select_for_update().values_list('quotation_number', flat=True)
+                max_seq = 483  # Floor: next will be 484
+                for num in all_numbers:
+                    try:
+                        seq = int(num.split('_')[-1])
+                        if seq > max_seq:
+                            max_seq = seq
+                    except (ValueError, IndexError):
+                        pass
+                self.quotation_number = f"{year_prefix}{max_seq + 1:05d}"
         super().save(*args, **kwargs)
 
     def __str__(self):
@@ -137,16 +142,21 @@ class Invoice(models.Model):
             self.due_date = base_date + timedelta(days=days)
 
         if not self.invoice_number:
-            now = timezone.now()
-            prefix = now.strftime("%y%b").upper() + "_EBFR_"
+            # Yearly prefix e.g. "26_EBFR_" — does not change monthly.
+            # Sequence is the global max across ALL invoices (all years/prefixes)
+            # so it never resets or produces duplicates.
+            year_prefix = timezone.now().strftime("%y") + "_EBFR_"
             with transaction.atomic():
-                last_invoice = Invoice.objects.select_for_update().filter(invoice_number__startswith=prefix).order_by('-invoice_number').first()
-                if last_invoice:
-                    last_seq = int(last_invoice.invoice_number.split('_')[-1])
-                    new_seq = last_seq + 1
-                else:
-                    new_seq = 315
-                self.invoice_number = f"{prefix}{new_seq:05d}"
+                all_numbers = Invoice.objects.select_for_update().values_list('invoice_number', flat=True)
+                max_seq = 314  # Floor: next will be 315
+                for num in all_numbers:
+                    try:
+                        seq = int(num.split('_')[-1])
+                        if seq > max_seq:
+                            max_seq = seq
+                    except (ValueError, IndexError):
+                        pass
+                self.invoice_number = f"{year_prefix}{max_seq + 1:05d}"
         super().save(*args, **kwargs)
 
     def __str__(self):

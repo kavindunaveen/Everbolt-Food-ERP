@@ -17,43 +17,6 @@ from django.contrib.contenttypes.models import ContentType
 import csv
 from num2words import num2words
 
-def get_next_invoice_number():
-    prefix = timezone.now().strftime('%y%b').upper() + "_EBFR_"
-    # Find the maximum number across ALL invoices to ensure continuity
-    existing = Invoice.objects.all().values_list('invoice_number', flat=True)
-    used = []
-    for num in existing:
-        try:
-            parts = num.split('_')
-            if parts:
-                used.append(int(parts[-1]))
-        except (ValueError, IndexError):
-            pass
-    
-    start_num = 315
-    next_num = start_num
-    while next_num in used:
-        next_num += 1
-    return f"{prefix}{next_num:05d}"
-    
-def get_next_quotation_number():
-    prefix = timezone.now().strftime('%y%b').upper() + "_EBFR_QUO_"
-    # Find the maximum number across ALL quotations to ensure continuity
-    existing = Quotation.objects.all().values_list('quotation_number', flat=True)
-    used = []
-    for num in existing:
-        try:
-            parts = num.split('_')
-            if parts:
-                used.append(int(parts[-1]))
-        except (ValueError, IndexError):
-            pass
-            
-    start_num = 484
-    next_num = start_num
-    while next_num in used:
-        next_num += 1
-    return f"{prefix}{next_num:05d}"
 
 class AdminRequiredMixin(UserPassesTestMixin):
     def test_func(self):
@@ -245,8 +208,7 @@ class QuotationCreateView(LoginRequiredMixin, PermissionRequiredMixin, CreateVie
         with transaction.atomic():
             self.object = form.save(commit=False)
             self.object.salesperson = self.object.customer.assigned_sales_officer or self.request.user
-            # Generate sequential gap-filling number
-            self.object.quotation_number = get_next_quotation_number()
+            # Quotation number is generated automatically in Quotation.save()
             
             if items.is_valid():
                 self.object.save()
@@ -407,7 +369,7 @@ class InvoiceCreateView(LoginRequiredMixin, PermissionRequiredMixin, CreateView)
         with transaction.atomic():
             self.object = form.save(commit=False)
             self.object.salesperson = self.object.customer.assigned_sales_officer or self.request.user
-            self.object.invoice_number = get_next_invoice_number()
+            # Invoice number is generated automatically in Invoice.save()
             
             # Block or Mark for approval based on customer status
             if self.object.customer.customer_status in ['BLACKLIST', 'ONHOLD'] and not getattr(self.object, 'is_approved', False):
