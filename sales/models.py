@@ -168,6 +168,14 @@ class Invoice(models.Model):
             return True
         return False
 
+    def delete(self, *args, **kwargs):
+        # Always clean up stock reserves before deleting an invoice.
+        # This covers DRAFT invoices deleted directly — without this,
+        # ghost reserves would block inventory for other orders.
+        from inventory.models import StockReserve
+        StockReserve.objects.filter(reference_type='INV', reference_id=self.pk).delete()
+        super().delete(*args, **kwargs)
+
     class Meta:
         permissions = [
             ("approve_invoice", "Can approve pending invoices"),
