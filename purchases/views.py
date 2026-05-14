@@ -378,3 +378,22 @@ def purchase_order_cancel(request, pk):
             messages.success(request, f"Purchase Order {po.po_number} has been Cancelled.")
     return redirect('po_detail', pk=pk)
 
+@login_required
+def purchase_order_delete(request, pk):
+    """Superadmin-only: Delete a PO in any status permanently."""
+    if not request.user.is_superuser:
+        messages.error(request, "You do not have permission to delete Purchase Orders.")
+        return redirect('po_detail', pk=pk)
+    
+    po = get_object_or_404(PurchaseOrder, pk=pk)
+    
+    if request.method == 'POST':
+        po_number = po.po_number
+        with transaction.atomic():
+            po.items.all().delete()
+            po.delete()
+        messages.success(request, f"Purchase Order {po_number} has been permanently deleted.")
+        return redirect('po_list')
+    
+    return render(request, 'purchases/po_delete_confirm.html', {'po': po})
+

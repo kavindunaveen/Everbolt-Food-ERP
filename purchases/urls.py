@@ -23,4 +23,5 @@ urlpatterns = [
     path('pos/<int:pk>/print/', views.PurchaseOrderPrintView.as_view(), name='po_print'),
     path('pos/<int:pk>/confirm/', views.purchase_order_confirm, name='po_confirm'),
     path('pos/<int:pk>/cancel/', views.purchase_order_cancel, name='po_cancel'),
+    path('pos/<int:pk>/delete/', views.purchase_order_delete, name='po_delete'),
 ]

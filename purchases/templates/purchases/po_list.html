@@ -52,7 +52,10 @@
                             {% if po.status == 'DRAFT' %}
                             <a href="{% url 'po_edit' po.pk %}" class="text-amber-600 hover:text-amber-900 mr-3">Edit</a>
                             {% endif %}
-                            <a href="{% url 'po_print' po.pk %}" target="_blank" class="text-gray-600 hover:text-gray-900">Print</a>
+                            <a href="{% url 'po_print' po.pk %}" target="_blank" class="text-gray-600 hover:text-gray-900 {% if user.is_superuser %}mr-3{% endif %}">Print</a>
+                            {% if user.is_superuser %}
+                            <a href="{% url 'po_delete' po.pk %}" class="text-red-600 hover:text-red-900">Delete</a>
+                            {% endif %}
                         </td>
                     </tr>
                     {% empty %}
