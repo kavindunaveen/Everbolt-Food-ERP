@@ -126,7 +126,22 @@ class Customer(models.Model):
                 else:
                     new_seq = 1
                 self.customer_code = f"{prefix}{new_seq:04d}"
+        # Check if officer changed to sync related records
+        officer_changed = False
+        if self.pk:
+            try:
+                old_obj = Customer.objects.get(pk=self.pk)
+                if old_obj.assigned_sales_officer != self.assigned_sales_officer:
+                    officer_changed = True
+            except Customer.DoesNotExist:
+                pass
+
         super().save(*args, **kwargs)
+
+        if officer_changed:
+            from sales.models import Invoice, Quotation
+            Invoice.objects.filter(customer=self, status__in=['DRAFT', 'APPROVAL_PENDING', 'EDIT_PENDING']).update(salesperson=self.assigned_sales_officer)
+            Quotation.objects.filter(customer=self, status__in=['DRAFT', 'SENT']).update(salesperson=self.assigned_sales_officer)
 
     def __str__(self):
         if self.company_name and self.customer_name and self.company_name != self.customer_name:

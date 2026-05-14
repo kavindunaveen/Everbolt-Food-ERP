@@ -291,7 +291,10 @@ class QuotationUpdateView(LoginRequiredMixin, PermissionRequiredMixin, UpdateVie
         context = self.get_context_data()
         items = context['items']
         with transaction.atomic():
-            self.object = form.save()
+            self.object = form.save(commit=False)
+            if self.object.status == 'DRAFT':
+                self.object.salesperson = self.object.customer.assigned_sales_officer or self.request.user
+            self.object.save()
             if items.is_valid():
                 items.instance = self.object
                 saved_items = items.save(commit=False)
@@ -487,6 +490,10 @@ class InvoiceUpdateView(LoginRequiredMixin, PermissionRequiredMixin, UpdateView)
         items = context['items']
         with transaction.atomic():
             self.object = form.save(commit=False)
+            
+            # Sync salesperson for DRAFT invoices
+            if self.object.status == 'DRAFT':
+                self.object.salesperson = self.object.customer.assigned_sales_officer or self.request.user
             
             if self.object.pk and self.object.status != 'DRAFT':
                 from django.core.exceptions import ValidationError
