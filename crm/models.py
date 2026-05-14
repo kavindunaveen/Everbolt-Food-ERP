@@ -130,18 +130,27 @@ class Customer(models.Model):
         officer_changed = False
         if self.pk:
             try:
-                old_obj = Customer.objects.get(pk=self.pk)
-                if old_obj.assigned_sales_officer != self.assigned_sales_officer:
+                # Use _id for direct comparison of the foreign key value without loading the User object
+                old_officer_id = Customer.objects.filter(pk=self.pk).values_list('assigned_sales_officer_id', flat=True).first()
+                if old_officer_id != self.assigned_sales_officer_id:
                     officer_changed = True
-            except Customer.DoesNotExist:
+            except Exception:
                 pass
 
         super().save(*args, **kwargs)
 
         if officer_changed:
             from sales.models import Invoice, Quotation
-            Invoice.objects.filter(customer=self, status__in=['DRAFT', 'APPROVAL_PENDING', 'EDIT_PENDING']).update(salesperson=self.assigned_sales_officer)
-            Quotation.objects.filter(customer=self, status__in=['DRAFT', 'SENT']).update(salesperson=self.assigned_sales_officer)
+            # Atomically update all non-finalized records to reflect the new salesperson assignment
+            Invoice.objects.filter(
+                customer=self, 
+                status__in=['DRAFT', 'APPROVAL_PENDING', 'EDIT_PENDING']
+            ).update(salesperson=self.assigned_sales_officer)
+            
+            Quotation.objects.filter(
+                customer=self, 
+                status__in=['DRAFT', 'SENT']
+            ).update(salesperson=self.assigned_sales_officer)
 
     def __str__(self):
         if self.company_name and self.customer_name and self.company_name != self.customer_name:

@@ -277,6 +277,10 @@
                         <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Payment Term</label>
                         <input type="text" id="customer-payment-term" readonly class="w-full px-3 py-2 border border-gray-100 rounded-lg text-sm bg-gray-50 text-gray-600 font-bold shadow-inner" placeholder="-">
                     </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Sales Officer</label>
+                        <input type="text" id="customer-sales-officer" readonly class="w-full px-3 py-2 border border-gray-100 rounded-lg text-sm bg-gray-50 text-emerald-700 font-bold shadow-inner" placeholder="{% if form.instance.salesperson %}{{ form.instance.salesperson.get_full_name|default:form.instance.salesperson.username|title }}{% else %}-{% endif %}">
+                    </div>
                     <div class="md:col-span-2 lg:col-span-4">
                         <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Internal Notes</label>
                         {{ form.notes }}
@@ -631,27 +635,35 @@
 }
 </script>
 
+<script id="customer-officer-data" type="application/json">
+{
+{% for customer in form.fields.customer.queryset %}
+    "{{ customer.pk }}": "{{ customer.assigned_sales_officer.get_full_name|default:customer.assigned_sales_officer.username|default:"N/A" }}"{% if not forloop.last %},{% endif %}
+{% endfor %}
+}
+</script>
+
 <script>
     $(document).ready(function() {
         // Special Customer Alert logic
         var customerSpecial = {};
+        var customerStatus = {};
+        var customerOfficers = {};
         try {
             var rawSpecialData = document.getElementById('customer-special-data').textContent.trim();
             if(rawSpecialData) {
                 customerSpecial = JSON.parse(rawSpecialData);
             }
-        } catch(e) {
-            console.error("Error parsing customer special data", e);
-        }
-        
-        var customerStatus = {};
-        try {
             var rawStatusData = document.getElementById('customer-status-data').textContent.trim();
             if(rawStatusData) {
                 customerStatus = JSON.parse(rawStatusData);
             }
+            var rawOfficerData = document.getElementById('customer-officer-data').textContent.trim();
+            if(rawOfficerData) {
+                customerOfficers = JSON.parse(rawOfficerData);
+            }
         } catch(e) {
-            console.error("Error parsing customer status data", e);
+            console.error("Error parsing customer data", e);
         }
 
         const blockMsgDiv = $('<div id="approval-block-msg" class="w-full bg-orange-50 border-l-4 border-orange-500 p-4 mb-4 hidden rounded-md shadow-sm"><p class="text-sm font-medium text-orange-800" id="approval-msg-text"></p></div>');
@@ -720,6 +732,13 @@
                 $('#customer-payment-term').val(displayTerm);
             } else {
                 $('#customer-payment-term').val('-');
+            }
+
+            var officer = customerOfficers[customerId];
+            if (officer) {
+                $('#customer-sales-officer').val(officer);
+            } else {
+                $('#customer-sales-officer').val('-');
             }
             
             var days = 0;

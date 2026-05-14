@@ -239,6 +239,10 @@
                         {{ form.valid_until }}
                         {% if form.valid_until.errors %}<p class="text-red-500 text-[10px] font-bold mt-1 uppercase">{{ form.valid_until.errors.0 }}</p>{% endif %}
                     </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Sales Officer</label>
+                        <input type="text" id="customer-sales-officer" readonly class="w-full px-3 py-2 border border-gray-100 rounded-lg text-sm bg-gray-50 text-emerald-700 font-bold shadow-inner" placeholder="{% if form.instance.salesperson %}{{ form.instance.salesperson.get_full_name|default:form.instance.salesperson.username|title }}{% else %}-{% endif %}">
+                    </div>
                     <div class="md:col-span-2 lg:col-span-2">
                         <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Terms & Notes</label>
                         {{ form.notes }}
@@ -492,8 +496,35 @@
 }
 </script>
 
+<script id="customer-officer-data" type="application/json">
+{
+{% for customer in form.fields.customer.queryset %}
+    "{{ customer.pk }}": "{{ customer.assigned_sales_officer.get_full_name|default:customer.assigned_sales_officer.username|default:"N/A" }}"{% if not forloop.last %},{% endif %}
+{% endfor %}
+}
+</script>
+
 <script>
     $(document).ready(function() {
+        var customerOfficers = {};
+        try {
+            var rawOfficerData = document.getElementById('customer-officer-data').textContent.trim();
+            if(rawOfficerData) {
+                customerOfficers = JSON.parse(rawOfficerData);
+            }
+        } catch(e) {
+            console.error("Error parsing customer officer data", e);
+        }
+
+        $('#id_customer').on('change', function() {
+            var customerId = $(this).val();
+            var officer = customerOfficers[customerId];
+            if (officer) {
+                $('#customer-sales-officer').val(officer);
+            } else {
+                $('#customer-sales-officer').val('-');
+            }
+        });
         // Special Customer Alert logic
         var customerSpecial = {};
         try {
