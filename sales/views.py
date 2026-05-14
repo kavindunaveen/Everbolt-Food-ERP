@@ -69,9 +69,24 @@ class SalesDashboardView(LoginRequiredMixin, TemplateView):
         # Only include confirmed sales (ISSUED or PAID) for revenue stats
         active_invoices = invoices.filter(status__in=['ISSUED', 'PAID'])
         context['total_invoice_count'] = active_invoices.count()
-        sum_total = active_invoices.aggregate(Sum('total_amount'))['total_amount__sum'] or Decimal('0.00')
-        sum_tax = active_invoices.aggregate(Sum('tax_amount'))['tax_amount__sum'] or Decimal('0.00')
-        context['total_invoice_amount'] = sum_total - sum_tax
+        
+        # Calculate gross revenue
+        revenue_with_vat = active_invoices.aggregate(Sum('total_amount'))['total_amount__sum'] or Decimal('0.00')
+        revenue_ex_vat = active_invoices.aggregate(Sum('subtotal_amount'))['subtotal_amount__sum'] or Decimal('0.00')
+        
+        # Subtract Credit Notes (Returns)
+        # Note: We filter credit notes by the same salesperson/date filters if applied to invoices
+        credit_notes = CreditNote.objects.filter(original_invoice__in=active_invoices)
+        total_credit = credit_notes.aggregate(Sum('credit_amount'))['credit_amount__sum'] or Decimal('0.00')
+        
+        # Approximate tax for credit notes to subtract from Ex-VAT (based on original invoice customer VAT status)
+        # For simplicity, we can sum the proportions or just use a reasonable estimation if tax isn't stored on CN
+        # Here we'll just subtract the total credit from With-VAT and an estimated proportion from Ex-VAT
+        # However, a better way is to sum (CN.quantity * CN.unit_price) which is effectively the subtotal.
+        credit_subtotal = sum((cn.quantity * cn.unit_price) for cn in credit_notes)
+        
+        context['total_revenue_with_vat'] = revenue_with_vat - total_credit
+        context['total_revenue_ex_vat'] = revenue_ex_vat - Decimal(str(credit_subtotal))
         
         try:
             from users.models import SavedFilter
@@ -257,6 +272,7 @@ class QuotationCreateView(LoginRequiredMixin, PermissionRequiredMixin, CreateVie
                 total = subtotal + tax
                 
                 self.object.tax_amount = tax
+                self.object.subtotal_amount = subtotal
                 self.object.total_discount = tot_discount
                 self.object.total_amount = total.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP).quantize(Decimal('1.'), rounding=ROUND_UP)
                 self.object.save()
@@ -337,6 +353,7 @@ class QuotationUpdateView(LoginRequiredMixin, PermissionRequiredMixin, UpdateVie
                 total = subtotal + tax
                 
                 self.object.tax_amount = tax
+                self.object.subtotal_amount = subtotal
                 self.object.total_discount = tot_discount
                 self.object.total_amount = total.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP).quantize(Decimal('1.'), rounding=ROUND_UP)
                 self.object.save()
@@ -437,6 +454,7 @@ class InvoiceCreateView(LoginRequiredMixin, PermissionRequiredMixin, CreateView)
                 total = subtotal + tax
                 
                 self.object.tax_amount = tax
+                self.object.subtotal_amount = subtotal
                 self.object.total_discount = tot_discount
                 self.object.total_amount = total.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP).quantize(Decimal('1.'), rounding=ROUND_UP)
                 self.object.save()
@@ -563,6 +581,7 @@ class InvoiceUpdateView(LoginRequiredMixin, PermissionRequiredMixin, UpdateView)
                 total = subtotal + tax
                 
                 self.object.tax_amount = tax
+                self.object.subtotal_amount = subtotal
                 self.object.total_discount = tot_discount
                 self.object.total_amount = total.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP).quantize(Decimal('1.'), rounding=ROUND_UP)
                 self.object.save()

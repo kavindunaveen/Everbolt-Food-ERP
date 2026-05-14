@@ -20,6 +20,7 @@ class Quotation(models.Model):
     customer_po_number = models.CharField(max_length=50, blank=True, null=True)
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.DRAFT)
     total_amount = models.DecimalField(max_digits=12, decimal_places=5, default=0.00000)
+    subtotal_amount = models.DecimalField(max_digits=12, decimal_places=5, default=0.00000, help_text="Amount before tax and rounding")
     tax_amount = models.DecimalField(max_digits=12, decimal_places=5, default=0.00000)
     total_discount = models.DecimalField(max_digits=12, decimal_places=5, default=0.00000)
     custom_discount_type = models.CharField(max_length=10, choices=[('AMOUNT', 'Amount'), ('PERCENT', 'Percentage')], default='AMOUNT')
@@ -106,6 +107,7 @@ class Invoice(models.Model):
     customer_po_number = models.CharField(max_length=50, blank=True, null=True)
     
     total_amount = models.DecimalField(max_digits=12, decimal_places=5, default=0.00000)
+    subtotal_amount = models.DecimalField(max_digits=12, decimal_places=5, default=0.00000, help_text="Amount before tax and rounding")
     tax_amount = models.DecimalField(max_digits=12, decimal_places=5, default=0.00000)
     total_discount = models.DecimalField(max_digits=12, decimal_places=5, default=0.00000)
     custom_discount_type = models.CharField(max_length=10, choices=[('AMOUNT', 'Amount'), ('PERCENT', 'Percentage')], default='AMOUNT')
