@@ -275,8 +275,15 @@ def purchase_order_create(request, po_type='raw'):
 @login_required
 def purchase_order_edit(request, pk):
     po = get_object_or_404(PurchaseOrder, pk=pk)
-    if po.status != PurchaseOrder.StatusChoices.DRAFT:
-        messages.warning(request, "Only DRAFT purchase orders can be edited.")
+    
+    can_edit = False
+    if po.status == PurchaseOrder.StatusChoices.DRAFT:
+        can_edit = True
+    elif po.status == PurchaseOrder.StatusChoices.CONFIRMED and request.user.is_admin():
+        can_edit = True
+
+    if not can_edit:
+        messages.warning(request, "Only DRAFT purchase orders can be edited by regular users. Admins can edit CONFIRMED orders.")
         return redirect('po_detail', pk=pk)
 
     if request.method == 'POST':
