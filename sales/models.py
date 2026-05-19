@@ -126,13 +126,13 @@ class Invoice(models.Model):
         if not self.due_date:
             days = 0
             if self.invoice_type == 'COD':
-                days = 14
+                days = 0
             elif self.invoice_type == 'CASH':
                 days = 0  # Due immediately on cash sales
             elif self.invoice_type == 'CREDIT':
                 terms = self.customer.payment_terms
                 if terms == 'COD':
-                    days = 14
+                    days = 0
                 elif terms and terms.startswith('CREDIT_'):
                     try:
                         days = int(terms.split('_')[1])
@@ -169,6 +169,9 @@ class Invoice(models.Model):
 
     @property
     def is_overdue(self):
+        # CASH and COD are typically completed on the same day, so they shouldn't show as overdue
+        if self.invoice_type in ['CASH', 'COD']:
+            return False
         if self.status == 'ISSUED' and self.due_date and self.due_date < timezone.now().date():
             return True
         return False

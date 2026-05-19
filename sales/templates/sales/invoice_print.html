@@ -11,7 +11,7 @@
             margin: 10mm;
         }
         body {
-            font-family: 'Courier New', Courier, monospace;
+            font-family: Arial, Helvetica, sans-serif;
             font-size: 11pt;
             font-weight: bold;
             color: #000;
@@ -124,8 +124,8 @@
             var opt = {
                 margin:       10,
                 filename:     filename,
-                image:        { type: 'jpeg', quality: 0.98 },
-                html2canvas:  { scale: 2, useCORS: true, windowWidth: 1024 },
+                image:        { type: 'jpeg', quality: 1.0 },
+                html2canvas:  { scale: 4, useCORS: true, windowWidth: 1024 },
                 jsPDF:        { unit: 'mm', format: [241.3, 304.8], orientation: 'portrait' }
             };
 
@@ -178,7 +178,7 @@
                 <div style="font-weight:bold; margin-top: 5px;">Telephone No: <span style="font-weight:normal;">076 540 0084</span></div>
             </div>
             <div class="box" style="min-height: 100px;">
-                <div style="font-weight:bold; margin-bottom: 2px;">Purchaser's TIN: <span style="font-weight:normal;">{{ invoice.customer.vat_number|default:"N/A" }}</span></div>
+                <div style="font-weight:bold; margin-bottom: 2px;">Purchaser's TIN: <span style="font-weight:normal;">{{ invoice.customer.tin_number|default:"N/A" }}</span></div>
                 <div style="font-weight:bold; margin-bottom: 2px;">Purchaser's Name: <span style="font-weight:normal;">{{ invoice.customer.company_name|default:invoice.customer.customer_name }}</span></div>
                 <div style="font-weight:bold; margin-bottom: 2px;">Address: <br><span style="font-weight:normal;">{{ invoice.customer.billing_address|linebreaksbr }}</span></div>
                 <div style="font-weight:bold; margin-top: 5px;">Telephone No: <span style="font-weight:normal;">{{ invoice.customer.phone }}</span></div>
@@ -335,8 +335,8 @@
                 const opt = {
                     margin:       10,
                     filename:     filename,
-                    image:        { type: 'jpeg', quality: 0.98 },
-                    html2canvas:  { scale: 2, useCORS: true },
+                    image:        { type: 'jpeg', quality: 1.0 },
+                    html2canvas:  { scale: 4, useCORS: true },
                     jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
                 };
                 html2pdf().from(element).set(opt).save().then(function() {
