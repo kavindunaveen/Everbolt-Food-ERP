@@ -85,6 +85,26 @@
     </div>
     </div>
     </div>
+    </div>
+
+    <!-- Charts Section -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+        <!-- Trendline Chart -->
+        <div class="bg-white shadow-md rounded-2xl border border-gray-100 p-6">
+            <h3 class="text-lg font-bold text-gray-800 mb-4">Revenue Trend (30 Days)</h3>
+            <div class="relative h-64 w-full">
+                <canvas id="revenueTrendChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Leaderboard Chart -->
+        <div class="bg-white shadow-md rounded-2xl border border-gray-100 p-6">
+            <h3 class="text-lg font-bold text-gray-800 mb-4">Sales Officer Leaderboard</h3>
+            <div class="relative h-64 w-full">
+                <canvas id="leaderboardChart"></canvas>
+            </div>
+        </div>
+    </div>
 
     <!-- Sales Officer Performance -->
     <div class="mb-8 bg-white shadow-md rounded-2xl border border-gray-100 overflow-hidden">
@@ -97,6 +117,7 @@
                     <tr>
                         <th scope="col" class="px-6 py-3 text-left text-[10px] font-bold text-gray-400 uppercase tracking-widest">Sales Officer</th>
                         <th scope="col" class="px-6 py-3 text-center text-[10px] font-bold text-gray-400 uppercase tracking-widest">Confirmed Invoices</th>
+                        <th scope="col" class="px-6 py-3 text-left text-[10px] font-bold text-gray-400 uppercase tracking-widest">Monthly Target Progress</th>
                         <th scope="col" class="px-6 py-3 text-right text-[10px] font-bold text-gray-400 uppercase tracking-widest">Total Revenue (Ex-VAT)</th>
                         <th scope="col" class="px-6 py-3 text-right text-[10px] font-bold text-gray-400 uppercase tracking-widest">Total Revenue (With VAT)</th>
                     </tr>
@@ -106,12 +127,25 @@
                     <tr class="hover:bg-gray-50 transition-colors">
                         <td class="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-900">{{ perf.officer.get_full_name|default:perf.officer.username|title }}</td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 font-medium text-center">{{ perf.invoice_count }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            {% if perf.target > 0 %}
+                            <div class="flex items-center space-x-2">
+                                <div class="flex-1 w-32 bg-gray-200 rounded-full h-2.5">
+                                    <div class="h-2.5 rounded-full {% if perf.progress_pct >= 100 %}bg-emerald-500{% elif perf.progress_pct >= 75 %}bg-blue-500{% elif perf.progress_pct >= 50 %}bg-yellow-400{% else %}bg-red-500{% endif %}" style="width: {{ perf.progress_pct|stringformat:'.2f' }}%"></div>
+                                </div>
+                                <span class="text-xs font-bold text-gray-600 w-10 text-right">{{ perf.progress_pct|floatformat:0 }}%</span>
+                            </div>
+                            <div class="text-[10px] text-gray-400 mt-1 uppercase tracking-wider">Target: Rs {{ perf.target|intcomma }}</div>
+                            {% else %}
+                            <span class="text-xs text-gray-400 italic">No Target Set</span>
+                            {% endif %}
+                        </td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right font-bold">Rs {{ perf.total_ex_vat|floatformat:2|intcomma }}</td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-purple-600 text-right font-bold">Rs {{ perf.total_sales|floatformat:2|intcomma }}</td>
                     </tr>
                     {% empty %}
                     <tr>
-                        <td colspan="4" class="px-6 py-12 text-center text-sm text-gray-400 italic">No sales performance data available for this period.</td>
+                        <td colspan="5" class="px-6 py-12 text-center text-sm text-gray-400 italic">No sales performance data available for this period.</td>
                     </tr>
                     {% endfor %}
                 </tbody>
@@ -195,4 +229,124 @@
         </div>
     </div>
 </div>
+
+<!-- Chart.js CDN and Initialization -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        // Trendline Chart
+        const trendCtx = document.getElementById('revenueTrendChart').getContext('2d');
+        const trendDates = JSON.parse('{{ trend_dates_json|safe }}');
+        const trendTotals = JSON.parse('{{ trend_totals_json|safe }}');
+        
+        new Chart(trendCtx, {
+            type: 'line',
+            data: {
+                labels: trendDates,
+                datasets: [{
+                    label: 'Daily Revenue (Rs)',
+                    data: trendTotals,
+                    borderColor: '#4f46e5', // indigo-600
+                    backgroundColor: 'rgba(79, 70, 229, 0.1)',
+                    borderWidth: 2,
+                    tension: 0.4,
+                    fill: true,
+                    pointBackgroundColor: '#ffffff',
+                    pointBorderColor: '#4f46e5',
+                    pointRadius: 3
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                let label = context.dataset.label || '';
+                                if (label) { label += ': '; }
+                                if (context.parsed.y !== null) {
+                                    label += 'Rs ' + context.parsed.y.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
+                                }
+                                return label;
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        grid: { borderDash: [2, 4], color: '#e5e7eb' },
+                        ticks: {
+                            callback: function(value) {
+                                if (value >= 1000000) return (value / 1000000).toFixed(1) + 'M';
+                                if (value >= 1000) return (value / 1000).toFixed(1) + 'k';
+                                return value;
+                            }
+                        }
+                    },
+                    x: {
+                        grid: { display: false }
+                    }
+                }
+            }
+        });
+
+        // Leaderboard Bar Chart
+        const leadCtx = document.getElementById('leaderboardChart').getContext('2d');
+        const leadNames = JSON.parse('{{ leaderboard_names_json|safe }}');
+        const leadSales = JSON.parse('{{ leaderboard_sales_json|safe }}');
+        
+        new Chart(leadCtx, {
+            type: 'bar',
+            data: {
+                labels: leadNames,
+                datasets: [{
+                    label: 'Total Revenue (Rs)',
+                    data: leadSales,
+                    backgroundColor: [
+                        '#10b981', // emerald-500
+                        '#3b82f6', // blue-500
+                        '#8b5cf6', // violet-500
+                        '#f59e0b', // amber-500
+                        '#ec4899', // pink-500
+                    ],
+                    borderRadius: 6,
+                    borderSkipped: false
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return 'Rs ' + context.parsed.y.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        grid: { borderDash: [2, 4], color: '#e5e7eb' },
+                        ticks: {
+                            callback: function(value) {
+                                if (value >= 1000000) return (value / 1000000).toFixed(1) + 'M';
+                                if (value >= 1000) return (value / 1000).toFixed(1) + 'k';
+                                return value;
+                            }
+                        }
+                    },
+                    x: {
+                        grid: { display: false }
+                    }
+                }
+            }
+        });
+    });
+</script>
 {% endblock %}

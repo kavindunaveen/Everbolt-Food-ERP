@@ -11,6 +11,7 @@ class User(AbstractUser):
     contact_number = models.CharField(max_length=20, blank=True, null=True)
     assigned_area = models.CharField(max_length=100, blank=True, null=True)
     is_delivery_officer = models.BooleanField(default=False, verbose_name="Is a Delivery Officer?", help_text="User can be assigned to deliver orders.")
+    monthly_target = models.DecimalField(max_digits=12, decimal_places=2, default=0.00, help_text="Monthly sales target (Ex-VAT) for this officer.")
     
     def is_admin(self):
         return self.role == self.Roles.ADMIN or self.is_superuser

@@ -8,7 +8,7 @@ class CustomUserAdmin(UserAdmin):
     list_filter = ('role', 'is_active')
     
     fieldsets = UserAdmin.fieldsets + (
-        ('Sales Data', {'fields': ('role', 'contact_number', 'assigned_area')}),
+        ('Sales Data', {'fields': ('role', 'contact_number', 'assigned_area', 'monthly_target')}),
     )
 
     def is_staff_status(self, obj):

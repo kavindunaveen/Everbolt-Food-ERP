@@ -15,6 +15,9 @@ from .services import issue_invoice, cancel_invoice, send_invoice_approval_email
 from users.models import SavedFilter
 from django.contrib.contenttypes.models import ContentType
 import csv
+import json
+from datetime import timedelta
+from django.db.models.functions import TruncDate
 from num2words import num2words
 
 
@@ -111,17 +114,71 @@ class SalesDashboardView(LoginRequiredMixin, TemplateView):
             net_with = off_rev_with - off_cred
             net_ex = off_rev_ex - Decimal(str(off_cred_sub))
             
-            if net_with > 0 or officer_invs.exists():
+            if net_with > 0 or officer_invs.exists() or officer.monthly_target > 0:
+                target = officer.monthly_target or Decimal('0.00')
+                if target > 0:
+                    progress_pct = min((net_ex / target) * 100, Decimal('100.00'))
+                else:
+                    progress_pct = Decimal('0.00')
+                    
                 officer_performance.append({
                     'officer': officer,
                     'total_sales': net_with,
                     'total_ex_vat': net_ex,
-                    'invoice_count': officer_invs.count()
+                    'invoice_count': officer_invs.count(),
+                    'target': target,
+                    'progress_pct': progress_pct
                 })
         
         # Sort by total_sales descending
         officer_performance.sort(key=lambda x: x['total_sales'], reverse=True)
         context['officer_performance'] = officer_performance
+        
+        # --- Chart Data Generation ---
+        
+        # 1. Leaderboard Data (Bar Chart)
+        # Using the sorted officer_performance list
+        leaderboard_names = [perf['officer'].get_full_name() or perf['officer'].username for perf in officer_performance]
+        leaderboard_sales = [float(perf['total_sales']) for perf in officer_performance]
+        context['leaderboard_names_json'] = json.dumps(leaderboard_names)
+        context['leaderboard_sales_json'] = json.dumps(leaderboard_sales)
+        
+        # 2. Revenue Trendline Data (Line Chart)
+        end_date = timezone.now().date()
+        start_date = end_date - timedelta(days=29)
+        
+        trend_invoices = active_invoices
+        if not date_from and not date_to:
+            trend_invoices = trend_invoices.filter(creation_date__date__gte=start_date)
+            
+        daily_revenue = trend_invoices.annotate(
+            date=TruncDate('creation_date')
+        ).values('date').annotate(
+            daily_total=Sum('total_amount')
+        ).order_by('date')
+        
+        # To handle credit notes in trend, we can just map invoice creation date to revenue.
+        # This is an approximation for trend line.
+        revenue_dict = {str(item['date']): float(item['daily_total']) for item in daily_revenue}
+        
+        trend_dates = []
+        trend_totals = []
+        
+        if date_from and date_to:
+            # If explicit filters are set, just plot the available data points
+            for item in daily_revenue:
+                trend_dates.append(item['date'].strftime('%b %d'))
+                trend_totals.append(float(item['daily_total']))
+        else:
+            # Default 30 days smooth line
+            curr = start_date
+            while curr <= end_date:
+                trend_dates.append(curr.strftime('%b %d'))
+                trend_totals.append(revenue_dict.get(str(curr), 0.0))
+                curr += timedelta(days=1)
+                
+        context['trend_dates_json'] = json.dumps(trend_dates)
+        context['trend_totals_json'] = json.dumps(trend_totals)
             
         return context
 
