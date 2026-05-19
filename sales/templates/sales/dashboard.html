@@ -125,7 +125,11 @@
                 <tbody class="divide-y divide-gray-100">
                     {% for perf in officer_performance %}
                     <tr class="hover:bg-gray-50 transition-colors">
-                        <td class="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-900">{{ perf.officer.get_full_name|default:perf.officer.username|title }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-900">
+                            <a href="{% url 'invoice_list' %}?salesperson={{ perf.officer.id }}" class="hover:text-emerald-600 hover:underline transition-colors cursor-pointer" title="View all invoices for {{ perf.officer.get_full_name|default:perf.officer.username|title }}">
+                                {{ perf.officer.get_full_name|default:perf.officer.username|title }}
+                            </a>
+                        </td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 font-medium text-center">{{ perf.invoice_count }}</td>
                         <td class="px-6 py-4 whitespace-nowrap">
                             {% if perf.target > 0 %}
