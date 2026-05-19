@@ -197,7 +197,7 @@
         <div class="flex-row" style="margin-bottom: 15px;">
             <div class="box" style="width: 24%;">
                 <strong>Sales Officer:</strong><br>
-                {{ invoice.salesperson.get_full_name|default:invoice.salesperson.username|title }}
+                {% if invoice.salesperson %}{{ invoice.salesperson.get_full_name|default:invoice.salesperson.username|title }}{% else %}N/A{% endif %}
             </div>
             <div class="box" style="width: 24%;">
                 <strong>Payment Term:</strong><br>
@@ -297,7 +297,15 @@
                 <td style="border:none; text-align:center; vertical-align: top; padding: 0 5px;">
                     <div style="border-top: 1px solid #000; padding-top: 5px;">
                         Prepared By<br>
-                        <span style="font-size: 0.9em;">({{ invoice.salesperson.get_full_name|default:invoice.salesperson.username|title }})</span>
+                        <span style="font-size: 0.9em;">
+                            ({% if invoice.created_by %}
+                                {{ invoice.created_by.get_full_name|default:invoice.created_by.username|title }}
+                            {% elif invoice.salesperson %}
+                                {{ invoice.salesperson.get_full_name|default:invoice.salesperson.username|title }}
+                            {% else %}
+                                N/A
+                            {% endif %})
+                        </span>
                     </div>
                 </td>
                 <td style="border:none; text-align:center; vertical-align: top; padding: 0 5px;">

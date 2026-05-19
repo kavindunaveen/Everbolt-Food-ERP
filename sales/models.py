@@ -99,6 +99,7 @@ class Invoice(models.Model):
     customer = models.ForeignKey(Customer, on_delete=models.PROTECT)
     salesperson = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True)
     designated_approver = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name='invoices_to_approve')
+    created_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name='created_invoices')
     is_approved = models.BooleanField(default=False)
     
     creation_date = models.DateTimeField(auto_now_add=True)

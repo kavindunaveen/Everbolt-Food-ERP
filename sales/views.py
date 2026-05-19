@@ -389,6 +389,7 @@ class InvoiceCreateView(LoginRequiredMixin, PermissionRequiredMixin, CreateView)
         with transaction.atomic():
             self.object = form.save(commit=False)
             self.object.salesperson = self.object.customer.assigned_sales_officer or self.request.user
+            self.object.created_by = self.request.user
             # Invoice number is generated automatically in Invoice.save()
             
             # Block or Mark for approval based on customer status
