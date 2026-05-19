@@ -84,6 +84,40 @@
         </div>
     </div>
     </div>
+    </div>
+
+    <!-- Sales Officer Performance -->
+    <div class="mb-8 bg-white shadow-md rounded-2xl border border-gray-100 overflow-hidden">
+        <div class="px-6 py-4 border-b border-gray-50 bg-white flex justify-between items-center">
+            <h3 class="text-lg font-bold text-gray-800">Sales Officer Performance</h3>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-100">
+                <thead class="bg-gray-50/50">
+                    <tr>
+                        <th scope="col" class="px-6 py-3 text-left text-[10px] font-bold text-gray-400 uppercase tracking-widest">Sales Officer</th>
+                        <th scope="col" class="px-6 py-3 text-center text-[10px] font-bold text-gray-400 uppercase tracking-widest">Confirmed Invoices</th>
+                        <th scope="col" class="px-6 py-3 text-right text-[10px] font-bold text-gray-400 uppercase tracking-widest">Total Revenue (Ex-VAT)</th>
+                        <th scope="col" class="px-6 py-3 text-right text-[10px] font-bold text-gray-400 uppercase tracking-widest">Total Revenue (With VAT)</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-100">
+                    {% for perf in officer_performance %}
+                    <tr class="hover:bg-gray-50 transition-colors">
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-900">{{ perf.officer.get_full_name|default:perf.officer.username|title }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 font-medium text-center">{{ perf.invoice_count }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right font-bold">Rs {{ perf.total_ex_vat|floatformat:2|intcomma }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-purple-600 text-right font-bold">Rs {{ perf.total_sales|floatformat:2|intcomma }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="4" class="px-6 py-12 text-center text-sm text-gray-400 italic">No sales performance data available for this period.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
 
     <!-- Quick Access Tables -->
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">

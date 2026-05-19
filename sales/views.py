@@ -32,7 +32,7 @@ class SalesDashboardView(LoginRequiredMixin, TemplateView):
         context = super().get_context_data(**kwargs)
         from users.models import User
         from django.db.models import Q
-        context['sales_officers'] = User.objects.filter(Q(role=User.Roles.SALES_OFFICER) | Q(role=User.Roles.ADMIN) | Q(is_superuser=True)).filter(is_active=True).distinct()
+        context['sales_officers'] = User.objects.filter(role=User.Roles.SALES_OFFICER, is_active=True).distinct()
         context['model_name'] = 'SalesDashboard'
         
         q = self.request.GET.get('q')
@@ -88,11 +88,40 @@ class SalesDashboardView(LoginRequiredMixin, TemplateView):
         context['total_revenue_with_vat'] = revenue_with_vat - total_credit
         context['total_revenue_ex_vat'] = revenue_ex_vat - Decimal(str(credit_subtotal))
         
+        sales_officers = context['sales_officers']
+        
         try:
             from users.models import SavedFilter
             context['saved_filters'] = SavedFilter.objects.filter(user=self.request.user, model_name='SalesDashboard')
         except ImportError:
             context['saved_filters'] = []
+            
+        # Calculate performance per Sales Officer
+        officer_performance = []
+        for officer in sales_officers:
+            officer_invs = active_invoices.filter(salesperson=officer)
+            officer_cns = credit_notes.filter(original_invoice__in=officer_invs)
+            
+            off_rev_with = officer_invs.aggregate(Sum('total_amount'))['total_amount__sum'] or Decimal('0.00')
+            off_rev_ex = officer_invs.aggregate(Sum('subtotal_amount'))['subtotal_amount__sum'] or Decimal('0.00')
+            
+            off_cred = officer_cns.aggregate(Sum('credit_amount'))['credit_amount__sum'] or Decimal('0.00')
+            off_cred_sub = sum((cn.quantity * cn.unit_price) for cn in officer_cns)
+            
+            net_with = off_rev_with - off_cred
+            net_ex = off_rev_ex - Decimal(str(off_cred_sub))
+            
+            if net_with > 0 or officer_invs.exists():
+                officer_performance.append({
+                    'officer': officer,
+                    'total_sales': net_with,
+                    'total_ex_vat': net_ex,
+                    'invoice_count': officer_invs.count()
+                })
+        
+        # Sort by total_sales descending
+        officer_performance.sort(key=lambda x: x['total_sales'], reverse=True)
+        context['officer_performance'] = officer_performance
             
         return context
 
@@ -138,7 +167,7 @@ class QuotationListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
         context = super().get_context_data(**kwargs)
         from users.models import User
         from django.db.models import Q
-        context['sales_officers'] = User.objects.filter(Q(role=User.Roles.SALES_OFFICER) | Q(role=User.Roles.ADMIN) | Q(is_superuser=True)).filter(is_active=True).distinct()
+        context['sales_officers'] = User.objects.filter(role=User.Roles.SALES_OFFICER, is_active=True).distinct()
         try:
             from users.models import SavedFilter
             context['saved_filters'] = SavedFilter.objects.filter(user=self.request.user, model_name='Quotation')
@@ -193,7 +222,7 @@ class InvoiceListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
         context = super().get_context_data(**kwargs)
         from users.models import User
         from django.db.models import Q
-        context['sales_officers'] = User.objects.filter(Q(role=User.Roles.SALES_OFFICER) | Q(role=User.Roles.ADMIN) | Q(is_superuser=True)).filter(is_active=True).distinct()
+        context['sales_officers'] = User.objects.filter(role=User.Roles.SALES_OFFICER, is_active=True).distinct()
         try:
             from users.models import SavedFilter
             context['saved_filters'] = SavedFilter.objects.filter(user=self.request.user, model_name='Invoice')
