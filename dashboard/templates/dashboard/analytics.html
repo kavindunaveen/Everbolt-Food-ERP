@@ -5,8 +5,11 @@
 {% block content %}
 <!-- Chart.js -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<!-- Chart.js Datalabels plugin -->
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
 
 <div class="px-4 py-6 sm:px-0">
+    <!-- Header -->
     <div class="mb-8 flex flex-col md:flex-row md:items-end md:justify-between gap-4">
         <div>
             <h1 class="text-4xl font-extrabold text-gray-900 tracking-tight">Analytics Dashboard</h1>
@@ -76,7 +79,7 @@
 
     <!-- Category Breakdowns -->
     <h2 class="text-2xl font-bold text-gray-800 mb-4 px-1">Category Analysis</h2>
-    <div class="grid grid-cols-1 xl:grid-cols-3 gap-6 mb-8">
+    <div class="grid grid-cols-1 xl:grid-cols-3 gap-6 mb-10">
         <!-- Sugar Analysis -->
         <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 border-t-4 border-t-blue-500">
             <h3 class="text-lg font-bold text-gray-800 mb-4">Sugar Analysis</h3>
@@ -134,169 +137,475 @@
             </div>
         </div>
     </div>
-</div>
+
+    <!-- =====================================================================
+         CONFECTIONERY ANALYTICS SECTION
+         ===================================================================== -->
+    <div class="flex items-center gap-4 mb-6">
+        <div class="h-1 flex-grow rounded-full bg-gradient-to-r from-red-500 via-orange-400 to-amber-300"></div>
+        <h2 class="text-2xl font-extrabold text-gray-900 whitespace-nowrap">🍬 Confectionery Analytics</h2>
+        <div class="h-1 flex-grow rounded-full bg-gradient-to-l from-red-500 via-orange-400 to-amber-300"></div>
+    </div>
+
+    <!-- Sub-product KPI strip -->
+    <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4 mb-8" id="confec-kpi-strip">
+        <!-- Populated by JS -->
+    </div>
+
+    <!-- Row 1: Sales by Sub-product + Qty by Sub-product -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+        <!-- Total Sales per Sub-product -->
+        <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 border-t-4 border-t-red-500">
+            <div class="flex items-start justify-between mb-5">
+                <div>
+                    <h3 class="text-lg font-bold text-gray-900">Total Sales by Sub-product</h3>
+                    <p class="text-xs text-gray-400 mt-0.5">Confectionery — Ex-VAT revenue per product type</p>
+                </div>
+                <span class="text-xs font-bold text-red-600 bg-red-50 px-2 py-1 rounded-lg">Sales (Rs)</span>
+            </div>
+            <div class="relative h-80">
+                <canvas id="confecSalesChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Total Quantity per Sub-product -->
+        <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 border-t-4 border-t-violet-500">
+            <div class="flex items-start justify-between mb-5">
+                <div>
+                    <h3 class="text-lg font-bold text-gray-900">Total Quantity by Sub-product</h3>
+                    <p class="text-xs text-gray-400 mt-0.5">Confectionery — Units sold per product type</p>
+                </div>
+                <span class="text-xs font-bold text-violet-600 bg-violet-50 px-2 py-1 rounded-lg">Quantity (Units)</span>
+            </div>
+            <div class="relative h-80">
+                <canvas id="confecQtyChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Row 2: Stacked Bar by Customer -->
+    <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 border-t-4 border-t-indigo-500 mb-8">
+        <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 mb-5">
+            <div>
+                <h3 class="text-lg font-bold text-gray-900">Total Confectioneries by Customer</h3>
+                <p class="text-xs text-gray-400 mt-0.5">Stacked by product type · Top 30 customers by value · Ex-VAT</p>
+            </div>
+            <div class="flex gap-2">
+                <span class="text-xs font-bold text-indigo-600 bg-indigo-50 px-2 py-1 rounded-lg">X-Axis: Total Sales (Rs)</span>
+                <span class="text-xs font-bold text-gray-500 bg-gray-100 px-2 py-1 rounded-lg">Y-Axis: Customer</span>
+            </div>
+        </div>
+        <!-- Chart height grows based on number of customers — done via JS -->
+        <div style="position:relative;" id="confecByCustWrapper">
+            <canvas id="confecByCustChart"></canvas>
+        </div>
+    </div>
+
+    <!-- Row 3: Line Chart by Month -->
+    <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 border-t-4 border-t-emerald-500 mb-10">
+        <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 mb-5">
+            <div>
+                <h3 class="text-lg font-bold text-gray-900">Total Confectioneries by Month</h3>
+                <p class="text-xs text-gray-400 mt-0.5">Monthly ex-VAT revenue trend for all confectionery products</p>
+            </div>
+            <span class="text-xs font-bold text-emerald-600 bg-emerald-50 px-2 py-1 rounded-lg">Line Chart</span>
+        </div>
+        <div class="relative h-72">
+            <canvas id="confecByMonthChart"></canvas>
+        </div>
+    </div>
+
+</div><!-- /main wrapper -->
 
 <script>
-    // Utils
-    const formatCurrency = (val) => new Intl.NumberFormat('en-LK', { notation: "compact", compactDisplay: "short" }).format(val);
-    const formatNumber = (val) => new Intl.NumberFormat('en-US').format(val);
-    
-    // Chart References
-    let overallChart, gaugeOverall, sugarChart, gaugeSugar, creamerChart, gaugeCreamer, teaChart, gaugeTea;
+// ============================================================
+// Utilities
+// ============================================================
+const fmtCur  = (v) => new Intl.NumberFormat('en-LK', { notation:'compact', compactDisplay:'short' }).format(v);
+const fmtFull = (v) => new Intl.NumberFormat('en-LK', { minimumFractionDigits:2, maximumFractionDigits:2 }).format(v);
+const fmtNum  = (v) => new Intl.NumberFormat('en-US').format(v);
 
-    function initCharts() {
-        Chart.defaults.font.family = "'Inter', sans-serif";
-        Chart.defaults.color = '#64748b'; // Tailwind slate-500
-        
-        // 1. Overall Trend Chart
-        const ctxOverall = document.getElementById('overallSalesChart').getContext('2d');
-        overallChart = new Chart(ctxOverall, {
-            type: 'line',
-            data: { labels: [], datasets: [] },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: { legend: { display: false } },
-                scales: {
-                    y: { beginAtZero: true, grid: { borderDash: [5, 5] } },
-                    x: { grid: { display: false } }
-                },
-                elements: { line: { tension: 0.4 }, point: { radius: 4, hoverRadius: 6 } }
+// Palette — 10 distinct colours aligned to CONFEC_BUCKETS order
+const PALETTE = [
+    '#d97706', // Nescafe   — amber
+    '#7c3aed', // Coffee Mate — violet
+    '#0891b2', // Catering Tea — cyan
+    '#16a34a', // Green Tea  — green
+    '#2dd4bf', // Flavored Tea — teal
+    '#22c55e', // Tea        — light-green
+    '#f59e0b', // Creamer    — yellow
+    '#3b82f6', // Sugar      — blue
+    '#94a3b8', // Salt       — slate
+    '#f97316', // Dried      — orange
+];
+
+// ============================================================
+// Chart instances
+// ============================================================
+let overallChart, gaugeOverall,
+    sugarChart, gaugeSugar,
+    creamerChart, gaugeCreamer,
+    teaChart, gaugeTea,
+    confecSalesChart, confecQtyChart,
+    confecByCustChart, confecByMonthChart;
+
+// ============================================================
+// Init — existing charts
+// ============================================================
+function initExistingCharts() {
+    Chart.defaults.font.family = "'Inter', sans-serif";
+    Chart.defaults.color = '#64748b';
+
+    const ctxOverall = document.getElementById('overallSalesChart').getContext('2d');
+    overallChart = new Chart(ctxOverall, {
+        type: 'line',
+        data: { labels: [], datasets: [] },
+        options: {
+            responsive: true, maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: {
+                y: { beginAtZero: true, grid: { borderDash: [5,5] } },
+                x: { grid: { display: false } }
+            },
+            elements: { line: { tension: 0.4 }, point: { radius: 4, hoverRadius: 6 } }
+        }
+    });
+
+    const createTrendCfg = () => ({
+        type: 'bar',
+        data: { labels: [], datasets: [] },
+        options: {
+            responsive: true, maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: {
+                y: { beginAtZero: true, grid: { borderDash: [5,5] }, ticks: { callback: v => fmtCur(v) } },
+                x: { grid: { display: false } }
             }
-        });
+        }
+    });
+    sugarChart   = new Chart(document.getElementById('sugarTrendChart').getContext('2d'),   createTrendCfg());
+    creamerChart = new Chart(document.getElementById('creamerTrendChart').getContext('2d'), createTrendCfg());
+    teaChart     = new Chart(document.getElementById('teaTrendChart').getContext('2d'),     createTrendCfg());
 
-        // 2. Trend Charts (Sugar, Creamer, Tea) - Combo Bar + Line
-        const createTrendConfig = (color) => ({
-            type: 'bar',
-            data: { labels: [], datasets: [] },
-            options: {
-                responsive: true, maintainAspectRatio: false,
-                plugins: { legend: { display: false } },
-                scales: {
-                    y: { beginAtZero: true, grid: { borderDash: [5, 5] }, ticks: { callback: function(value) { return formatCurrency(value); } } },
-                    x: { grid: { display: false } }
+    const createGaugeCfg = () => ({
+        type: 'doughnut',
+        data: { labels: ['Achieved','Remaining'], datasets: [{ data:[0,100], backgroundColor:['#ef4444','#f1f5f9'], borderWidth:0 }] },
+        options: {
+            responsive: true, maintainAspectRatio: false,
+            rotation: -90, circumference: 180, cutout: '75%',
+            plugins: { legend: { display: false }, tooltip: { enabled: false } },
+            animation: { duration: 1000 }
+        }
+    });
+    gaugeOverall = new Chart(document.getElementById('gaugeOverallChart').getContext('2d'), createGaugeCfg());
+    gaugeSugar   = new Chart(document.getElementById('gaugeSugarChart').getContext('2d'),   createGaugeCfg());
+    gaugeCreamer = new Chart(document.getElementById('gaugeCreamerChart').getContext('2d'), createGaugeCfg());
+    gaugeTea     = new Chart(document.getElementById('gaugeTeaChart').getContext('2d'),     createGaugeCfg());
+}
+
+function updateGauge(chart, valEl, subEl, achieved, target, color) {
+    achieved = parseFloat(achieved) || 0;
+    target   = parseFloat(target)   || 0;
+    let p = 0, rem = target;
+    if (target > 0) { p = Math.min((achieved/target)*100,100); rem = Math.max(target-achieved,0); }
+    else             { achieved = 0; rem = 100; }
+    chart.data.datasets[0].data = [achieved, rem];
+    chart.data.datasets[0].backgroundColor[0] = color;
+    chart.update();
+    document.getElementById(valEl).innerText = target > 0 ? `${p.toFixed(1)}%` : 'No Target';
+    if (subEl) document.getElementById(subEl).innerText = `Target: ${fmtCur(target)}`;
+}
+
+// ============================================================
+// Init — NEW Confectionery charts
+// ============================================================
+function initConfecCharts() {
+    // 1. Sales Bar Chart (vertical)
+    confecSalesChart = new Chart(document.getElementById('confecSalesChart').getContext('2d'), {
+        type: 'bar',
+        data: { labels: [], datasets: [] },
+        options: {
+            responsive: true, maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    callbacks: {
+                        label: ctx => ` Rs ${fmtFull(ctx.parsed.y)}`
+                    }
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    grid: { borderDash: [4,4], color: '#f1f5f9' },
+                    ticks: { callback: v => 'Rs ' + fmtCur(v) }
+                },
+                x: { grid: { display: false } }
+            }
+        }
+    });
+
+    // 2. Quantity Bar Chart (vertical)
+    confecQtyChart = new Chart(document.getElementById('confecQtyChart').getContext('2d'), {
+        type: 'bar',
+        data: { labels: [], datasets: [] },
+        options: {
+            responsive: true, maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    callbacks: {
+                        label: ctx => ` ${fmtNum(ctx.parsed.y)} units`
+                    }
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    grid: { borderDash: [4,4], color: '#f1f5f9' },
+                    ticks: { callback: v => fmtNum(v) }
+                },
+                x: { grid: { display: false } }
+            }
+        }
+    });
+
+    // 3. Stacked Horizontal Bar by Customer
+    confecByCustChart = new Chart(document.getElementById('confecByCustChart').getContext('2d'), {
+        type: 'bar',
+        data: { labels: [], datasets: [] },
+        options: {
+            indexAxis: 'y',   // <-- horizontal bar
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: true,
+                    position: 'top',
+                    labels: { boxWidth: 12, font: { size: 11 } }
+                },
+                tooltip: {
+                    callbacks: {
+                        label: ctx => ` ${ctx.dataset.label}: Rs ${fmtFull(ctx.parsed.x)}`
+                    }
+                }
+            },
+            scales: {
+                x: {
+                    stacked: true,
+                    grid: { borderDash: [4,4], color: '#f1f5f9' },
+                    ticks: { callback: v => 'Rs ' + fmtCur(v) },
+                    title: { display: true, text: 'Total Confectioneries (Ex-VAT, Rs)', font: { weight: 'bold', size: 11 } }
+                },
+                y: {
+                    stacked: true,
+                    grid: { display: false },
+                    ticks: { font: { size: 10.5 } },
+                    title: { display: true, text: 'Customer Name', font: { weight: 'bold', size: 11 } }
                 }
             }
-        });
-
-        sugarChart = new Chart(document.getElementById('sugarTrendChart').getContext('2d'), createTrendConfig());
-        creamerChart = new Chart(document.getElementById('creamerTrendChart').getContext('2d'), createTrendConfig());
-        teaChart = new Chart(document.getElementById('teaTrendChart').getContext('2d'), createTrendConfig());
-
-        // 3. Gauge Charts (Half Doughnuts)
-        const createGaugeConfig = () => ({
-            type: 'doughnut',
-            data: { labels: ['Achieved', 'Remaining'], datasets: [{ data: [0, 100], backgroundColor: ['#ef4444', '#f1f5f9'], borderWidth: 0 }] },
-            options: {
-                responsive: true, maintainAspectRatio: false,
-                rotation: -90, circumference: 180, cutout: '75%',
-                plugins: { legend: { display: false }, tooltip: { enabled: false } },
-                animation: { duration: 1000 }
-            }
-        });
-
-        gaugeOverall = new Chart(document.getElementById('gaugeOverallChart').getContext('2d'), createGaugeConfig());
-        gaugeSugar = new Chart(document.getElementById('gaugeSugarChart').getContext('2d'), createGaugeConfig());
-        gaugeCreamer = new Chart(document.getElementById('gaugeCreamerChart').getContext('2d'), createGaugeConfig());
-        gaugeTea = new Chart(document.getElementById('gaugeTeaChart').getContext('2d'), createGaugeConfig());
-    }
-
-    function updateGauge(chart, valEl, subEl, achieved, target, color) {
-        achieved = parseFloat(achieved) || 0;
-        target = parseFloat(target) || 0;
-        let p = 0;
-        let rem = target;
-        if (target > 0) {
-            p = Math.min((achieved / target) * 100, 100);
-            rem = Math.max(target - achieved, 0);
-        } else {
-            // No target set, show full gray
-            achieved = 0; rem = 100;
         }
-
-        chart.data.datasets[0].data = [achieved, rem];
-        chart.data.datasets[0].backgroundColor[0] = color;
-        chart.update();
-
-        document.getElementById(valEl).innerText = target > 0 ? `${p.toFixed(1)}%` : 'No Target';
-        if(subEl) {
-            document.getElementById(subEl).innerText = `Target: ${formatCurrency(target)}`;
-        }
-    }
-
-    async function fetchData() {
-        const year = document.getElementById('yearSelect').value;
-        document.getElementById('lastUpdated').innerText = 'Fetching...';
-        
-        try {
-            const resp = await fetch(`/dashboard/api/data/?year=${year}`);
-            if(!resp.ok) throw new Error("Failed to fetch");
-            const data = await resp.json();
-            
-            // Overviews
-            document.getElementById('kpi-sales').innerText = formatCurrency(data.overview.overall_sales_total);
-            document.getElementById('kpi-packs').innerText = formatCurrency(data.overview.total_packs);
-            document.getElementById('kpi-invoices').innerText = formatNumber(data.overview.total_invoices);
-            document.getElementById('kpi-customers').innerText = formatNumber(data.overview.total_customers);
-
-            // Overall Trend Line
-            overallChart.data.labels = data.trends.months;
-            overallChart.data.datasets = [{
-                label: 'Overall Sales',
-                data: data.trends.overall_sales,
-                borderColor: '#ef4444',
-                backgroundColor: 'rgba(239, 68, 68, 0.1)',
-                fill: true
-            }];
-            overallChart.update();
-
-            // Category Trends (Combo)
-            const updateTrend = (c, saleData, qtyData, colorLine, colorBar) => {
-                c.data.labels = data.trends.months;
-                c.data.datasets = [
-                    { type: 'line', label: 'Sales Val', data: saleData, borderColor: colorLine, borderWidth: 2, fill: false, tension: 0.3 },
-                    { type: 'bar', label: 'Qty', data: qtyData, backgroundColor: colorBar, borderRadius: 4 }
-                ];
-                c.update();
-            }
-
-            updateTrend(sugarChart, data.trends.sugar_sales, data.trends.sugar_qty, '#2563eb', 'rgba(37, 99, 235, 0.4)');
-            updateTrend(creamerChart, data.trends.creamer_sales, data.trends.creamer_qty, '#d97706', 'rgba(217, 119, 6, 0.4)');
-            updateTrend(teaChart, data.trends.tea_sales, data.trends.tea_qty, '#059669', 'rgba(5, 150, 105, 0.4)');
-
-            // Gauges
-            updateGauge(gaugeOverall, 'gauge-overall-val', 'gauge-overall-sub', data.overview.overall_sales_total, data.targets.overall, '#ef4444');
-            
-            updateGauge(gaugeSugar, 'gauge-sugar-val', null, data.overview.sugar_sales, data.targets.sugar, '#3b82f6');
-            document.getElementById('sugar-sold').innerText = formatCurrency(data.overview.sugar_sales);
-            document.getElementById('sugar-target').innerText = formatCurrency(data.targets.sugar);
-
-            updateGauge(gaugeCreamer, 'gauge-creamer-val', null, data.overview.creamer_sales, data.targets.creamer, '#f59e0b');
-            document.getElementById('creamer-sold').innerText = formatCurrency(data.overview.creamer_sales);
-            document.getElementById('creamer-target').innerText = formatCurrency(data.targets.creamer);
-
-            updateGauge(gaugeTea, 'gauge-tea-val', null, data.overview.tea_sales, data.targets.tea, '#10b981');
-            document.getElementById('tea-sold').innerText = formatCurrency(data.overview.tea_sales);
-            document.getElementById('tea-target').innerText = formatCurrency(data.targets.tea);
-
-            const now = new Date();
-            document.getElementById('lastUpdated').innerText = `Live (Last update: ${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')})`;
-
-        } catch (e) {
-            console.error(e);
-            document.getElementById('lastUpdated').innerText = 'Error loading data';
-        }
-    }
-
-    // Init
-    document.addEventListener("DOMContentLoaded", () => {
-        initCharts();
-        fetchData();
-        
-        document.getElementById('yearSelect').addEventListener('change', fetchData);
-
-        // Polling every 60 seconds
-        setInterval(fetchData, 60000);
     });
+
+    // 4. Line Chart by Month
+    confecByMonthChart = new Chart(document.getElementById('confecByMonthChart').getContext('2d'), {
+        type: 'line',
+        data: { labels: [], datasets: [] },
+        options: {
+            responsive: true, maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    callbacks: {
+                        label: ctx => ` Rs ${fmtFull(ctx.parsed.y)}`
+                    }
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    grid: { borderDash: [4,4], color: '#f1f5f9' },
+                    ticks: { callback: v => 'Rs ' + fmtCur(v) },
+                    title: { display: true, text: 'Total Confectioneries (Ex-VAT, Rs)', font: { weight: 'bold', size: 11 } }
+                },
+                x: {
+                    grid: { display: false },
+                    title: { display: true, text: 'Month', font: { weight: 'bold', size: 11 } }
+                }
+            },
+            elements: {
+                line: { tension: 0.35, borderWidth: 3 },
+                point: { radius: 5, hoverRadius: 8, borderWidth: 2 }
+            }
+        }
+    });
+}
+
+// ============================================================
+// Fetch + Render — existing data
+// ============================================================
+async function fetchMainData(year) {
+    const resp = await fetch(`/dashboard/api/data/?year=${year}`);
+    if (!resp.ok) throw new Error('Main API failed');
+    const data = await resp.json();
+
+    document.getElementById('kpi-sales').innerText     = fmtCur(data.overview.overall_sales_total);
+    document.getElementById('kpi-packs').innerText     = fmtCur(data.overview.total_packs);
+    document.getElementById('kpi-invoices').innerText  = fmtNum(data.overview.total_invoices);
+    document.getElementById('kpi-customers').innerText = fmtNum(data.overview.total_customers);
+
+    overallChart.data.labels = data.trends.months;
+    overallChart.data.datasets = [{
+        label: 'Overall Sales',
+        data: data.trends.overall_sales,
+        borderColor: '#ef4444',
+        backgroundColor: 'rgba(239,68,68,0.1)',
+        fill: true
+    }];
+    overallChart.update();
+
+    const updateTrend = (c, sData, qData, lineClr, barClr) => {
+        c.data.labels = data.trends.months;
+        c.data.datasets = [
+            { type:'line', label:'Sales Val', data:sData, borderColor:lineClr, borderWidth:2, fill:false, tension:0.3 },
+            { type:'bar',  label:'Qty',       data:qData, backgroundColor:barClr, borderRadius:4 }
+        ];
+        c.update();
+    };
+    updateTrend(sugarChart,   data.trends.sugar_sales,   data.trends.sugar_qty,   '#2563eb','rgba(37,99,235,0.4)');
+    updateTrend(creamerChart, data.trends.creamer_sales, data.trends.creamer_qty, '#d97706','rgba(217,119,6,0.4)');
+    updateTrend(teaChart,     data.trends.tea_sales,     data.trends.tea_qty,     '#059669','rgba(5,150,105,0.4)');
+
+    updateGauge(gaugeOverall,'gauge-overall-val','gauge-overall-sub', data.overview.overall_sales_total, data.targets.overall, '#ef4444');
+    updateGauge(gaugeSugar,  'gauge-sugar-val',  null, data.overview.sugar_sales,   data.targets.sugar,   '#3b82f6');
+    document.getElementById('sugar-sold').innerText   = fmtCur(data.overview.sugar_sales);
+    document.getElementById('sugar-target').innerText = fmtCur(data.targets.sugar);
+    updateGauge(gaugeCreamer,'gauge-creamer-val',null, data.overview.creamer_sales, data.targets.creamer, '#f59e0b');
+    document.getElementById('creamer-sold').innerText   = fmtCur(data.overview.creamer_sales);
+    document.getElementById('creamer-target').innerText = fmtCur(data.targets.creamer);
+    updateGauge(gaugeTea,    'gauge-tea-val',    null, data.overview.tea_sales,     data.targets.tea,     '#10b981');
+    document.getElementById('tea-sold').innerText   = fmtCur(data.overview.tea_sales);
+    document.getElementById('tea-target').innerText = fmtCur(data.targets.tea);
+}
+
+// ============================================================
+// Fetch + Render — NEW Confectionery data
+// ============================================================
+async function fetchConfecData(year) {
+    const resp = await fetch(`/dashboard/api/confectionery/?year=${year}`);
+    if (!resp.ok) throw new Error('Confectionery API failed');
+    const data = await resp.json();
+
+    const totals = data.sub_product_totals;  // array of {label, sales, qty}
+    const labels = totals.map(t => t.label);
+    const sales  = totals.map(t => t.sales);
+    const qty    = totals.map(t => t.qty);
+    const colors = labels.map((_, i) => PALETTE[i % PALETTE.length]);
+
+    // ---- KPI Strip ----
+    const strip = document.getElementById('confec-kpi-strip');
+    strip.innerHTML = '';
+    totals.forEach((t, i) => {
+        if (t.sales === 0 && t.qty === 0) return;
+        const clr = PALETTE[i % PALETTE.length];
+        strip.insertAdjacentHTML('beforeend', `
+            <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 flex flex-col gap-1"
+                 style="border-top: 4px solid ${clr};">
+                <span class="text-[11px] font-black uppercase tracking-widest text-gray-400">${t.label}</span>
+                <span class="text-xl font-extrabold text-gray-900">Rs ${fmtCur(t.sales)}</span>
+                <span class="text-xs text-gray-400 font-medium">${fmtNum(t.qty)} units</span>
+            </div>`);
+    });
+
+    // ---- Chart 1: Sales Bar ----
+    confecSalesChart.data.labels = labels;
+    confecSalesChart.data.datasets = [{
+        label: 'Sales (Ex-VAT)',
+        data:  sales,
+        backgroundColor: colors.map(c => c + 'cc'),
+        borderColor:     colors,
+        borderWidth: 2,
+        borderRadius: 6,
+        hoverBorderWidth: 3,
+    }];
+    confecSalesChart.update();
+
+    // ---- Chart 2: Qty Bar ----
+    confecQtyChart.data.labels = labels;
+    confecQtyChart.data.datasets = [{
+        label: 'Quantity',
+        data:  qty,
+        backgroundColor: colors.map(c => c + 'aa'),
+        borderColor:     colors,
+        borderWidth: 2,
+        borderRadius: 6,
+        hoverBorderWidth: 3,
+    }];
+    confecQtyChart.update();
+
+    // ---- Chart 3: Stacked Horizontal Bar by Customer ----
+    const byC = data.by_customer;
+    const numCustomers = byC.customers.length;
+
+    // Dynamic height: ~34px per customer + legend + padding
+    const barHeight = Math.max(400, numCustomers * 34 + 80);
+    document.getElementById('confecByCustWrapper').style.height = barHeight + 'px';
+
+    confecByCustChart.data.labels = byC.customers;
+    confecByCustChart.data.datasets = byC.datasets.map((ds, i) => ({
+        label:           ds.label,
+        data:            ds.data,
+        backgroundColor: PALETTE[i % PALETTE.length] + 'cc',
+        borderColor:     PALETTE[i % PALETTE.length],
+        borderWidth:     1,
+        borderRadius:    3,
+    }));
+    confecByCustChart.update();
+
+    // ---- Chart 4: Line by Month ----
+    const byM = data.by_month;
+    confecByMonthChart.data.labels = byM.months;
+    confecByMonthChart.data.datasets = [{
+        label: 'Total Confectioneries',
+        data:  byM.sales,
+        borderColor:     '#dc2626',
+        backgroundColor: 'rgba(220,38,38,0.08)',
+        fill: true,
+        pointBackgroundColor: '#dc2626',
+        pointBorderColor: '#fff',
+    }];
+    confecByMonthChart.update();
+}
+
+// ============================================================
+// Main fetch orchestrator
+// ============================================================
+async function fetchData() {
+    const year = document.getElementById('yearSelect').value;
+    document.getElementById('lastUpdated').innerText = 'Fetching...';
+    try {
+        await Promise.all([
+            fetchMainData(year),
+            fetchConfecData(year),
+        ]);
+        const now = new Date();
+        document.getElementById('lastUpdated').innerText =
+            `Live (${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')})`;
+    } catch (e) {
+        console.error(e);
+        document.getElementById('lastUpdated').innerText = 'Error loading data';
+    }
+}
+
+// ============================================================
+// Boot
+// ============================================================
+document.addEventListener('DOMContentLoaded', () => {
+    initExistingCharts();
+    initConfecCharts();
+    fetchData();
+    document.getElementById('yearSelect').addEventListener('change', fetchData);
+    setInterval(fetchData, 60000);
+});
 </script>
 {% endblock %}

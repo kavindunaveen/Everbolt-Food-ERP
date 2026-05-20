@@ -3,13 +3,42 @@ from django.views.generic import TemplateView
 from django.http import JsonResponse
 from django.views import View
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.db.models import Sum, Count, F
+from django.db.models import Sum, Count, F, Q
 from django.utils import timezone
+from collections import defaultdict
 
 from sales.models import Invoice, InvoiceItem
 from crm.models import Customer
 from inventory.models import Product
 from .models import SalesTarget
+
+
+# ---------------------------------------------------------------------------
+# Confectionery sub-product keyword mapping
+# Each key is the canonical label shown in charts; value is a list of
+# case-insensitive substrings that identify the product in product.name.
+# Order matters — more specific keywords must come before broader ones.
+# ---------------------------------------------------------------------------
+CONFEC_BUCKETS = [
+    ("Nescafe",     ["nescafe", "nescafé"]),
+    ("Coffee Mate", ["coffee mate", "coffeemate"]),
+    ("Catering Tea",["catering tea"]),
+    ("Green Tea",   ["green tea"]),
+    ("Flavored Tea",  ["flavored tea", "flavoured tea"]),
+    ("Tea",         ["tea"]),
+    ("Creamer",     ["creamer", "cream"]),
+    ("Sugar",       ["sugar"]),
+    ("Salt",        ["salt"]),
+    ("Dried",       ["dried"]),
+]
+
+def classify_product(name: str) -> str | None:
+    """Return bucket label for a product name, or None if not confectionery."""
+    name_lower = name.lower()
+    for label, keywords in CONFEC_BUCKETS:
+        if any(kw in name_lower for kw in keywords):
+            return label
+    return None
 
 class AnalyticsDashboardView(LoginRequiredMixin, TemplateView):
     template_name = 'dashboard/analytics.html'
@@ -126,3 +155,115 @@ class DashboardDataAPI(LoginRequiredMixin, View):
         }
         
         return JsonResponse(data)
+
+
+class ConfectioneryAnalyticsAPI(LoginRequiredMixin, View):
+    """
+    Returns confectionery-specific analytics for 3 charts:
+      1. sub_product_totals  – sales & qty per sub-product (Sugar, Creamer, Tea, …)
+      2. by_customer         – stacked confectionery sales per customer name
+      3. by_month            – total confectionery sales per calendar month
+    """
+
+    def get(self, request, *args, **kwargs):
+        year = request.GET.get('year', timezone.now().year)
+        try:
+            year = int(year)
+        except Exception:
+            year = timezone.now().year
+
+        # Only issued / paid invoices for the selected year
+        invoices = Invoice.objects.filter(
+            creation_date__year=year,
+            status__in=[Invoice.Status.ISSUED, Invoice.Status.PAID]
+        )
+
+        # Pull every invoice item that belongs to a Confectionery product.
+        # We also bring customer_name, month, product name in one queryset.
+        raw_items = (
+            InvoiceItem.objects
+            .filter(invoice__in=invoices, product__category__iexact='Confectionery')
+            .annotate(ex_vat=F('line_total') - F('tax_amount'))
+            .values(
+                'product__name',
+                'quantity',
+                'ex_vat',
+                'invoice__customer__customer_name',
+                'invoice__creation_date__month',
+            )
+        )
+
+        # ---------- accumulators ----------
+        bucket_labels = [b[0] for b in CONFEC_BUCKETS]
+
+        sub_sales  = defaultdict(float)   # label -> total ex-VAT sales
+        sub_qty    = defaultdict(float)   # label -> total quantity
+
+        # customer -> { label -> sales }
+        cust_data  = defaultdict(lambda: defaultdict(float))
+
+        # month index (0-11) -> sales
+        month_sales = [0.0] * 12
+
+        for row in raw_items:
+            pname   = row['product__name'] or ''
+            qty     = float(row['quantity'] or 0)
+            exvat   = float(row['ex_vat']   or 0)
+            cust    = row['invoice__customer__customer_name'] or 'Unknown'
+            m_idx   = (row['invoice__creation_date__month'] or 1) - 1  # 0-based
+
+            label = classify_product(pname)
+            if label is None:
+                label = 'Other'
+
+            sub_sales[label]  += exvat
+            sub_qty[label]    += qty
+            cust_data[cust][label] += exvat
+            month_sales[m_idx] += exvat
+
+        # ---------- build response ----------
+
+        # 1. Sub-product totals
+        sub_product_totals = [
+            {
+                'label': lbl,
+                'sales': round(sub_sales.get(lbl, 0.0), 2),
+                'qty':   round(sub_qty.get(lbl, 0.0),   2),
+            }
+            for lbl in bucket_labels
+        ]
+
+        # 2. By-customer (top 30 customers by total confectionery sales)
+        cust_totals = {
+            cname: sum(vals.values())
+            for cname, vals in cust_data.items()
+        }
+        top_customers = sorted(cust_totals, key=lambda c: cust_totals[c], reverse=True)[:30]
+
+        by_customer = {
+            'customers': top_customers,
+            'datasets': [
+                {
+                    'label': lbl,
+                    'data':  [round(cust_data[c].get(lbl, 0.0), 2) for c in top_customers],
+                }
+                for lbl in bucket_labels
+            ],
+        }
+
+        # 3. By-month
+        month_names = [
+            "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+            "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
+        ]
+        by_month = {
+            'months': month_names,
+            'sales':  [round(v, 2) for v in month_sales],
+        }
+
+        return JsonResponse({
+            'year': year,
+            'sub_product_totals': sub_product_totals,
+            'by_customer': by_customer,
+            'by_month': by_month,
+        })
