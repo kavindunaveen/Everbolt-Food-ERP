@@ -10,7 +10,7 @@ from collections import defaultdict
 from sales.models import Invoice, InvoiceItem
 from crm.models import Customer
 from inventory.models import Product
-from .models import SalesTarget
+from .models import SalesTarget, TrackedProduct, ProductTarget
 
 
 # ---------------------------------------------------------------------------
@@ -283,118 +283,291 @@ class ConfectioneryAnalyticsAPI(LoginRequiredMixin, View):
 
 
 # ---------------------------------------------------------------------------
-# Target Management View
-# Access: user.is_admin() OR user.can_set_targets
+# Target Management — helpers
 # ---------------------------------------------------------------------------
 import calendar as _calendar
+import json as _json
 from django.contrib import messages
 from django.shortcuts import redirect
 
+CAT_ROWS = [
+    {'label': 'Overall Sales', 'type': 'OVERALL_SALES',  'category': None,      'key': 'overall'},
+    {'label': 'Sugar Sales',   'type': 'CATEGORY_SALES', 'category': 'Sugar',   'key': 'sugar'},
+    {'label': 'Creamer Sales', 'type': 'CATEGORY_SALES', 'category': 'Creamer', 'key': 'creamer'},
+    {'label': 'Tea Sales',     'type': 'CATEGORY_SALES', 'category': 'Tea',     'key': 'tea'},
+]
+MONTH_ABBR = [_calendar.month_abbr[m] for m in range(1, 13)]
+
+
+def _check_target_access(request):
+    return request.user.is_admin() or request.user.can_set_targets
+
+
+def _upsert_category(year, target_type, category, month, val_str):
+    val_str = (val_str or '').strip()
+    if val_str:
+        try:
+            SalesTarget.objects.update_or_create(
+                year=year, month=month, target_type=target_type, category=category,
+                defaults={'target_value': float(val_str)}
+            )
+        except ValueError:
+            pass
+    else:
+        SalesTarget.objects.filter(
+            year=year, month=month, target_type=target_type, category=category
+        ).delete()
+
+
+def _upsert_product(product, year, month, val_str):
+    val_str = (val_str or '').strip()
+    if val_str:
+        try:
+            ProductTarget.objects.update_or_create(
+                product=product, year=year, month=month,
+                defaults={'target_value': float(val_str)}
+            )
+        except ValueError:
+            pass
+    else:
+        ProductTarget.objects.filter(product=product, year=year, month=month).delete()
+
+
+# ---------------------------------------------------------------------------
+# Target Management View
+# ---------------------------------------------------------------------------
 class TargetManagementView(LoginRequiredMixin, View):
     template_name = 'dashboard/targets.html'
 
-    # Rows shown in the grid
-    TARGET_ROWS = [
-        {'label': 'Overall Sales',   'type': 'OVERALL_SALES',  'category': None,      'key': 'overall'},
-        {'label': 'Sugar Sales',     'type': 'CATEGORY_SALES', 'category': 'Sugar',   'key': 'sugar'},
-        {'label': 'Creamer Sales',   'type': 'CATEGORY_SALES', 'category': 'Creamer', 'key': 'creamer'},
-        {'label': 'Tea Sales',       'type': 'CATEGORY_SALES', 'category': 'Tea',     'key': 'tea'},
-    ]
-    MONTH_NAMES = [_calendar.month_abbr[m] for m in range(1, 13)]
-
-    def _check_access(self, request):
-        return request.user.is_admin() or request.user.can_set_targets
-
     def get(self, request, *args, **kwargs):
-        if not self._check_access(request):
+        if not _check_target_access(request):
             messages.error(request, "You don't have permission to manage targets.")
             return redirect('analytics_dashboard')
 
-        year = request.GET.get('year', timezone.now().year)
-        try:
-            year = int(year)
-        except Exception:
-            year = timezone.now().year
-
-        # Load all targets for this year into a lookup dict
-        # key: (target_type, category_or_None, month_or_None) -> value
-        existing = {}
-        for t in SalesTarget.objects.filter(year=year):
-            existing[(t.target_type, t.category, t.month)] = float(t.target_value)
-
-        # Build grid data for template
-        rows = []
-        for row in self.TARGET_ROWS:
-            periods = []
-            # Yearly (month=None)
-            yearly_key = (row['type'], row['category'], None)
-            periods.append({
-                'field_name': f"target_{row['key']}_yearly",
-                'value': existing.get(yearly_key, ''),
-                'label': 'Yearly',
-            })
-            # Monthly (1–12)
-            for m in range(1, 13):
-                monthly_key = (row['type'], row['category'], m)
-                periods.append({
-                    'field_name': f"target_{row['key']}_m{m}",
-                    'value': existing.get(monthly_key, ''),
-                    'label': self.MONTH_NAMES[m - 1],
-                })
-            rows.append({'label': row['label'], 'key': row['key'], 'periods': periods})
-
+        year = int(request.GET.get('year', timezone.now().year))
         available_years = list(range(timezone.now().year + 1, 2022, -1))
 
+        # ── Category target rows ──────────────────────────────────────────
+        cat_existing = {}
+        for t in SalesTarget.objects.filter(year=year):
+            cat_existing[(t.target_type, t.category, t.month)] = float(t.target_value)
+
+        cat_rows = []
+        for row in CAT_ROWS:
+            periods = [{'field': f"ct_{row['key']}_y",
+                        'value': cat_existing.get((row['type'], row['category'], None), ''),
+                        'label': 'Yearly'}]
+            for m in range(1, 13):
+                periods.append({
+                    'field': f"ct_{row['key']}_m{m}",
+                    'value': cat_existing.get((row['type'], row['category'], m), ''),
+                    'label': MONTH_ABBR[m - 1],
+                })
+            cat_rows.append({'label': row['label'], 'key': row['key'], 'periods': periods})
+
+        # ── Product target rows ───────────────────────────────────────────
+        prod_existing = {}
+        for pt in ProductTarget.objects.filter(year=year).select_related('product'):
+            prod_existing[(pt.product_id, pt.month)] = float(pt.target_value)
+
+        prod_rows = []
+        for tp in TrackedProduct.objects.select_related('product').all():
+            p = tp.product
+            periods = [{'field': f"pt_{p.id}_y",
+                        'value': prod_existing.get((p.id, None), ''),
+                        'label': 'Yearly'}]
+            for m in range(1, 13):
+                periods.append({
+                    'field': f"pt_{p.id}_m{m}",
+                    'value': prod_existing.get((p.id, m), ''),
+                    'label': MONTH_ABBR[m - 1],
+                })
+            prod_rows.append({
+                'tracked_id': tp.id,
+                'product_id': p.id,
+                'product_code': p.product_id,
+                'name': p.name,
+                'category': p.category,
+                'periods': periods,
+            })
+
         return render(request, self.template_name, {
-            'rows': rows,
+            'cat_rows': cat_rows,
+            'prod_rows': prod_rows,
             'year': year,
-            'month_names': self.MONTH_NAMES,
             'available_years': available_years,
+            'month_abbr': MONTH_ABBR,
         })
 
     def post(self, request, *args, **kwargs):
-        if not self._check_access(request):
-            messages.error(request, "You don't have permission to manage targets.")
-            return redirect('analytics_dashboard')
+        if not _check_target_access(request):
+            return JsonResponse({'error': 'Forbidden'}, status=403)
 
-        year = request.POST.get('year')
-        try:
-            year = int(year)
-        except Exception:
-            messages.error(request, "Invalid year.")
-            return redirect('target_management')
+        action = request.POST.get('action', 'save_targets')
+        year = int(request.POST.get('year', timezone.now().year))
 
-        saved = 0
-        for row in self.TARGET_ROWS:
-            # Yearly
-            val_str = request.POST.get(f"target_{row['key']}_yearly", '').strip()
-            self._upsert(year, row['type'], row['category'], None, val_str)
-            if val_str:
-                saved += 1
-            # Monthly
+        if action == 'add_product':
+            pid = request.POST.get('product_db_id')
+            try:
+                product = Product.objects.get(pk=pid)
+                tp, created = TrackedProduct.objects.get_or_create(
+                    product=product,
+                    defaults={'display_order': TrackedProduct.objects.count()}
+                )
+                return JsonResponse({'status': 'ok', 'created': created,
+                                     'tracked_id': tp.id, 'name': product.name,
+                                     'product_id': product.id,
+                                     'product_code': product.product_id,
+                                     'category': product.category})
+            except Product.DoesNotExist:
+                return JsonResponse({'error': 'Product not found'}, status=404)
+
+        if action == 'remove_product':
+            tid = request.POST.get('tracked_id')
+            try:
+                tp = TrackedProduct.objects.get(pk=tid)
+                pid = tp.product_id
+                tp.delete()
+                ProductTarget.objects.filter(product_id=pid).delete()
+                return JsonResponse({'status': 'ok'})
+            except TrackedProduct.DoesNotExist:
+                return JsonResponse({'error': 'Not found'}, status=404)
+
+        # ── action == 'save_targets' ────────────────────────────────────
+        # Save category targets
+        for row in CAT_ROWS:
+            _upsert_category(year, row['type'], row['category'], None,
+                             request.POST.get(f"ct_{row['key']}_y"))
             for m in range(1, 13):
-                val_str = request.POST.get(f"target_{row['key']}_m{m}", '').strip()
-                self._upsert(year, row['type'], row['category'], m, val_str)
-                if val_str:
-                    saved += 1
+                _upsert_category(year, row['type'], row['category'], m,
+                                 request.POST.get(f"ct_{row['key']}_m{m}"))
 
-        messages.success(request, f"Targets for {year} saved successfully ({saved} entries updated).")
+        # Save product targets
+        for tp in TrackedProduct.objects.select_related('product').all():
+            p = tp.product
+            _upsert_product(p, year, None, request.POST.get(f"pt_{p.id}_y"))
+            for m in range(1, 13):
+                _upsert_product(p, year, m, request.POST.get(f"pt_{p.id}_m{m}"))
+
+        messages.success(request, f"Targets for {year} saved successfully.")
         return redirect(f"{request.path}?year={year}")
 
-    @staticmethod
-    def _upsert(year, target_type, category, month, val_str):
-        """Create or update a target; delete if value is cleared."""
-        if val_str:
+
+# ---------------------------------------------------------------------------
+# Product Search API  — used by the autocomplete widget on the targets page
+# GET /dashboard/api/product-search/?q=sugar
+# ---------------------------------------------------------------------------
+class ProductSearchAPI(LoginRequiredMixin, View):
+    def get(self, request, *args, **kwargs):
+        q = request.GET.get('q', '').strip()
+        if len(q) < 2:
+            return JsonResponse({'results': []})
+
+        # Exclude products already being tracked
+        tracked_pids = set(TrackedProduct.objects.values_list('product_id', flat=True))
+
+        products = (
+            Product.objects
+            .filter(
+                Q(name__icontains=q) | Q(product_id__icontains=q),
+                status=True,
+            )
+            .exclude(id__in=tracked_pids)
+            .order_by('name')[:25]
+        )
+
+        return JsonResponse({
+            'results': [
+                {'id': p.id, 'product_id': p.product_id,
+                 'name': p.name, 'category': p.category}
+                for p in products
+            ]
+        })
+
+
+# ---------------------------------------------------------------------------
+# Product Targets API  — feeds the dashboard Product Performance section
+# GET /dashboard/api/product-targets/?year=2026&month=5
+# ---------------------------------------------------------------------------
+class ProductTargetsAPI(LoginRequiredMixin, View):
+    def get(self, request, *args, **kwargs):
+        year = int(request.GET.get('year', timezone.now().year))
+        month_raw = request.GET.get('month')
+        month = None
+        try:
+            m = int(month_raw)
+            if 1 <= m <= 12:
+                month = m
+        except (TypeError, ValueError):
+            pass
+
+        STATUSES = [Invoice.Status.ISSUED, Invoice.Status.PAID]
+        results = []
+
+        for tp in TrackedProduct.objects.select_related('product').all():
+            p = tp.product
+
+            # ── Actual sales for selected period ─────────────────────────
+            items_qs = InvoiceItem.objects.filter(
+                product=p,
+                invoice__creation_date__year=year,
+                invoice__status__in=STATUSES,
+            )
+            if month:
+                items_qs = items_qs.filter(invoice__creation_date__month=month)
+
+            actual = float(
+                items_qs.annotate(ex_vat=F('line_total') - F('tax_amount'))
+                .aggregate(s=Sum('ex_vat'))['s'] or 0
+            )
+            actual_qty = float(
+                items_qs.aggregate(q=Sum('quantity'))['q'] or 0
+            )
+
+            # ── Target for this period ────────────────────────────────────
             try:
-                val = float(val_str)
-                SalesTarget.objects.update_or_create(
-                    year=year, month=month, target_type=target_type, category=category,
-                    defaults={'target_value': val}
-                )
-            except ValueError:
-                pass
-        else:
-            # Empty string = clear the target
-            SalesTarget.objects.filter(
-                year=year, month=month, target_type=target_type, category=category
-            ).delete()
+                pt = ProductTarget.objects.get(product=p, year=year, month=month)
+                target = float(pt.target_value)
+                has_target = True
+            except ProductTarget.DoesNotExist:
+                target = 0.0
+                has_target = False
+
+            pct = round(actual / target * 100, 1) if target > 0 else 0
+
+            # ── Monthly trend (always full 12 months) ─────────────────────
+            all_year_qs = InvoiceItem.objects.filter(
+                product=p,
+                invoice__creation_date__year=year,
+                invoice__status__in=STATUSES,
+            ).annotate(ex_vat=F('line_total') - F('tax_amount')).values(
+                'invoice__creation_date__month'
+            ).annotate(s=Sum('ex_vat'))
+
+            monthly_trend = [0.0] * 12
+            for row in all_year_qs:
+                monthly_trend[row['invoice__creation_date__month'] - 1] = round(
+                    float(row['s'] or 0), 2)
+
+            # ── Monthly targets ───────────────────────────────────────────
+            monthly_targets = [0.0] * 12
+            for pt_m in ProductTarget.objects.filter(product=p, year=year,
+                                                     month__isnull=False):
+                monthly_targets[pt_m.month - 1] = float(pt_m.target_value)
+
+            results.append({
+                'tracked_id':   tp.id,
+                'product_db_id': p.id,
+                'product_code': p.product_id,
+                'name':         p.name,
+                'category':     p.category,
+                'actual_sales': actual,
+                'actual_qty':   actual_qty,
+                'target_value': target,
+                'has_target':   has_target,
+                'pct_achieved': pct,
+                'monthly_trend':   monthly_trend,
+                'monthly_targets': monthly_targets,
+            })
+
+        return JsonResponse({'year': year, 'month': month, 'products': results})

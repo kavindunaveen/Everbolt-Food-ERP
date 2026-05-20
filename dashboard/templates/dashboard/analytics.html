@@ -294,7 +294,21 @@
         </div>
     </div>
 
+    <!-- =====================================================================
+         📦 PRODUCT PERFORMANCE SECTION
+         ===================================================================== -->
+    <div class="flex items-center gap-4 mb-6 mt-10">
+        <div class="h-1 flex-grow rounded-full bg-gradient-to-r from-blue-400 via-indigo-300 to-blue-400"></div>
+        <h2 class="text-2xl font-extrabold text-gray-900 whitespace-nowrap">📦 Product Performance</h2>
+        <div class="h-1 flex-grow rounded-full bg-gradient-to-l from-blue-400 via-indigo-300 to-blue-400"></div>
+    </div>
+
+    <div id="product-performance-section" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mb-12">
+        <!-- Loaded dynamically via AJAX -->
+    </div>
+
 </div><!-- /main wrapper -->
+
 
 <script>
 // ============================================================
@@ -649,6 +663,157 @@ function round2(v) { return Math.round(v * 100) / 100; }
 const MONTH_LABELS = ['January','February','March','April','May','June',
                       'July','August','September','October','November','December'];
 
+let productCharts = {};
+
+async function fetchProductTargets(year, month) {
+    let url = `/dashboard/api/product-targets/?year=${year}`;
+    if (month) url += `&month=${month}`;
+
+    const resp = await fetch(url);
+    if (!resp.ok) throw new Error('Product targets API failed');
+    const data = await resp.json();
+
+    const container = document.getElementById('product-performance-section');
+    if (!container) return;
+
+    if (!data.products || data.products.length === 0) {
+        container.innerHTML = `
+            <div class="col-span-full py-12 text-center text-sm font-bold text-gray-400 bg-white border border-dashed border-gray-200 rounded-2xl">
+                No products are currently tracked. Go to target settings to add products from inventory.
+            </div>
+        `;
+        return;
+    }
+
+    // Clean up old charts
+    for (const key in productCharts) {
+        if (productCharts[key].gauge) productCharts[key].gauge.destroy();
+        if (productCharts[key].sparkline) productCharts[key].sparkline.destroy();
+    }
+    productCharts = {};
+
+    let html = '';
+    data.products.forEach(p => {
+        html += `
+            <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex flex-col hover:shadow-md transition-shadow">
+                <div class="mb-3">
+                    <h4 class="text-base font-extrabold text-gray-900 line-clamp-2 min-h-[48px]">${p.name}</h4>
+                    <div class="flex items-center gap-2 mt-1">
+                        <span class="px-2 py-0.5 rounded bg-gray-100 text-[10px] font-black text-gray-500 uppercase tracking-wider">${p.product_code}</span>
+                        <span class="px-2 py-0.5 rounded bg-blue-50 text-[10px] font-black text-blue-600 uppercase tracking-wider">${p.category}</span>
+                    </div>
+                </div>
+
+                <!-- Gauge -->
+                <div class="relative h-32 flex items-center justify-center mb-3">
+                    <canvas id="gauge-prod-${p.product_db_id}"></canvas>
+                    <div class="absolute flex flex-col items-center top-[55%]">
+                        <span class="text-lg font-black text-gray-900" id="gauge-prod-val-${p.product_db_id}">0%</span>
+                        <span class="text-[10px] text-gray-400 font-bold uppercase tracking-wider" id="gauge-prod-sub-${p.product_db_id}">Target: 0</span>
+                    </div>
+                </div>
+
+                <!-- KPIs -->
+                <div class="grid grid-cols-2 gap-4 border-t border-b border-gray-100 py-3 mb-4 text-xs font-semibold">
+                    <div>
+                        <span class="text-gray-400 block uppercase tracking-wider">Sold Value</span>
+                        <span class="text-sm font-black text-gray-900">Rs ${fmtCur(p.actual_sales)}</span>
+                    </div>
+                    <div>
+                        <span class="text-gray-400 block uppercase tracking-wider">Quantity</span>
+                        <span class="text-sm font-black text-gray-900">${fmtNum(p.actual_qty)} units</span>
+                    </div>
+                </div>
+
+                <!-- Sparkline Trend Chart -->
+                <div>
+                    <span class="text-[10px] text-gray-400 font-bold uppercase tracking-wider block mb-1">Monthly Trend (Rs)</span>
+                    <div class="relative h-20">
+                        <canvas id="sparkline-prod-${p.product_db_id}"></canvas>
+                    </div>
+                </div>
+            </div>
+        `;
+    });
+
+    container.innerHTML = html;
+
+    // Now instantiate charts for each product
+    data.products.forEach(p => {
+        const id = p.product_db_id;
+
+        // 1. Gauge chart
+        const ctxGauge = document.getElementById(`gauge-prod-${id}`).getContext('2d');
+        const achieved = parseFloat(p.actual_sales) || 0;
+        const target   = parseFloat(p.target_value) || 0;
+
+        let valText = 'No Target';
+        let subText = 'No Target';
+        let valData = [0, 100];
+        let color = '#3b82f6'; // default blue
+
+        if (p.has_target && target > 0) {
+            const pct = Math.min((achieved / target) * 100, 100);
+            valData = [achieved, Math.max(target - achieved, 0)];
+            valText = `${p.pct_achieved}%`;
+            subText = `Target: ${fmtCur(target)}`;
+            color = p.pct_achieved >= 100 ? '#10b981' : (p.pct_achieved >= 50 ? '#f59e0b' : '#ef4444');
+        }
+
+        const gaugeChart = new Chart(ctxGauge, {
+            type: 'doughnut',
+            data: {
+                labels: ['Achieved', 'Remaining'],
+                datasets: [{
+                    data: valData,
+                    backgroundColor: [color, '#f1f5f9'],
+                    borderWidth: 0
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                rotation: -90,
+                circumference: 180,
+                cutout: '75%',
+                plugins: { legend: { display: false }, tooltip: { enabled: false } },
+                animation: { duration: 800 }
+            }
+        });
+
+        document.getElementById(`gauge-prod-val-${id}`).innerText = valText;
+        document.getElementById(`gauge-prod-sub-${id}`).innerText = subText;
+
+        // 2. Mini Sparkline Trend Chart (Monthly ex-vat actuals as bar chart)
+        const ctxSpark = document.getElementById(`sparkline-prod-${id}`).getContext('2d');
+        const sparklineChart = new Chart(ctxSpark, {
+            type: 'bar',
+            data: {
+                labels: MONTH_ABBR,
+                datasets: [{
+                    data: p.monthly_trend,
+                    backgroundColor: 'rgba(59, 130, 246, 0.4)',
+                    hoverBackgroundColor: '#2563eb',
+                    borderRadius: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false }, tooltip: { enabled: true } },
+                scales: {
+                    x: { display: true, grid: { display: false }, ticks: { font: { size: 8 } } },
+                    y: { display: false }
+                }
+            }
+        });
+
+        productCharts[id] = { gauge: gaugeChart, sparkline: sparklineChart };
+    });
+}
+
+const MONTH_ABBR = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
 async function fetchData() {
     const year  = document.getElementById('yearSelect').value;
     const month = document.getElementById('monthSelect').value;  // '' = full year
@@ -668,6 +833,7 @@ async function fetchData() {
         await Promise.all([
             fetchMainData(year, month),
             fetchConfecData(year),
+            fetchProductTargets(year, month),
         ]);
         const now = new Date();
         document.getElementById('lastUpdated').innerText =
@@ -691,3 +857,4 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 </script>
 {% endblock %}
+

@@ -1,9 +1,8 @@
 {% extends 'layouts/base.html' %}
-{% block title %}Sales Targets | ERP System{% endblock %}
+{% block title %}Target Management | ERP System{% endblock %}
 
 {% block content %}
-<div class="px-4 py-6 sm:px-0">
-
+<div class="px-4 py-6 sm:px-0 max-w-7xl mx-auto">
     <!-- Header -->
     <div class="mb-8 flex flex-col md:flex-row md:items-end md:justify-between gap-4">
         <div>
@@ -11,15 +10,15 @@
                 <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7"/></svg>
                 Back to Dashboard
             </a>
-            <h1 class="text-3xl font-extrabold text-gray-900 tracking-tight">📊 Sales Target Management</h1>
-            <p class="mt-1 text-sm text-gray-500">Set yearly and monthly targets for Overall Sales, Sugar, Creamer &amp; Tea. Leave a cell blank to clear that target (gauge will show <em>No Target</em>).</p>
+            <h1 class="text-3xl font-extrabold text-gray-900 tracking-tight">⚙️ Sales Target Management</h1>
+            <p class="mt-1 text-sm text-gray-500">Configure yearly and monthly sales targets for categories and specific products.</p>
         </div>
 
         <!-- Year Selector -->
         <form method="get" id="yearForm" class="flex items-center gap-3 bg-white px-4 py-2.5 rounded-xl shadow-sm border border-gray-100">
-            <label class="text-xs font-black text-gray-500 uppercase tracking-widest">Year</label>
+            <label class="text-xs font-black text-gray-500 uppercase tracking-widest">Target Year</label>
             <select name="year" onchange="document.getElementById('yearForm').submit()"
-                    class="border-0 shadow-none text-red-600 font-extrabold text-lg focus:ring-0 bg-transparent cursor-pointer">
+                    class="border-0 shadow-none text-red-600 font-extrabold text-xl focus:ring-0 bg-transparent cursor-pointer">
                 {% for y in available_years %}
                     <option value="{{ y }}" {% if y == year %}selected{% endif %}>{{ y }}</option>
                 {% endfor %}
@@ -27,116 +26,403 @@
         </form>
     </div>
 
-    <!-- Target Grid Form -->
-    <form method="post">
+    <!-- Alert Messages -->
+    {% if messages %}
+    <div class="mb-6">
+        {% for message in messages %}
+        <div class="p-4 rounded-xl {% if message.tags == 'success' %}bg-emerald-50 border border-emerald-200 text-emerald-800{% else %}bg-red-50 border border-red-200 text-red-800{% endif %} font-bold text-sm">
+            {{ message }}
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- Tabs Navigation -->
+    <div class="mb-6 border-b border-gray-200">
+        <nav class="-mb-px flex space-x-8" aria-label="Tabs">
+            <button onclick="switchTab('categories')" id="tab-btn-categories"
+               class="border-red-500 text-red-600 border-b-2 py-4 px-1 text-sm font-black uppercase tracking-wider focus:outline-none">
+                📁 Category Targets
+            </button>
+            <button onclick="switchTab('products')" id="tab-btn-products"
+               class="border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 border-b-2 py-4 px-1 text-sm font-black uppercase tracking-wider focus:outline-none">
+                📦 Product Targets
+            </button>
+        </nav>
+    </div>
+
+    <!-- Target Form -->
+    <form method="post" id="targetsForm">
         {% csrf_token %}
         <input type="hidden" name="year" value="{{ year }}">
+        <input type="hidden" name="action" value="save_targets">
 
-        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden mb-8">
-            <!-- Sticky header row -->
-            <div class="overflow-x-auto">
-                <table class="min-w-full" id="target-table">
-                    <thead>
-                        <tr class="bg-gray-900 text-white">
-                            <th class="px-5 py-4 text-left text-xs font-black uppercase tracking-widest whitespace-nowrap sticky left-0 bg-gray-900 z-10 min-w-[160px]">
-                                Category
-                            </th>
-                            <th class="px-4 py-4 text-center text-xs font-black uppercase tracking-widest whitespace-nowrap bg-red-600 min-w-[110px]">
-                                Yearly
-                            </th>
-                            {% for m in month_names %}
-                            <th class="px-4 py-4 text-center text-xs font-bold uppercase tracking-wider whitespace-nowrap min-w-[100px]">
-                                {{ m }}
-                            </th>
+        <!-- TAB 1: CATEGORIES -->
+        <div id="tab-content-categories" class="tab-content block">
+            <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden mb-6">
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-100">
+                        <thead>
+                            <tr class="bg-gray-900 text-white">
+                                <th class="px-6 py-4 text-left text-xs font-black uppercase tracking-widest whitespace-nowrap sticky left-0 bg-gray-900 z-10 min-w-[200px]">
+                                    Category
+                                </th>
+                                <th class="px-4 py-4 text-center text-xs font-black uppercase tracking-widest whitespace-nowrap bg-red-600 min-w-[150px]">
+                                    Yearly Target
+                                </th>
+                                {% for m in month_abbr %}
+                                <th class="px-4 py-4 text-center text-xs font-bold uppercase tracking-wider whitespace-nowrap min-w-[120px]">
+                                    {{ m }}
+                                </th>
+                                {% endfor %}
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-100">
+                            {% for row in cat_rows %}
+                            <tr class="group hover:bg-amber-50/40 transition-colors">
+                                <!-- Category Label -->
+                                <td class="px-6 py-4 sticky left-0 bg-white group-hover:bg-amber-50/40 z-10 transition-colors">
+                                    <div class="flex items-center gap-3">
+                                        <span class="w-3 h-3 rounded-full flex-shrink-0
+                                                     {% if row.key == 'overall' %}bg-red-500
+                                                     {% elif row.key == 'sugar' %}bg-blue-500
+                                                     {% elif row.key == 'creamer' %}bg-amber-500
+                                                     {% elif row.key == 'tea' %}bg-emerald-500{% endif %}">
+                                        </span>
+                                        <span class="text-base font-extrabold text-gray-800">{{ row.label }}</span>
+                                    </div>
+                                </td>
+                                <!-- Target Values -->
+                                {% for period in row.periods %}
+                                <td class="px-2 py-3 {% if forloop.first %}bg-red-50/60{% endif %}">
+                                    <div class="relative">
+                                        <span class="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-bold text-gray-400 pointer-events-none">Rs</span>
+                                        <input type="number"
+                                               name="{{ period.field }}"
+                                               value="{{ period.value }}"
+                                               min="0"
+                                               step="0.01"
+                                               placeholder="—"
+                                               class="pl-8 pr-2 py-3 w-full text-lg font-black text-gray-900 text-right
+                                                      rounded-xl border transition-all duration-150 outline-none min-h-[48px]
+                                                      {% if forloop.first %}bg-red-50 border-red-200 focus:border-red-400 focus:ring-4 focus:ring-red-100
+                                                      {% else %}bg-gray-50 border-gray-200 focus:border-blue-400 focus:ring-4 focus:ring-blue-100{% endif %}
+                                                      placeholder:text-gray-300"
+                                               title="{{ row.label }} — {{ period.label }}">
+                                    </div>
+                                </td>
+                                {% endfor %}
+                            </tr>
                             {% endfor %}
-                        </tr>
-                    </thead>
-                    <tbody class="divide-y divide-gray-100">
-                        {% for row in rows %}
-                        <tr class="group hover:bg-amber-50/40 transition-colors
-                                   {% if row.key == 'overall' %}border-l-4 border-l-red-500
-                                   {% elif row.key == 'sugar' %}border-l-4 border-l-blue-500
-                                   {% elif row.key == 'creamer' %}border-l-4 border-l-amber-500
-                                   {% elif row.key == 'tea' %}border-l-4 border-l-emerald-500{% endif %}">
-                            <!-- Label cell -->
-                            <td class="px-5 py-4 sticky left-0 bg-white group-hover:bg-amber-50/40 z-10 transition-colors">
-                                <div class="flex items-center gap-2.5">
-                                    <span class="w-2.5 h-2.5 rounded-full flex-shrink-0
-                                                 {% if row.key == 'overall' %}bg-red-500
-                                                 {% elif row.key == 'sugar' %}bg-blue-500
-                                                 {% elif row.key == 'creamer' %}bg-amber-500
-                                                 {% elif row.key == 'tea' %}bg-emerald-500{% endif %}">
-                                    </span>
-                                    <span class="text-sm font-bold text-gray-800 whitespace-nowrap">{{ row.label }}</span>
-                                </div>
-                            </td>
-                            {% for period in row.periods %}
-                            <td class="px-3 py-3 {% if forloop.first %}bg-red-50/60{% endif %}">
-                                <div class="relative">
-                                    <span class="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-bold text-gray-400 pointer-events-none">Rs</span>
-                                    <input type="number"
-                                           name="{{ period.field_name }}"
-                                           value="{{ period.value }}"
-                                           min="0"
-                                           step="0.01"
-                                           placeholder="—"
-                                           class="pl-7 pr-2 py-2 w-full text-sm font-bold text-gray-800 text-right
-                                                  rounded-lg border transition-all duration-150 outline-none
-                                                  {% if forloop.first %}bg-red-50 border-red-200 focus:border-red-400 focus:ring-2 focus:ring-red-100
-                                                  {% else %}bg-gray-50 border-gray-200 focus:border-blue-400 focus:ring-2 focus:ring-blue-100{% endif %}
-                                                  placeholder:text-gray-300 placeholder:font-normal"
-                                           title="{{ row.label }} — {{ period.label }}">
-                                </div>
-                            </td>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 2: PRODUCTS -->
+        <div id="tab-content-products" class="tab-content hidden">
+            <!-- Add Product Section -->
+            <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 mb-6">
+                <h3 class="text-base font-black text-gray-800 uppercase tracking-wider mb-4">🔍 Add Product from Inventory</h3>
+                <div class="relative max-w-xl">
+                    <div class="flex gap-3">
+                        <div class="relative flex-grow">
+                            <input type="text" id="productSearchInput" placeholder="Type product name or ID to search..."
+                                   class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-100 text-base font-medium outline-none">
+                            <div id="searchResults" class="absolute left-0 right-0 mt-2 bg-white rounded-xl shadow-xl border border-gray-100 overflow-hidden z-50 hidden max-h-60 overflow-y-auto">
+                                <!-- Results populate here -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Product Targets Grid -->
+            <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden mb-6">
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-100" id="productTargetsTable">
+                        <thead>
+                            <tr class="bg-gray-900 text-white">
+                                <th class="px-6 py-4 text-left text-xs font-black uppercase tracking-widest whitespace-nowrap sticky left-0 bg-gray-900 z-10 min-w-[280px]">
+                                    Product Name
+                                </th>
+                                <th class="px-4 py-4 text-center text-xs font-black uppercase tracking-widest whitespace-nowrap bg-red-600 min-w-[150px]">
+                                    Yearly Target
+                                </th>
+                                {% for m in month_abbr %}
+                                <th class="px-4 py-4 text-center text-xs font-bold uppercase tracking-wider whitespace-nowrap min-w-[120px]">
+                                    {{ m }}
+                                </th>
+                                {% endfor %}
+                                <th class="px-4 py-4 text-center text-xs font-black uppercase tracking-widest whitespace-nowrap min-w-[80px]">
+                                    Action
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-100" id="productTargetsBody">
+                            {% for row in prod_rows %}
+                            <tr class="group hover:bg-amber-50/40 transition-colors" id="prod-row-{{ row.tracked_id }}">
+                                <!-- Product details -->
+                                <td class="px-6 py-4 sticky left-0 bg-white group-hover:bg-amber-50/40 z-10 transition-colors">
+                                    <div>
+                                        <div class="text-base font-extrabold text-gray-950">{{ row.name }}</div>
+                                        <div class="flex items-center gap-2 mt-1">
+                                            <span class="px-2 py-0.5 rounded bg-gray-100 text-[10px] font-black text-gray-500 uppercase tracking-wider">{{ row.product_code }}</span>
+                                            <span class="px-2 py-0.5 rounded bg-blue-50 text-[10px] font-black text-blue-600 uppercase tracking-wider">{{ row.category }}</span>
+                                        </div>
+                                    </div>
+                                </td>
+                                <!-- Target Values -->
+                                {% for period in row.periods %}
+                                <td class="px-2 py-3 {% if forloop.first %}bg-red-50/60{% endif %}">
+                                    <div class="relative">
+                                        <span class="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-bold text-gray-400 pointer-events-none">Rs</span>
+                                        <input type="number"
+                                               name="{{ period.field }}"
+                                               value="{{ period.value }}"
+                                               min="0"
+                                               step="0.01"
+                                               placeholder="—"
+                                               class="pl-8 pr-2 py-3 w-full text-lg font-black text-gray-900 text-right
+                                                      rounded-xl border transition-all duration-150 outline-none min-h-[48px]
+                                                      {% if forloop.first %}bg-red-50 border-red-200 focus:border-red-400 focus:ring-4 focus:ring-red-100
+                                                      {% else %}bg-gray-50 border-gray-200 focus:border-blue-400 focus:ring-4 focus:ring-blue-100{% endif %}
+                                                      placeholder:text-gray-300">
+                                    </div>
+                                </td>
+                                {% endfor %}
+                                <!-- Remove Action -->
+                                <td class="px-4 py-4 text-center">
+                                    <button type="button" onclick="removeProduct({{ row.tracked_id }})"
+                                            class="p-2 rounded-xl text-gray-400 hover:text-red-600 hover:bg-red-50 transition-all"
+                                            title="Stop tracking this product">
+                                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                                    </button>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr id="noProductsRow">
+                                <td colspan="15" class="px-6 py-12 text-center text-sm text-gray-400 font-bold">
+                                    No products are currently tracked. Use the search bar above to add products.
+                                </td>
+                            </tr>
                             {% endfor %}
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
 
         <!-- Action Bar -->
         <div class="flex flex-col sm:flex-row items-center justify-between gap-4 bg-white rounded-2xl shadow-sm border border-gray-100 px-6 py-4">
-            <div class="text-xs text-gray-400 font-medium">
-                <span class="font-bold text-gray-600">Tip:</span>
-                Enter values in Rs (Ex-VAT). Leave any cell blank to clear that specific target. The gauge on the dashboard will show <em>"No Target"</em> for cleared entries.
+            <div class="text-xs text-gray-400 font-bold">
+                * Note: Targets values are in Rs (Ex-VAT). Cleared inputs default to "No Target".
             </div>
             <div class="flex items-center gap-3">
                 <a href="{% url 'analytics_dashboard' %}"
-                   class="px-5 py-2.5 rounded-xl border border-gray-200 text-sm font-bold text-gray-600 hover:bg-gray-50 transition-all">
+                   class="px-6 py-3 rounded-xl border border-gray-200 text-sm font-bold text-gray-600 hover:bg-gray-50 transition-all">
                     Cancel
                 </a>
                 <button type="submit"
-                        class="px-6 py-2.5 rounded-xl bg-red-600 hover:bg-red-700 text-white text-sm font-extrabold shadow-sm hover:shadow-lg hover:shadow-red-600/20 transition-all active:scale-95">
+                        class="px-8 py-3 rounded-xl bg-red-600 hover:bg-red-700 text-white text-base font-extrabold shadow-sm hover:shadow-lg hover:shadow-red-600/20 transition-all active:scale-95">
                     💾 Save All Targets for {{ year }}
                 </button>
             </div>
         </div>
     </form>
-
-    <!-- Legend -->
-    <div class="mt-6 grid grid-cols-2 sm:grid-cols-4 gap-4">
-        {% for row in rows %}
-        <div class="flex items-center gap-2 text-xs font-semibold text-gray-500">
-            <span class="w-3 h-3 rounded-full flex-shrink-0
-                         {% if row.key == 'overall' %}bg-red-500
-                         {% elif row.key == 'sugar' %}bg-blue-500
-                         {% elif row.key == 'creamer' %}bg-amber-500
-                         {% elif row.key == 'tea' %}bg-emerald-500{% endif %}">
-            </span>
-            {{ row.label }}
-        </div>
-        {% endfor %}
-        <div class="flex items-center gap-2 text-xs font-semibold text-gray-500 sm:col-span-2">
-            <span class="px-2 py-0.5 bg-red-50 border border-red-200 rounded text-red-600 font-bold text-[10px]">Yearly</span>
-            = Used when "Full Year" is selected on the dashboard
-        </div>
-        <div class="flex items-center gap-2 text-xs font-semibold text-gray-500 sm:col-span-2">
-            <span class="px-2 py-0.5 bg-blue-50 border border-blue-200 rounded text-blue-600 font-bold text-[10px]">Jan–Dec</span>
-            = Used when a specific month is selected
-        </div>
-    </div>
-
 </div>
+
+<script>
+// Tab Switching logic
+function switchTab(tabId) {
+    document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+    document.getElementById('tab-content-' + tabId).classList.remove('hidden');
+
+    const catBtn = document.getElementById('tab-btn-categories');
+    const prodBtn = document.getElementById('tab-btn-products');
+
+    if (tabId === 'categories') {
+        catBtn.className = "border-red-500 text-red-600 border-b-2 py-4 px-1 text-sm font-black uppercase tracking-wider focus:outline-none";
+        prodBtn.className = "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 border-b-2 py-4 px-1 text-sm font-black uppercase tracking-wider focus:outline-none";
+    } else {
+        prodBtn.className = "border-red-500 text-red-600 border-b-2 py-4 px-1 text-sm font-black uppercase tracking-wider focus:outline-none";
+        catBtn.className = "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 border-b-2 py-4 px-1 text-sm font-black uppercase tracking-wider focus:outline-none";
+    }
+}
+
+// Live Autocomplete search
+const searchInput = document.getElementById('productSearchInput');
+const searchResults = document.getElementById('searchResults');
+
+if (searchInput) {
+    searchInput.addEventListener('input', async (e) => {
+        const q = e.target.value.trim();
+        if (q.length < 2) {
+            searchResults.innerHTML = '';
+            searchResults.classList.add('hidden');
+            return;
+        }
+
+        try {
+            const resp = await fetch(`/dashboard/api/product-search/?q=${encodeURIComponent(q)}`);
+            if (resp.ok) {
+                const data = await resp.json();
+                renderSearchResults(data.results);
+            }
+        } catch (err) {
+            console.error("Search failed", err);
+        }
+    });
+}
+
+function renderSearchResults(results) {
+    if (!results || results.length === 0) {
+        searchResults.innerHTML = '<div class="p-4 text-sm text-gray-400 font-bold text-center">No matching products found</div>';
+        searchResults.classList.remove('hidden');
+        return;
+    }
+
+    let html = '';
+    results.forEach(p => {
+        html += `
+            <button type="button" onclick="addProductToTracking(${p.id})"
+                    class="w-full text-left px-4 py-3 hover:bg-gray-50 border-b border-gray-50 flex items-center justify-between transition-colors">
+                <div>
+                    <div class="text-sm font-extrabold text-gray-900">${p.name}</div>
+                    <div class="text-[10px] text-gray-400 font-bold uppercase mt-0.5">${p.product_id} | ${p.category}</div>
+                </div>
+                <span class="text-xs font-black text-blue-600 bg-blue-50 px-2.5 py-1 rounded-lg uppercase tracking-wider">Add +</span>
+            </button>
+        `;
+    });
+    searchResults.innerHTML = html;
+    searchResults.classList.remove('hidden');
+}
+
+// Add tracked product via AJAX
+async function addProductToTracking(productId) {
+    searchResults.classList.add('hidden');
+    if (searchInput) searchInput.value = '';
+
+    const formData = new FormData();
+    formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
+    formData.append('action', 'add_product');
+    formData.append('product_db_id', productId);
+    formData.append('year', '{{ year }}');
+
+    try {
+        const resp = await fetch(window.location.pathname, {
+            method: 'POST',
+            body: formData,
+            headers: {'X-Requested-With': 'XMLHttpRequest'}
+        });
+        if (resp.ok) {
+            const res = await resp.json();
+            if (res.status === 'ok') {
+                // Prepend or append to table
+                const noRow = document.getElementById('noProductsRow');
+                if (noRow) noRow.remove();
+
+                const tbody = document.getElementById('productTargetsBody');
+                const tr = document.createElement('tr');
+                tr.id = `prod-row-${res.tracked_id}`;
+                tr.className = "group hover:bg-amber-50/40 transition-colors";
+
+                let inputsHtml = '';
+                // Yearly
+                inputsHtml += `
+                    <td class="px-2 py-3 bg-red-50/60">
+                        <div class="relative">
+                            <span class="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-bold text-gray-400 pointer-events-none">Rs</span>
+                            <input type="number" name="pt_${res.product_id}_y" value="" min="0" step="0.01" placeholder="—"
+                                   class="pl-8 pr-2 py-3 w-full text-lg font-black text-gray-900 text-right rounded-xl border border-red-200 focus:border-red-400 focus:ring-4 focus:ring-red-100 bg-red-50 outline-none min-h-[48px]">
+                        </div>
+                    </td>
+                `;
+                // Months
+                for (let m = 1; m <= 12; m++) {
+                    inputsHtml += `
+                        <td class="px-2 py-3">
+                            <div class="relative">
+                                <span class="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-bold text-gray-400 pointer-events-none">Rs</span>
+                                <input type="number" name="pt_${res.product_id}_m${m}" value="" min="0" step="0.01" placeholder="—"
+                                       class="pl-8 pr-2 py-3 w-full text-lg font-black text-gray-900 text-right rounded-xl border border-gray-200 focus:border-blue-400 focus:ring-4 focus:ring-blue-100 bg-gray-50 outline-none min-h-[48px]">
+                            </div>
+                        </td>
+                    `;
+                }
+
+                tr.innerHTML = `
+                    <td class="px-6 py-4 sticky left-0 bg-white group-hover:bg-amber-50/40 z-10 transition-colors">
+                        <div>
+                            <div class="text-base font-extrabold text-gray-950">${res.name}</div>
+                            <div class="flex items-center gap-2 mt-1">
+                                <span class="px-2 py-0.5 rounded bg-gray-100 text-[10px] font-black text-gray-500 uppercase tracking-wider">${res.product_code}</span>
+                                <span class="px-2 py-0.5 rounded bg-blue-50 text-[10px] font-black text-blue-600 uppercase tracking-wider">${res.category}</span>
+                            </div>
+                        </div>
+                    </td>
+                    ${inputsHtml}
+                    <td class="px-4 py-4 text-center">
+                        <button type="button" onclick="removeProduct(${res.tracked_id})"
+                                class="p-2 rounded-xl text-gray-400 hover:text-red-600 hover:bg-red-50 transition-all">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                        </button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            }
+        }
+    } catch (err) {
+        console.error("Add failed", err);
+    }
+}
+
+// Remove tracked product via AJAX
+async function removeProduct(trackedId) {
+    if (!confirm("Are you sure you want to stop tracking this product? This will delete all its target entries for this year.")) return;
+
+    const formData = new FormData();
+    formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
+    formData.append('action', 'remove_product');
+    formData.append('tracked_id', trackedId);
+    formData.append('year', '{{ year }}');
+
+    try {
+        const resp = await fetch(window.location.pathname, {
+            method: 'POST',
+            body: formData,
+            headers: {'X-Requested-With': 'XMLHttpRequest'}
+        });
+        if (resp.ok) {
+            const res = await resp.json();
+            if (res.status === 'ok') {
+                document.getElementById(`prod-row-${trackedId}`).remove();
+                
+                // If table is empty now, show the placeholder row
+                const tbody = document.getElementById('productTargetsBody');
+                if (tbody.children.length === 0) {
+                    tbody.innerHTML = `
+                        <tr id="noProductsRow">
+                            <td colspan="15" class="px-6 py-12 text-center text-sm text-gray-400 font-bold">
+                                No products are currently tracked. Use the search bar above to add products.
+                            </td>
+                        </tr>
+                    `;
+                }
+            }
+        }
+    } catch (err) {
+        console.error("Remove failed", err);
+    }
+}
+
+// Hide autocomplete on click outside
+document.addEventListener('click', (e) => {
+    if (!searchResults.contains(e.target) && e.target !== searchInput) {
+        searchResults.classList.add('hidden');
+    }
+});
+</script>
 {% endblock %}
