@@ -133,19 +133,34 @@ class DashboardDataAPI(LoginRequiredMixin, View):
         # When full-year: look for yearly targets (month=None).
         # -------------------------------------------------------------------
         def _get_targets(for_month):
-            qs = SalesTarget.objects.filter(year=year, month=for_month)
-            d = {"overall": 0, "sugar": 0, "creamer": 0, "tea": 0, "has_target": False}
-            for t in qs.values('target_type', 'category', 'target_value'):
-                val = float(t['target_value'])
-                if t['target_type'] == 'OVERALL_SALES':
-                    d['overall'] += val
-                    d['has_target'] = True
-                elif t['target_type'] == 'CATEGORY_SALES':
-                    cat = (t['category'] or '').lower()
-                    if 'sugar'   in cat: d['sugar']   += val; d['has_target'] = True
-                    if 'creamer' in cat: d['creamer'] += val; d['has_target'] = True
-                    if 'tea'     in cat: d['tea']     += val; d['has_target'] = True
-            return d
+            sugar_t = float(ProductTarget.objects.filter(
+                Q(product__category__icontains='sugar') | Q(product__name__icontains='sugar'),
+                year=year, month=for_month
+            ).aggregate(s=Sum('target_value'))['s'] or 0)
+
+            creamer_t = float(ProductTarget.objects.filter(
+                Q(product__category__icontains='creamer') | Q(product__name__icontains='creamer'),
+                year=year, month=for_month
+            ).aggregate(s=Sum('target_value'))['s'] or 0)
+
+            tea_t = float(ProductTarget.objects.filter(
+                product__category__icontains='tea',
+                year=year, month=for_month
+            ).exclude(product__name__icontains='catering tea').aggregate(s=Sum('target_value'))['s'] or 0)
+
+            overall_t = float(ProductTarget.objects.filter(
+                year=year, month=for_month
+            ).aggregate(s=Sum('target_value'))['s'] or 0)
+
+            has_target = ProductTarget.objects.filter(year=year, month=for_month).exists()
+
+            return {
+                "overall": overall_t,
+                "sugar": sugar_t,
+                "creamer": creamer_t,
+                "tea": tea_t,
+                "has_target": has_target
+            }
 
         target_dict = _get_targets(for_month=month)  # month is None = yearly
 
@@ -432,24 +447,6 @@ class TargetManagementView(LoginRequiredMixin, View):
         year = int(request.GET.get('year', timezone.now().year))
         available_years = list(range(timezone.now().year + 1, 2022, -1))
 
-        # ── Category target rows ──────────────────────────────────────────
-        cat_existing = {}
-        for t in SalesTarget.objects.filter(year=year):
-            cat_existing[(t.target_type, t.category, t.month)] = float(t.target_value)
-
-        cat_rows = []
-        for row in CAT_ROWS:
-            periods = [{'field': f"ct_{row['key']}_y",
-                        'value': cat_existing.get((row['type'], row['category'], None), ''),
-                        'label': 'Yearly'}]
-            for m in range(1, 13):
-                periods.append({
-                    'field': f"ct_{row['key']}_m{m}",
-                    'value': cat_existing.get((row['type'], row['category'], m), ''),
-                    'label': MONTH_ABBR[m - 1],
-                })
-            cat_rows.append({'label': row['label'], 'key': row['key'], 'periods': periods})
-
         # ── Product target rows ───────────────────────────────────────────
         prod_existing = {}
         for pt in ProductTarget.objects.filter(year=year).select_related('product'):
@@ -477,7 +474,6 @@ class TargetManagementView(LoginRequiredMixin, View):
             })
 
         return render(request, self.template_name, {
-            'cat_rows': cat_rows,
             'prod_rows': prod_rows,
             'year': year,
             'available_years': available_years,
@@ -519,14 +515,6 @@ class TargetManagementView(LoginRequiredMixin, View):
                 return JsonResponse({'error': 'Not found'}, status=404)
 
         # ── action == 'save_targets' ────────────────────────────────────
-        # Save category targets
-        for row in CAT_ROWS:
-            _upsert_category(year, row['type'], row['category'], None,
-                             request.POST.get(f"ct_{row['key']}_y"))
-            for m in range(1, 13):
-                _upsert_category(year, row['type'], row['category'], m,
-                                 request.POST.get(f"ct_{row['key']}_m{m}"))
-
         # Save product targets
         for tp in TrackedProduct.objects.select_related('product').all():
             p = tp.product
