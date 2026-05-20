@@ -107,24 +107,15 @@
                                 </td>
                                 <!-- Target Values -->
                                 {% for period in row.periods %}
-                                <td class="px-2 py-3 {% if forloop.first %}bg-red-50/60{% endif %}">
-                                    <div class="flex items-center rounded-xl border overflow-hidden transition-all duration-150 min-h-[48px]
-                                                {% if forloop.first %}
-                                                    bg-red-50/40 border-red-200 focus-within:ring-4 focus-within:ring-red-100 focus-within:border-red-400
-                                                {% else %}
-                                                    bg-gray-50 border-gray-200 focus-within:ring-4 focus-within:ring-blue-100 focus-within:border-blue-400
-                                                {% endif %}">
-                                        <span class="px-2.5 text-xs font-black text-gray-400 select-none py-3
-                                                     {% if forloop.first %}bg-red-100/50 border-r border-red-200/60{% else %}bg-gray-100 border-r border-gray-200{% endif %}">Rs</span>
-                                        <input type="number"
-                                               name="{{ period.field }}"
-                                               value="{{ period.value }}"
-                                               min="0"
-                                               step="0.01"
-                                               placeholder="—"
-                                               class="w-full bg-transparent border-0 text-base font-extrabold text-gray-900 text-right pr-3 focus:ring-0 outline-none py-3 placeholder:text-gray-300"
-                                               title="{{ row.label }} — {{ period.label }}">
-                                    </div>
+                                <td class="px-1 py-1.5 {% if forloop.first %}bg-red-50/40{% endif %}">
+                                    <input type="number"
+                                           name="{{ period.field }}"
+                                           value="{{ period.value }}"
+                                           min="0"
+                                           step="0.01"
+                                           placeholder="—"
+                                           class="w-full px-2 py-1 text-sm font-semibold text-gray-800 text-right border border-gray-300 rounded focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none transition-colors"
+                                           title="{{ row.label }} — {{ period.label }}">
                                 </td>
                                 {% endfor %}
                             </tr>
@@ -190,23 +181,14 @@
                                 </td>
                                 <!-- Target Values -->
                                 {% for period in row.periods %}
-                                <td class="px-2 py-3 {% if forloop.first %}bg-red-50/60{% endif %}">
-                                    <div class="flex items-center rounded-xl border overflow-hidden transition-all duration-150 min-h-[48px]
-                                                {% if forloop.first %}
-                                                    bg-red-50/40 border-red-200 focus-within:ring-4 focus-within:ring-red-100 focus-within:border-red-400
-                                                {% else %}
-                                                    bg-gray-50 border-gray-200 focus-within:ring-4 focus-within:ring-blue-100 focus-within:border-blue-400
-                                                {% endif %}">
-                                        <span class="px-2.5 text-xs font-black text-gray-400 select-none py-3
-                                                     {% if forloop.first %}bg-red-100/50 border-r border-red-200/60{% else %}bg-gray-100 border-r border-gray-200{% endif %}">Rs</span>
-                                        <input type="number"
-                                               name="{{ period.field }}"
-                                               value="{{ period.value }}"
-                                               min="0"
-                                               step="0.01"
-                                               placeholder="—"
-                                               class="w-full bg-transparent border-0 text-base font-extrabold text-gray-900 text-right pr-3 focus:ring-0 outline-none py-3 placeholder:text-gray-300">
-                                    </div>
+                                <td class="px-1 py-1.5 {% if forloop.first %}bg-red-50/40{% endif %}">
+                                    <input type="number"
+                                           name="{{ period.field }}"
+                                           value="{{ period.value }}"
+                                           min="0"
+                                           step="0.01"
+                                           placeholder="—"
+                                           class="w-full px-2 py-1 text-sm font-semibold text-gray-800 text-right border border-gray-300 rounded focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none transition-colors">
                                 </td>
                                 {% endfor %}
                                 <!-- Remove Action -->
@@ -349,23 +331,17 @@ async function addProductToTracking(productId) {
                 let inputsHtml = '';
                 // Yearly
                 inputsHtml += `
-                    <td class="px-2 py-3 bg-red-50/60">
-                        <div class="flex items-center rounded-xl border border-red-200 focus-within:ring-4 focus-within:ring-red-100 focus-within:border-red-400 bg-red-50/40 overflow-hidden min-h-[48px]">
-                            <span class="px-2.5 text-xs font-black text-gray-400 bg-red-100/50 border-r border-red-200/60 select-none py-3">Rs</span>
-                            <input type="number" name="pt_${res.product_id}_y" value="" min="0" step="0.01" placeholder="—"
-                                   class="w-full bg-transparent border-0 text-base font-extrabold text-gray-900 text-right pr-3 focus:ring-0 outline-none py-3">
-                        </div>
+                    <td class="px-1 py-1.5 bg-red-50/40">
+                        <input type="number" name="pt_${res.product_id}_y" value="" min="0" step="0.01" placeholder="—"
+                               class="w-full px-2 py-1 text-sm font-semibold text-gray-800 text-right border border-gray-300 rounded focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none transition-colors">
                     </td>
                 `;
                 // Months
                 for (let m = 1; m <= 12; m++) {
                     inputsHtml += `
-                        <td class="px-2 py-3">
-                            <div class="flex items-center rounded-xl border border-gray-200 focus-within:ring-4 focus-within:ring-blue-100 focus-within:border-blue-400 bg-gray-50 overflow-hidden min-h-[48px]">
-                                <span class="px-2.5 text-xs font-black text-gray-400 bg-gray-100 border-r border-gray-200 select-none py-3">Rs</span>
-                                <input type="number" name="pt_${res.product_id}_m${m}" value="" min="0" step="0.01" placeholder="—"
-                                       class="w-full bg-transparent border-0 text-base font-extrabold text-gray-900 text-right pr-3 focus:ring-0 outline-none py-3">
-                            </div>
+                        <td class="px-1 py-1.5">
+                            <input type="number" name="pt_${res.product_id}_m${m}" value="" min="0" step="0.01" placeholder="—"
+                                   class="w-full px-2 py-1 text-sm font-semibold text-gray-800 text-right border border-gray-300 rounded focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none transition-colors">
                         </td>
                     `;
                 }
