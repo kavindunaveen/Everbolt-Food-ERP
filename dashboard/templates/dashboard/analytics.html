@@ -15,21 +15,74 @@
             <h1 class="text-4xl font-extrabold text-gray-900 tracking-tight">Analytics Dashboard</h1>
             <p class="mt-2 text-lg text-gray-600 font-medium">Live updating sales metrics, targets, and KPIs.</p>
         </div>
-        <div class="bg-white px-4 py-2 rounded-xl shadow-sm border border-gray-100 flex items-center space-x-4">
-            <label for="yearSelect" class="font-bold text-sm text-gray-700">Year:</label>
-            <select id="yearSelect" class="form-select border-0 shadow-none text-red-600 font-bold focus:ring-0">
-                <option value="2026" selected>2026</option>
-                <option value="2025">2025</option>
-                <option value="2024">2024</option>
-            </select>
-            <div class="w-px h-6 bg-gray-200"></div>
-            <div class="flex items-center space-x-2 text-sm text-gray-500">
-                <span id="lastUpdated">Updating...</span>
-                <span class="relative flex h-3 w-3">
-                  <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                  <span class="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
-                </span>
+
+        <!-- Filter + Actions bar -->
+        <div class="flex flex-wrap items-center gap-3">
+
+            <!-- Year + Month selectors -->
+            <div class="bg-white px-4 py-2 rounded-xl shadow-sm border border-gray-100 flex items-center gap-3">
+                <!-- Year -->
+                <div class="flex items-center gap-2">
+                    <label for="yearSelect" class="text-xs font-black text-gray-400 uppercase tracking-widest">Year</label>
+                    <select id="yearSelect" class="border-0 shadow-none text-red-600 font-extrabold text-base focus:ring-0 bg-transparent cursor-pointer">
+                        <option value="2026" selected>2026</option>
+                        <option value="2025">2025</option>
+                        <option value="2024">2024</option>
+                    </select>
+                </div>
+
+                <div class="w-px h-6 bg-gray-200"></div>
+
+                <!-- Month -->
+                <div class="flex items-center gap-2">
+                    <label for="monthSelect" class="text-xs font-black text-gray-400 uppercase tracking-widest">Month</label>
+                    <select id="monthSelect" class="border-0 shadow-none text-blue-600 font-extrabold text-base focus:ring-0 bg-transparent cursor-pointer">
+                        <option value="" selected>Full Year</option>
+                        <option value="1">January</option>
+                        <option value="2">February</option>
+                        <option value="3">March</option>
+                        <option value="4">April</option>
+                        <option value="5">May</option>
+                        <option value="6">June</option>
+                        <option value="7">July</option>
+                        <option value="8">August</option>
+                        <option value="9">September</option>
+                        <option value="10">October</option>
+                        <option value="11">November</option>
+                        <option value="12">December</option>
+                    </select>
+                </div>
+
+                <div class="w-px h-6 bg-gray-200"></div>
+
+                <!-- Live status -->
+                <div class="flex items-center gap-2 text-sm text-gray-400">
+                    <span id="lastUpdated">Updating...</span>
+                    <span class="relative flex h-3 w-3">
+                      <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                      <span class="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
+                    </span>
+                </div>
             </div>
+
+            <!-- Period Badge -->
+            <div id="periodBadge" class="px-3 py-2 rounded-xl bg-blue-50 border border-blue-100 text-xs font-black text-blue-600 uppercase tracking-widest hidden">
+                Viewing: <span id="periodBadgeText"></span>
+            </div>
+
+            {% if user.is_admin or user.can_set_targets %}
+            <!-- Manage Targets button (admin / can_set_targets only) -->
+            <a href="{% url 'target_management' %}"
+               class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gray-900 hover:bg-gray-700 text-white text-xs font-black uppercase tracking-widest transition-all shadow-sm hover:shadow-lg">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                          d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
+                    <circle cx="12" cy="12" r="3"/>
+                </svg>
+                Manage Targets
+            </a>
+            {% endif %}
+
         </div>
     </div>
 
@@ -433,8 +486,10 @@ function initConfecCharts() {
 // ============================================================
 // Fetch + Render — existing data
 // ============================================================
-async function fetchMainData(year) {
-    const resp = await fetch(`/dashboard/api/data/?year=${year}`);
+async function fetchMainData(year, month) {
+    let url = `/dashboard/api/data/?year=${year}`;
+    if (month) url += `&month=${month}`;
+    const resp = await fetch(url);
     if (!resp.ok) throw new Error('Main API failed');
     const data = await resp.json();
 
@@ -591,12 +646,27 @@ function round2(v) { return Math.round(v * 100) / 100; }
 // ============================================================
 // Main fetch orchestrator
 // ============================================================
+const MONTH_LABELS = ['January','February','March','April','May','June',
+                      'July','August','September','October','November','December'];
+
 async function fetchData() {
-    const year = document.getElementById('yearSelect').value;
+    const year  = document.getElementById('yearSelect').value;
+    const month = document.getElementById('monthSelect').value;  // '' = full year
     document.getElementById('lastUpdated').innerText = 'Fetching...';
+
+    // Period badge
+    const badge     = document.getElementById('periodBadge');
+    const badgeText = document.getElementById('periodBadgeText');
+    if (month) {
+        badge.classList.remove('hidden');
+        badgeText.innerText = `${MONTH_LABELS[parseInt(month)-1]} ${year}`;
+    } else {
+        badge.classList.add('hidden');
+    }
+
     try {
         await Promise.all([
-            fetchMainData(year),
+            fetchMainData(year, month),
             fetchConfecData(year),
         ]);
         const now = new Date();
@@ -616,6 +686,7 @@ document.addEventListener('DOMContentLoaded', () => {
     initConfecCharts();
     fetchData();
     document.getElementById('yearSelect').addEventListener('change', fetchData);
+    document.getElementById('monthSelect').addEventListener('change', fetchData);
     setInterval(fetchData, 60000);
 });
 </script>
