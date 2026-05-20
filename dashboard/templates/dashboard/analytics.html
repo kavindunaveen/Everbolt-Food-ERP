@@ -191,6 +191,34 @@
         </div>
     </div>
 
+    <!-- Target Achievement Table by Product Category -->
+    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 mb-10 overflow-hidden">
+        <div class="px-6 pt-5 pb-3 border-b border-gray-100 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 bg-gray-50/50">
+            <div>
+                <h3 class="text-lg font-bold text-gray-900">🎯 Target Achievement by Product Category</h3>
+                <p class="text-xs text-gray-400 mt-0.5">Summary of target values and ex-VAT sales achievements</p>
+            </div>
+            <span class="self-start sm:self-auto text-xs font-bold text-blue-600 bg-blue-50 px-3 py-1 rounded-lg">Formula: (Achieved Value / Target Value) * 100%</span>
+        </div>
+        <div class="px-6 py-4">
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-100">
+                    <thead>
+                        <tr class="text-left text-xs font-extrabold uppercase text-gray-400 tracking-wider">
+                            <th class="px-6 py-3">Product Category</th>
+                            <th class="px-6 py-3 text-right">Achieved Value (Rs)</th>
+                            <th class="px-6 py-3 text-right">Target Value (Rs)</th>
+                            <th class="px-6 py-3 text-right">Achieved Percentage</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-100 text-sm font-semibold text-gray-850" id="category-achievement-table-body">
+                        <!-- Populated via AJAX -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
     <!-- =====================================================================
          CONFECTIONERY ANALYTICS SECTION
          ===================================================================== -->
@@ -544,6 +572,26 @@ async function fetchMainData(year, month) {
     updateGauge(gaugeTea,    'gauge-tea-val',    null, data.overview.tea_sales,     data.targets.tea,     '#10b981');
     document.getElementById('tea-sold').innerText   = fmtCur(data.overview.tea_sales);
     document.getElementById('tea-target').innerText = fmtCur(data.targets.tea);
+
+    // Populate Category Achievement table
+    const tableBody = document.getElementById('category-achievement-table-body');
+    if (tableBody && data.category_achievement) {
+        tableBody.innerHTML = data.category_achievement.map(row => {
+            const pctText = row.has_target ? `${row.pct.toFixed(2)}%` : '—';
+            let pctColor = 'text-gray-900';
+            if (row.has_target) {
+                pctColor = row.pct >= 100 ? 'text-emerald-600' : (row.pct >= 50 ? 'text-amber-600' : 'text-rose-600');
+            }
+            return `
+                <tr class="hover:bg-gray-50/50 transition-colors">
+                    <td class="px-6 py-3.5 text-gray-900 font-bold">${row.category}</td>
+                    <td class="px-6 py-3.5 text-right font-semibold text-gray-700">Rs ${fmtFull(row.sales)}</td>
+                    <td class="px-6 py-3.5 text-right font-semibold text-gray-700">${row.has_target ? 'Rs ' + fmtFull(row.target) : 'No Target'}</td>
+                    <td class="px-6 py-3.5 text-right font-bold ${pctColor}">${pctText}</td>
+                </tr>
+            `;
+        }).join('');
+    }
 }
 
 // ============================================================

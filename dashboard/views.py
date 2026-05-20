@@ -149,6 +149,90 @@ class DashboardDataAPI(LoginRequiredMixin, View):
 
         target_dict = _get_targets(for_month=month)  # month is None = yearly
 
+        # ── Target achievement list by product category ──────────────────
+        # 1. Catering Tea
+        items_catering_tea = invoice_items.filter(product__name__icontains='catering tea')
+        sales_catering_tea = float(items_catering_tea.annotate(ex_vat=F('line_total') - F('tax_amount')).aggregate(s=Sum('ex_vat'))['s'] or 0)
+        target_catering_tea = float(ProductTarget.objects.filter(
+            product__name__icontains='catering tea', year=year, month=month
+        ).aggregate(s=Sum('target_value'))['s'] or 0)
+
+        # 2. Coffee Mate
+        items_coffee_mate = invoice_items.filter(Q(product__name__icontains='coffee mate') | Q(product__name__icontains='coffeemate'))
+        sales_coffee_mate = float(items_coffee_mate.annotate(ex_vat=F('line_total') - F('tax_amount')).aggregate(s=Sum('ex_vat'))['s'] or 0)
+        target_coffee_mate = float(ProductTarget.objects.filter(
+            Q(product__name__icontains='coffee mate') | Q(product__name__icontains='coffeemate'),
+            year=year, month=month
+        ).aggregate(s=Sum('target_value'))['s'] or 0)
+
+        # 3. Creamer
+        sales_creamer = float(creamer_sales)
+        target_creamer = float(target_dict['creamer'])
+
+        # 4. Nescafe
+        items_nescafe = invoice_items.filter(Q(product__name__icontains='nescafe') | Q(product__name__icontains='nescafé'))
+        sales_nescafe = float(items_nescafe.annotate(ex_vat=F('line_total') - F('tax_amount')).aggregate(s=Sum('ex_vat'))['s'] or 0)
+        target_nescafe = float(ProductTarget.objects.filter(
+            Q(product__name__icontains='nescafe') | Q(product__name__icontains='nescafé'),
+            year=year, month=month
+        ).aggregate(s=Sum('target_value'))['s'] or 0)
+
+        # 5. Sugar
+        sales_sugar = float(sugar_sales)
+        target_sugar = float(target_dict['sugar'])
+
+        # 6. Tea
+        sales_tea = float(tea_sales)
+        target_tea = float(target_dict['tea'])
+
+        def _get_pct(sales, target):
+            return round((sales / target) * 100, 2) if target > 0 else 0.0
+
+        achievement_rows = [
+            {
+                'category': 'Catering Tea',
+                'sales': sales_catering_tea,
+                'target': target_catering_tea,
+                'pct': _get_pct(sales_catering_tea, target_catering_tea),
+                'has_target': target_catering_tea > 0
+            },
+            {
+                'category': 'Coffee Mate',
+                'sales': sales_coffee_mate,
+                'target': target_coffee_mate,
+                'pct': _get_pct(sales_coffee_mate, target_coffee_mate),
+                'has_target': target_coffee_mate > 0
+            },
+            {
+                'category': 'Creamer',
+                'sales': sales_creamer,
+                'target': target_creamer,
+                'pct': _get_pct(sales_creamer, target_creamer),
+                'has_target': target_creamer > 0
+            },
+            {
+                'category': 'Nescafe',
+                'sales': sales_nescafe,
+                'target': target_nescafe,
+                'pct': _get_pct(sales_nescafe, target_nescafe),
+                'has_target': target_nescafe > 0
+            },
+            {
+                'category': 'Sugar',
+                'sales': sales_sugar,
+                'target': target_sugar,
+                'pct': _get_pct(sales_sugar, target_sugar),
+                'has_target': target_sugar > 0
+            },
+            {
+                'category': 'Tea',
+                'sales': sales_tea,
+                'target': target_tea,
+                'pct': _get_pct(sales_tea, target_tea),
+                'has_target': target_tea > 0
+            },
+        ]
+
         data = {
             "month": month,
             "overview": {
@@ -166,6 +250,7 @@ class DashboardDataAPI(LoginRequiredMixin, View):
             },
             "trends": trend_data,
             "targets": target_dict,
+            "category_achievement": achievement_rows,
         }
         return JsonResponse(data)
 
