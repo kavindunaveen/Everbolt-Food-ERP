@@ -3,6 +3,130 @@
 
 {% block content %}
 <style>
+    /* Clean Django Admin / Classic Style */
+    .admin-container {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+        color: #333;
+        margin: 20px auto;
+        max-width: 100%;
+        padding: 0 15px;
+    }
+    .admin-header {
+        background: #417690;
+        color: #fff;
+        padding: 12px 20px;
+        margin-bottom: 20px;
+        border-radius: 4px;
+    }
+    .admin-header h1 {
+        margin: 0;
+        font-size: 20px;
+        font-weight: normal;
+    }
+    .admin-header p {
+        margin: 5px 0 0 0;
+        font-size: 13px;
+        opacity: 0.9;
+    }
+    .admin-card {
+        background: #fff;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        margin-bottom: 20px;
+        padding: 15px;
+    }
+    .admin-card h2 {
+        margin-top: 0;
+        font-size: 16px;
+        color: #666;
+        border-bottom: 1px solid #eee;
+        padding-bottom: 8px;
+        margin-bottom: 15px;
+    }
+    .admin-table {
+        width: 100%;
+        min-width: 1850px;
+        border-collapse: collapse;
+        margin-bottom: 15px;
+    }
+    .admin-table th {
+        background: #79aec8;
+        color: #fff;
+        text-align: left;
+        padding: 8px;
+        font-size: 13px;
+        font-weight: 600;
+        border: 1px solid #79aec8;
+    }
+    .admin-table td {
+        padding: 8px;
+        font-size: 13px;
+        border-bottom: 1px solid #eee;
+        border-left: 1px solid #eee;
+        border-right: 1px solid #eee;
+        vertical-align: middle;
+    }
+    .admin-table tr:hover {
+        background: #f9f9f9;
+    }
+    .admin-input {
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        padding: 5px 6px;
+        width: 100%;
+        box-sizing: border-box;
+        text-align: right;
+        font-size: 13px;
+    }
+    .admin-input:focus {
+        border-color: #79aec8;
+        outline: none;
+    }
+    .btn-admin {
+        background: #417690;
+        color: white;
+        border: none;
+        padding: 6px 12px;
+        font-size: 13px;
+        border-radius: 4px;
+        cursor: pointer;
+        font-weight: bold;
+    }
+    .btn-admin:hover {
+        background: #305c73;
+    }
+    .btn-delete {
+        background: #ba2121;
+        color: white;
+        border: none;
+        padding: 4px 8px;
+        font-size: 11px;
+        border-radius: 4px;
+        cursor: pointer;
+    }
+    .btn-delete:hover {
+        background: #a41c1c;
+    }
+    .badge-product {
+        display: inline-flex;
+        align-items: center;
+        background: #f1f1f1;
+        border: 1px solid #ddd;
+        border-radius: 3px;
+        padding: 2px 6px;
+        margin: 2px;
+        font-size: 11px;
+    }
+    .badge-product-remove {
+        color: #ba2121;
+        margin-left: 5px;
+        font-weight: bold;
+        cursor: pointer;
+        text-decoration: none;
+    }
+    .badge-product-remove:hover {
+        color: red;
+    }
     /* Hide Chrome, Safari, Edge, Opera number spinners */
     input::-webkit-outer-spin-button,
     input::-webkit-inner-spin-button {
@@ -15,156 +139,152 @@
     }
 </style>
 
-<div class="px-4 py-6 sm:px-0 max-w-7xl mx-auto">
-    <!-- Header -->
-    <div class="mb-8 flex flex-col md:flex-row md:items-end md:justify-between gap-4">
-        <div>
-            <a href="{% url 'analytics_dashboard' %}" class="inline-flex items-center gap-1.5 text-xs font-bold text-gray-400 uppercase tracking-widest hover:text-red-600 transition-colors mb-3">
-                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7"/></svg>
-                Back to Dashboard
-            </a>
-            <h1 class="text-3xl font-extrabold text-gray-900 tracking-tight">⚙️ Sales Target Management</h1>
-            <p class="mt-1 text-sm text-gray-500">Configure yearly and monthly sales targets for categories and specific products.</p>
-        </div>
+<div class="admin-container">
+    <div style="margin-bottom: 10px;">
+        <a href="{% url 'analytics_dashboard' %}" style="text-decoration: none; color: #417690; font-weight: bold; font-size: 13px;">&larr; Back to Dashboard</a>
+    </div>
 
-        <!-- Year Selector -->
-        <form method="get" id="yearForm" class="flex items-center gap-3 bg-white px-4 py-2.5 rounded-xl shadow-sm border border-gray-100">
-            <label class="text-xs font-black text-gray-500 uppercase tracking-widest">Target Year</label>
-            <select name="year" onchange="document.getElementById('yearForm').submit()"
-                    class="border-0 shadow-none text-red-600 font-extrabold text-xl focus:ring-0 bg-transparent cursor-pointer">
-                {% for y in available_years %}
-                    <option value="{{ y }}" {% if y == year %}selected{% endif %}>{{ y }}</option>
-                {% endfor %}
-            </select>
-        </form>
+    <!-- Header -->
+    <div class="admin-header">
+        <h1>⚙️ Sales Target Configuration</h1>
+        <p>Set yearly and monthly sales targets for product groups and custom configurations.</p>
     </div>
 
     <!-- Alert Messages -->
     {% if messages %}
-    <div class="mb-6">
+    <div style="margin-bottom: 20px;">
         {% for message in messages %}
-        <div class="p-4 rounded-xl {% if message.tags == 'success' %}bg-emerald-50 border border-emerald-200 text-emerald-800{% else %}bg-red-50 border border-red-200 text-red-800{% endif %} font-bold text-sm">
+        <div style="padding: 10px 15px; border-radius: 4px; background: #e6f4ea; border: 1px solid #b7e1cd; color: #137333; font-weight: bold; font-size: 13px; margin-bottom: 8px;">
             {{ message }}
         </div>
         {% endfor %}
     </div>
     {% endif %}
 
-    <!-- Target Form -->
+    <!-- Year & Search Selector Card -->
+    <div class="admin-card">
+        <h2>1. Configure Target Scope</h2>
+        <div style="display: flex; flex-wrap: wrap; gap: 30px; align-items: flex-start;">
+            <!-- Year Selector -->
+            <div>
+                <form method="get" id="yearForm">
+                    <label style="display: block; font-weight: bold; font-size: 12px; color: #666; margin-bottom: 5px;">Select Target Year</label>
+                    <select name="year" onchange="document.getElementById('yearForm').submit()" style="padding: 6px 12px; border: 1px solid #ccc; border-radius: 4px; font-size: 14px; font-weight: bold; color: #417690;">
+                        {% for y in available_years %}
+                            <option value="{{ y }}" {% if y == year %}selected{% endif %}>{{ y }}</option>
+                        {% endfor %}
+                    </select>
+                </form>
+            </div>
+
+            <!-- Product Search and Group Add -->
+            <div style="flex-grow: 1; max-w: 600px;">
+                <label style="display: block; font-weight: bold; font-size: 12px; color: #666; margin-bottom: 5px;">🔍 Search Product to Add to Targets</label>
+                <div style="position: relative;">
+                    <input type="text" id="productSearchInput" placeholder="Type product code or name..." style="width: 100%; box-sizing: border-box; padding: 8px 12px; border: 1px solid #ccc; border-radius: 4px; font-size: 13px;">
+                    <div id="searchResults" style="position: absolute; left: 0; right: 0; background: #fff; border: 1px solid #ccc; border-radius: 4px; max-height: 250px; overflow-y: auto; z-index: 1000; box-shadow: 0 4px 6px rgba(0,0,0,0.1); display: none; margin-top: 2px;">
+                        <!-- Populate dynamically -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Create Custom Target Group -->
+            <div style="min-width: 250px;">
+                <label style="display: block; font-weight: bold; font-size: 12px; color: #666; margin-bottom: 5px;">➕ Create New Target Group</label>
+                <div style="display: flex; gap: 8px;">
+                    <input type="text" id="customGroupName" placeholder="e.g. Sugar Sachets" style="padding: 6px 10px; border: 1px solid #ccc; border-radius: 4px; font-size: 13px; flex-grow: 1;">
+                    <button type="button" onclick="createCustomGroup()" class="btn-admin">Create</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Targets Form -->
     <form method="post" id="targetsForm">
         {% csrf_token %}
         <input type="hidden" name="year" value="{{ year }}">
         <input type="hidden" name="action" value="save_targets">
 
-        <!-- PRODUCT TARGETS -->
-        <div class="block">
-            <!-- Add Product Section -->
-            <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 mb-6">
-                <h3 class="text-base font-black text-gray-800 uppercase tracking-wider mb-4">🔍 Add Product from Inventory</h3>
-                <div class="relative max-w-xl">
-                    <div class="flex gap-3">
-                        <div class="relative flex-grow">
-                            <input type="text" id="productSearchInput" placeholder="Type product name or ID to search..."
-                                   class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-100 text-base font-medium outline-none">
-                            <div id="searchResults" class="absolute left-0 right-0 mt-2 bg-white rounded-xl shadow-xl border border-gray-100 overflow-hidden z-50 hidden max-h-60 overflow-y-auto">
-                                <!-- Results populate here -->
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Product Targets Grid -->
-            <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden mb-6">
-                <div class="overflow-x-auto">
-                    <table class="min-w-full divide-y divide-gray-100" id="productTargetsTable">
-                        <thead>
-                            <tr class="bg-gray-900 text-white">
-                                <th class="px-6 py-4 text-left text-xs font-black uppercase tracking-widest whitespace-nowrap sticky left-0 bg-gray-900 z-10 min-w-[280px]">
-                                    Product Name
-                                </th>
-                                <th class="px-4 py-4 text-center text-xs font-black uppercase tracking-widest whitespace-nowrap bg-red-600 min-w-[150px]">
-                                    Yearly Target
-                                </th>
-                                {% for m in month_abbr %}
-                                <th class="px-4 py-4 text-center text-xs font-bold uppercase tracking-wider whitespace-nowrap min-w-[120px]">
-                                    {{ m }}
-                                </th>
-                                {% endfor %}
-                                <th class="px-4 py-4 text-center text-xs font-black uppercase tracking-widest whitespace-nowrap min-w-[80px]">
-                                    Action
-                                </th>
-                            </tr>
-                        </thead>
-                        <tbody class="divide-y divide-gray-100" id="productTargetsBody">
-                            {% for row in prod_rows %}
-                            <tr class="group hover:bg-amber-50/40 transition-colors" id="prod-row-{{ row.tracked_id }}">
-                                <!-- Product details -->
-                                <td class="px-6 py-4 sticky left-0 bg-white group-hover:bg-amber-50/40 z-10 transition-colors">
-                                    <div>
-                                        <div class="text-base font-extrabold text-gray-950">{{ row.name }}</div>
-                                        <div class="flex items-center gap-2 mt-1">
-                                            <span class="px-2 py-0.5 rounded bg-gray-100 text-[10px] font-black text-gray-500 uppercase tracking-wider">{{ row.product_code }}</span>
-                                            <span class="px-2 py-0.5 rounded bg-blue-50 text-[10px] font-black text-blue-600 uppercase tracking-wider">{{ row.category }}</span>
-                                        </div>
-                                    </div>
-                                </td>
-                                <!-- Target Values -->
-                                {% for period in row.periods %}
-                                <td class="px-1 py-1.5 {% if forloop.first %}bg-red-50/40{% endif %}">
-                                    <input type="number"
-                                           name="{{ period.field }}"
-                                           value="{{ period.value }}"
-                                           min="0"
-                                           step="0.01"
-                                           placeholder="—"
-                                           class="w-full px-2 py-1 text-sm font-semibold text-gray-800 text-right border border-gray-300 rounded focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none transition-colors">
-                                </td>
-                                {% endfor %}
-                                <!-- Remove Action -->
-                                <td class="px-4 py-4 text-center">
-                                    <button type="button" onclick="removeProduct({{ row.tracked_id }})"
-                                            class="p-2 rounded-xl text-gray-400 hover:text-red-600 hover:bg-red-50 transition-all"
-                                            title="Stop tracking this product">
-                                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
-                                    </button>
-                                </td>
-                            </tr>
-                            {% empty %}
-                            <tr id="noProductsRow">
-                                <td colspan="15" class="px-6 py-12 text-center text-sm text-gray-400 font-bold">
-                                    No products are currently tracked. Use the search bar above to add products.
-                                </td>
-                            </tr>
+        <div class="admin-card">
+            <h2>2. Set Targets (Rs. Ex-VAT)</h2>
+            <div style="overflow-x: auto; border: 1px solid #ccc; border-radius: 4px;">
+                <table class="admin-table" id="productTargetsTable" style="margin-bottom: 0;">
+                    <thead>
+                        <tr>
+                            <th style="min-width: 300px; z-index: 10;">Target Group & Linked Products</th>
+                            <th style="text-align: center; background: #417690; width: 130px;">Yearly Target</th>
+                            {% for m in month_abbr %}
+                            <th style="text-align: center; width: 120px;">{{ m }}</th>
                             {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
+                            <th style="text-align: center; width: 100px;">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="productTargetsBody">
+                        {% for row in prod_rows %}
+                        <tr id="group-row-{{ row.group_id }}">
+                            <!-- Group Details -->
+                            <td>
+                                <div style="font-weight: bold; font-size: 14px; color: #000; display: flex; align-items: center; gap: 8px;">
+                                    <span>📦 {{ row.name }}</span>
+                                </div>
+                                <div id="group-products-{{ row.group_id }}" style="margin-top: 6px; display: flex; flex-wrap: wrap; gap: 4px;">
+                                    {% for p in row.products %}
+                                    <div class="badge-product" id="badge-{{ row.group_id }}-{{ p.id }}">
+                                        <span>{{ p.name }} ({{ p.product_id }})</span>
+                                        <a href="javascript:void(0)" onclick="removeProductFromGroup({{ row.group_id }}, {{ p.id }})" class="badge-product-remove" title="Remove from group">&times;</a>
+                                    </div>
+                                    {% endfor %}
+                                    {% if not row.products %}
+                                    <span style="color: #999; font-style: italic; font-size: 11px;" class="no-products-warning">No products linked to this group.</span>
+                                    {% endif %}
+                                </div>
+                            </td>
 
-        <!-- Action Bar -->
-        <div class="flex flex-col sm:flex-row items-center justify-between gap-4 bg-white rounded-2xl shadow-sm border border-gray-100 px-6 py-4">
-            <div class="text-xs text-gray-400 font-bold">
-                * Note: Targets values are in Rs (Ex-VAT). Cleared inputs default to "No Target".
+                            <!-- Input Targets -->
+                            {% for period in row.periods %}
+                            <td style="text-align: center; padding: 6px 4px; {% if forloop.first %}background: #f7f9fa;{% endif %}">
+                                <input type="number"
+                                       name="{{ period.field }}"
+                                       value="{{ period.value }}"
+                                       min="0"
+                                       step="0.01"
+                                       placeholder="—"
+                                       class="admin-input">
+                            </td>
+                            {% endfor %}
+
+                            <!-- Actions -->
+                            <td style="text-align: center;">
+                                <button type="button" onclick="deleteGroup({{ row.group_id }})" class="btn-delete">Delete Group</button>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr id="noProductsRow">
+                            <td colspan="15" style="text-align: center; padding: 30px; color: #999; font-style: italic;">
+                                No target groups configured. Use the options above to add items.
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
             </div>
-            <div class="flex items-center gap-3">
-                <a href="{% url 'analytics_dashboard' %}"
-                   class="px-6 py-3 rounded-xl border border-gray-200 text-sm font-bold text-gray-600 hover:bg-gray-50 transition-all">
-                    Cancel
-                </a>
-                <button type="submit"
-                        class="px-8 py-3 rounded-xl bg-red-600 hover:bg-red-700 text-white text-base font-extrabold shadow-sm hover:shadow-lg hover:shadow-red-600/20 transition-all active:scale-95">
-                    💾 Save All Targets for {{ year }}
-                </button>
+
+            <!-- Footer Save buttons -->
+            <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid #eee; padding-top: 15px; margin-top: 15px;">
+                <span style="font-size: 11px; color: #666; font-style: italic;">* Clear target inputs to set "No Target". All calculations use values exclusive of VAT.</span>
+                <div>
+                    <a href="{% url 'analytics_dashboard' %}" style="margin-right: 15px; text-decoration: none; color: #666; font-size: 13px;">Cancel</a>
+                    <button type="submit" class="btn-admin" style="font-size: 14px; padding: 8px 20px;">💾 Save All Targets for {{ year }}</button>
+                </div>
             </div>
         </div>
     </form>
 </div>
 
 <script>
+// Available target groups serialized from Django views to populate dropdowns inside search results
+let allTargetGroups = {{ all_groups|safe }};
 
-// Live Autocomplete search
 const searchInput = document.getElementById('productSearchInput');
 const searchResults = document.getElementById('searchResults');
 
@@ -174,6 +294,7 @@ if (searchInput) {
         if (q.length < 2) {
             searchResults.innerHTML = '';
             searchResults.classList.add('hidden');
+            searchResults.style.display = 'none';
             return;
         }
 
@@ -191,36 +312,126 @@ if (searchInput) {
 
 function renderSearchResults(results) {
     if (!results || results.length === 0) {
-        searchResults.innerHTML = '<div class="p-4 text-sm text-gray-400 font-bold text-center">No matching products found</div>';
-        searchResults.classList.remove('hidden');
+        searchResults.innerHTML = '<div style="padding: 10px; text-align: center; color: #999; font-size: 13px;">No matching products found</div>';
+        searchResults.style.display = 'block';
         return;
     }
 
     let html = '';
     results.forEach(p => {
+        // Dropdown actions to add either as new group or to existing groups
+        let optionsHtml = '<option value="">Add to target group...</option>';
+        optionsHtml += '<option value="new">+ Create as new Target Item</option>';
+        allTargetGroups.forEach(g => {
+            optionsHtml += `<option value="${g.id}">Add to Group: ${g.name}</option>`;
+        });
+
         html += `
-            <button type="button" onclick="addProductToTracking(${p.id})"
-                    class="w-full text-left px-4 py-3 hover:bg-gray-50 border-b border-gray-50 flex items-center justify-between transition-colors">
+            <div style="padding: 8px 12px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center;">
                 <div>
-                    <div class="text-sm font-extrabold text-gray-900">${p.name}</div>
-                    <div class="text-[10px] text-gray-400 font-bold uppercase mt-0.5">${p.product_id} | ${p.category}</div>
+                    <div style="font-weight: bold; font-size: 13px; color: #333;">${escapeHtml(p.name)}</div>
+                    <div style="font-size: 11px; color: #666;">Code: ${escapeHtml(p.product_id)} | Category: ${escapeHtml(p.category)}</div>
                 </div>
-                <span class="text-xs font-black text-blue-600 bg-blue-50 px-2.5 py-1 rounded-lg uppercase tracking-wider">Add +</span>
-            </button>
+                <div>
+                    <select onchange="if(this.value) { handleSelectProduct(${p.id}, this.value); this.value=''; }" style="padding: 4px; font-size: 12px; border: 1px solid #ccc; border-radius: 4px;">
+                        ${optionsHtml}
+                    </select>
+                </div>
+            </div>
         `;
     });
     searchResults.innerHTML = html;
-    searchResults.classList.remove('hidden');
+    searchResults.style.display = 'block';
 }
 
-// Add tracked product via AJAX
-async function addProductToTracking(productId) {
-    searchResults.classList.add('hidden');
+// Escapes HTML tags to prevent XSS
+function escapeHtml(text) {
+    return text
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+}
+
+// Add product to new or existing target group
+async function handleSelectProduct(productId, groupVal) {
+    searchResults.style.display = 'none';
     if (searchInput) searchInput.value = '';
 
     const formData = new FormData();
     formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
     formData.append('action', 'add_product');
+    formData.append('product_db_id', productId);
+    formData.append('year', '{{ year }}');
+    if (groupVal !== 'new') {
+        formData.append('group_id', groupVal);
+    }
+
+    try {
+        const resp = await fetch(window.location.pathname, {
+            method: 'POST',
+            body: formData,
+            headers: {'X-Requested-With': 'XMLHttpRequest'}
+        });
+        if (resp.ok) {
+            const res = await resp.json();
+            if (res.status === 'ok') {
+                // If it created a new group or modified an existing group, update the table
+                location.reload(); // Simplest way to ensure all inputs and fields are correctly initialized
+            }
+        }
+    } catch (err) {
+        console.error("Failed to add product to group", err);
+    }
+}
+
+// Create custom target group via AJAX
+async function createCustomGroup() {
+    const nameInput = document.getElementById('customGroupName');
+    const name = nameInput.value.trim();
+    if (!name) {
+        alert("Please enter a group name");
+        return;
+    }
+
+    const formData = new FormData();
+    formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
+    formData.append('action', 'create_group');
+    formData.append('name', name);
+    formData.append('year', '{{ year }}');
+
+    try {
+        const resp = await fetch(window.location.pathname, {
+            method: 'POST',
+            body: formData,
+            headers: {'X-Requested-With': 'XMLHttpRequest'}
+        });
+        if (resp.ok) {
+            const res = await resp.json();
+            if (res.status === 'ok') {
+                nameInput.value = '';
+                location.reload();
+            } else {
+                alert(res.error || "Failed to create group");
+            }
+        } else {
+            const res = await resp.json();
+            alert(res.error || "Failed to create group");
+        }
+    } catch (err) {
+        console.error("Failed to create group", err);
+    }
+}
+
+// Remove product from group via AJAX
+async function removeProductFromGroup(groupId, productId) {
+    if (!confirm("Are you sure you want to remove this product from this target group?")) return;
+
+    const formData = new FormData();
+    formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
+    formData.append('action', 'remove_product');
+    formData.append('group_id', groupId);
     formData.append('product_db_id', productId);
     formData.append('year', '{{ year }}');
 
@@ -233,67 +444,30 @@ async function addProductToTracking(productId) {
         if (resp.ok) {
             const res = await resp.json();
             if (res.status === 'ok') {
-                // Prepend or append to table
-                const noRow = document.getElementById('noProductsRow');
-                if (noRow) noRow.remove();
-
-                const tbody = document.getElementById('productTargetsBody');
-                const tr = document.createElement('tr');
-                tr.id = `prod-row-${res.tracked_id}`;
-                tr.className = "group hover:bg-amber-50/40 transition-colors";
-
-                let inputsHtml = '';
-                // Yearly
-                inputsHtml += `
-                    <td class="px-1 py-1.5 bg-red-50/40">
-                        <input type="number" name="pt_${res.product_id}_y" value="" min="0" step="0.01" placeholder="—"
-                               class="w-full px-2 py-1 text-sm font-semibold text-gray-800 text-right border border-gray-300 rounded focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none transition-colors">
-                    </td>
-                `;
-                // Months
-                for (let m = 1; m <= 12; m++) {
-                    inputsHtml += `
-                        <td class="px-1 py-1.5">
-                            <input type="number" name="pt_${res.product_id}_m${m}" value="" min="0" step="0.01" placeholder="—"
-                                   class="w-full px-2 py-1 text-sm font-semibold text-gray-800 text-right border border-gray-300 rounded focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none transition-colors">
-                        </td>
-                    `;
+                if (res.group_deleted) {
+                    document.getElementById(`group-row-${groupId}`).remove();
+                    // Update global dropdown list
+                    allTargetGroups = allTargetGroups.filter(g => g.id !== groupId);
+                } else {
+                    // Remove just the badge
+                    const badge = document.getElementById(`badge-${groupId}-${productId}`);
+                    if (badge) badge.remove();
                 }
-
-                tr.innerHTML = `
-                    <td class="px-6 py-4 sticky left-0 bg-white group-hover:bg-amber-50/40 z-10 transition-colors">
-                        <div>
-                            <div class="text-base font-extrabold text-gray-950">${res.name}</div>
-                            <div class="flex items-center gap-2 mt-1">
-                                <span class="px-2 py-0.5 rounded bg-gray-100 text-[10px] font-black text-gray-500 uppercase tracking-wider">${res.product_code}</span>
-                                <span class="px-2 py-0.5 rounded bg-blue-50 text-[10px] font-black text-blue-600 uppercase tracking-wider">${res.category}</span>
-                            </div>
-                        </div>
-                    </td>
-                    ${inputsHtml}
-                    <td class="px-4 py-4 text-center">
-                        <button type="button" onclick="removeProduct(${res.tracked_id})"
-                                class="p-2 rounded-xl text-gray-400 hover:text-red-600 hover:bg-red-50 transition-all">
-                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
-                        </button>
-                    </td>
-                `;
-                tbody.appendChild(tr);
             }
         }
     } catch (err) {
-        console.error("Add failed", err);
+        console.error("Failed to remove product from group", err);
     }
 }
 
-// Remove tracked product via AJAX
-async function removeProduct(trackedId) {
-    if (!confirm("Are you sure you want to stop tracking this product? This will delete all its target entries for this year.")) return;
+// Delete group entirely
+async function deleteGroup(groupId) {
+    if (!confirm("Are you sure you want to delete this target group and all its target configurations?")) return;
 
     const formData = new FormData();
     formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
-    formData.append('action', 'remove_product');
-    formData.append('tracked_id', trackedId);
+    formData.append('action', 'delete_group');
+    formData.append('group_id', groupId);
     formData.append('year', '{{ year }}');
 
     try {
@@ -305,15 +479,15 @@ async function removeProduct(trackedId) {
         if (resp.ok) {
             const res = await resp.json();
             if (res.status === 'ok') {
-                document.getElementById(`prod-row-${trackedId}`).remove();
+                document.getElementById(`group-row-${groupId}`).remove();
+                allTargetGroups = allTargetGroups.filter(g => g.id !== groupId);
                 
-                // If table is empty now, show the placeholder row
                 const tbody = document.getElementById('productTargetsBody');
-                if (tbody.children.length === 0) {
+                if (tbody.rows.length === 0 || (tbody.rows.length === 1 && tbody.rows[0].id === 'noProductsRow')) {
                     tbody.innerHTML = `
                         <tr id="noProductsRow">
-                            <td colspan="15" class="px-6 py-12 text-center text-sm text-gray-400 font-bold">
-                                No products are currently tracked. Use the search bar above to add products.
+                            <td colspan="15" style="text-align: center; padding: 30px; color: #999; font-style: italic;">
+                                No target groups configured. Use the options above to add items.
                             </td>
                         </tr>
                     `;
@@ -321,14 +495,14 @@ async function removeProduct(trackedId) {
             }
         }
     } catch (err) {
-        console.error("Remove failed", err);
+        console.error("Failed to delete group", err);
     }
 }
 
 // Hide autocomplete on click outside
 document.addEventListener('click', (e) => {
-    if (!searchResults.contains(e.target) && e.target !== searchInput) {
-        searchResults.classList.add('hidden');
+    if (searchResults && !searchResults.contains(e.target) && e.target !== searchInput) {
+        searchResults.style.display = 'none';
     }
 });
 </script>

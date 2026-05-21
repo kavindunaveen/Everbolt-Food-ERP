@@ -28,11 +28,10 @@ class SalesTarget(models.Model):
         return f"{self.year} | {period} | {self.get_target_type_display()}{cat_str} | {self.target_value}"
 
 
-class TrackedProduct(models.Model):
-    """Which products appear in the Product Targets grid and dashboard Product Performance section."""
-    product = models.OneToOneField(
-        Product, on_delete=models.CASCADE, related_name='tracking'
-    )
+class ProductTargetGroup(models.Model):
+    """A user-defined or automatic group of products that shares a single target (e.g. Sugar Sachets)."""
+    name = models.CharField(max_length=100, unique=True, help_text="e.g. Sugar Sachets, Nescafe")
+    products = models.ManyToManyField(Product, related_name='target_groups')
     display_order = models.IntegerField(default=0)
     added_at = models.DateTimeField(auto_now_add=True)
 
@@ -40,23 +39,24 @@ class TrackedProduct(models.Model):
         ordering = ['display_order', 'added_at']
 
     def __str__(self):
-        return f"Tracked: {self.product.name}"
+        return self.name
 
 
 class ProductTarget(models.Model):
-    """Per-product sales target — yearly (month=None) or monthly (month=1..12)."""
-    product = models.ForeignKey(
-        Product, on_delete=models.CASCADE, related_name='product_targets'
+    """Per-group sales target — yearly (month=None) or monthly (month=1..12)."""
+    target_group = models.ForeignKey(
+        ProductTargetGroup, on_delete=models.CASCADE, related_name='targets'
     )
     year = models.IntegerField()
     month = models.IntegerField(null=True, blank=True)
     target_value = models.DecimalField(max_digits=14, decimal_places=2, default=0)
 
     class Meta:
-        unique_together = ('product', 'year', 'month')
+        unique_together = ('target_group', 'year', 'month')
 
     def __str__(self):
         import calendar as _cal
         period = _cal.month_abbr[self.month] if self.month else 'Yearly'
-        return f"{self.product.name} | {self.year} | {period} | {self.target_value}"
+        return f"{self.target_group.name} | {self.year} | {period} | {self.target_value}"
+
 

@@ -10,7 +10,23 @@ from collections import defaultdict
 from sales.models import Invoice, InvoiceItem
 from crm.models import Customer
 from inventory.models import Product
-from .models import SalesTarget, TrackedProduct, ProductTarget
+from .models import SalesTarget, ProductTargetGroup, ProductTarget
+
+
+def get_target_value_rs(pt_qs):
+    """
+    Helper to convert ProductTarget quantity targets to Rupees (ex-VAT).
+    For each ProductTarget in the queryset:
+      value_rs = target_qty * (average unit selling price of the target group's products)
+    """
+    total_rs = 0.0
+    for pt in pt_qs.select_related('target_group').prefetch_related('target_group__products'):
+        products = list(pt.target_group.products.all())
+        if not products:
+            continue
+        avg_price = sum(float(p.selling_price) for p in products) / len(products)
+        total_rs += float(pt.target_value) * avg_price
+    return total_rs
 
 
 # ---------------------------------------------------------------------------
@@ -133,24 +149,30 @@ class DashboardDataAPI(LoginRequiredMixin, View):
         # When full-year: look for yearly targets (month=None).
         # -------------------------------------------------------------------
         def _get_targets(for_month):
-            sugar_t = float(ProductTarget.objects.filter(
-                Q(product__category__icontains='sugar') | Q(product__name__icontains='sugar'),
+            sugar_qs = ProductTarget.objects.filter(
+                Q(target_group__products__category__icontains='sugar') | Q(target_group__products__name__icontains='sugar') | Q(target_group__name__icontains='sugar'),
                 year=year, month=for_month
-            ).aggregate(s=Sum('target_value'))['s'] or 0)
+            ).distinct()
+            sugar_t = get_target_value_rs(sugar_qs)
 
-            creamer_t = float(ProductTarget.objects.filter(
-                Q(product__category__icontains='creamer') | Q(product__name__icontains='creamer'),
+            creamer_qs = ProductTarget.objects.filter(
+                Q(target_group__products__category__icontains='creamer') | Q(target_group__products__name__icontains='creamer') | Q(target_group__name__icontains='creamer'),
                 year=year, month=for_month
-            ).aggregate(s=Sum('target_value'))['s'] or 0)
+            ).distinct()
+            creamer_t = get_target_value_rs(creamer_qs)
 
-            tea_t = float(ProductTarget.objects.filter(
-                product__category__icontains='tea',
+            tea_qs = ProductTarget.objects.filter(
+                Q(target_group__products__category__icontains='tea') | Q(target_group__name__icontains='tea'),
                 year=year, month=for_month
-            ).exclude(product__name__icontains='catering tea').aggregate(s=Sum('target_value'))['s'] or 0)
+            ).exclude(
+                Q(target_group__products__name__icontains='catering tea') | Q(target_group__name__icontains='catering tea')
+            ).distinct()
+            tea_t = get_target_value_rs(tea_qs)
 
-            overall_t = float(ProductTarget.objects.filter(
+            overall_qs = ProductTarget.objects.filter(
                 year=year, month=for_month
-            ).aggregate(s=Sum('target_value'))['s'] or 0)
+            ).distinct()
+            overall_t = get_target_value_rs(overall_qs)
 
             has_target = ProductTarget.objects.filter(year=year, month=for_month).exists()
 
@@ -168,17 +190,20 @@ class DashboardDataAPI(LoginRequiredMixin, View):
         # 1. Catering Tea
         items_catering_tea = invoice_items.filter(product__name__icontains='catering tea')
         sales_catering_tea = float(items_catering_tea.annotate(ex_vat=F('line_total') - F('tax_amount')).aggregate(s=Sum('ex_vat'))['s'] or 0)
-        target_catering_tea = float(ProductTarget.objects.filter(
-            product__name__icontains='catering tea', year=year, month=month
-        ).aggregate(s=Sum('target_value'))['s'] or 0)
+        ct_qs = ProductTarget.objects.filter(
+            Q(target_group__products__name__icontains='catering tea') | Q(target_group__name__icontains='catering tea'),
+            year=year, month=month
+        ).distinct()
+        target_catering_tea = get_target_value_rs(ct_qs)
 
         # 2. Coffee Mate
         items_coffee_mate = invoice_items.filter(Q(product__name__icontains='coffee mate') | Q(product__name__icontains='coffeemate'))
         sales_coffee_mate = float(items_coffee_mate.annotate(ex_vat=F('line_total') - F('tax_amount')).aggregate(s=Sum('ex_vat'))['s'] or 0)
-        target_coffee_mate = float(ProductTarget.objects.filter(
-            Q(product__name__icontains='coffee mate') | Q(product__name__icontains='coffeemate'),
+        cm_qs = ProductTarget.objects.filter(
+            Q(target_group__products__name__icontains='coffee mate') | Q(target_group__products__name__icontains='coffeemate') | Q(target_group__name__icontains='coffee mate') | Q(target_group__name__icontains='coffeemate'),
             year=year, month=month
-        ).aggregate(s=Sum('target_value'))['s'] or 0)
+        ).distinct()
+        target_coffee_mate = get_target_value_rs(cm_qs)
 
         # 3. Creamer
         sales_creamer = float(creamer_sales)
@@ -187,10 +212,11 @@ class DashboardDataAPI(LoginRequiredMixin, View):
         # 4. Nescafe
         items_nescafe = invoice_items.filter(Q(product__name__icontains='nescafe') | Q(product__name__icontains='nescafé'))
         sales_nescafe = float(items_nescafe.annotate(ex_vat=F('line_total') - F('tax_amount')).aggregate(s=Sum('ex_vat'))['s'] or 0)
-        target_nescafe = float(ProductTarget.objects.filter(
-            Q(product__name__icontains='nescafe') | Q(product__name__icontains='nescafé'),
+        nes_qs = ProductTarget.objects.filter(
+            Q(target_group__products__name__icontains='nescafe') | Q(target_group__products__name__icontains='nescafé') | Q(target_group__name__icontains='nescafe') | Q(target_group__name__icontains='nescafé'),
             year=year, month=month
-        ).aggregate(s=Sum('target_value'))['s'] or 0)
+        ).distinct()
+        target_nescafe = get_target_value_rs(nes_qs)
 
         # 5. Sugar
         sales_sugar = float(sugar_sales)
@@ -419,18 +445,18 @@ def _upsert_category(year, target_type, category, month, val_str):
         ).delete()
 
 
-def _upsert_product(product, year, month, val_str):
+def _upsert_group_target(group, year, month, val_str):
     val_str = (val_str or '').strip()
     if val_str:
         try:
             ProductTarget.objects.update_or_create(
-                product=product, year=year, month=month,
+                target_group=group, year=year, month=month,
                 defaults={'target_value': float(val_str)}
             )
         except ValueError:
             pass
     else:
-        ProductTarget.objects.filter(product=product, year=year, month=month).delete()
+        ProductTarget.objects.filter(target_group=group, year=year, month=month).delete()
 
 
 # ---------------------------------------------------------------------------
@@ -447,34 +473,41 @@ class TargetManagementView(LoginRequiredMixin, View):
         year = int(request.GET.get('year', timezone.now().year))
         available_years = list(range(timezone.now().year + 1, 2022, -1))
 
-        # ── Product target rows ───────────────────────────────────────────
+        # ── Product Group target rows ─────────────────────────────────────────
         prod_existing = {}
-        for pt in ProductTarget.objects.filter(year=year).select_related('product'):
-            prod_existing[(pt.product_id, pt.month)] = float(pt.target_value)
+        for pt in ProductTarget.objects.filter(year=year).select_related('target_group'):
+            prod_existing[(pt.target_group_id, pt.month)] = float(pt.target_value)
 
         prod_rows = []
-        for tp in TrackedProduct.objects.select_related('product').all():
-            p = tp.product
-            periods = [{'field': f"pt_{p.id}_y",
-                        'value': prod_existing.get((p.id, None), ''),
+        for group in ProductTargetGroup.objects.prefetch_related('products').all():
+            periods = [{'field': f"gt_{group.id}_y",
+                        'value': prod_existing.get((group.id, None), ''),
                         'label': 'Yearly'}]
             for m in range(1, 13):
                 periods.append({
-                    'field': f"pt_{p.id}_m{m}",
-                    'value': prod_existing.get((p.id, m), ''),
+                    'field': f"gt_{group.id}_m{m}",
+                    'value': prod_existing.get((group.id, m), ''),
                     'label': MONTH_ABBR[m - 1],
                 })
+            
+            linked_products = [
+                {'id': p.id, 'product_id': p.product_id, 'name': p.name, 'category': p.category}
+                for p in group.products.all()
+            ]
+            
             prod_rows.append({
-                'tracked_id': tp.id,
-                'product_id': p.id,
-                'product_code': p.product_id,
-                'name': p.name,
-                'category': p.category,
+                'group_id': group.id,
+                'name': group.name,
                 'periods': periods,
+                'products': linked_products,
             })
+
+        # Fetch all available groups to allow adding products to them
+        all_groups = [{'id': g.id, 'name': g.name} for g in ProductTargetGroup.objects.all()]
 
         return render(request, self.template_name, {
             'prod_rows': prod_rows,
+            'all_groups': all_groups,
             'year': year,
             'available_years': available_years,
             'month_abbr': MONTH_ABBR,
@@ -487,41 +520,100 @@ class TargetManagementView(LoginRequiredMixin, View):
         action = request.POST.get('action', 'save_targets')
         year = int(request.POST.get('year', timezone.now().year))
 
+        if action == 'create_group':
+            name = request.POST.get('name', '').strip()
+            if not name:
+                return JsonResponse({'error': 'Group name is required'}, status=400)
+            
+            if ProductTargetGroup.objects.filter(name__iexact=name).exists():
+                return JsonResponse({'error': f'Group "{name}" already exists'}, status=400)
+
+            group = ProductTargetGroup.objects.create(
+                name=name,
+                display_order=ProductTargetGroup.objects.count()
+            )
+            return JsonResponse({
+                'status': 'ok',
+                'group_id': group.id,
+                'name': group.name
+            })
+
         if action == 'add_product':
             pid = request.POST.get('product_db_id')
+            gid = request.POST.get('group_id')
             try:
                 product = Product.objects.get(pk=pid)
-                tp, created = TrackedProduct.objects.get_or_create(
-                    product=product,
-                    defaults={'display_order': TrackedProduct.objects.count()}
-                )
-                return JsonResponse({'status': 'ok', 'created': created,
-                                     'tracked_id': tp.id, 'name': product.name,
-                                     'product_id': product.id,
-                                     'product_code': product.product_id,
-                                     'category': product.category})
+                if gid:
+                    group = ProductTargetGroup.objects.get(pk=gid)
+                else:
+                    gname = product.name
+                    base_gname = gname
+                    counter = 1
+                    while ProductTargetGroup.objects.filter(name__iexact=gname).exists():
+                        gname = f"{base_gname} ({counter})"
+                        counter += 1
+                    group = ProductTargetGroup.objects.create(
+                        name=gname,
+                        display_order=ProductTargetGroup.objects.count()
+                    )
+                
+                group.products.add(product)
+                
+                linked_products = [
+                    {'id': p.id, 'product_id': p.product_id, 'name': p.name, 'category': p.category}
+                    for p in group.products.all()
+                ]
+                
+                return JsonResponse({
+                    'status': 'ok',
+                    'group_id': group.id,
+                    'name': group.name,
+                    'products': linked_products
+                })
             except Product.DoesNotExist:
                 return JsonResponse({'error': 'Product not found'}, status=404)
+            except ProductTargetGroup.DoesNotExist:
+                return JsonResponse({'error': 'Group not found'}, status=404)
 
         if action == 'remove_product':
-            tid = request.POST.get('tracked_id')
+            gid = request.POST.get('group_id')
+            pid = request.POST.get('product_db_id')
             try:
-                tp = TrackedProduct.objects.get(pk=tid)
-                pid = tp.product_id
-                tp.delete()
-                ProductTarget.objects.filter(product_id=pid).delete()
+                group = ProductTargetGroup.objects.get(pk=gid)
+                product = Product.objects.get(pk=pid)
+                group.products.remove(product)
+                
+                if group.products.count() == 0:
+                    group.delete()
+                    return JsonResponse({'status': 'ok', 'group_deleted': True})
+                    
+                return JsonResponse({
+                    'status': 'ok',
+                    'group_deleted': False,
+                    'products': [
+                        {'id': p.id, 'product_id': p.product_id, 'name': p.name, 'category': p.category}
+                        for p in group.products.all()
+                    ]
+                })
+            except (ProductTargetGroup.DoesNotExist, Product.DoesNotExist):
+                return JsonResponse({'error': 'Not found'}, status=404)
+
+        if action == 'delete_group':
+            gid = request.POST.get('group_id')
+            try:
+                group = ProductTargetGroup.objects.get(pk=gid)
+                group.delete()
                 return JsonResponse({'status': 'ok'})
-            except TrackedProduct.DoesNotExist:
+            except ProductTargetGroup.DoesNotExist:
                 return JsonResponse({'error': 'Not found'}, status=404)
 
         # ── action == 'save_targets' ────────────────────────────────────
-        # Save product targets
-        for tp in TrackedProduct.objects.select_related('product').all():
-            p = tp.product
-            _upsert_product(p, year, None, request.POST.get(f"pt_{p.id}_y"))
+        for group in ProductTargetGroup.objects.all():
+            _upsert_group_target(group, year, None, request.POST.get(f"gt_{group.id}_y"))
             for m in range(1, 13):
-                _upsert_product(p, year, m, request.POST.get(f"pt_{p.id}_m{m}"))
+                _upsert_group_target(group, year, m, request.POST.get(f"gt_{group.id}_m{m}"))
 
+        from django.contrib import messages
         messages.success(request, f"Targets for {year} saved successfully.")
         return redirect(f"{request.path}?year={year}")
 
@@ -536,8 +628,8 @@ class ProductSearchAPI(LoginRequiredMixin, View):
         if len(q) < 2:
             return JsonResponse({'results': []})
 
-        # Exclude products already being tracked
-        tracked_pids = set(TrackedProduct.objects.values_list('product_id', flat=True))
+        # Exclude products already linked to a target group
+        linked_pids = set(ProductTargetGroup.objects.values_list('products__id', flat=True))
 
         products = (
             Product.objects
@@ -545,7 +637,7 @@ class ProductSearchAPI(LoginRequiredMixin, View):
                 Q(name__icontains=q) | Q(product_id__icontains=q),
                 status=True,
             )
-            .exclude(id__in=tracked_pids)
+            .exclude(id__in=linked_pids)
             .order_by('name')[:25]
         )
 
@@ -577,12 +669,14 @@ class ProductTargetsAPI(LoginRequiredMixin, View):
         STATUSES = [Invoice.Status.ISSUED, Invoice.Status.PAID]
         results = []
 
-        for tp in TrackedProduct.objects.select_related('product').all():
-            p = tp.product
+        for group in ProductTargetGroup.objects.prefetch_related('products').all():
+            products_list = list(group.products.all())
+            if not products_list:
+                continue
 
             # ── Actual sales for selected period ─────────────────────────
             items_qs = InvoiceItem.objects.filter(
-                product=p,
+                product__in=products_list,
                 invoice__creation_date__year=year,
                 invoice__status__in=STATUSES,
             )
@@ -598,9 +692,10 @@ class ProductTargetsAPI(LoginRequiredMixin, View):
             )
 
             # ── Target for this period ────────────────────────────────────
+            avg_price = sum(float(p.selling_price) for p in products_list) / len(products_list) if products_list else 0.0
             try:
-                pt = ProductTarget.objects.get(product=p, year=year, month=month)
-                target = float(pt.target_value)
+                pt = ProductTarget.objects.get(target_group=group, year=year, month=month)
+                target = float(pt.target_value) * avg_price
                 has_target = True
             except ProductTarget.DoesNotExist:
                 target = 0.0
@@ -610,7 +705,7 @@ class ProductTargetsAPI(LoginRequiredMixin, View):
 
             # ── Monthly trend (always full 12 months) ─────────────────────
             all_year_qs = InvoiceItem.objects.filter(
-                product=p,
+                product__in=products_list,
                 invoice__creation_date__year=year,
                 invoice__status__in=STATUSES,
             ).annotate(ex_vat=F('line_total') - F('tax_amount')).values(
@@ -624,16 +719,15 @@ class ProductTargetsAPI(LoginRequiredMixin, View):
 
             # ── Monthly targets ───────────────────────────────────────────
             monthly_targets = [0.0] * 12
-            for pt_m in ProductTarget.objects.filter(product=p, year=year,
+            for pt_m in ProductTarget.objects.filter(target_group=group, year=year,
                                                      month__isnull=False):
-                monthly_targets[pt_m.month - 1] = float(pt_m.target_value)
+                monthly_targets[pt_m.month - 1] = float(pt_m.target_value) * avg_price
 
             results.append({
-                'tracked_id':   tp.id,
-                'product_db_id': p.id,
-                'product_code': p.product_id,
-                'name':         p.name,
-                'category':     p.category,
+                'group_id':     group.id,
+                'product_codes': ", ".join([p.product_id for p in products_list]),
+                'name':         group.name,
+                'category':     ", ".join(sorted(list(set([p.category for p in products_list])))),
                 'actual_sales': actual,
                 'actual_qty':   actual_qty,
                 'target_value': target,

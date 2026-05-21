@@ -747,17 +747,17 @@ async function fetchProductTargets(year, month) {
                 <div class="mb-3">
                     <h4 class="text-base font-extrabold text-gray-900 line-clamp-2 min-h-[48px]">${p.name}</h4>
                     <div class="flex items-center gap-2 mt-1">
-                        <span class="px-2 py-0.5 rounded bg-gray-100 text-[10px] font-black text-gray-500 uppercase tracking-wider">${p.product_code}</span>
+                        <span class="px-2 py-0.5 rounded bg-gray-100 text-[10px] font-black text-gray-500 uppercase tracking-wider">${p.product_codes}</span>
                         <span class="px-2 py-0.5 rounded bg-blue-50 text-[10px] font-black text-blue-600 uppercase tracking-wider">${p.category}</span>
                     </div>
                 </div>
 
                 <!-- Gauge -->
                 <div class="relative h-32 flex items-center justify-center mb-3">
-                    <canvas id="gauge-prod-${p.product_db_id}"></canvas>
+                    <canvas id="gauge-prod-${p.group_id}"></canvas>
                     <div class="absolute flex flex-col items-center top-[55%]">
-                        <span class="text-lg font-black text-gray-900" id="gauge-prod-val-${p.product_db_id}">0%</span>
-                        <span class="text-[10px] text-gray-400 font-bold uppercase tracking-wider" id="gauge-prod-sub-${p.product_db_id}">Target: 0</span>
+                        <span class="text-lg font-black text-gray-900" id="gauge-prod-val-${p.group_id}">0%</span>
+                        <span class="text-[10px] text-gray-400 font-bold uppercase tracking-wider" id="gauge-prod-sub-${p.group_id}">Target: 0</span>
                     </div>
                 </div>
 
@@ -777,7 +777,7 @@ async function fetchProductTargets(year, month) {
                 <div>
                     <span class="text-[10px] text-gray-400 font-bold uppercase tracking-wider block mb-1">Monthly Trend (Rs)</span>
                     <div class="relative h-20">
-                        <canvas id="sparkline-prod-${p.product_db_id}"></canvas>
+                        <canvas id="sparkline-prod-${p.group_id}"></canvas>
                     </div>
                 </div>
             </div>
@@ -786,9 +786,9 @@ async function fetchProductTargets(year, month) {
 
     container.innerHTML = html;
 
-    // Now instantiate charts for each product
+    // Now instantiate charts for each product group
     data.products.forEach(p => {
-        const id = p.product_db_id;
+        const id = p.group_id;
 
         // 1. Gauge chart
         const ctxGauge = document.getElementById(`gauge-prod-${id}`).getContext('2d');
