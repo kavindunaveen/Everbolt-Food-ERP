@@ -81,7 +81,7 @@ class QuotationItem(models.Model):
 
 class Invoice(models.Model):
     class Type(models.TextChoices):
-        CASH   = 'CASH',   'Cash'
+        CASH   = 'CASH',   'Cash Invoice'
         COD    = 'COD',    'Cash On Delivery'
         CREDIT = 'CREDIT', 'Credit Invoice'
 
@@ -95,7 +95,7 @@ class Invoice(models.Model):
         CANCELLED = 'CANCELLED', 'Cancelled'
 
     invoice_number = models.CharField(max_length=50, unique=True)
-    invoice_type = models.CharField(max_length=20, choices=Type.choices, default=Type.CREDIT)
+    invoice_type = models.CharField(max_length=20, choices=Type.choices, default=Type.CASH)
     customer = models.ForeignKey(Customer, on_delete=models.PROTECT)
     salesperson = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True)
     designated_approver = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name='invoices_to_approve')
