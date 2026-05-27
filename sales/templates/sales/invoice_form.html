@@ -285,7 +285,42 @@
                         <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Internal Notes</label>
                         {{ form.notes }}
                     </div>
-                </div>
+
+                    <!-- Delivery Address Section -->
+                    <div class="md:col-span-2 lg:col-span-4">
+                        <div class="border border-gray-200 rounded-lg p-4 bg-gray-50/40">
+                            <div class="flex items-center justify-between mb-3">
+                                <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider">Delivery Address</label>
+                                {% if form.instance.pk and form.instance.status != 'DRAFT' %}
+                                    <span class="text-[10px] font-bold text-gray-400 bg-white border border-gray-200 px-2 py-0.5 rounded">Frozen at Invoice Creation</span>
+                                {% endif %}
+                            </div>
+
+                            {% if not form.instance.pk or form.instance.status == 'DRAFT' %}
+                            <!-- Editable — new or draft invoice -->
+                            <select id="delivery-addr-select" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm text-gray-700 mb-3 bg-white" onchange="applyDeliveryAddr(this)">
+                                <option value="">— Select delivery address —</option>
+                            </select>
+                            {% endif %}
+
+                            <!-- Hidden fields snapshotted on submit -->
+                            <input type="hidden" name="snap_delivery_line1"    id="snap_line1"    value="{{ form.instance.snap_delivery_line1|default:'' }}">
+                            <input type="hidden" name="snap_delivery_line2"    id="snap_line2"    value="{{ form.instance.snap_delivery_line2|default:'' }}">
+                            <input type="hidden" name="snap_delivery_city"     id="snap_city"     value="{{ form.instance.snap_delivery_city|default:'' }}">
+                            <input type="hidden" name="snap_delivery_province" id="snap_province" value="{{ form.instance.snap_delivery_province|default:'' }}">
+                            <input type="hidden" name="snap_delivery_zip"      id="snap_zip"      value="{{ form.instance.snap_delivery_zip|default:'' }}">
+
+                            <!-- Visible display of the address -->
+                            <div id="delivery-addr-display" class="text-sm text-gray-700 bg-white border border-gray-100 rounded-lg px-3 py-2 min-h-[42px] leading-relaxed">
+                                {% if form.instance.snap_delivery_line1 or form.instance.snap_delivery_city %}
+                                    {{ form.instance.delivery_address_snapshot }}
+                                {% else %}
+                                    <span class="text-gray-400 italic">No delivery address set</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
             </div>
         </div>
 
@@ -774,6 +809,67 @@
                 calculateDueDate();
             }
         });
+
+        // ── Delivery address selector ───────────────────────────────────────────
+        var deliveryAddresses = [];
+
+        function applyDeliveryAddr(select) {
+            var idx = parseInt(select.value);
+            if (isNaN(idx) || idx < 0 || idx >= deliveryAddresses.length) return;
+            var a = deliveryAddresses[idx];
+            $('#snap_line1').val(a.line1 || '');
+            $('#snap_line2').val(a.line2 || '');
+            $('#snap_city').val(a.city || '');
+            $('#snap_province').val(a.province || '');
+            $('#snap_zip').val(a.zip_code || '');
+            $('#delivery-addr-display').text(a.formatted || '(no address entered)');
+        }
+        // Expose for the inline onchange= attribute
+        window.applyDeliveryAddr = applyDeliveryAddr;
+
+        function loadDeliveryAddresses(customerId) {
+            var sel = document.getElementById('delivery-addr-select');
+            if (!sel) return;
+            if (!customerId) {
+                sel.innerHTML = '<option value="">— Select delivery address —</option>';
+                return;
+            }
+            fetch('/customers/' + customerId + '/delivery-addresses/')
+                .then(r => r.json())
+                .then(data => {
+                    deliveryAddresses = data.addresses || [];
+                    sel.innerHTML = '<option value="">— Select delivery address —</option>';
+                    var defaultIdx = 0;
+                    deliveryAddresses.forEach(function(a, i) {
+                        var opt = document.createElement('option');
+                        opt.value = i;
+                        opt.textContent = a.label + (a.is_default ? ' (Default)' : '') + (a.formatted ? ' — ' + a.formatted : '');
+                        sel.appendChild(opt);
+                        if (a.is_default) defaultIdx = i;
+                    });
+                    // Auto-select the default address
+                    if (deliveryAddresses.length) {
+                        sel.value = defaultIdx;
+                        applyDeliveryAddr(sel);
+                    }
+                })
+                .catch(function() {});
+        }
+
+        // Load addresses when customer changes
+        $('#id_customer').on('change select2:select', function() {
+            loadDeliveryAddresses($(this).val());
+        });
+        // Also trigger on page load if customer is already set (edit mode / new with pre-fill)
+        {% if not form.instance.pk or form.instance.status == 'DRAFT' %}
+        var initialCustomer = $('#id_customer').val();
+        if (initialCustomer) {
+            loadDeliveryAddresses(initialCustomer);
+        }
+        {% endif %}
+        // ── End delivery address selector ───────────────────────────────────────
+
+
         // Initialize Select2 on all selects
         function initSelects(scope) {
             $(scope).find('select').not('#empty-row select').not('.no-select2').each(function() {

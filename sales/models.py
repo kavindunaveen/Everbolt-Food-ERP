@@ -101,6 +101,21 @@ class Invoice(models.Model):
     designated_approver = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name='invoices_to_approve')
     created_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name='created_invoices')
     is_approved = models.BooleanField(default=False)
+
+    # Snapshot of the delivery address at invoice creation — never changes after creation
+    snap_delivery_line1    = models.CharField(max_length=255, blank=True, null=True)
+    snap_delivery_line2    = models.CharField(max_length=255, blank=True, null=True)
+    snap_delivery_city     = models.CharField(max_length=100, blank=True, null=True)
+    snap_delivery_province = models.CharField(max_length=100, blank=True, null=True)
+    snap_delivery_zip      = models.CharField(max_length=20,  blank=True, null=True)
+
+    @property
+    def delivery_address_snapshot(self):
+        parts = [p for p in [
+            self.snap_delivery_line1, self.snap_delivery_line2,
+            self.snap_delivery_city, self.snap_delivery_province, self.snap_delivery_zip
+        ] if p]
+        return ', '.join(parts)
     
     creation_date = models.DateTimeField(auto_now_add=True)
     delivery_date = models.DateField(blank=True, null=True)

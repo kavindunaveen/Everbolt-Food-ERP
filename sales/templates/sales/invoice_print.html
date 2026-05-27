@@ -190,7 +190,7 @@
                 <strong>Date of Delivery:</strong> {{ invoice.delivery_date|date:"Y-m-d"|default:"Pending" }}
             </div>
             <div class="box">
-                <strong>Place of Supply:</strong> {{ invoice.customer.delivery_city|default:"-" }}
+                <strong>Place of Supply:</strong> {{ invoice.snap_delivery_city|default:invoice.customer.delivery_city|default:"-" }}
             </div>
         </div>
 

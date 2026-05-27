@@ -157,6 +157,35 @@ class Customer(models.Model):
             return f"{self.customer_name} - {self.company_name}"
         return f"{self.company_name or self.customer_name}"
 
+class CustomerDeliveryAddress(models.Model):
+    """A saved delivery address for a customer. A customer can have multiple."""
+    customer  = models.ForeignKey(Customer, on_delete=models.CASCADE, related_name='delivery_addresses')
+    label     = models.CharField(max_length=100, help_text="e.g. Main Warehouse, Kandy Branch")
+    line1     = models.CharField(max_length=255, blank=True, null=True)
+    line2     = models.CharField(max_length=255, blank=True, null=True)
+    city      = models.CharField(max_length=100, blank=True, null=True)
+    province  = models.CharField(max_length=100, blank=True, null=True)
+    zip_code  = models.CharField(max_length=20,  blank=True, null=True)
+    is_default = models.BooleanField(default=False)
+
+    class Meta:
+        ordering = ['-is_default', 'label']
+
+    def save(self, *args, **kwargs):
+        # Ensure only one default per customer
+        if self.is_default:
+            CustomerDeliveryAddress.objects.filter(customer=self.customer, is_default=True).exclude(pk=self.pk).update(is_default=False)
+        super().save(*args, **kwargs)
+
+    @property
+    def formatted(self):
+        parts = [p for p in [self.line1, self.line2, self.city, self.province, self.zip_code] if p]
+        return ', '.join(parts)
+
+    def __str__(self):
+        return f"{self.label} — {self.formatted}"
+
+
 class CustomerChangeLog(models.Model):
     customer = models.ForeignKey(Customer, on_delete=models.CASCADE, related_name='change_logs')
     changed_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True)

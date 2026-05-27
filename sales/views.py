@@ -477,6 +477,21 @@ class InvoiceCreateView(LoginRequiredMixin, PermissionRequiredMixin, CreateView)
             self.object.salesperson = self.object.customer.assigned_sales_officer or self.request.user
             self.object.created_by = self.request.user
             # Invoice number is generated automatically in Invoice.save()
+
+            # ── Snapshot the selected delivery address ──────────────────────────
+            self.object.snap_delivery_line1    = self.request.POST.get('snap_delivery_line1', '').strip() or None
+            self.object.snap_delivery_line2    = self.request.POST.get('snap_delivery_line2', '').strip() or None
+            self.object.snap_delivery_city     = self.request.POST.get('snap_delivery_city', '').strip() or None
+            self.object.snap_delivery_province = self.request.POST.get('snap_delivery_province', '').strip() or None
+            self.object.snap_delivery_zip      = self.request.POST.get('snap_delivery_zip', '').strip() or None
+            # Fallback to customer's old single delivery address if nothing posted
+            if not any([self.object.snap_delivery_line1, self.object.snap_delivery_city]):
+                c = self.object.customer
+                self.object.snap_delivery_line1    = c.delivery_address_line1
+                self.object.snap_delivery_line2    = c.delivery_address_line2
+                self.object.snap_delivery_city     = c.delivery_city
+                self.object.snap_delivery_province = c.delivery_province
+                self.object.snap_delivery_zip      = c.delivery_zip_code
             
             # Block or Mark for approval based on customer status
             if self.object.customer.customer_status in ['BLACKLIST', 'ONHOLD'] and not getattr(self.object, 'is_approved', False):
@@ -595,10 +610,17 @@ class InvoiceUpdateView(LoginRequiredMixin, PermissionRequiredMixin, UpdateView)
         items = context['items']
         with transaction.atomic():
             self.object = form.save(commit=False)
-            
+
             # Sync salesperson for DRAFT invoices
             if self.object.status == 'DRAFT':
                 self.object.salesperson = self.object.customer.assigned_sales_officer or self.request.user
+                # Allow updating snapshot address on DRAFT invoices
+                if self.request.POST.get('snap_delivery_line1') or self.request.POST.get('snap_delivery_city'):
+                    self.object.snap_delivery_line1    = self.request.POST.get('snap_delivery_line1', '').strip() or None
+                    self.object.snap_delivery_line2    = self.request.POST.get('snap_delivery_line2', '').strip() or None
+                    self.object.snap_delivery_city     = self.request.POST.get('snap_delivery_city', '').strip() or None
+                    self.object.snap_delivery_province = self.request.POST.get('snap_delivery_province', '').strip() or None
+                    self.object.snap_delivery_zip      = self.request.POST.get('snap_delivery_zip', '').strip() or None
             
             if self.object.pk and self.object.status != 'DRAFT':
                 from django.core.exceptions import ValidationError
@@ -1450,17 +1472,28 @@ class DeliveryNoteCreateView(LoginRequiredMixin, PermissionRequiredMixin, Create
 @login_required
 def get_invoice_details(request, pk):
     invoice = get_object_or_404(Invoice, pk=pk)
-    # Concatenate delivery address
     customer = invoice.customer
-    address_parts = [
-        customer.delivery_address_line1,
-        customer.delivery_address_line2,
-        customer.delivery_city,
-        customer.delivery_province,
-        customer.delivery_zip_code
-    ]
-    address = ", ".join([p for p in address_parts if p])
-    
+
+    # Use the invoice's own snapshotted delivery address if available.
+    # Fall back to the customer's current address for backward compatibility.
+    if invoice.snap_delivery_line1 or invoice.snap_delivery_city:
+        addr_parts = [
+            invoice.snap_delivery_line1,
+            invoice.snap_delivery_line2,
+            invoice.snap_delivery_city,
+            invoice.snap_delivery_province,
+            invoice.snap_delivery_zip,
+        ]
+    else:
+        addr_parts = [
+            customer.delivery_address_line1,
+            customer.delivery_address_line2,
+            customer.delivery_city,
+            customer.delivery_province,
+            customer.delivery_zip_code,
+        ]
+    address = ", ".join([p for p in addr_parts if p])
+
     items = []
     for item in invoice.items.all():
         items.append({
@@ -1468,7 +1501,7 @@ def get_invoice_details(request, pk):
             'quantity': str(item.quantity),
             'product_id': item.product.product_id
         })
-        
+
     data = {
         'customer_name': customer.company_name or customer.customer_name,
         'delivery_address': address,

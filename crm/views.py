@@ -1,10 +1,14 @@
-from django.shortcuts import render
+from django.shortcuts import render, get_object_or_404
 from django.urls import reverse_lazy
 from django.db.models import Sum
 from django.views.generic import ListView, CreateView, UpdateView, DeleteView, DetailView
 from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
+from django.http import JsonResponse
+from django.views.decorators.http import require_POST
+from django.contrib.auth.decorators import login_required
+from django.views import View
 from sales.views import AdminRequiredMixin
-from .models import Customer, CustomerChangeLog
+from .models import Customer, CustomerChangeLog, CustomerDeliveryAddress
 from .forms import CustomerForm
 
 class CustomerListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
@@ -193,3 +197,114 @@ class CustomerExportView(LoginRequiredMixin, PermissionRequiredMixin, View):
             ])
             
         return response
+
+
+# ─── Delivery Address AJAX views ─────────────────────────────────────────────
+
+def _serialize_addr(a):
+    return {
+        'id':         a.pk,
+        'label':      a.label,
+        'line1':      a.line1 or '',
+        'line2':      a.line2 or '',
+        'city':       a.city  or '',
+        'province':   a.province or '',
+        'zip_code':   a.zip_code or '',
+        'is_default': a.is_default,
+        'formatted':  a.formatted,
+    }
+
+
+@login_required
+def customer_delivery_addresses(request, pk):
+    """GET: return all delivery addresses for a customer (used by invoice form AJAX)."""
+    customer = get_object_or_404(Customer, pk=pk)
+    addrs = list(customer.delivery_addresses.all())
+
+    # Fallback: if no saved addresses yet, synthesise one from the old single fields
+    if not addrs and (customer.delivery_address_line1 or customer.delivery_city):
+        fallback = CustomerDeliveryAddress(
+            customer=customer,
+            label='Default',
+            line1=customer.delivery_address_line1 or '',
+            line2=customer.delivery_address_line2 or '',
+            city=customer.delivery_city or '',
+            province=customer.delivery_province or '',
+            zip_code=customer.delivery_zip_code or '',
+            is_default=True,
+        )
+        return JsonResponse({'addresses': [_serialize_addr(fallback)]})
+
+    return JsonResponse({'addresses': [_serialize_addr(a) for a in addrs]})
+
+
+@login_required
+@require_POST
+def add_delivery_address(request, pk):
+    """POST: add a new delivery address to a customer."""
+    customer = get_object_or_404(Customer, pk=pk)
+    label    = request.POST.get('label', '').strip()
+    if not label:
+        return JsonResponse({'error': 'Label is required.'}, status=400)
+
+    is_default = request.POST.get('is_default') == 'true'
+    # If this is the first address, auto-make it default
+    if not customer.delivery_addresses.exists():
+        is_default = True
+
+    addr = CustomerDeliveryAddress.objects.create(
+        customer   = customer,
+        label      = label,
+        line1      = request.POST.get('line1', '').strip() or None,
+        line2      = request.POST.get('line2', '').strip() or None,
+        city       = request.POST.get('city', '').strip()  or None,
+        province   = request.POST.get('province', '').strip() or None,
+        zip_code   = request.POST.get('zip_code', '').strip() or None,
+        is_default = is_default,
+    )
+    CustomerChangeLog.objects.create(
+        customer=customer,
+        changed_by=request.user,
+        details=f"Added delivery address: {addr.label}"
+    )
+    return JsonResponse({'address': _serialize_addr(addr)})
+
+
+@login_required
+@require_POST
+def set_default_delivery_address(request, pk, addr_pk):
+    """POST: mark an address as the default for a customer."""
+    customer = get_object_or_404(Customer, pk=pk)
+    addr     = get_object_or_404(CustomerDeliveryAddress, pk=addr_pk, customer=customer)
+    addr.is_default = True
+    addr.save()  # model.save() clears other defaults automatically
+    CustomerChangeLog.objects.create(
+        customer=customer,
+        changed_by=request.user,
+        details=f"Set default delivery address to: {addr.label}"
+    )
+    return JsonResponse({'ok': True, 'addresses': [_serialize_addr(a) for a in customer.delivery_addresses.all()]})
+
+
+@login_required
+@require_POST
+def delete_delivery_address(request, pk, addr_pk):
+    """POST: delete a delivery address."""
+    customer = get_object_or_404(Customer, pk=pk)
+    addr     = get_object_or_404(CustomerDeliveryAddress, pk=addr_pk, customer=customer)
+    label    = addr.label
+    was_default = addr.is_default
+    addr.delete()
+    # If we deleted the default, promote the first remaining address
+    if was_default:
+        first = customer.delivery_addresses.first()
+        if first:
+            first.is_default = True
+            first.save()
+    CustomerChangeLog.objects.create(
+        customer=customer,
+        changed_by=request.user,
+        details=f"Deleted delivery address: {label}"
+    )
+    return JsonResponse({'ok': True, 'addresses': [_serialize_addr(a) for a in customer.delivery_addresses.all()]})
+

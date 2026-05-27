@@ -113,37 +113,93 @@
                         </div>
                     </div>
 
-                    <!-- Delivery Address Box -->
+                    <!-- Delivery Addresses Box -->
                     <div class="space-y-3 bg-gray-50 p-4 rounded-md border border-gray-200">
                         <div class="flex justify-between items-center border-b pb-1">
-                            <h3 class="text-sm font-bold text-gray-800">Delivery Address</h3>
-                            <label class="flex items-center text-xs font-medium text-gray-600 cursor-pointer">
-                                <input type="checkbox" id="copy_billing" class="mr-1.5 h-3.5 w-3.5 text-purple-600 rounded"> Same as Billing
-                            </label>
+                            <h3 class="text-sm font-bold text-gray-800">Delivery Addresses</h3>
+                            {% if form.instance.pk %}
+                                <span class="text-xs text-gray-400">Manage multiple delivery locations</span>
+                            {% else %}
+                                <label class="flex items-center text-xs font-medium text-gray-600 cursor-pointer">
+                                    <input type="checkbox" id="copy_billing" class="mr-1.5 h-3.5 w-3.5 text-purple-600 rounded"> Same as Billing
+                                </label>
+                            {% endif %}
                         </div>
-                        <div>
-                            <label class="block text-xs font-medium text-gray-700 mb-1">{{ form.delivery_address_line1.label }}</label>
-                            {{ form.delivery_address_line1 }}
-                        </div>
-                        <div>
-                            <label class="block text-xs font-medium text-gray-700 mb-1">{{ form.delivery_address_line2.label }}</label>
-                            {{ form.delivery_address_line2 }}
-                        </div>
-                        <div class="grid grid-cols-2 gap-4">
+
+                        {% if form.instance.pk %}
+                            <!-- ── Existing customer: full multi-address manager ── -->
+                            <div id="addr-list" class="space-y-2 mb-3">
+                                {% for addr in form.instance.delivery_addresses.all %}
+                                <div class="addr-card flex items-start justify-between bg-white border rounded p-2 text-xs" data-id="{{ addr.pk }}">
+                                    <div>
+                                        <span class="font-bold text-gray-800">{{ addr.label }}</span>
+                                        {% if addr.is_default %}<span class="ml-1 bg-green-100 text-green-700 text-[10px] font-bold px-1.5 py-0.5 rounded">Default</span>{% endif %}
+                                        <div class="text-gray-500 mt-0.5">{{ addr.formatted|default:"(no address entered)" }}</div>
+                                    </div>
+                                    <div class="flex gap-1 ml-2 shrink-0">
+                                        {% if not addr.is_default %}
+                                        <button type="button" onclick="setDefaultAddr({{ form.instance.pk }}, {{ addr.pk }})"
+                                            class="text-[10px] font-bold text-blue-600 hover:text-blue-800 border border-blue-200 rounded px-1.5 py-0.5">Default</button>
+                                        {% endif %}
+                                        <button type="button" onclick="deleteAddr({{ form.instance.pk }}, {{ addr.pk }})"
+                                            class="text-[10px] font-bold text-red-500 hover:text-red-700 border border-red-200 rounded px-1.5 py-0.5">✕</button>
+                                    </div>
+                                </div>
+                                {% empty %}
+                                <p class="text-xs text-gray-400 italic" id="no-addr-msg">No delivery addresses saved yet.</p>
+                                {% endfor %}
+                            </div>
+
+                            <!-- Add new address form -->
+                            <details class="border border-dashed border-gray-300 rounded p-3 bg-white" id="add-addr-details">
+                                <summary class="text-xs font-bold text-purple-700 cursor-pointer select-none">+ Add New Delivery Address</summary>
+                                <div class="mt-3 space-y-2">
+                                    <input id="new-addr-label" type="text" placeholder="Label (e.g. Main Warehouse)" class="w-full border border-gray-200 rounded px-2 py-1.5 text-xs">
+                                    <input id="new-addr-line1" type="text" placeholder="Address Line 1" class="w-full border border-gray-200 rounded px-2 py-1.5 text-xs">
+                                    <input id="new-addr-line2" type="text" placeholder="Address Line 2 (optional)" class="w-full border border-gray-200 rounded px-2 py-1.5 text-xs">
+                                    <div class="grid grid-cols-2 gap-2">
+                                        <input id="new-addr-city" type="text" placeholder="City" class="w-full border border-gray-200 rounded px-2 py-1.5 text-xs">
+                                        <input id="new-addr-province" type="text" placeholder="Province" class="w-full border border-gray-200 rounded px-2 py-1.5 text-xs">
+                                    </div>
+                                    <input id="new-addr-zip" type="text" placeholder="Zip Code" class="w-full border border-gray-200 rounded px-2 py-1.5 text-xs">
+                                    <label class="flex items-center gap-1.5 text-xs text-gray-600">
+                                        <input type="checkbox" id="new-addr-default" class="h-3.5 w-3.5"> Set as default
+                                    </label>
+                                    <button type="button" onclick="addAddr({{ form.instance.pk }})"
+                                        class="w-full py-1.5 text-xs font-bold text-white bg-purple-600 hover:bg-purple-700 rounded transition-colors">
+                                        Save Address
+                                    </button>
+                                    <p id="addr-error" class="text-red-500 text-[10px] hidden"></p>
+                                </div>
+                            </details>
+
+                        {% else %}
+                            <!-- ── New customer: single address fields (becomes first entry) ── -->
                             <div>
-                                <label class="block text-xs font-medium text-gray-700 mb-1">{{ form.delivery_city.label }}</label>
-                                {{ form.delivery_city }}
+                                <label class="block text-xs font-medium text-gray-700 mb-1">{{ form.delivery_address_line1.label }}</label>
+                                {{ form.delivery_address_line1 }}
                             </div>
                             <div>
-                                <label class="block text-xs font-medium text-gray-700 mb-1">{{ form.delivery_province.label }}</label>
-                                {{ form.delivery_province }}
+                                <label class="block text-xs font-medium text-gray-700 mb-1">{{ form.delivery_address_line2.label }}</label>
+                                {{ form.delivery_address_line2 }}
                             </div>
-                        </div>
-                        <div>
-                            <label class="block text-xs font-medium text-gray-700 mb-1">{{ form.delivery_zip_code.label }}</label>
-                            {{ form.delivery_zip_code }}
-                        </div>
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-xs font-medium text-gray-700 mb-1">{{ form.delivery_city.label }}</label>
+                                    {{ form.delivery_city }}
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-medium text-gray-700 mb-1">{{ form.delivery_province.label }}</label>
+                                    {{ form.delivery_province }}
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-gray-700 mb-1">{{ form.delivery_zip_code.label }}</label>
+                                {{ form.delivery_zip_code }}
+                            </div>
+                        {% endif %}
                     </div>
+
                 </div>
 
                 <!-- Group 3: Sales & Accounting -->
@@ -236,13 +292,12 @@
         const typeSelectEl = getEl('customer_type');
         if(typeSelectEl) { typeSelectEl.addEventListener('change', toggleCustomType); }
         
-        // jQuery fallback for Select2 plugins replacing standard selects
         if(window.jQuery) {
             jQuery('[name="customer_type"]').on('change select2:select', toggleCustomType);
         }
         toggleCustomType();
 
-        // --- Same as Billing Logic ---
+        // --- Same as Billing Logic (new customer only) ---
         const copyBillingBtn = document.getElementById('copy_billing');
         if(copyBillingBtn) {
             copyBillingBtn.addEventListener('change', function() {
@@ -252,26 +307,100 @@
                     var bCity = getEl('billing_city');
                     var bProv = getEl('billing_province');
                     var bZip = getEl('billing_zip_code');
-
                     var d1 = getEl('delivery_address_line1');
                     var d2 = getEl('delivery_address_line2');
                     var dCity = getEl('delivery_city');
                     var dProv = getEl('delivery_province');
                     var dZip = getEl('delivery_zip_code');
-
                     if(d1 && b1) d1.value = b1.value;
                     if(d2 && b2) d2.value = b2.value;
                     if(dCity && bCity) dCity.value = bCity.value;
                     if(dProv && bProv) dProv.value = bProv.value;
                     if(dZip && bZip) dZip.value = bZip.value;
-                    
-                    // Trigger change in case Select2 is bound to province dropdown
-                    if(window.jQuery && dProv) {
-                        jQuery(dProv).trigger('change');
-                    }
+                    if(window.jQuery && dProv) jQuery(dProv).trigger('change');
                 }
             });
         }
     });
+
+    function getCsrf() {
+        return document.querySelector('[name=csrfmiddlewaretoken]').value;
+    }
+
+    function renderAddrList(addrs) {
+        const list = document.getElementById('addr-list');
+        if (!list) return;
+        if (!addrs.length) {
+            list.innerHTML = '<p class="text-xs text-gray-400 italic" id="no-addr-msg">No delivery addresses saved yet.</p>';
+            return;
+        }
+        list.innerHTML = addrs.map(a => `
+            <div class="addr-card flex items-start justify-between bg-white border rounded p-2 text-xs" data-id="${a.id}">
+                <div>
+                    <span class="font-bold text-gray-800">${a.label}</span>
+                    ${a.is_default ? '<span class="ml-1 bg-green-100 text-green-700 text-[10px] font-bold px-1.5 py-0.5 rounded">Default</span>' : ''}
+                    <div class="text-gray-500 mt-0.5">${a.formatted || '(no address entered)'}</div>
+                </div>
+                <div class="flex gap-1 ml-2 shrink-0">
+                    ${!a.is_default ? `<button type="button" onclick="setDefaultAddr(${customerId}, ${a.id})"
+                        class="text-[10px] font-bold text-blue-600 hover:text-blue-800 border border-blue-200 rounded px-1.5 py-0.5">Default</button>` : ''}
+                    <button type="button" onclick="deleteAddr(${customerId}, ${a.id})"
+                        class="text-[10px] font-bold text-red-500 hover:text-red-700 border border-red-200 rounded px-1.5 py-0.5">✕</button>
+                </div>
+            </div>`).join('');
+    }
+
+    // customerId injected below (only present on edit page)
+    {% if form.instance.pk %}
+    const customerId = {{ form.instance.pk }};
+
+    async function addAddr(custId) {
+        const label   = document.getElementById('new-addr-label').value.trim();
+        const errEl   = document.getElementById('addr-error');
+        errEl.classList.add('hidden');
+        if (!label) { errEl.textContent = 'Label is required.'; errEl.classList.remove('hidden'); return; }
+
+        const fd = new FormData();
+        fd.append('csrfmiddlewaretoken', getCsrf());
+        fd.append('label',      label);
+        fd.append('line1',      document.getElementById('new-addr-line1').value.trim());
+        fd.append('line2',      document.getElementById('new-addr-line2').value.trim());
+        fd.append('city',       document.getElementById('new-addr-city').value.trim());
+        fd.append('province',   document.getElementById('new-addr-province').value.trim());
+        fd.append('zip_code',   document.getElementById('new-addr-zip').value.trim());
+        fd.append('is_default', document.getElementById('new-addr-default').checked ? 'true' : 'false');
+
+        const res = await fetch(`/customers/${custId}/delivery-addresses/add/`, { method: 'POST', body: fd });
+        const data = await res.json();
+        if (data.error) { errEl.textContent = data.error; errEl.classList.remove('hidden'); return; }
+
+        // Refresh list
+        const listRes = await fetch(`/customers/${custId}/delivery-addresses/`);
+        const listData = await listRes.json();
+        renderAddrList(listData.addresses);
+
+        // Clear form & close details
+        ['new-addr-label','new-addr-line1','new-addr-line2','new-addr-city','new-addr-province','new-addr-zip'].forEach(id => document.getElementById(id).value = '');
+        document.getElementById('new-addr-default').checked = false;
+        document.getElementById('add-addr-details').removeAttribute('open');
+    }
+
+    async function setDefaultAddr(custId, addrId) {
+        const fd = new FormData();
+        fd.append('csrfmiddlewaretoken', getCsrf());
+        const res = await fetch(`/customers/${custId}/delivery-addresses/${addrId}/set-default/`, { method: 'POST', body: fd });
+        const data = await res.json();
+        if (data.addresses) renderAddrList(data.addresses);
+    }
+
+    async function deleteAddr(custId, addrId) {
+        if (!confirm('Delete this delivery address?')) return;
+        const fd = new FormData();
+        fd.append('csrfmiddlewaretoken', getCsrf());
+        const res = await fetch(`/customers/${custId}/delivery-addresses/${addrId}/delete/`, { method: 'POST', body: fd });
+        const data = await res.json();
+        if (data.addresses) renderAddrList(data.addresses);
+    }
+    {% endif %}
 </script>
 {% endblock %}
