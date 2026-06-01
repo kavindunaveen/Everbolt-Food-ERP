@@ -117,7 +117,7 @@
                     <tr>
                         <th scope="col" class="px-6 py-3 text-left text-[10px] font-bold text-gray-400 uppercase tracking-widest">Sales Officer</th>
                         <th scope="col" class="px-6 py-3 text-center text-[10px] font-bold text-gray-400 uppercase tracking-widest">Confirmed Invoices</th>
-                        <th scope="col" class="px-6 py-3 text-left text-[10px] font-bold text-gray-400 uppercase tracking-widest">Monthly Target Progress</th>
+                        <th scope="col" class="px-6 py-3 text-left text-[10px] font-bold text-gray-400 uppercase tracking-widest">{{ target_month_name|default:"Monthly" }} Target Progress</th>
                         <th scope="col" class="px-6 py-3 text-right text-[10px] font-bold text-gray-400 uppercase tracking-widest">Total Revenue (Ex-VAT)</th>
                         <th scope="col" class="px-6 py-3 text-right text-[10px] font-bold text-gray-400 uppercase tracking-widest">Total Revenue (With VAT)</th>
                     </tr>
@@ -301,24 +301,40 @@
         const leadCtx = document.getElementById('leaderboardChart').getContext('2d');
         const leadNames = JSON.parse('{{ leaderboard_names_json|safe }}');
         const leadSales = JSON.parse('{{ leaderboard_sales_json|safe }}');
+        const leadTargets = JSON.parse('{{ leaderboard_targets_json|safe }}');
         
         new Chart(leadCtx, {
             type: 'bar',
             data: {
                 labels: leadNames,
-                datasets: [{
-                    label: 'Total Revenue (Rs)',
-                    data: leadSales,
-                    backgroundColor: [
-                        '#10b981', // emerald-500
-                        '#3b82f6', // blue-500
-                        '#8b5cf6', // violet-500
-                        '#f59e0b', // amber-500
-                        '#ec4899', // pink-500
-                    ],
-                    borderRadius: 6,
-                    borderSkipped: false
-                }]
+                datasets: [
+                    {
+                        label: 'Total Revenue (Rs)',
+                        data: leadSales,
+                        backgroundColor: [
+                            '#10b981', // emerald-500
+                            '#3b82f6', // blue-500
+                            '#8b5cf6', // violet-500
+                            '#f59e0b', // amber-500
+                            '#ec4899', // pink-500
+                        ],
+                        borderRadius: 6,
+                        borderSkipped: false,
+                        order: 2
+                    },
+                    {
+                        label: 'Monthly Target',
+                        data: leadTargets,
+                        type: 'line',
+                        backgroundColor: 'transparent',
+                        borderColor: 'transparent',
+                        pointStyle: 'rectRot',
+                        pointRadius: 6,
+                        pointBackgroundColor: '#ef4444',
+                        showLine: false,
+                        order: 1
+                    }
+                ]
             },
             options: {
                 responsive: true,

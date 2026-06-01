@@ -1,4 +1,5 @@
 from django.db import models
+from django.conf import settings
 from inventory.models import Product
 
 
@@ -59,4 +60,18 @@ class ProductTarget(models.Model):
         period = _cal.month_abbr[self.month] if self.month else 'Yearly'
         return f"{self.target_group.name} | {self.year} | {period} | {self.target_value}"
 
+class SalespersonTarget(models.Model):
+    """Monthly sales target for a salesperson (Rs Ex-VAT)."""
+    salesperson = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='sales_targets'
+    )
+    year = models.IntegerField()
+    month = models.IntegerField()
+    target_value = models.DecimalField(max_digits=14, decimal_places=2, default=0)
 
+    class Meta:
+        unique_together = ('salesperson', 'year', 'month')
+
+    def __str__(self):
+        import calendar as _cal
+        return f"{self.salesperson.username} | {self.year} {_cal.month_abbr[self.month]} | Rs {self.target_value}"

@@ -10,7 +10,10 @@ from collections import defaultdict
 from sales.models import Invoice, InvoiceItem
 from crm.models import Customer
 from inventory.models import Product
-from .models import SalesTarget, ProductTargetGroup, ProductTarget
+from .models import SalesTarget, ProductTargetGroup, ProductTarget, SalespersonTarget
+from django.contrib.auth import get_user_model
+
+User = get_user_model()
 
 
 def get_target_value_rs(pt_qs):
@@ -187,27 +190,30 @@ class DashboardDataAPI(LoginRequiredMixin, View):
         target_dict = _get_targets(for_month=month)  # month is None = yearly
 
         # ── Target achievement list by product category ──────────────────
-        def _get_pct(sales, target):
-            return round((sales / target) * 100, 2) if target > 0 else 0.0
+        def _get_pct(achieved, target):
+            return round((achieved / target) * 100, 2) if target > 0 else 0.0
 
         achievement_rows = []
         for group in ProductTargetGroup.objects.all().prefetch_related('products'):
             products = list(group.products.all())
             if not products:
                 sales = 0.0
+                achieved_qty = 0.0
             else:
                 items_group = invoice_items.filter(product__in=products)
                 sales = float(items_group.annotate(ex_vat=F('line_total') - F('tax_amount')).aggregate(s=Sum('ex_vat'))['s'] or 0)
+                achieved_qty = float(items_group.aggregate(s=Sum('quantity'))['s'] or 0)
             
             group_targets = ProductTarget.objects.filter(target_group=group, year=year, month=month)
-            target = get_target_value_rs(group_targets)
+            target_qty = float(group_targets.aggregate(s=Sum('target_value'))['s'] or 0)
             
             achievement_rows.append({
                 'category': group.name,
                 'sales': sales,
-                'target': target,
-                'pct': _get_pct(sales, target),
-                'has_target': target > 0
+                'achieved_qty': achieved_qty,
+                'target': target_qty,
+                'pct': _get_pct(achieved_qty, target_qty),
+                'has_target': target_qty > 0
             })
 
         data = {
@@ -416,9 +422,7 @@ class TargetManagementView(LoginRequiredMixin, View):
 
         prod_rows = []
         for group in ProductTargetGroup.objects.prefetch_related('products').all():
-            periods = [{'field': f"gt_{group.id}_y",
-                        'value': prod_existing.get((group.id, None), ''),
-                        'label': 'Yearly'}]
+            periods = []
             for m in range(1, 13):
                 periods.append({
                     'field': f"gt_{group.id}_m{m}",
@@ -441,8 +445,29 @@ class TargetManagementView(LoginRequiredMixin, View):
         # Fetch all available groups to allow adding products to them
         all_groups = [{'id': g.id, 'name': g.name} for g in ProductTargetGroup.objects.all()]
 
+        # ── Salesperson target rows ───────────────────────────────────────────
+        sp_existing = {}
+        for spt in SalespersonTarget.objects.filter(year=year).select_related('salesperson'):
+            sp_existing[(spt.salesperson_id, spt.month)] = float(spt.target_value)
+
+        salesperson_rows = []
+        for sp in User.objects.filter(role='SALES').order_by('username'):
+            periods = []
+            for m in range(1, 13):
+                periods.append({
+                    'field': f"st_{sp.id}_m{m}",
+                    'value': sp_existing.get((sp.id, m), ''),
+                    'label': MONTH_ABBR[m - 1],
+                })
+            salesperson_rows.append({
+                'id': sp.id,
+                'name': f"{sp.first_name} {sp.last_name} ({sp.username})",
+                'periods': periods,
+            })
+
         return render(request, self.template_name, {
             'prod_rows': prod_rows,
+            'salesperson_rows': salesperson_rows,
             'all_groups': all_groups,
             'year': year,
             'available_years': available_years,
@@ -545,9 +570,22 @@ class TargetManagementView(LoginRequiredMixin, View):
 
         # ── action == 'save_targets' ────────────────────────────────────
         for group in ProductTargetGroup.objects.all():
-            _upsert_group_target(group, year, None, request.POST.get(f"gt_{group.id}_y"))
             for m in range(1, 13):
                 _upsert_group_target(group, year, m, request.POST.get(f"gt_{group.id}_m{m}"))
+
+        for sp in User.objects.filter(role='SALES'):
+            for m in range(1, 13):
+                val_str = (request.POST.get(f"st_{sp.id}_m{m}") or '').strip()
+                if val_str:
+                    try:
+                        SalespersonTarget.objects.update_or_create(
+                            salesperson=sp, year=year, month=m,
+                            defaults={'target_value': float(val_str)}
+                        )
+                    except ValueError:
+                        pass
+                else:
+                    SalespersonTarget.objects.filter(salesperson=sp, year=year, month=m).delete()
 
         from django.contrib import messages
         messages.success(request, f"Targets for {year} saved successfully.")
@@ -628,16 +666,15 @@ class ProductTargetsAPI(LoginRequiredMixin, View):
             )
 
             # ── Target for this period ────────────────────────────────────
-            avg_price = sum(float(p.selling_price) for p in products_list) / len(products_list) if products_list else 0.0
             try:
                 pt = ProductTarget.objects.get(target_group=group, year=year, month=month)
-                target = float(pt.target_value) * avg_price
+                target_qty = float(pt.target_value)
                 has_target = True
             except ProductTarget.DoesNotExist:
-                target = 0.0
+                target_qty = 0.0
                 has_target = False
 
-            pct = round(actual / target * 100, 1) if target > 0 else 0
+            pct = round(actual_qty / target_qty * 100, 1) if target_qty > 0 else 0
 
             # ── Monthly trend (always full 12 months) ─────────────────────
             all_year_qs = InvoiceItem.objects.filter(
@@ -657,7 +694,7 @@ class ProductTargetsAPI(LoginRequiredMixin, View):
             monthly_targets = [0.0] * 12
             for pt_m in ProductTarget.objects.filter(target_group=group, year=year,
                                                      month__isnull=False):
-                monthly_targets[pt_m.month - 1] = float(pt_m.target_value) * avg_price
+                monthly_targets[pt_m.month - 1] = float(pt_m.target_value)
 
             results.append({
                 'group_id':     group.id,
@@ -666,7 +703,7 @@ class ProductTargetsAPI(LoginRequiredMixin, View):
                 'category':     ", ".join(sorted(list(set([p.category for p in products_list])))),
                 'actual_sales': actual,
                 'actual_qty':   actual_qty,
-                'target_value': target,
+                'target_value': target_qty,
                 'has_target':   has_target,
                 'pct_achieved': pct,
                 'monthly_trend':   monthly_trend,

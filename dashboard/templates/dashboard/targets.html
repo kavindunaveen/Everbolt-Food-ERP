@@ -206,13 +206,12 @@
         <input type="hidden" name="action" value="save_targets">
 
         <div class="admin-card">
-            <h2>2. Set Targets (Rs. Ex-VAT)</h2>
+            <h2>2. Set Targets (Quantity)</h2>
             <div style="overflow-x: auto; border: 1px solid #ccc; border-radius: 4px;">
                 <table class="admin-table" id="productTargetsTable" style="margin-bottom: 0;">
                     <thead>
                         <tr>
                             <th style="min-width: 300px; z-index: 10;">Target Group & Linked Products</th>
-                            <th style="text-align: center; background: #417690; width: 130px;">Yearly Target</th>
                             {% for m in month_abbr %}
                             <th style="text-align: center; width: 120px;">{{ m }}</th>
                             {% endfor %}
@@ -242,7 +241,7 @@
 
                             <!-- Input Targets -->
                             {% for period in row.periods %}
-                            <td style="text-align: center; padding: 6px 4px; {% if forloop.first %}background: #f7f9fa;{% endif %}">
+                            <td style="text-align: center; padding: 6px 4px;">
                                 <input type="number"
                                        name="{{ period.field }}"
                                        value="{{ period.value }}"
@@ -262,6 +261,49 @@
                         <tr id="noProductsRow">
                             <td colspan="15" style="text-align: center; padding: 30px; color: #999; font-style: italic;">
                                 No target groups configured. Use the options above to add items.
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Salesperson Targets Table -->
+            <h2 style="margin-top: 30px;">3. Set Sales Officer Targets (Rs. Ex-VAT)</h2>
+            <div style="overflow-x: auto; border: 1px solid #ccc; border-radius: 4px; margin-bottom: 20px;">
+                <table class="admin-table" style="margin-bottom: 0;">
+                    <thead>
+                        <tr>
+                            <th style="min-width: 250px;">Sales Officer</th>
+                            {% for m in month_abbr %}
+                            <th style="text-align: center; width: 120px;">{{ m }}</th>
+                            {% endfor %}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for sp in salesperson_rows %}
+                        <tr>
+                            <td>
+                                <div style="font-weight: bold; font-size: 14px; color: #000;">
+                                    👤 {{ sp.name }}
+                                </div>
+                            </td>
+                            {% for period in sp.periods %}
+                            <td style="text-align: center; padding: 6px 4px;">
+                                <input type="number"
+                                       name="{{ period.field }}"
+                                       value="{{ period.value }}"
+                                       min="0"
+                                       step="0.01"
+                                       placeholder="—"
+                                       class="admin-input">
+                            </td>
+                            {% endfor %}
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="13" style="text-align: center; padding: 30px; color: #999; font-style: italic;">
+                                No active sales officers found.
                             </td>
                         </tr>
                         {% endfor %}

@@ -196,9 +196,9 @@
         <div class="px-6 pt-5 pb-3 border-b border-gray-100 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 bg-gray-50/50">
             <div>
                 <h3 class="text-lg font-bold text-gray-900">🎯 Target Achievement by Product Category</h3>
-                <p class="text-xs text-gray-400 mt-0.5">Summary of target values and ex-VAT sales achievements</p>
+                <p class="text-xs text-gray-400 mt-0.5">Summary of achieved quantities vs target quantities, along with sales value</p>
             </div>
-            <span class="self-start sm:self-auto text-xs font-bold text-blue-600 bg-blue-50 px-3 py-1 rounded-lg">Formula: (Achieved Value / Target Value) * 100%</span>
+            <span class="self-start sm:self-auto text-xs font-bold text-blue-600 bg-blue-50 px-3 py-1 rounded-lg">Formula: (Achieved Qty / Target Qty) * 100%</span>
         </div>
         <div class="px-6 py-4">
             <div class="overflow-x-auto">
@@ -207,7 +207,8 @@
                         <tr class="text-left text-xs font-extrabold uppercase text-gray-400 tracking-wider">
                             <th class="px-6 py-3">Product Category</th>
                             <th class="px-6 py-3 text-right">Achieved Value (Rs)</th>
-                            <th class="px-6 py-3 text-right">Target Value (Rs)</th>
+                            <th class="px-6 py-3 text-right">Achieved Qty</th>
+                            <th class="px-6 py-3 text-right">Target Qty</th>
                             <th class="px-6 py-3 text-right">Achieved Percentage</th>
                         </tr>
                     </thead>
@@ -586,7 +587,8 @@ async function fetchMainData(year, month) {
                 <tr class="hover:bg-gray-50/50 transition-colors">
                     <td class="px-6 py-3.5 text-gray-900 font-bold">${row.category}</td>
                     <td class="px-6 py-3.5 text-right font-semibold text-gray-700">Rs ${fmtFull(row.sales)}</td>
-                    <td class="px-6 py-3.5 text-right font-semibold text-gray-700">${row.has_target ? 'Rs ' + fmtFull(row.target) : 'No Target'}</td>
+                    <td class="px-6 py-3.5 text-right font-semibold text-gray-700">${fmtNum(row.achieved_qty)} units</td>
+                    <td class="px-6 py-3.5 text-right font-semibold text-gray-700">${row.has_target ? fmtNum(row.target) + ' units' : 'No Target'}</td>
                     <td class="px-6 py-3.5 text-right font-bold ${pctColor}">${pctText}</td>
                 </tr>
             `;
@@ -792,7 +794,7 @@ async function fetchProductTargets(year, month) {
 
         // 1. Gauge chart
         const ctxGauge = document.getElementById(`gauge-prod-${id}`).getContext('2d');
-        const achieved = parseFloat(p.actual_sales) || 0;
+        const achieved = parseFloat(p.actual_qty) || 0;
         const target   = parseFloat(p.target_value) || 0;
 
         let valText = 'No Target';
@@ -804,7 +806,7 @@ async function fetchProductTargets(year, month) {
             const pct = Math.min((achieved / target) * 100, 100);
             valData = [achieved, Math.max(target - achieved, 0)];
             valText = `${p.pct_achieved}%`;
-            subText = `Target: ${fmtCur(target)}`;
+            subText = `Target: ${fmtNum(target)} units`;
             color = p.pct_achieved >= 100 ? '#10b981' : (p.pct_achieved >= 50 ? '#f59e0b' : '#ef4444');
         }
 

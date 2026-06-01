@@ -99,6 +99,27 @@ class SalesDashboardView(LoginRequiredMixin, TemplateView):
         except ImportError:
             context['saved_filters'] = []
             
+        # Determine target month/year from date_from or today
+        target_date = timezone.now().date()
+        if date_from:
+            from datetime import datetime
+            if isinstance(date_from, str):
+                try:
+                    target_date = datetime.strptime(date_from, '%Y-%m-%d').date()
+                except ValueError:
+                    pass
+            else:
+                target_date = date_from
+
+        target_year = target_date.year
+        target_month = target_date.month
+
+        # Fetch Salesperson targets for this month
+        from dashboard.models import SalespersonTarget
+        sp_targets_map = {}
+        for spt in SalespersonTarget.objects.filter(year=target_year, month=target_month):
+            sp_targets_map[spt.salesperson_id] = spt.target_value
+
         # Calculate performance per Sales Officer
         officer_performance = []
         for officer in sales_officers:
@@ -114,8 +135,10 @@ class SalesDashboardView(LoginRequiredMixin, TemplateView):
             net_with = off_rev_with - off_cred
             net_ex = off_rev_ex - Decimal(str(off_cred_sub))
             
-            if net_with > 0 or officer_invs.exists() or officer.monthly_target > 0:
-                target = officer.monthly_target or Decimal('0.00')
+            sp_target_val = sp_targets_map.get(officer.id, Decimal('0.00'))
+            
+            if net_with > 0 or officer_invs.exists() or sp_target_val > 0:
+                target = sp_target_val
                 if target > 0:
                     progress_pct = min((net_ex / target) * 100, Decimal('100.00'))
                 else:
@@ -130,8 +153,8 @@ class SalesDashboardView(LoginRequiredMixin, TemplateView):
                     'progress_pct': progress_pct
                 })
         
-        # Sort by total_sales descending
-        officer_performance.sort(key=lambda x: x['total_sales'], reverse=True)
+        # Sort by total_ex_vat descending for leaderboard
+        officer_performance.sort(key=lambda x: x['total_ex_vat'], reverse=True)
         context['officer_performance'] = officer_performance
         
         # --- Chart Data Generation ---
@@ -139,9 +162,12 @@ class SalesDashboardView(LoginRequiredMixin, TemplateView):
         # 1. Leaderboard Data (Bar Chart)
         # Using the sorted officer_performance list
         leaderboard_names = [perf['officer'].get_full_name() or perf['officer'].username for perf in officer_performance]
-        leaderboard_sales = [float(perf['total_sales']) for perf in officer_performance]
+        leaderboard_sales = [float(perf['total_ex_vat']) for perf in officer_performance]
+        leaderboard_targets = [float(perf['target']) for perf in officer_performance]
         context['leaderboard_names_json'] = json.dumps(leaderboard_names)
         context['leaderboard_sales_json'] = json.dumps(leaderboard_sales)
+        context['leaderboard_targets_json'] = json.dumps(leaderboard_targets)
+        context['target_month_name'] = target_date.strftime('%B %Y')
         
         # 2. Revenue Trendline Data (Line Chart)
         end_date = timezone.now().date()
