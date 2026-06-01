@@ -834,7 +834,7 @@
                 sel.innerHTML = '<option value="">— Select delivery address —</option>';
                 return;
             }
-            fetch('/customers/' + customerId + '/delivery-addresses/')
+            fetch('/crm/' + customerId + '/delivery-addresses/')
                 .then(r => r.json())
                 .then(data => {
                     deliveryAddresses = data.addresses || [];
