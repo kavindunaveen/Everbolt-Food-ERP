@@ -127,14 +127,17 @@ class DashboardDataAPI(LoginRequiredMixin, View):
         overall_sales_total = invoice_items.annotate(ex_vat=F('line_total') - F('tax_amount')).aggregate(Sum('ex_vat'))['ex_vat__sum'] or 0
         confectionery_sales = invoice_items.filter(product__category__icontains='Confectionery').annotate(ex_vat=F('line_total') - F('tax_amount')).aggregate(Sum('ex_vat'))['ex_vat__sum'] or 0
 
-        sugar_qty   = invoice_items.filter(product__category__icontains='Sugar').aggregate(Sum('quantity'))['quantity__sum'] or 0
-        sugar_sales = invoice_items.filter(product__category__icontains='Sugar').annotate(ex_vat=F('line_total') - F('tax_amount')).aggregate(Sum('ex_vat'))['ex_vat__sum'] or 0
+        sugar_items = invoice_items.filter(Q(product__category__icontains='Sugar') | Q(product__name__icontains='Sugar'))
+        sugar_qty   = sugar_items.aggregate(Sum('quantity'))['quantity__sum'] or 0
+        sugar_sales = sugar_items.annotate(ex_vat=F('line_total') - F('tax_amount')).aggregate(Sum('ex_vat'))['ex_vat__sum'] or 0
 
-        creamer_qty   = invoice_items.filter(product__category__icontains='Creamer').aggregate(Sum('quantity'))['quantity__sum'] or 0
-        creamer_sales = invoice_items.filter(product__category__icontains='Creamer').annotate(ex_vat=F('line_total') - F('tax_amount')).aggregate(Sum('ex_vat'))['ex_vat__sum'] or 0
+        creamer_items = invoice_items.filter(Q(product__category__icontains='Creamer') | Q(product__name__icontains='Creamer'))
+        creamer_qty   = creamer_items.aggregate(Sum('quantity'))['quantity__sum'] or 0
+        creamer_sales = creamer_items.annotate(ex_vat=F('line_total') - F('tax_amount')).aggregate(Sum('ex_vat'))['ex_vat__sum'] or 0
 
-        tea_qty   = invoice_items.filter(product__category__icontains='Tea').aggregate(Sum('quantity'))['quantity__sum'] or 0
-        tea_sales = invoice_items.filter(product__category__icontains='Tea').annotate(ex_vat=F('line_total') - F('tax_amount')).aggregate(Sum('ex_vat'))['ex_vat__sum'] or 0
+        tea_items = invoice_items.filter(Q(product__category__icontains='Tea') | Q(product__name__icontains='Tea'))
+        tea_qty   = tea_items.aggregate(Sum('quantity'))['quantity__sum'] or 0
+        tea_sales = tea_items.annotate(ex_vat=F('line_total') - F('tax_amount')).aggregate(Sum('ex_vat'))['ex_vat__sum'] or 0
 
         # Monthly Trends (always show full year trend regardless of month filter)
         all_items_year = InvoiceItem.objects.filter(
@@ -151,26 +154,27 @@ class DashboardDataAPI(LoginRequiredMixin, View):
             'overall_sales': [0] * 12,
         }
         monthly_items = all_items_year.values(
-            'invoice__creation_date__month', 'product__category'
+            'invoice__creation_date__month', 'product__category', 'product__name'
         ).annotate(
             ex_vat_sales=F('line_total') - F('tax_amount')
         ).values(
-            'invoice__creation_date__month', 'product__category'
+            'invoice__creation_date__month', 'product__category', 'product__name'
         ).annotate(t_sales=Sum('ex_vat_sales'), t_qty=Sum('quantity'))
 
         for item in monthly_items:
             m_idx  = item['invoice__creation_date__month'] - 1
             c_name = (item['product__category'] or '').lower()
+            p_name = (item['product__name'] or '').lower()
             val_s  = float(item['t_sales'] or 0)
             val_q  = float(item['t_qty']   or 0)
             trend_data['overall_sales'][m_idx] += val_s
-            if 'sugar' in c_name:
+            if 'sugar' in c_name or 'sugar' in p_name:
                 trend_data['sugar_sales'][m_idx] += val_s
                 trend_data['sugar_qty'][m_idx]   += val_q
-            elif 'creamer' in c_name:
+            elif 'creamer' in c_name or 'creamer' in p_name:
                 trend_data['creamer_sales'][m_idx] += val_s
                 trend_data['creamer_qty'][m_idx]   += val_q
-            elif 'tea' in c_name:
+            elif 'tea' in c_name or 'tea' in p_name:
                 trend_data['tea_sales'][m_idx] += val_s
                 trend_data['tea_qty'][m_idx]   += val_q
 
