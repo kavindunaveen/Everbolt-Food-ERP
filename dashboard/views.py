@@ -64,29 +64,35 @@ class AnalyticsDashboardView(LoginRequiredMixin, TemplateView):
 
 class DashboardDataAPI(LoginRequiredMixin, View):
     def get(self, request, *args, **kwargs):
-        year = request.GET.get('year', timezone.now().year)
-        try:
-            year = int(year)
-        except Exception:
-            year = timezone.now().year
-
-        # Optional month filter (1–12). None = full year.
-        month_raw = request.GET.get('month')
-        month = None
-        try:
-            m = int(month_raw)
-            if 1 <= m <= 12:
-                month = m
-        except (TypeError, ValueError):
-            pass
+        import calendar
+        date_from_raw = request.GET.get('date_from')
+        date_to_raw = request.GET.get('date_to')
+        
+        target_year = timezone.now().year
+        target_month = timezone.now().month
+        using_custom_dates = False
 
         # Base invoices query
-        inv_qs = Invoice.objects.filter(
-            creation_date__year=year,
-            status__in=[Invoice.Status.ISSUED, Invoice.Status.PAID]
-        )
-        if month:
-            inv_qs = inv_qs.filter(creation_date__month=month)
+        inv_qs = Invoice.objects.filter(status__in=[Invoice.Status.ISSUED, Invoice.Status.PAID])
+
+        if date_from_raw and date_to_raw:
+            try:
+                date_from = timezone.datetime.strptime(date_from_raw, '%Y-%m-%d').date()
+                date_to = timezone.datetime.strptime(date_to_raw, '%Y-%m-%d').date()
+                inv_qs = inv_qs.filter(creation_date__date__gte=date_from, creation_date__date__lte=date_to)
+                
+                last_day = calendar.monthrange(date_from.year, date_from.month)[1]
+                if date_from.day == 1 and date_to.month == date_from.month and date_to.year == date_from.year and date_to.day == last_day:
+                    target_year = date_from.year
+                    target_month = date_from.month
+                else:
+                    using_custom_dates = True
+                    target_year = date_from.year
+                    target_month = date_from.month
+            except ValueError:
+                pass
+        else:
+            inv_qs = inv_qs.filter(creation_date__year=target_year, creation_date__month=target_month)
 
         invoice_items = InvoiceItem.objects.filter(invoice__in=inv_qs)
 
@@ -109,7 +115,7 @@ class DashboardDataAPI(LoginRequiredMixin, View):
 
         # Monthly Trends (always show full year trend regardless of month filter)
         all_items_year = InvoiceItem.objects.filter(
-            invoice__creation_date__year=year,
+            invoice__creation_date__year=target_year,
             invoice__status__in=[Invoice.Status.ISSUED, Invoice.Status.PAID]
         )
         months_names = ["January", "February", "March", "April", "May", "June",
@@ -147,37 +153,40 @@ class DashboardDataAPI(LoginRequiredMixin, View):
 
         # -------------------------------------------------------------------
         # Targets — month-aware
-        # When a month is selected: look for a monthly target (month=month).
-        # If none exists, return 0 (shown as "No Target" in gauges).
-        # When full-year: look for yearly targets (month=None).
+        # If using_custom_dates is True, targets are hidden.
         # -------------------------------------------------------------------
-        def _get_targets(for_month):
+        def _get_targets(for_year, for_month):
+            if using_custom_dates:
+                return {
+                    "overall": 0, "sugar": 0, "creamer": 0, "tea": 0, "has_target": False
+                }
+
             sugar_qs = ProductTarget.objects.filter(
                 Q(target_group__products__category__icontains='sugar') | Q(target_group__products__name__icontains='sugar') | Q(target_group__name__icontains='sugar'),
-                year=year, month=for_month
+                year=for_year, month=for_month
             ).distinct()
             sugar_t = sum(float(pt.target_value) for pt in sugar_qs)
 
             creamer_qs = ProductTarget.objects.filter(
                 Q(target_group__products__category__icontains='creamer') | Q(target_group__products__name__icontains='creamer') | Q(target_group__name__icontains='creamer'),
-                year=year, month=for_month
+                year=for_year, month=for_month
             ).distinct()
             creamer_t = sum(float(pt.target_value) for pt in creamer_qs)
 
             tea_qs = ProductTarget.objects.filter(
                 Q(target_group__products__category__icontains='tea') | Q(target_group__name__icontains='tea'),
-                year=year, month=for_month
+                year=for_year, month=for_month
             ).exclude(
                 Q(target_group__products__name__icontains='catering tea') | Q(target_group__name__icontains='catering tea')
             ).distinct()
             tea_t = sum(float(pt.target_value) for pt in tea_qs)
 
             overall_qs = ProductTarget.objects.filter(
-                year=year, month=for_month
+                year=for_year, month=for_month
             ).distinct()
             overall_t = get_target_value_rs(overall_qs)
 
-            has_target = ProductTarget.objects.filter(year=year, month=for_month).exists()
+            has_target = ProductTarget.objects.filter(year=for_year, month=for_month).exists()
 
             return {
                 "overall": overall_t,
@@ -187,7 +196,7 @@ class DashboardDataAPI(LoginRequiredMixin, View):
                 "has_target": has_target
             }
 
-        target_dict = _get_targets(for_month=month)  # month is None = yearly
+        target_dict = _get_targets(target_year, target_month)
 
         # ── Target achievement list by product category ──────────────────
         def _get_pct(achieved, target):
@@ -204,8 +213,11 @@ class DashboardDataAPI(LoginRequiredMixin, View):
                 sales = float(items_group.annotate(ex_vat=F('line_total') - F('tax_amount')).aggregate(s=Sum('ex_vat'))['s'] or 0)
                 achieved_qty = float(items_group.aggregate(s=Sum('quantity'))['s'] or 0)
             
-            group_targets = ProductTarget.objects.filter(target_group=group, year=year, month=month)
-            target_qty = float(group_targets.aggregate(s=Sum('target_value'))['s'] or 0)
+            if using_custom_dates:
+                target_qty = 0.0
+            else:
+                group_targets = ProductTarget.objects.filter(target_group=group, year=target_year, month=target_month)
+                target_qty = float(group_targets.aggregate(s=Sum('target_value'))['s'] or 0)
             
             achievement_rows.append({
                 'category': group.name,
@@ -213,11 +225,11 @@ class DashboardDataAPI(LoginRequiredMixin, View):
                 'achieved_qty': achieved_qty,
                 'target': target_qty,
                 'pct': _get_pct(achieved_qty, target_qty),
-                'has_target': target_qty > 0
+                'has_target': not using_custom_dates and target_qty > 0
             })
 
         data = {
-            "month": month,
+            "month": target_month if not using_custom_dates else None,
             "overview": {
                 "total_invoices":      total_invoices,
                 "total_customers":     total_customers,
@@ -247,28 +259,25 @@ class ConfectioneryAnalyticsAPI(LoginRequiredMixin, View):
     """
 
     def get(self, request, *args, **kwargs):
-        year = request.GET.get('year', timezone.now().year)
-        try:
-            year = int(year)
-        except Exception:
-            year = timezone.now().year
+        date_from_raw = request.GET.get('date_from')
+        date_to_raw = request.GET.get('date_to')
 
-        month_raw = request.GET.get('month')
-        month = None
-        try:
-            m = int(month_raw)
-            if 1 <= m <= 12:
-                month = m
-        except (TypeError, ValueError):
-            pass
+        target_year = timezone.now().year
+        target_month = timezone.now().month
 
-        # Only issued / paid invoices for the selected year/month
-        inv_qs = Invoice.objects.filter(
-            creation_date__year=year,
-            status__in=[Invoice.Status.ISSUED, Invoice.Status.PAID]
-        )
-        if month:
-            inv_qs = inv_qs.filter(creation_date__month=month)
+        inv_qs = Invoice.objects.filter(status__in=[Invoice.Status.ISSUED, Invoice.Status.PAID])
+
+        if date_from_raw and date_to_raw:
+            try:
+                date_from = timezone.datetime.strptime(date_from_raw, '%Y-%m-%d').date()
+                date_to = timezone.datetime.strptime(date_to_raw, '%Y-%m-%d').date()
+                inv_qs = inv_qs.filter(creation_date__date__gte=date_from, creation_date__date__lte=date_to)
+                target_year = date_from.year
+                target_month = date_from.month
+            except ValueError:
+                pass
+        else:
+            inv_qs = inv_qs.filter(creation_date__year=target_year, creation_date__month=target_month)
 
         invoices = inv_qs
 
@@ -643,15 +652,29 @@ class ProductSearchAPI(LoginRequiredMixin, View):
 # ---------------------------------------------------------------------------
 class ProductTargetsAPI(LoginRequiredMixin, View):
     def get(self, request, *args, **kwargs):
-        year = int(request.GET.get('year', timezone.now().year))
-        month_raw = request.GET.get('month')
-        month = None
-        try:
-            m = int(month_raw)
-            if 1 <= m <= 12:
-                month = m
-        except (TypeError, ValueError):
-            pass
+        import calendar
+        date_from_raw = request.GET.get('date_from')
+        date_to_raw = request.GET.get('date_to')
+
+        target_year = timezone.now().year
+        target_month = timezone.now().month
+        using_custom_dates = False
+
+        if date_from_raw and date_to_raw:
+            try:
+                date_from = timezone.datetime.strptime(date_from_raw, '%Y-%m-%d').date()
+                date_to = timezone.datetime.strptime(date_to_raw, '%Y-%m-%d').date()
+                
+                last_day = calendar.monthrange(date_from.year, date_from.month)[1]
+                if date_from.day == 1 and date_to.month == date_from.month and date_to.year == date_from.year and date_to.day == last_day:
+                    target_year = date_from.year
+                    target_month = date_from.month
+                else:
+                    using_custom_dates = True
+                    target_year = date_from.year
+                    target_month = date_from.month
+            except ValueError:
+                pass
 
         STATUSES = [Invoice.Status.ISSUED, Invoice.Status.PAID]
         results = []
@@ -664,11 +687,18 @@ class ProductTargetsAPI(LoginRequiredMixin, View):
             # ── Actual sales for selected period ─────────────────────────
             items_qs = InvoiceItem.objects.filter(
                 product__in=products_list,
-                invoice__creation_date__year=year,
                 invoice__status__in=STATUSES,
             )
-            if month:
-                items_qs = items_qs.filter(invoice__creation_date__month=month)
+            if date_from_raw and date_to_raw and 'date_from' in locals() and 'date_to' in locals():
+                items_qs = items_qs.filter(
+                    invoice__creation_date__date__gte=date_from,
+                    invoice__creation_date__date__lte=date_to
+                )
+            else:
+                items_qs = items_qs.filter(
+                    invoice__creation_date__year=target_year,
+                    invoice__creation_date__month=target_month
+                )
 
             actual = float(
                 items_qs.annotate(ex_vat=F('line_total') - F('tax_amount'))
@@ -679,20 +709,24 @@ class ProductTargetsAPI(LoginRequiredMixin, View):
             )
 
             # ── Target for this period ────────────────────────────────────
-            try:
-                pt = ProductTarget.objects.get(target_group=group, year=year, month=month)
-                target_qty = float(pt.target_value)
-                has_target = True
-            except ProductTarget.DoesNotExist:
+            if using_custom_dates:
                 target_qty = 0.0
                 has_target = False
+            else:
+                try:
+                    pt = ProductTarget.objects.get(target_group=group, year=target_year, month=target_month)
+                    target_qty = float(pt.target_value)
+                    has_target = True
+                except ProductTarget.DoesNotExist:
+                    target_qty = 0.0
+                    has_target = False
 
             pct = round(actual_qty / target_qty * 100, 1) if target_qty > 0 else 0
 
             # ── Monthly trend (always full 12 months) ─────────────────────
             all_year_qs = InvoiceItem.objects.filter(
                 product__in=products_list,
-                invoice__creation_date__year=year,
+                invoice__creation_date__year=target_year,
                 invoice__status__in=STATUSES,
             ).annotate(ex_vat=F('line_total') - F('tax_amount')).values(
                 'invoice__creation_date__month'
@@ -705,7 +739,7 @@ class ProductTargetsAPI(LoginRequiredMixin, View):
 
             # ── Monthly targets ───────────────────────────────────────────
             monthly_targets = [0.0] * 12
-            for pt_m in ProductTarget.objects.filter(target_group=group, year=year,
+            for pt_m in ProductTarget.objects.filter(target_group=group, year=target_year,
                                                      month__isnull=False):
                 monthly_targets[pt_m.month - 1] = float(pt_m.target_value)
 
@@ -723,4 +757,4 @@ class ProductTargetsAPI(LoginRequiredMixin, View):
                 'monthly_targets': monthly_targets,
             })
 
-        return JsonResponse({'year': year, 'month': month, 'products': results})
+        return JsonResponse({'year': target_year, 'month': target_month if not using_custom_dates else None, 'products': results})

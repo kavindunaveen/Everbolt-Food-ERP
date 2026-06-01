@@ -19,43 +19,30 @@
         <!-- Filter + Actions bar -->
         <div class="flex flex-wrap items-center gap-3">
 
-            <!-- Year + Month selectors -->
-            <div class="bg-white px-4 py-2 rounded-xl shadow-sm border border-gray-100 flex items-center gap-3">
-                <!-- Year -->
+            <!-- Custom Date Filters -->
+            <div class="bg-white px-4 py-2 rounded-xl shadow-sm border border-gray-100 flex flex-wrap items-center gap-3">
                 <div class="flex items-center gap-2">
-                    <label for="yearSelect" class="text-xs font-black text-gray-400 uppercase tracking-widest">Year</label>
-                    <select id="yearSelect" class="border-0 shadow-none text-red-600 font-extrabold text-base focus:ring-0 bg-transparent cursor-pointer">
-                        <option value="2026" selected>2026</option>
-                        <option value="2025">2025</option>
-                        <option value="2024">2024</option>
-                    </select>
+                    <label for="dateFrom" class="text-xs font-black text-gray-400 uppercase tracking-widest">From</label>
+                    <input type="date" id="dateFrom" class="border-0 shadow-none text-indigo-600 font-extrabold text-sm focus:ring-0 bg-transparent cursor-pointer p-0 h-auto">
                 </div>
 
-                <div class="w-px h-6 bg-gray-200"></div>
+                <div class="w-px h-6 bg-gray-200 hidden sm:block"></div>
 
-                <!-- Month -->
                 <div class="flex items-center gap-2">
-                    <label for="monthSelect" class="text-xs font-black text-gray-400 uppercase tracking-widest">Month</label>
-                    <select id="monthSelect" class="border-0 shadow-none text-blue-600 font-extrabold text-base focus:ring-0 bg-transparent cursor-pointer">
-                        <option value="" selected>Full Year</option>
-                        <option value="1">January</option>
-                        <option value="2">February</option>
-                        <option value="3">March</option>
-                        <option value="4">April</option>
-                        <option value="5">May</option>
-                        <option value="6">June</option>
-                        <option value="7">July</option>
-                        <option value="8">August</option>
-                        <option value="9">September</option>
-                        <option value="10">October</option>
-                        <option value="11">November</option>
-                        <option value="12">December</option>
-                    </select>
+                    <label for="dateTo" class="text-xs font-black text-gray-400 uppercase tracking-widest">To</label>
+                    <input type="date" id="dateTo" class="border-0 shadow-none text-indigo-600 font-extrabold text-sm focus:ring-0 bg-transparent cursor-pointer p-0 h-auto">
                 </div>
 
-                <div class="w-px h-6 bg-gray-200"></div>
+                <div class="w-px h-6 bg-gray-200 hidden sm:block"></div>
 
-                <!-- Live status -->
+                <button type="button" onclick="clearDates()" class="text-xs font-bold text-red-500 hover:text-red-700 bg-red-50 hover:bg-red-100 px-2 py-1 rounded transition-colors uppercase tracking-wider">
+                    Clear
+                </button>
+            </div>
+
+            <div class="w-px h-6 bg-gray-200 hidden md:block"></div>
+
+            <!-- Live status -->
                 <div class="flex items-center gap-2 text-sm text-gray-400">
                     <span id="lastUpdated">Updating...</span>
                     <span class="relative flex h-3 w-3">
@@ -424,7 +411,16 @@ function initExistingCharts() {
     gaugeTea     = new Chart(document.getElementById('gaugeTeaChart').getContext('2d'),     createGaugeCfg());
 }
 
-function updateGauge(chart, valEl, subEl, achieved, target, color) {
+function updateGauge(chart, valEl, subEl, achieved, target, color, hasTarget) {
+    if (hasTarget === false) {
+        chart.data.datasets[0].data = [0, 100];
+        chart.data.datasets[0].backgroundColor[0] = '#d1d5db';
+        chart.update();
+        document.getElementById(valEl).innerText = 'No Target';
+        if (subEl) document.getElementById(subEl).innerText = 'Custom Date / No Target';
+        return;
+    }
+
     achieved = parseFloat(achieved) || 0;
     target   = parseFloat(target)   || 0;
     let p = 0, rem = target;
@@ -529,9 +525,11 @@ function initConfecCharts() {
 // ============================================================
 // Fetch + Render — existing data
 // ============================================================
-async function fetchMainData(year, month) {
-    let url = `/dashboard/api/data/?year=${year}`;
-    if (month) url += `&month=${month}`;
+async function fetchMainData(dateFrom, dateTo) {
+    let url = `/dashboard/api/data/?`;
+    if (dateFrom) url += `date_from=${dateFrom}&`;
+    if (dateTo) url += `date_to=${dateTo}&`;
+
     const resp = await fetch(url);
     if (!resp.ok) throw new Error('Main API failed');
     const data = await resp.json();
@@ -563,16 +561,16 @@ async function fetchMainData(year, month) {
     updateTrend(creamerChart, data.trends.creamer_sales, data.trends.creamer_qty, '#d97706','rgba(217,119,6,0.4)');
     updateTrend(teaChart,     data.trends.tea_sales,     data.trends.tea_qty,     '#059669','rgba(5,150,105,0.4)');
 
-    updateGauge(gaugeOverall,'gauge-overall-val','gauge-overall-sub', data.overview.overall_sales_total, data.targets.overall, '#ef4444');
-    updateGauge(gaugeSugar,  'gauge-sugar-val',  null, data.overview.sugar_qty,   data.targets.sugar,   '#3b82f6');
+    updateGauge(gaugeOverall,'gauge-overall-val','gauge-overall-sub', data.overview.overall_sales_total, data.targets.overall, '#ef4444', data.targets.has_target);
+    updateGauge(gaugeSugar,  'gauge-sugar-val',  null, data.overview.sugar_qty,   data.targets.sugar,   '#3b82f6', data.targets.has_target);
     document.getElementById('sugar-sold').innerText   = fmtNum(data.overview.sugar_qty) + ' units';
-    document.getElementById('sugar-target').innerText = fmtNum(data.targets.sugar) + ' units';
-    updateGauge(gaugeCreamer,'gauge-creamer-val',null, data.overview.creamer_qty, data.targets.creamer, '#f59e0b');
+    document.getElementById('sugar-target').innerText = data.targets.has_target ? fmtNum(data.targets.sugar) + ' units' : '-';
+    updateGauge(gaugeCreamer,'gauge-creamer-val',null, data.overview.creamer_qty, data.targets.creamer, '#f59e0b', data.targets.has_target);
     document.getElementById('creamer-sold').innerText   = fmtNum(data.overview.creamer_qty) + ' units';
-    document.getElementById('creamer-target').innerText = fmtNum(data.targets.creamer) + ' units';
-    updateGauge(gaugeTea,    'gauge-tea-val',    null, data.overview.tea_qty,     data.targets.tea,     '#10b981');
+    document.getElementById('creamer-target').innerText = data.targets.has_target ? fmtNum(data.targets.creamer) + ' units' : '-';
+    updateGauge(gaugeTea,    'gauge-tea-val',    null, data.overview.tea_qty,     data.targets.tea,     '#10b981', data.targets.has_target);
     document.getElementById('tea-sold').innerText   = fmtNum(data.overview.tea_qty) + ' units';
-    document.getElementById('tea-target').innerText = fmtNum(data.targets.tea) + ' units';
+    document.getElementById('tea-target').innerText = data.targets.has_target ? fmtNum(data.targets.tea) + ' units' : '-';
 
     // Populate Category Achievement table
     const tableBody = document.getElementById('category-achievement-table-body');
@@ -599,9 +597,10 @@ async function fetchMainData(year, month) {
 // ============================================================
 // Fetch + Render — NEW Confectionery data
 // ============================================================
-async function fetchConfecData(year, month) {
-    let url = `/dashboard/api/confectionery/?year=${year}`;
-    if (month) url += `&month=${month}`;
+async function fetchConfecData(dateFrom, dateTo) {
+    let url = `/dashboard/api/confectionery/?`;
+    if (dateFrom) url += `date_from=${dateFrom}&`;
+    if (dateTo) url += `date_to=${dateTo}&`;
     const resp = await fetch(url);
     if (!resp.ok) throw new Error('Confectionery API failed');
     const data = await resp.json();
@@ -717,10 +716,12 @@ const MONTH_LABELS = ['January','February','March','April','May','June',
 
 let productCharts = {};
 
-async function fetchProductTargets(year, month) {
-    let url = `/dashboard/api/product-targets/?year=${year}`;
-    if (month) url += `&month=${month}`;
-
+// Fetch + Render — NEW Product Targets
+// ============================================================
+async function fetchProductTargets(dateFrom, dateTo) {
+    let url = `/dashboard/api/product-targets/?`;
+    if (dateFrom) url += `date_from=${dateFrom}&`;
+    if (dateTo) url += `date_to=${dateTo}&`;
     const resp = await fetch(url);
     if (!resp.ok) throw new Error('Product targets API failed');
     const data = await resp.json();
@@ -866,26 +867,32 @@ async function fetchProductTargets(year, month) {
 
 const MONTH_ABBR = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 
+function clearDates() {
+    document.getElementById('dateFrom').value = '';
+    document.getElementById('dateTo').value = '';
+    fetchData();
+}
+
 async function fetchData() {
-    const year  = document.getElementById('yearSelect').value;
-    const month = document.getElementById('monthSelect').value;  // '' = full year
+    const dateFrom = document.getElementById('dateFrom').value;
+    const dateTo   = document.getElementById('dateTo').value;
     document.getElementById('lastUpdated').innerText = 'Fetching...';
 
     // Period badge
     const badge     = document.getElementById('periodBadge');
     const badgeText = document.getElementById('periodBadgeText');
-    if (month) {
+    if (dateFrom || dateTo) {
         badge.classList.remove('hidden');
-        badgeText.innerText = `${MONTH_LABELS[parseInt(month)-1]} ${year}`;
+        badgeText.innerText = `${dateFrom || 'Start'} to ${dateTo || 'End'}`;
     } else {
         badge.classList.add('hidden');
     }
 
     try {
         await Promise.all([
-            fetchMainData(year, month),
-            fetchConfecData(year, month),
-            fetchProductTargets(year, month),
+            fetchMainData(dateFrom, dateTo),
+            fetchConfecData(dateFrom, dateTo),
+            fetchProductTargets(dateFrom, dateTo),
         ]);
         const now = new Date();
         document.getElementById('lastUpdated').innerText =
@@ -901,14 +908,25 @@ async function fetchData() {
 // ============================================================
 document.addEventListener('DOMContentLoaded', () => {
     // Default to current month if not explicitly set
-    const currentMonth = new Date().getMonth() + 1;
-    document.getElementById('monthSelect').value = currentMonth;
+    const today = new Date();
+    const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
+    const lastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+
+    const formatDate = (d) => {
+        const yyyy = d.getFullYear();
+        const mm = String(d.getMonth() + 1).padStart(2, '0');
+        const dd = String(d.getDate()).padStart(2, '0');
+        return `${yyyy}-${mm}-${dd}`;
+    };
+
+    document.getElementById('dateFrom').value = formatDate(firstDay);
+    document.getElementById('dateTo').value = formatDate(lastDay);
 
     initExistingCharts();
     initConfecCharts();
     fetchData();
-    document.getElementById('yearSelect').addEventListener('change', fetchData);
-    document.getElementById('monthSelect').addEventListener('change', fetchData);
+    document.getElementById('dateFrom').addEventListener('change', fetchData);
+    document.getElementById('dateTo').addEventListener('change', fetchData);
     setInterval(fetchData, 60000);
 });
 </script>
