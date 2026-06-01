@@ -10,58 +10,52 @@
 
 <div class="px-4 py-6 sm:px-0">
     <!-- Header -->
-    <div class="mb-8 flex flex-col md:flex-row md:items-end md:justify-between gap-4">
+    <div class="mb-8 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+        <!-- Title & Live Indicator -->
         <div>
             <h1 class="text-4xl font-extrabold text-gray-900 tracking-tight">Analytics Dashboard</h1>
-            <p class="mt-2 text-lg text-gray-600 font-medium">Live updating sales metrics, targets, and KPIs.</p>
+            <div class="mt-2 flex items-center gap-2">
+                <p class="text-lg text-gray-600 font-medium">Live updating sales metrics, targets, and KPIs.</p>
+                <div class="flex items-center gap-2 px-3 py-1 bg-emerald-50 rounded-full border border-emerald-100">
+                    <span class="relative flex h-2.5 w-2.5">
+                      <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                      <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+                    </span>
+                    <span id="lastUpdated" class="text-xs font-bold text-emerald-700 tracking-wide uppercase">Updating...</span>
+                </div>
+            </div>
         </div>
 
-        <!-- Filter + Actions bar -->
-        <div class="flex flex-wrap items-center gap-3">
+        <!-- Controls -->
+        <div class="flex flex-wrap items-center gap-4">
+            
+            <!-- Date Filter Card -->
+            <div class="bg-white px-3 py-2 rounded-xl shadow-sm border border-gray-200 flex items-center gap-2 transition-shadow hover:shadow-md">
+                <div class="flex items-center gap-2 bg-gray-50 px-2 py-1 rounded-lg border border-gray-100">
+                    <span class="text-xs font-black text-gray-400 uppercase tracking-widest">From</span>
+                    <input type="date" id="dateFrom" class="border-0 shadow-none text-indigo-700 font-bold text-sm focus:ring-0 bg-transparent p-0 w-32 cursor-pointer">
+                </div>
+                
+                <span class="text-gray-300 font-bold">—</span>
 
-            <!-- Custom Date Filters -->
-            <div class="bg-white px-4 py-2 rounded-xl shadow-sm border border-gray-100 flex flex-wrap items-center gap-3">
-                <div class="flex items-center gap-2">
-                    <label for="dateFrom" class="text-xs font-black text-gray-400 uppercase tracking-widest">From</label>
-                    <input type="date" id="dateFrom" class="border-0 shadow-none text-indigo-600 font-extrabold text-sm focus:ring-0 bg-transparent cursor-pointer p-0 h-auto">
+                <div class="flex items-center gap-2 bg-gray-50 px-2 py-1 rounded-lg border border-gray-100">
+                    <span class="text-xs font-black text-gray-400 uppercase tracking-widest">To</span>
+                    <input type="date" id="dateTo" class="border-0 shadow-none text-indigo-700 font-bold text-sm focus:ring-0 bg-transparent p-0 w-32 cursor-pointer">
                 </div>
 
-                <div class="w-px h-6 bg-gray-200 hidden sm:block"></div>
+                <div class="w-px h-6 bg-gray-200 mx-1"></div>
 
-                <div class="flex items-center gap-2">
-                    <label for="dateTo" class="text-xs font-black text-gray-400 uppercase tracking-widest">To</label>
-                    <input type="date" id="dateTo" class="border-0 shadow-none text-indigo-600 font-extrabold text-sm focus:ring-0 bg-transparent cursor-pointer p-0 h-auto">
-                </div>
-
-                <div class="w-px h-6 bg-gray-200 hidden sm:block"></div>
-
-                <button type="button" onclick="clearDates()" class="text-xs font-bold text-red-500 hover:text-red-700 bg-red-50 hover:bg-red-100 px-2 py-1 rounded transition-colors uppercase tracking-wider">
+                <button type="button" onclick="clearDates()" class="text-xs font-bold text-red-500 hover:text-red-700 hover:bg-red-50 px-2 py-1.5 rounded-lg transition-colors uppercase tracking-widest flex items-center gap-1" title="Clear Filters">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
                     Clear
                 </button>
             </div>
 
-            <div class="w-px h-6 bg-gray-200 hidden md:block"></div>
-
-            <!-- Live status -->
-                <div class="flex items-center gap-2 text-sm text-gray-400">
-                    <span id="lastUpdated">Updating...</span>
-                    <span class="relative flex h-3 w-3">
-                      <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                      <span class="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
-                    </span>
-                </div>
-            </div>
-
-            <!-- Period Badge -->
-            <div id="periodBadge" class="px-3 py-2 rounded-xl bg-blue-50 border border-blue-100 text-xs font-black text-blue-600 uppercase tracking-widest hidden">
-                Viewing: <span id="periodBadgeText"></span>
-            </div>
-
             {% if user.is_admin or user.can_set_targets %}
-            <!-- Manage Targets button (admin / can_set_targets only) -->
+            <!-- Manage Targets button -->
             <a href="{% url 'target_management' %}"
-               class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gray-900 hover:bg-gray-700 text-white text-xs font-black uppercase tracking-widest transition-all shadow-sm hover:shadow-lg">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+               class="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-gray-900 hover:bg-gray-800 text-white text-xs font-black uppercase tracking-widest shadow-sm transition-all hover:shadow-md hover:-translate-y-0.5">
+                <svg class="w-4 h-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                           d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
                     <circle cx="12" cy="12" r="3"/>
@@ -69,7 +63,6 @@
                 Manage Targets
             </a>
             {% endif %}
-
         </div>
     </div>
 
@@ -878,15 +871,7 @@ async function fetchData() {
     const dateTo   = document.getElementById('dateTo').value;
     document.getElementById('lastUpdated').innerText = 'Fetching...';
 
-    // Period badge
-    const badge     = document.getElementById('periodBadge');
-    const badgeText = document.getElementById('periodBadgeText');
-    if (dateFrom || dateTo) {
-        badge.classList.remove('hidden');
-        badgeText.innerText = `${dateFrom || 'Start'} to ${dateTo || 'End'}`;
-    } else {
-        badge.classList.add('hidden');
-    }
+    document.getElementById('lastUpdated').innerText = 'Fetching...';
 
     try {
         await Promise.all([

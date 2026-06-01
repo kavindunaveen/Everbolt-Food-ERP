@@ -365,7 +365,7 @@ class ConfectioneryAnalyticsAPI(LoginRequiredMixin, View):
         }
 
         return JsonResponse({
-            'year': year,
+            'year': target_year,
             'sub_product_totals': sub_product_totals,
             'by_customer': by_customer,
             'by_month': by_month,
