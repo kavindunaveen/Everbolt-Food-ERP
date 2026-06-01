@@ -68,12 +68,12 @@ class SalesDashboardView(LoginRequiredMixin, TemplateView):
             invoices = invoices.filter(invoice_number__icontains=q)
             
         if date_from:
-            quotations = quotations.filter(creation_date__gte=date_from)
-            invoices = invoices.filter(creation_date__gte=date_from)
+            quotations = quotations.filter(creation_date__date__gte=date_from)
+            invoices = invoices.filter(creation_date__date__gte=date_from)
             
         if date_to:
-            quotations = quotations.filter(creation_date__lte=date_to)
-            invoices = invoices.filter(creation_date__lte=date_to)
+            quotations = quotations.filter(creation_date__date__lte=date_to)
+            invoices = invoices.filter(creation_date__date__lte=date_to)
             
         if salesperson_id:
             quotations = quotations.filter(salesperson_id=salesperson_id)
