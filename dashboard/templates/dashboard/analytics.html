@@ -139,7 +139,7 @@
             <div class="relative h-48 mb-6">
                 <canvas id="sugarTrendChart"></canvas>
             </div>
-            <h4 class="text-sm font-bold text-gray-500 text-center uppercase tracking-wider mb-2">Yearly Target</h4>
+            <h4 class="text-sm font-bold text-gray-500 text-center uppercase tracking-wider mb-2">Target Achievement</h4>
             <div class="relative h-40 flex items-center justify-center">
                 <canvas id="gaugeSugarChart"></canvas>
                 <div class="absolute flex flex-col items-center top-[60%]">
@@ -158,7 +158,7 @@
             <div class="relative h-48 mb-6">
                 <canvas id="creamerTrendChart"></canvas>
             </div>
-            <h4 class="text-sm font-bold text-gray-500 text-center uppercase tracking-wider mb-2">Yearly Target</h4>
+            <h4 class="text-sm font-bold text-gray-500 text-center uppercase tracking-wider mb-2">Target Achievement</h4>
             <div class="relative h-40 flex items-center justify-center">
                 <canvas id="gaugeCreamerChart"></canvas>
                 <div class="absolute flex flex-col items-center top-[60%]">
@@ -177,7 +177,7 @@
             <div class="relative h-48 mb-6">
                 <canvas id="teaTrendChart"></canvas>
             </div>
-            <h4 class="text-sm font-bold text-gray-500 text-center uppercase tracking-wider mb-2">Yearly Target</h4>
+            <h4 class="text-sm font-bold text-gray-500 text-center uppercase tracking-wider mb-2">Target Achievement</h4>
             <div class="relative h-40 flex items-center justify-center">
                 <canvas id="gaugeTeaChart"></canvas>
                 <div class="absolute flex flex-col items-center top-[60%]">
@@ -564,15 +564,15 @@ async function fetchMainData(year, month) {
     updateTrend(teaChart,     data.trends.tea_sales,     data.trends.tea_qty,     '#059669','rgba(5,150,105,0.4)');
 
     updateGauge(gaugeOverall,'gauge-overall-val','gauge-overall-sub', data.overview.overall_sales_total, data.targets.overall, '#ef4444');
-    updateGauge(gaugeSugar,  'gauge-sugar-val',  null, data.overview.sugar_sales,   data.targets.sugar,   '#3b82f6');
-    document.getElementById('sugar-sold').innerText   = fmtCur(data.overview.sugar_sales);
-    document.getElementById('sugar-target').innerText = fmtCur(data.targets.sugar);
-    updateGauge(gaugeCreamer,'gauge-creamer-val',null, data.overview.creamer_sales, data.targets.creamer, '#f59e0b');
-    document.getElementById('creamer-sold').innerText   = fmtCur(data.overview.creamer_sales);
-    document.getElementById('creamer-target').innerText = fmtCur(data.targets.creamer);
-    updateGauge(gaugeTea,    'gauge-tea-val',    null, data.overview.tea_sales,     data.targets.tea,     '#10b981');
-    document.getElementById('tea-sold').innerText   = fmtCur(data.overview.tea_sales);
-    document.getElementById('tea-target').innerText = fmtCur(data.targets.tea);
+    updateGauge(gaugeSugar,  'gauge-sugar-val',  null, data.overview.sugar_qty,   data.targets.sugar,   '#3b82f6');
+    document.getElementById('sugar-sold').innerText   = fmtNum(data.overview.sugar_qty) + ' units';
+    document.getElementById('sugar-target').innerText = fmtNum(data.targets.sugar) + ' units';
+    updateGauge(gaugeCreamer,'gauge-creamer-val',null, data.overview.creamer_qty, data.targets.creamer, '#f59e0b');
+    document.getElementById('creamer-sold').innerText   = fmtNum(data.overview.creamer_qty) + ' units';
+    document.getElementById('creamer-target').innerText = fmtNum(data.targets.creamer) + ' units';
+    updateGauge(gaugeTea,    'gauge-tea-val',    null, data.overview.tea_qty,     data.targets.tea,     '#10b981');
+    document.getElementById('tea-sold').innerText   = fmtNum(data.overview.tea_qty) + ' units';
+    document.getElementById('tea-target').innerText = fmtNum(data.targets.tea) + ' units';
 
     // Populate Category Achievement table
     const tableBody = document.getElementById('category-achievement-table-body');
@@ -599,8 +599,10 @@ async function fetchMainData(year, month) {
 // ============================================================
 // Fetch + Render — NEW Confectionery data
 // ============================================================
-async function fetchConfecData(year) {
-    const resp = await fetch(`/dashboard/api/confectionery/?year=${year}`);
+async function fetchConfecData(year, month) {
+    let url = `/dashboard/api/confectionery/?year=${year}`;
+    if (month) url += `&month=${month}`;
+    const resp = await fetch(url);
     if (!resp.ok) throw new Error('Confectionery API failed');
     const data = await resp.json();
 
@@ -882,7 +884,7 @@ async function fetchData() {
     try {
         await Promise.all([
             fetchMainData(year, month),
-            fetchConfecData(year),
+            fetchConfecData(year, month),
             fetchProductTargets(year, month),
         ]);
         const now = new Date();
@@ -898,6 +900,10 @@ async function fetchData() {
 // Boot
 // ============================================================
 document.addEventListener('DOMContentLoaded', () => {
+    // Default to current month if not explicitly set
+    const currentMonth = new Date().getMonth() + 1;
+    document.getElementById('monthSelect').value = currentMonth;
+
     initExistingCharts();
     initConfecCharts();
     fetchData();

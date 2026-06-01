@@ -92,7 +92,7 @@ class DashboardDataAPI(LoginRequiredMixin, View):
 
         # Overview Metrics
         total_invoices = inv_qs.count()
-        total_customers = Customer.objects.count()
+        total_customers = inv_qs.values('customer').distinct().count()
         total_packs = invoice_items.filter(product__stock_unit='pack').aggregate(Sum('quantity'))['quantity__sum'] or 0
 
         overall_sales_total = invoice_items.annotate(ex_vat=F('line_total') - F('tax_amount')).aggregate(Sum('ex_vat'))['ex_vat__sum'] or 0
@@ -156,13 +156,13 @@ class DashboardDataAPI(LoginRequiredMixin, View):
                 Q(target_group__products__category__icontains='sugar') | Q(target_group__products__name__icontains='sugar') | Q(target_group__name__icontains='sugar'),
                 year=year, month=for_month
             ).distinct()
-            sugar_t = get_target_value_rs(sugar_qs)
+            sugar_t = sum(float(pt.target_value) for pt in sugar_qs)
 
             creamer_qs = ProductTarget.objects.filter(
                 Q(target_group__products__category__icontains='creamer') | Q(target_group__products__name__icontains='creamer') | Q(target_group__name__icontains='creamer'),
                 year=year, month=for_month
             ).distinct()
-            creamer_t = get_target_value_rs(creamer_qs)
+            creamer_t = sum(float(pt.target_value) for pt in creamer_qs)
 
             tea_qs = ProductTarget.objects.filter(
                 Q(target_group__products__category__icontains='tea') | Q(target_group__name__icontains='tea'),
@@ -170,7 +170,7 @@ class DashboardDataAPI(LoginRequiredMixin, View):
             ).exclude(
                 Q(target_group__products__name__icontains='catering tea') | Q(target_group__name__icontains='catering tea')
             ).distinct()
-            tea_t = get_target_value_rs(tea_qs)
+            tea_t = sum(float(pt.target_value) for pt in tea_qs)
 
             overall_qs = ProductTarget.objects.filter(
                 year=year, month=for_month
@@ -253,11 +253,24 @@ class ConfectioneryAnalyticsAPI(LoginRequiredMixin, View):
         except Exception:
             year = timezone.now().year
 
-        # Only issued / paid invoices for the selected year
-        invoices = Invoice.objects.filter(
+        month_raw = request.GET.get('month')
+        month = None
+        try:
+            m = int(month_raw)
+            if 1 <= m <= 12:
+                month = m
+        except (TypeError, ValueError):
+            pass
+
+        # Only issued / paid invoices for the selected year/month
+        inv_qs = Invoice.objects.filter(
             creation_date__year=year,
             status__in=[Invoice.Status.ISSUED, Invoice.Status.PAID]
         )
+        if month:
+            inv_qs = inv_qs.filter(creation_date__month=month)
+
+        invoices = inv_qs
 
         # Pull every invoice item that belongs to a Confectionery product.
         # We also bring customer_name, month, product name in one queryset.
@@ -451,7 +464,7 @@ class TargetManagementView(LoginRequiredMixin, View):
             sp_existing[(spt.salesperson_id, spt.month)] = float(spt.target_value)
 
         salesperson_rows = []
-        for sp in User.objects.filter(role='SALES').order_by('username'):
+        for sp in User.objects.filter(role=User.Roles.SALES_OFFICER).order_by('username'):
             periods = []
             for m in range(1, 13):
                 periods.append({
@@ -573,7 +586,7 @@ class TargetManagementView(LoginRequiredMixin, View):
             for m in range(1, 13):
                 _upsert_group_target(group, year, m, request.POST.get(f"gt_{group.id}_m{m}"))
 
-        for sp in User.objects.filter(role='SALES'):
+        for sp in User.objects.filter(role=User.Roles.SALES_OFFICER):
             for m in range(1, 13):
                 val_str = (request.POST.get(f"st_{sp.id}_m{m}") or '').strip()
                 if val_str:

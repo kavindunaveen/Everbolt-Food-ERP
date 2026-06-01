@@ -79,6 +79,7 @@ class SalesDashboardView(LoginRequiredMixin, TemplateView):
             quotations = quotations.filter(salesperson_id=salesperson_id)
             invoices = invoices.filter(salesperson_id=salesperson_id)
             
+        context['total_quotations_count'] = quotations.count()
         context['recent_quotations'] = quotations.order_by('-creation_date')[:15]
         context['recent_invoices'] = invoices.order_by('-creation_date')[:15]
         
@@ -193,7 +194,7 @@ class SalesDashboardView(LoginRequiredMixin, TemplateView):
         daily_revenue = trend_invoices.annotate(
             date=TruncDate('creation_date')
         ).values('date').annotate(
-            daily_total=Sum('total_amount')
+            daily_total=Sum('subtotal_amount')
         ).order_by('date')
         
         # To handle credit notes in trend, we can just map invoice creation date to revenue.
