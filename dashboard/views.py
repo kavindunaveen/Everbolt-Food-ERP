@@ -98,7 +98,9 @@ class DashboardDataAPI(LoginRequiredMixin, View):
         # Base invoices query
         inv_qs = Invoice.objects.filter(status__in=[Invoice.Status.ISSUED, Invoice.Status.PAID])
 
-        if date_from_raw and date_to_raw:
+        if request.GET.get('all_time') == 'true':
+            using_custom_dates = True
+        elif date_from_raw and date_to_raw:
             try:
                 date_from = timezone.datetime.strptime(date_from_raw, '%Y-%m-%d').date()
                 date_to = timezone.datetime.strptime(date_to_raw, '%Y-%m-%d').date()
@@ -294,7 +296,9 @@ class ConfectioneryAnalyticsAPI(LoginRequiredMixin, View):
 
         inv_qs = Invoice.objects.filter(status__in=[Invoice.Status.ISSUED, Invoice.Status.PAID])
 
-        if date_from_raw and date_to_raw:
+        if request.GET.get('all_time') == 'true':
+            pass
+        elif date_from_raw and date_to_raw:
             try:
                 date_from = timezone.datetime.strptime(date_from_raw, '%Y-%m-%d').date()
                 date_to = timezone.datetime.strptime(date_to_raw, '%Y-%m-%d').date()
@@ -687,7 +691,9 @@ class ProductTargetsAPI(LoginRequiredMixin, View):
         target_month = timezone.now().month
         using_custom_dates = False
 
-        if date_from_raw and date_to_raw:
+        if request.GET.get('all_time') == 'true':
+            using_custom_dates = True
+        elif date_from_raw and date_to_raw:
             try:
                 date_from = timezone.datetime.strptime(date_from_raw, '%Y-%m-%d').date()
                 date_to = timezone.datetime.strptime(date_to_raw, '%Y-%m-%d').date()
@@ -716,7 +722,9 @@ class ProductTargetsAPI(LoginRequiredMixin, View):
                 product__in=products_list,
                 invoice__status__in=STATUSES,
             )
-            if date_from_raw and date_to_raw and 'date_from' in locals() and 'date_to' in locals():
+            if request.GET.get('all_time') == 'true':
+                pass
+            elif date_from_raw and date_to_raw and 'date_from' in locals() and 'date_to' in locals():
                 items_qs = items_qs.filter(
                     invoice__creation_date__date__gte=date_from,
                     invoice__creation_date__date__lte=date_to

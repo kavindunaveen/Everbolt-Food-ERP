@@ -507,10 +507,13 @@ function initConfecCharts() {
 // ============================================================
 // Fetch + Render — existing data
 // ============================================================
-async function fetchMainData(dateFrom, dateTo) {
+async function fetchMainData(dateFrom, dateTo, allTime) {
     let url = `/dashboard/api/data/?`;
-    if (dateFrom) url += `date_from=${dateFrom}&`;
-    if (dateTo) url += `date_to=${dateTo}&`;
+    if (allTime) url += `all_time=true&`;
+    else {
+        if (dateFrom) url += `date_from=${dateFrom}&`;
+        if (dateTo) url += `date_to=${dateTo}&`;
+    }
 
     const resp = await fetch(url);
     if (!resp.ok) throw new Error('Main API failed');
@@ -579,10 +582,13 @@ async function fetchMainData(dateFrom, dateTo) {
 // ============================================================
 // Fetch + Render — NEW Confectionery data
 // ============================================================
-async function fetchConfecData(dateFrom, dateTo) {
+async function fetchConfecData(dateFrom, dateTo, allTime) {
     let url = `/dashboard/api/confectionery/?`;
-    if (dateFrom) url += `date_from=${dateFrom}&`;
-    if (dateTo) url += `date_to=${dateTo}&`;
+    if (allTime) url += `all_time=true&`;
+    else {
+        if (dateFrom) url += `date_from=${dateFrom}&`;
+        if (dateTo) url += `date_to=${dateTo}&`;
+    }
     const resp = await fetch(url);
     if (!resp.ok) throw new Error('Confectionery API failed');
     const data = await resp.json();
@@ -700,10 +706,13 @@ let productCharts = {};
 
 // Fetch + Render — NEW Product Targets
 // ============================================================
-async function fetchProductTargets(dateFrom, dateTo) {
+async function fetchProductTargets(dateFrom, dateTo, allTime) {
     let url = `/dashboard/api/product-targets/?`;
-    if (dateFrom) url += `date_from=${dateFrom}&`;
-    if (dateTo) url += `date_to=${dateTo}&`;
+    if (allTime) url += `all_time=true&`;
+    else {
+        if (dateFrom) url += `date_from=${dateFrom}&`;
+        if (dateTo) url += `date_to=${dateTo}&`;
+    }
     const resp = await fetch(url);
     if (!resp.ok) throw new Error('Product targets API failed');
     const data = await resp.json();
@@ -853,15 +862,14 @@ async function fetchData() {
     const urlParams = new URLSearchParams(window.location.search);
     const dateFrom = urlParams.get('date_from') || '';
     const dateTo   = urlParams.get('date_to') || '';
-    document.getElementById('lastUpdated').innerText = 'Fetching...';
-
+    const allTime  = urlParams.get('all_time') || '';
     document.getElementById('lastUpdated').innerText = 'Fetching...';
 
     try {
         await Promise.all([
-            fetchMainData(dateFrom, dateTo),
-            fetchConfecData(dateFrom, dateTo),
-            fetchProductTargets(dateFrom, dateTo),
+            fetchMainData(dateFrom, dateTo, allTime),
+            fetchConfecData(dateFrom, dateTo, allTime),
+            fetchProductTargets(dateFrom, dateTo, allTime),
         ]);
         const now = new Date();
         document.getElementById('lastUpdated').innerText =
