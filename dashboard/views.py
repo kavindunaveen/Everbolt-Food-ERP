@@ -62,6 +62,29 @@ def classify_product(name: str) -> str | None:
 class AnalyticsDashboardView(LoginRequiredMixin, TemplateView):
     template_name = 'dashboard/analytics.html'
 
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['model_name'] = 'SalesDashboard'
+        
+        today = timezone.now().date()
+        months = []
+        for i in range(12):
+            month = today.month - i
+            year = today.year
+            while month <= 0:
+                month += 12
+                year -= 1
+            import calendar
+            start = timezone.datetime(year, month, 1).date()
+            end = timezone.datetime(year, month, calendar.monthrange(year, month)[1]).date()
+            months.append({
+                'label': start.strftime('%b %Y'),
+                'date_from': start.strftime('%Y-%m-%d'),
+                'date_to': end.strftime('%Y-%m-%d'),
+            })
+        context['quick_months'] = months
+        return context
+
 class DashboardDataAPI(LoginRequiredMixin, View):
     def get(self, request, *args, **kwargs):
         import calendar
