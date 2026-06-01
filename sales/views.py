@@ -44,13 +44,39 @@ class SalesDashboardView(LoginRequiredMixin, TemplateView):
         date_from = self.request.GET.get('date_from')
         date_to = self.request.GET.get('date_to')
         
-        if not date_from and not date_to:
+        all_time = self.request.GET.get('all_time') == 'true'
+        
+        if all_time:
+            date_from = None
+            date_to = None
+        elif not date_from and not date_to:
             date_from = today.replace(day=1).strftime('%Y-%m-%d')
             import calendar
             last_day = calendar.monthrange(today.year, today.month)[1]
             date_to = today.replace(day=last_day).strftime('%Y-%m-%d')
             
         salesperson_id = self.request.GET.get('salesperson')
+        
+        # Generate quick_months for Quick Select
+        import calendar
+        quick_months = []
+        for i in range(5):
+            first_day = (today.replace(day=1) - timezone.timedelta(days=30 * i)).replace(day=1)
+            last_day = calendar.monthrange(first_day.year, first_day.month)[1]
+            last_date = first_day.replace(day=last_day)
+            
+            label = first_day.strftime('%b %Y')
+            if i == 0:
+                label = 'Current Month'
+            elif i == 1:
+                label = 'Last Month'
+
+            quick_months.append({
+                'label': label,
+                'date_from': first_day.strftime('%Y-%m-%d'),
+                'date_to': last_date.strftime('%Y-%m-%d'),
+            })
+        context['quick_months'] = quick_months
         
         # Pass the effective dates to context so the template knows what is active
         context['active_date_from'] = date_from
