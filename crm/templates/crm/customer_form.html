@@ -370,12 +370,12 @@
         fd.append('zip_code',   document.getElementById('new-addr-zip').value.trim());
         fd.append('is_default', document.getElementById('new-addr-default').checked ? 'true' : 'false');
 
-        const res = await fetch(`/customers/${custId}/delivery-addresses/add/`, { method: 'POST', body: fd });
+        const res = await fetch(`/crm/${custId}/delivery-addresses/add/`, { method: 'POST', body: fd });
         const data = await res.json();
         if (data.error) { errEl.textContent = data.error; errEl.classList.remove('hidden'); return; }
 
         // Refresh list
-        const listRes = await fetch(`/customers/${custId}/delivery-addresses/`);
+        const listRes = await fetch(`/crm/${custId}/delivery-addresses/`);
         const listData = await listRes.json();
         renderAddrList(listData.addresses);
 
@@ -388,7 +388,7 @@
     async function setDefaultAddr(custId, addrId) {
         const fd = new FormData();
         fd.append('csrfmiddlewaretoken', getCsrf());
-        const res = await fetch(`/customers/${custId}/delivery-addresses/${addrId}/set-default/`, { method: 'POST', body: fd });
+        const res = await fetch(`/crm/${custId}/delivery-addresses/${addrId}/set-default/`, { method: 'POST', body: fd });
         const data = await res.json();
         if (data.addresses) renderAddrList(data.addresses);
     }
@@ -397,7 +397,7 @@
         if (!confirm('Delete this delivery address?')) return;
         const fd = new FormData();
         fd.append('csrfmiddlewaretoken', getCsrf());
-        const res = await fetch(`/customers/${custId}/delivery-addresses/${addrId}/delete/`, { method: 'POST', body: fd });
+        const res = await fetch(`/crm/${custId}/delivery-addresses/${addrId}/delete/`, { method: 'POST', body: fd });
         const data = await res.json();
         if (data.addresses) renderAddrList(data.addresses);
     }
