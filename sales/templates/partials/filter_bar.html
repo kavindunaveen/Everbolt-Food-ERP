@@ -74,8 +74,8 @@
                     <div>
                         <label class="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2">Date Range</label>
                         <div class="grid grid-cols-2 gap-2">
-                            <input type="date" name="date_from" class="text-xs border-gray-200 rounded-lg focus:ring-indigo-500 focus:border-indigo-500 p-2" value="{{ request.GET.date_from }}" placeholder="From">
-                            <input type="date" name="date_to" class="text-xs border-gray-200 rounded-lg focus:ring-indigo-500 focus:border-indigo-500 p-2" value="{{ request.GET.date_to }}" placeholder="To">
+                            <input type="date" name="date_from" class="text-xs border-gray-200 rounded-lg focus:ring-indigo-500 focus:border-indigo-500 p-2" value="{{ active_date_from|default:request.GET.date_from }}" placeholder="From">
+                            <input type="date" name="date_to" class="text-xs border-gray-200 rounded-lg focus:ring-indigo-500 focus:border-indigo-500 p-2" value="{{ active_date_to|default:request.GET.date_to }}" placeholder="To">
                         </div>
                     </div>
                     <div>

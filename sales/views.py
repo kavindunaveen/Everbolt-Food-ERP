@@ -39,9 +39,22 @@ class SalesDashboardView(LoginRequiredMixin, TemplateView):
         context['model_name'] = 'SalesDashboard'
         
         q = self.request.GET.get('q')
+        
+        today = timezone.now().date()
         date_from = self.request.GET.get('date_from')
         date_to = self.request.GET.get('date_to')
+        
+        if not date_from and not date_to:
+            date_from = today.replace(day=1).strftime('%Y-%m-%d')
+            import calendar
+            last_day = calendar.monthrange(today.year, today.month)[1]
+            date_to = today.replace(day=last_day).strftime('%Y-%m-%d')
+            
         salesperson_id = self.request.GET.get('salesperson')
+        
+        # Pass the effective dates to context so the template knows what is active
+        context['active_date_from'] = date_from
+        context['active_date_to'] = date_to
         
         if self.request.user.role == 'SALES_OFFICER':
             quotations = Quotation.objects.filter(salesperson=self.request.user)
