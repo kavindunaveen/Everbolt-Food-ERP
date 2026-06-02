@@ -60,6 +60,12 @@ class SalesDashboardView(LoginRequiredMixin, TemplateView):
         # Generate quick_months for Quick Select
         import calendar
         quick_months = []
+        today_str = today.strftime('%Y-%m-%d')
+        quick_months.append({
+            'label': 'Today',
+            'date_from': today_str,
+            'date_to': today_str,
+        })
         for i in range(5):
             first_day = (today.replace(day=1) - timezone.timedelta(days=30 * i)).replace(day=1)
             last_day = calendar.monthrange(first_day.year, first_day.month)[1]

@@ -68,7 +68,12 @@ class AnalyticsDashboardView(LoginRequiredMixin, TemplateView):
         context['model_name'] = 'SalesDashboard'
         
         today = timezone.now().date()
-        months = []
+        today_str = today.strftime('%Y-%m-%d')
+        months = [{
+            'label': 'Today',
+            'date_from': today_str,
+            'date_to': today_str,
+        }]
         for i in range(12):
             month = today.month - i
             year = today.year
