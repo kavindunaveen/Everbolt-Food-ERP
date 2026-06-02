@@ -126,20 +126,33 @@ class DashboardDataAPI(LoginRequiredMixin, View):
         total_customers = inv_qs.values('customer').distinct().count()
         total_packs = invoice_items.filter(product__stock_unit='pack').aggregate(Sum('quantity'))['quantity__sum'] or 0
 
-        overall_sales_total = invoice_items.annotate(ex_vat=F('line_total') - F('tax_amount')).aggregate(Sum('ex_vat'))['ex_vat__sum'] or 0
+        # Calculate precise Overall Sales (Ex-VAT) taking into account invoice-level discounts and credit notes
+        revenue_ex_vat = inv_qs.aggregate(Sum('subtotal_amount'))['subtotal_amount__sum'] or Decimal('0.00')
+        from sales.models import CreditNote
+        credit_notes = CreditNote.objects.filter(original_invoice__in=inv_qs)
+        credit_subtotal = sum((cn.quantity * cn.unit_price) for cn in credit_notes)
+        overall_sales_total = float(revenue_ex_vat - Decimal(str(credit_subtotal)))
         confectionery_sales = invoice_items.filter(product__category__icontains='Confectionery').annotate(ex_vat=F('line_total') - F('tax_amount')).aggregate(Sum('ex_vat'))['ex_vat__sum'] or 0
+        conf_credits = sum((cn.quantity * cn.unit_price) for cn in credit_notes.filter(product__category__icontains='Confectionery'))
+        confectionery_sales = float(Decimal(str(confectionery_sales)) - conf_credits)
 
         sugar_items = invoice_items.filter(Q(product__category__icontains='Sugar') | Q(product__name__icontains='Sugar'))
         sugar_qty   = sugar_items.aggregate(Sum('quantity'))['quantity__sum'] or 0
         sugar_sales = sugar_items.annotate(ex_vat=F('line_total') - F('tax_amount')).aggregate(Sum('ex_vat'))['ex_vat__sum'] or 0
+        sugar_credits = sum((cn.quantity * cn.unit_price) for cn in credit_notes.filter(Q(product__category__icontains='Sugar') | Q(product__name__icontains='Sugar')))
+        sugar_sales = float(Decimal(str(sugar_sales)) - sugar_credits)
 
         creamer_items = invoice_items.filter(Q(product__category__icontains='Creamer') | Q(product__name__icontains='Creamer'))
         creamer_qty   = creamer_items.aggregate(Sum('quantity'))['quantity__sum'] or 0
         creamer_sales = creamer_items.annotate(ex_vat=F('line_total') - F('tax_amount')).aggregate(Sum('ex_vat'))['ex_vat__sum'] or 0
+        creamer_credits = sum((cn.quantity * cn.unit_price) for cn in credit_notes.filter(Q(product__category__icontains='Creamer') | Q(product__name__icontains='Creamer')))
+        creamer_sales = float(Decimal(str(creamer_sales)) - creamer_credits)
 
         tea_items = invoice_items.filter(Q(product__category__icontains='Tea') | Q(product__name__icontains='Tea'))
         tea_qty   = tea_items.aggregate(Sum('quantity'))['quantity__sum'] or 0
         tea_sales = tea_items.annotate(ex_vat=F('line_total') - F('tax_amount')).aggregate(Sum('ex_vat'))['ex_vat__sum'] or 0
+        tea_credits = sum((cn.quantity * cn.unit_price) for cn in credit_notes.filter(Q(product__category__icontains='Tea') | Q(product__name__icontains='Tea')))
+        tea_sales = float(Decimal(str(tea_sales)) - tea_credits)
 
         # Monthly Trends (always show full year trend regardless of month filter)
         all_items_year = InvoiceItem.objects.filter(
