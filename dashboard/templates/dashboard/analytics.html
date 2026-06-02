@@ -181,6 +181,7 @@
                             <th class="px-6 py-3 text-right">Achieved Value (Rs)</th>
                             <th class="px-6 py-3 text-right">Achieved Qty</th>
                             <th class="px-6 py-3 text-right">Target Qty</th>
+                            <th class="px-6 py-3 text-right">Remaining Qty</th>
                             <th class="px-6 py-3 text-right">Achieved Percentage</th>
                         </tr>
                     </thead>
@@ -566,8 +567,18 @@ async function fetchMainData(dateFrom, dateTo, allTime) {
         tableBody.innerHTML = data.category_achievement.map(row => {
             const pctText = row.has_target ? `${row.pct.toFixed(2)}%` : '—';
             let pctColor = 'text-gray-900';
+            let remText = '—';
+            let remColor = 'text-gray-700';
             if (row.has_target) {
                 pctColor = row.pct >= 100 ? 'text-emerald-600' : (row.pct >= 50 ? 'text-amber-600' : 'text-rose-600');
+                const remaining = row.target - row.achieved_qty;
+                if (remaining > 0) {
+                    remText = fmtNum(remaining) + ' units';
+                    remColor = 'text-rose-600 font-bold';
+                } else {
+                    remText = '✓ Achieved';
+                    remColor = 'text-emerald-600 font-bold';
+                }
             }
             return `
                 <tr class="hover:bg-gray-50/50 transition-colors">
@@ -575,6 +586,7 @@ async function fetchMainData(dateFrom, dateTo, allTime) {
                     <td class="px-6 py-3.5 text-right font-semibold text-gray-700">Rs ${fmtFull(row.sales)}</td>
                     <td class="px-6 py-3.5 text-right font-semibold text-gray-700">${fmtNum(row.achieved_qty)} units</td>
                     <td class="px-6 py-3.5 text-right font-semibold text-gray-700">${row.has_target ? fmtNum(row.target) + ' units' : 'No Target'}</td>
+                    <td class="px-6 py-3.5 text-right font-semibold ${remColor}">${remText}</td>
                     <td class="px-6 py-3.5 text-right font-bold ${pctColor}">${pctText}</td>
                 </tr>
             `;
