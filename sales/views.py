@@ -183,21 +183,20 @@ class SalesDashboardView(LoginRequiredMixin, TemplateView):
             
             sp_target_val = sp_targets_map.get(officer.id, Decimal('0.00'))
             
-            if net_with > 0 or officer_invs.exists() or sp_target_val > 0:
-                target = sp_target_val
-                if target > 0:
-                    progress_pct = min((net_ex / target) * 100, Decimal('100.00'))
-                else:
-                    progress_pct = Decimal('0.00')
-                    
-                officer_performance.append({
-                    'officer': officer,
-                    'total_sales': net_with,
-                    'total_ex_vat': net_ex,
-                    'invoice_count': officer_invs.count(),
-                    'target': target,
-                    'progress_pct': progress_pct
-                })
+            target = sp_target_val
+            if target > 0:
+                progress_pct = min((net_ex / target) * 100, Decimal('100.00'))
+            else:
+                progress_pct = Decimal('0.00')
+                
+            officer_performance.append({
+                'officer': officer,
+                'total_sales': net_with,
+                'total_ex_vat': net_ex,
+                'invoice_count': officer_invs.count(),
+                'target': target,
+                'progress_pct': progress_pct
+            })
         
         # Sort by total_ex_vat descending for leaderboard
         officer_performance.sort(key=lambda x: x['total_ex_vat'], reverse=True)
