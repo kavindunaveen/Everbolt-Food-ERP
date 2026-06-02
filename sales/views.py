@@ -132,8 +132,20 @@ class SalesDashboardView(LoginRequiredMixin, TemplateView):
         # However, a better way is to sum (CN.quantity * CN.unit_price) which is effectively the subtotal.
         credit_subtotal = sum((cn.quantity * cn.unit_price) for cn in credit_notes)
         
-        context['total_revenue_with_vat'] = revenue_with_vat - total_credit
-        context['total_revenue_ex_vat'] = revenue_ex_vat - Decimal(str(credit_subtotal))
+        total_revenue_with_vat = revenue_with_vat - total_credit
+        total_revenue_ex_vat = revenue_ex_vat - Decimal(str(credit_subtotal))
+        
+        context['total_revenue_with_vat'] = total_revenue_with_vat
+        context['total_revenue_ex_vat'] = total_revenue_ex_vat
+        
+        # Calculate Average Daily Sales
+        from django.db.models.functions import TruncDate
+        days_recorded = active_invoices.annotate(d=TruncDate('creation_date')).values('d').distinct().count()
+        if days_recorded == 0:
+            days_recorded = 1
+        
+        context['days_recorded'] = days_recorded
+        context['avg_daily_sales'] = float(total_revenue_ex_vat) / days_recorded
         
         sales_officers = context['sales_officers']
         
@@ -187,13 +199,19 @@ class SalesDashboardView(LoginRequiredMixin, TemplateView):
             else:
                 progress_pct = Decimal('0.00')
                 
+            if total_revenue_ex_vat > 0:
+                contribution_pct = (net_ex / total_revenue_ex_vat) * Decimal('100')
+            else:
+                contribution_pct = Decimal('0.00')
+                
             officer_performance.append({
                 'officer': officer,
                 'total_sales': net_with,
                 'total_ex_vat': net_ex,
                 'invoice_count': officer_invs.count(),
                 'target': target,
-                'progress_pct': progress_pct
+                'progress_pct': progress_pct,
+                'contribution_pct': contribution_pct
             })
         
         # Sort by total_ex_vat descending for leaderboard
@@ -211,6 +229,12 @@ class SalesDashboardView(LoginRequiredMixin, TemplateView):
         context['leaderboard_sales_json'] = json.dumps(leaderboard_sales)
         context['leaderboard_targets_json'] = json.dumps(leaderboard_targets)
         context['target_month_name'] = target_date.strftime('%B %Y')
+        
+        # 1.5 Contribution Data (Doughnut Chart)
+        contribution_names = [perf['officer'].get_full_name() or perf['officer'].username for perf in officer_performance if perf['total_ex_vat'] > 0]
+        contribution_sales = [float(perf['total_ex_vat']) for perf in officer_performance if perf['total_ex_vat'] > 0]
+        context['contribution_names_json'] = json.dumps(contribution_names)
+        context['contribution_sales_json'] = json.dumps(contribution_sales)
         
         # 2. Revenue Trendline Data (Line Chart)
         end_date = timezone.now().date()

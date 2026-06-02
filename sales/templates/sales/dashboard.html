@@ -53,7 +53,7 @@
         {% include 'partials/filter_bar.html' %}
     </div>
 
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
         <!-- Stats Card 1: Total Invoices -->
         <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5 flex items-center group hover:shadow-md hover:border-blue-200 transition-all duration-300">
             <div class="p-2.5 rounded-lg bg-blue-50 text-blue-600 mr-4 group-hover:bg-blue-600 group-hover:text-white transition-colors duration-300">
@@ -97,13 +97,25 @@
                 <div class="text-xl font-black text-gray-900 whitespace-nowrap"><span class="text-sm font-bold text-gray-400 mr-0.5">Rs</span>{{ total_revenue_with_vat|floatformat:2|intcomma|default:"0.00" }}</div>
             </div>
         </div>
+
+        <!-- Stats Card 5: Average Daily Sales -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5 flex items-center group hover:shadow-md hover:border-orange-200 transition-all duration-300">
+            <div class="p-2.5 rounded-lg bg-orange-50 text-orange-600 mr-4 group-hover:bg-orange-600 group-hover:text-white transition-colors duration-300">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+            </div>
+            <div class="min-w-0">
+                <div class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-0.5 truncate">Avg. Daily Sales</div>
+                <div class="text-xl font-black text-gray-900 whitespace-nowrap"><span class="text-sm font-bold text-gray-400 mr-0.5">Rs</span>{{ avg_daily_sales|floatformat:2|intcomma|default:"0.00" }}</div>
+                <div class="text-[10px] text-gray-400 font-medium">Over {{ days_recorded }} day{{ days_recorded|pluralize }}</div>
+            </div>
+        </div>
     </div>
     </div>
     </div>
     </div>
 
     <!-- Charts Section -->
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
         <!-- Trendline Chart -->
         <div class="bg-white shadow-md rounded-2xl border border-gray-100 p-6">
             <h3 class="text-lg font-bold text-gray-800 mb-4">Revenue Trend (30 Days)</h3>
@@ -119,6 +131,14 @@
                 <canvas id="leaderboardChart"></canvas>
             </div>
         </div>
+
+        <!-- Contribution Chart -->
+        <div class="bg-white shadow-md rounded-2xl border border-gray-100 p-6">
+            <h3 class="text-lg font-bold text-gray-800 mb-4">Contribution %</h3>
+            <div class="relative h-64 w-full flex items-center justify-center">
+                <canvas id="contributionChart"></canvas>
+            </div>
+        </div>
     </div>
 
     <!-- Sales Officer Performance -->
@@ -132,6 +152,7 @@
                     <tr>
                         <th scope="col" class="px-6 py-3 text-left text-[10px] font-bold text-gray-400 uppercase tracking-widest">Sales Officer</th>
                         <th scope="col" class="px-6 py-3 text-center text-[10px] font-bold text-gray-400 uppercase tracking-widest">Confirmed Invoices</th>
+                        <th scope="col" class="px-6 py-3 text-center text-[10px] font-bold text-gray-400 uppercase tracking-widest">Contribution %</th>
                         <th scope="col" class="px-6 py-3 text-left text-[10px] font-bold text-gray-400 uppercase tracking-widest">{{ target_month_name|default:"Monthly" }} Target Progress</th>
                         <th scope="col" class="px-6 py-3 text-right text-[10px] font-bold text-gray-400 uppercase tracking-widest">Total Revenue (Ex-VAT)</th>
                         <th scope="col" class="px-6 py-3 text-right text-[10px] font-bold text-gray-400 uppercase tracking-widest">Total Revenue (With VAT)</th>
@@ -146,6 +167,9 @@
                             </a>
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 font-medium text-center">{{ perf.invoice_count }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-bold text-blue-600 text-center">
+                            {{ perf.contribution_pct|floatformat:1 }}%
+                        </td>
                         <td class="px-6 py-4 whitespace-nowrap">
                             {% if perf.target > 0 %}
                             <div class="flex items-center space-x-2">
@@ -164,7 +188,7 @@
                     </tr>
                     {% empty %}
                     <tr>
-                        <td colspan="5" class="px-6 py-12 text-center text-sm text-gray-400 italic">No sales performance data available for this period.</td>
+                        <td colspan="6" class="px-6 py-12 text-center text-sm text-gray-400 italic">No sales performance data available for this period.</td>
                     </tr>
                     {% endfor %}
                 </tbody>
@@ -378,6 +402,53 @@
                     },
                     x: {
                         grid: { display: false }
+                    }
+                }
+            }
+        });
+
+        // Contribution Doughnut Chart
+        const contribCtx = document.getElementById('contributionChart').getContext('2d');
+        const contribNames = JSON.parse('{{ contribution_names_json|safe }}');
+        const contribSales = JSON.parse('{{ contribution_sales_json|safe }}');
+        
+        new Chart(contribCtx, {
+            type: 'doughnut',
+            data: {
+                labels: contribNames,
+                datasets: [{
+                    data: contribSales,
+                    backgroundColor: [
+                        '#10b981', '#3b82f6', '#8b5cf6', '#f59e0b', '#ec4899',
+                        '#14b8a6', '#6366f1', '#a855f7', '#ef4444', '#06b6d4'
+                    ],
+                    borderWidth: 2,
+                    hoverOffset: 4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                cutout: '65%',
+                plugins: {
+                    legend: {
+                        position: 'right',
+                        labels: {
+                            usePointStyle: true,
+                            boxWidth: 8,
+                            padding: 20,
+                            font: { size: 11 }
+                        }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                const val = context.parsed;
+                                const total = context.chart._metasets[context.datasetIndex].total;
+                                const pct = total > 0 ? ((val / total) * 100).toFixed(1) : 0;
+                                return ' Rs ' + val.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) + ' (' + pct + '%)';
+                            }
+                        }
                     }
                 }
             }
