@@ -5,6 +5,7 @@ from django.views import View
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.db.models import Sum, Count, F, Q
 from django.utils import timezone
+from decimal import Decimal
 from collections import defaultdict
 
 from sales.models import Invoice, InvoiceItem
