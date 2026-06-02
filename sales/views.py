@@ -50,10 +50,8 @@ class SalesDashboardView(LoginRequiredMixin, TemplateView):
             date_from = None
             date_to = None
         elif not date_from and not date_to:
-            date_from = today.replace(day=1).strftime('%Y-%m-%d')
-            import calendar
-            last_day = calendar.monthrange(today.year, today.month)[1]
-            date_to = today.replace(day=last_day).strftime('%Y-%m-%d')
+            date_from = today.strftime('%Y-%m-%d')
+            date_to = today.strftime('%Y-%m-%d')
             
         salesperson_id = self.request.GET.get('salesperson')
         
