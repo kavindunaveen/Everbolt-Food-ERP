@@ -206,7 +206,43 @@
         <input type="hidden" name="action" value="save_targets">
 
         <div class="admin-card">
-            <h2>2. Set Targets (Quantity)</h2>
+            <h2>2. Set Overall Company Target (Rs. Ex-VAT)</h2>
+            <div style="overflow-x: auto; border: 1px solid #ccc; border-radius: 4px; margin-bottom: 30px;">
+                <table class="admin-table" style="margin-bottom: 0;">
+                    <thead>
+                        <tr>
+                            <th style="min-width: 300px;">Target Type</th>
+                            {% for m in month_abbr %}
+                            <th style="text-align: center; width: 120px;">{{ m }}</th>
+                            {% endfor %}
+                            <th style="text-align: center; width: 100px;"></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>
+                                <div style="font-weight: bold; font-size: 14px; color: #000; display: flex; align-items: center; gap: 8px;">
+                                    <span>🏢 Overall Sales Revenue</span>
+                                </div>
+                            </td>
+                            {% for period in overall_periods %}
+                            <td style="text-align: center; padding: 6px 4px;">
+                                <input type="number"
+                                       name="{{ period.field }}"
+                                       value="{{ period.value }}"
+                                       min="0"
+                                       step="0.01"
+                                       placeholder="—"
+                                       class="admin-input">
+                            </td>
+                            {% endfor %}
+                            <td></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <h2>3. Set Product Targets (Quantity)</h2>
             <div style="overflow-x: auto; border: 1px solid #ccc; border-radius: 4px;">
                 <table class="admin-table" id="productTargetsTable" style="margin-bottom: 0;">
                     <thead>
@@ -269,7 +305,7 @@
             </div>
 
             <!-- Salesperson Targets Table -->
-            <h2 style="margin-top: 30px;">3. Set Sales Officer Targets (Rs. Ex-VAT)</h2>
+            <h2 style="margin-top: 30px;">4. Set Sales Officer Targets (Rs. Ex-VAT)</h2>
             <div style="overflow-x: auto; border: 1px solid #ccc; border-radius: 4px; margin-bottom: 20px;">
                 <table class="admin-table" style="margin-bottom: 0;">
                     <thead>

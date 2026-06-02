@@ -224,10 +224,12 @@ class DashboardDataAPI(LoginRequiredMixin, View):
             ).distinct()
             tea_t = sum(float(pt.target_value) for pt in tea_qs)
 
-            overall_qs = ProductTarget.objects.filter(
-                year=for_year, month=for_month
-            ).distinct()
-            overall_t = get_target_value_rs(overall_qs)
+            from dashboard.models import SalesTarget
+            try:
+                st = SalesTarget.objects.get(year=for_year, month=for_month, target_type='OVERALL_SALES')
+                overall_t = float(st.target_value)
+            except SalesTarget.DoesNotExist:
+                overall_t = 0.0
 
             has_target = ProductTarget.objects.filter(year=for_year, month=for_month).exists()
 
@@ -482,6 +484,19 @@ class TargetManagementView(LoginRequiredMixin, View):
         year = int(request.GET.get('year', timezone.now().year))
         available_years = list(range(timezone.now().year + 1, 2022, -1))
 
+        # ── Overall Company Target ────────────────────────────────────────────
+        overall_existing = {}
+        for st in SalesTarget.objects.filter(year=year, target_type=SalesTarget.TargetTypes.OVERALL_SALES):
+            overall_existing[st.month] = float(st.target_value)
+            
+        overall_periods = []
+        for m in range(1, 13):
+            overall_periods.append({
+                'field': f"overall_m{m}",
+                'value': overall_existing.get(m, ''),
+                'label': MONTH_ABBR[m - 1],
+            })
+
         # ── Product Group target rows ─────────────────────────────────────────
         prod_existing = {}
         for pt in ProductTarget.objects.filter(year=year).select_related('target_group'):
@@ -533,6 +548,7 @@ class TargetManagementView(LoginRequiredMixin, View):
             })
 
         return render(request, self.template_name, {
+            'overall_periods': overall_periods,
             'prod_rows': prod_rows,
             'salesperson_rows': salesperson_rows,
             'all_groups': all_groups,
@@ -636,6 +652,9 @@ class TargetManagementView(LoginRequiredMixin, View):
                 return JsonResponse({'error': 'Not found'}, status=404)
 
         # ── action == 'save_targets' ────────────────────────────────────
+        for m in range(1, 13):
+            _upsert_category(year, SalesTarget.TargetTypes.OVERALL_SALES, None, m, request.POST.get(f"overall_m{m}"))
+
         for group in ProductTargetGroup.objects.all():
             for m in range(1, 13):
                 _upsert_group_target(group, year, m, request.POST.get(f"gt_{group.id}_m{m}"))
