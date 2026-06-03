@@ -1117,16 +1117,22 @@ class ForecastingView(LoginRequiredMixin, TemplateView):
         
         context['working_days_passed'] = days_passed
 
-        # Total Net Sales this month
+        # Total Net Sales this month (subtract credit notes for accuracy)
         inv_this_month = Invoice.objects.filter(
             creation_date__year=target_year,
             creation_date__month=target_month,
             status__in=[Invoice.Status.ISSUED, Invoice.Status.PAID]
-        ).annotate(ex_vat=F('total_amount') - F('tax_amount'))
+        )
+        total_sales_gross = inv_this_month.annotate(ex_vat=F('total_amount') - F('tax_amount')).aggregate(total=Sum('ex_vat'))['total'] or Decimal('0.00')
         
-        total_sales = inv_this_month.aggregate(total=Sum('ex_vat'))['total'] or 0
-        context['total_sales'] = float(total_sales)
-        actual_pace = float(total_sales) / days_passed if days_passed > 0 else 0
+        from sales.models import CreditNote
+        from decimal import Decimal
+        credit_notes = CreditNote.objects.filter(original_invoice__in=inv_this_month)
+        credit_subtotal = sum((cn.quantity * cn.unit_price) for cn in credit_notes)
+        
+        total_sales = float(total_sales_gross - Decimal(str(credit_subtotal)))
+        context['total_sales'] = total_sales
+        actual_pace = total_sales / days_passed if days_passed > 0 else 0
         context['actual_pace'] = actual_pace
 
         # 05. Work Days Remaining
