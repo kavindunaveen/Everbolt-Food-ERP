@@ -134,46 +134,92 @@ class DashboardDataAPI(LoginRequiredMixin, View):
         credit_subtotal = sum((cn.quantity * cn.unit_price) for cn in credit_notes)
         overall_sales_total = float(revenue_ex_vat - Decimal(str(credit_subtotal)))
         
-        from django.db.models import Case, When, DecimalField, ExpressionWrapper
+        # Calculate Category Sales Accurately (Handling Global Discounts)
+        # We fetch necessary invoice and item data to proportionally apply global discounts
+        invoices = inv_qs.values('id', 'custom_discount_type', 'custom_discount_value')
+        inv_map = { i['id']: i for i in invoices }
         
-        prop_discount_annot = Case(
-            When(invoice__subtotal_amount__gt=0,
-                 then=(F('line_total') / F('invoice__subtotal_amount')) * F('invoice__total_discount')),
-            default=0.0,
-            output_field=DecimalField()
+        items = InvoiceItem.objects.filter(invoice__in=inv_qs).values(
+            'invoice_id', 'product__category', 'product__name', 'quantity', 'unit_price', 'discount_type', 'discount'
         )
-        invoice_items = InvoiceItem.objects.filter(invoice__in=inv_qs).annotate(
-            prop_discount=prop_discount_annot,
-            ex_vat=ExpressionWrapper(F('line_total') - F('tax_amount') - F('prop_discount'), output_field=DecimalField())
-        )
+        
+        # First pass: calculate gross ex-vat per item and sum per invoice
+        from decimal import Decimal
+        inv_gross_sums = {}
+        processed_items = []
+        for item in items:
+            q = Decimal(str(item['quantity']))
+            p = Decimal(str(item['unit_price']))
+            d_val = Decimal(str(item['discount'] or 0))
+            if item['discount_type'] == 'PERCENT':
+                line_disc = (q * p) * (d_val / Decimal('100.0'))
+            else:
+                line_disc = d_val
+                
+            item_gross = (q * p) - line_disc
+            inv_id = item['invoice_id']
+            inv_gross_sums[inv_id] = inv_gross_sums.get(inv_id, Decimal('0.00')) + item_gross
+            
+            processed_items.append({
+                'item': item,
+                'gross': item_gross,
+                'inv_id': inv_id
+            })
+            
+        # Second pass: apply global discount and sum by category
+        cat_sums = {'confectionery': Decimal('0.0'), 'sugar': Decimal('0.0'), 'creamer': Decimal('0.0'), 'tea': Decimal('0.0')}
+        
+        for p_item in processed_items:
+            inv = inv_map[p_item['inv_id']]
+            inv_gross = inv_gross_sums[p_item['inv_id']]
+            item_gross = p_item['gross']
+            
+            # Apply global discount
+            c_type = inv['custom_discount_type']
+            c_val = Decimal(str(inv['custom_discount_value'] or 0))
+            
+            if c_type == 'PERCENT':
+                final_val = item_gross * (Decimal('1.0') - (c_val / Decimal('100.0')))
+            else:
+                # AMOUNT
+                if inv_gross > 0:
+                    ratio = item_gross / inv_gross
+                    final_val = item_gross - (ratio * c_val)
+                else:
+                    final_val = item_gross
+                    
+            cat = (p_item['item']['product__category'] or '').lower()
+            name = (p_item['item']['product__name'] or '').lower()
+            
+            if 'confectionery' in cat:
+                cat_sums['confectionery'] += final_val
+            if 'sugar' in cat or 'sugar' in name:
+                cat_sums['sugar'] += final_val
+            if 'creamer' in cat or 'creamer' in name:
+                cat_sums['creamer'] += final_val
+            if 'tea' in cat or 'tea' in name:
+                cat_sums['tea'] += final_val
 
-        confectionery_sales = invoice_items.filter(product__category__icontains='Confectionery').aggregate(Sum('ex_vat'))['ex_vat__sum'] or 0
         conf_credits = sum((cn.quantity * cn.unit_price) for cn in credit_notes.filter(product__category__icontains='Confectionery'))
-        confectionery_sales = float(Decimal(str(confectionery_sales)) - conf_credits)
+        confectionery_sales = float(cat_sums['confectionery'] - Decimal(str(conf_credits)))
 
-        sugar_items = invoice_items.filter(Q(product__category__icontains='Sugar') | Q(product__name__icontains='Sugar'))
-        sugar_qty   = sugar_items.aggregate(Sum('quantity'))['quantity__sum'] or 0
-        sugar_sales = sugar_items.aggregate(Sum('ex_vat'))['ex_vat__sum'] or 0
+        sugar_qty   = InvoiceItem.objects.filter(invoice__in=inv_qs).filter(Q(product__category__icontains='Sugar') | Q(product__name__icontains='Sugar')).aggregate(Sum('quantity'))['quantity__sum'] or 0
         sugar_credits = sum((cn.quantity * cn.unit_price) for cn in credit_notes.filter(Q(product__category__icontains='Sugar') | Q(product__name__icontains='Sugar')))
-        sugar_sales = float(Decimal(str(sugar_sales)) - sugar_credits)
+        sugar_sales = float(cat_sums['sugar'] - Decimal(str(sugar_credits)))
 
-        creamer_items = invoice_items.filter(Q(product__category__icontains='Creamer') | Q(product__name__icontains='Creamer'))
-        creamer_qty   = creamer_items.aggregate(Sum('quantity'))['quantity__sum'] or 0
-        creamer_sales = creamer_items.aggregate(Sum('ex_vat'))['ex_vat__sum'] or 0
+        creamer_qty   = InvoiceItem.objects.filter(invoice__in=inv_qs).filter(Q(product__category__icontains='Creamer') | Q(product__name__icontains='Creamer')).aggregate(Sum('quantity'))['quantity__sum'] or 0
         creamer_credits = sum((cn.quantity * cn.unit_price) for cn in credit_notes.filter(Q(product__category__icontains='Creamer') | Q(product__name__icontains='Creamer')))
-        creamer_sales = float(Decimal(str(creamer_sales)) - creamer_credits)
+        creamer_sales = float(cat_sums['creamer'] - Decimal(str(creamer_credits)))
 
-        tea_items = invoice_items.filter(Q(product__category__icontains='Tea') | Q(product__name__icontains='Tea'))
-        tea_qty   = tea_items.aggregate(Sum('quantity'))['quantity__sum'] or 0
-        tea_sales = tea_items.aggregate(Sum('ex_vat'))['ex_vat__sum'] or 0
+        tea_qty   = InvoiceItem.objects.filter(invoice__in=inv_qs).filter(Q(product__category__icontains='Tea') | Q(product__name__icontains='Tea')).aggregate(Sum('quantity'))['quantity__sum'] or 0
         tea_credits = sum((cn.quantity * cn.unit_price) for cn in credit_notes.filter(Q(product__category__icontains='Tea') | Q(product__name__icontains='Tea')))
-        tea_sales = float(Decimal(str(tea_sales)) - tea_credits)
+        tea_sales = float(cat_sums['tea'] - Decimal(str(tea_credits)))
 
         # Monthly Trends (always show full year trend regardless of month filter)
         all_items_year = InvoiceItem.objects.filter(
             invoice__creation_date__year=target_year,
             invoice__status__in=[Invoice.Status.ISSUED, Invoice.Status.PAID]
-        )
+        ).select_related('invoice')
         months_names = ["January", "February", "March", "April", "May", "June",
                         "July", "August", "September", "October", "November", "December"]
         trend_data = {
@@ -183,23 +229,63 @@ class DashboardDataAPI(LoginRequiredMixin, View):
             'tea_sales': [0] * 12, 'tea_qty': [0] * 12,
             'overall_sales': [0] * 12,
         }
-        monthly_items = all_items_year.annotate(
-            prop_discount=Case(
-                When(invoice__subtotal_amount__gt=0, then=(F('line_total') / F('invoice__subtotal_amount')) * F('invoice__total_discount')),
-                default=0.0,
-                output_field=DecimalField()
-            ),
-            ex_vat_sales=ExpressionWrapper(F('line_total') - F('tax_amount') - F('prop_discount'), output_field=DecimalField())
-        ).values(
-            'invoice__creation_date__month', 'product__category', 'product__name'
-        ).annotate(t_sales=Sum('ex_vat_sales'), t_qty=Sum('quantity'))
-
-        for item in monthly_items:
+        
+        # Calculate exactly like the overview
+        y_invoices = Invoice.objects.filter(
+            creation_date__year=target_year,
+            status__in=[Invoice.Status.ISSUED, Invoice.Status.PAID]
+        ).values('id', 'custom_discount_type', 'custom_discount_value')
+        y_inv_map = { i['id']: i for i in y_invoices }
+        
+        y_items = all_items_year.values(
+            'invoice_id', 'invoice__creation_date__month', 'product__category', 'product__name', 'quantity', 'unit_price', 'discount_type', 'discount'
+        )
+        
+        y_inv_gross_sums = {}
+        y_processed_items = []
+        for item in y_items:
+            q = Decimal(str(item['quantity']))
+            p = Decimal(str(item['unit_price']))
+            d_val = Decimal(str(item['discount'] or 0))
+            if item['discount_type'] == 'PERCENT':
+                line_disc = (q * p) * (d_val / Decimal('100.0'))
+            else:
+                line_disc = d_val
+                
+            item_gross = (q * p) - line_disc
+            inv_id = item['invoice_id']
+            y_inv_gross_sums[inv_id] = y_inv_gross_sums.get(inv_id, Decimal('0.00')) + item_gross
+            
+            y_processed_items.append({
+                'item': item,
+                'gross': item_gross,
+                'inv_id': inv_id
+            })
+            
+        for p_item in y_processed_items:
+            item = p_item['item']
+            inv = y_inv_map[p_item['inv_id']]
+            inv_gross = y_inv_gross_sums[p_item['inv_id']]
+            item_gross = p_item['gross']
+            
+            c_type = inv['custom_discount_type']
+            c_val = Decimal(str(inv['custom_discount_value'] or 0))
+            
+            if c_type == 'PERCENT':
+                final_val = item_gross * (Decimal('1.0') - (c_val / Decimal('100.0')))
+            else:
+                if inv_gross > 0:
+                    ratio = item_gross / inv_gross
+                    final_val = item_gross - (ratio * c_val)
+                else:
+                    final_val = item_gross
+                    
             m_idx  = item['invoice__creation_date__month'] - 1
             c_name = (item['product__category'] or '').lower()
             p_name = (item['product__name'] or '').lower()
-            val_s  = float(item['t_sales'] or 0)
-            val_q  = float(item['t_qty']   or 0)
+            val_s  = float(final_val)
+            val_q  = float(item['quantity'])
+            
             trend_data['overall_sales'][m_idx] += val_s
             if 'sugar' in c_name or 'sugar' in p_name:
                 trend_data['sugar_sales'][m_idx] += val_s
@@ -1043,39 +1129,75 @@ class ForecastingView(LoginRequiredMixin, TemplateView):
         
         # Product Comparison (Advanced)
         from sales.models import InvoiceItem
-        from django.db.models import Case, When, DecimalField, ExpressionWrapper
         
         def get_advanced_product_sales(inv_qs):
-            return InvoiceItem.objects.filter(invoice__in=inv_qs).annotate(
-                prop_discount=Case(
-                    When(invoice__subtotal_amount__gt=0, then=(F('line_total') / F('invoice__subtotal_amount')) * F('invoice__total_discount')),
-                    default=0.0,
-                    output_field=DecimalField()
-                ),
-                item_ex_vat=ExpressionWrapper(F('line_total') - F('tax_amount') - F('prop_discount'), output_field=DecimalField())
-            ).values(
-                'product__name'
-            ).annotate(
-                total_revenue=Sum('item_ex_vat'),
-                total_qty=Sum('quantity')
+            # Same reliable python processing
+            invoices = inv_qs.values('id', 'custom_discount_type', 'custom_discount_value')
+            inv_map = { i['id']: i for i in invoices }
+            
+            items = InvoiceItem.objects.filter(invoice__in=inv_qs).values(
+                'invoice_id', 'product__name', 'quantity', 'unit_price', 'discount_type', 'discount', 'invoice__creation_date'
             )
             
-        curr_qs = get_advanced_product_sales(inv_this_month)
+            inv_gross_sums = {}
+            processed_items = []
+            for item in items:
+                q = Decimal(str(item['quantity']))
+                p = Decimal(str(item['unit_price']))
+                d_val = Decimal(str(item['discount'] or 0))
+                if item['discount_type'] == 'PERCENT':
+                    line_disc = (q * p) * (d_val / Decimal('100.0'))
+                else:
+                    line_disc = d_val
+                    
+                item_gross = (q * p) - line_disc
+                inv_id = item['invoice_id']
+                inv_gross_sums[inv_id] = inv_gross_sums.get(inv_id, Decimal('0.00')) + item_gross
+                
+                processed_items.append({
+                    'item': item,
+                    'gross': item_gross,
+                    'inv_id': inv_id
+                })
+                
+            results = {}
+            daily_results = {}
+            for p_item in processed_items:
+                inv = inv_map[p_item['inv_id']]
+                inv_gross = inv_gross_sums[p_item['inv_id']]
+                item_gross = p_item['gross']
+                
+                c_type = inv['custom_discount_type']
+                c_val = Decimal(str(inv['custom_discount_value'] or 0))
+                
+                if c_type == 'PERCENT':
+                    final_val = item_gross * (Decimal('1.0') - (c_val / Decimal('100.0')))
+                else:
+                    if inv_gross > 0:
+                        ratio = item_gross / inv_gross
+                        final_val = item_gross - (ratio * c_val)
+                    else:
+                        final_val = item_gross
+                        
+                name = p_item['item']['product__name']
+                q = p_item['item']['quantity']
+                
+                if name not in results:
+                    results[name] = {'product__name': name, 'total_revenue': Decimal('0.00'), 'total_qty': 0}
+                results[name]['total_revenue'] += final_val
+                results[name]['total_qty'] += q
+                
+                date_only = p_item['item']['invoice__creation_date'].date()
+                d_key = (name, date_only)
+                daily_results[d_key] = daily_results.get(d_key, Decimal('0.00')) + final_val
+                
+            return list(results.values()), daily_results
+            
+        curr_qs, curr_daily = get_advanced_product_sales(inv_this_month)
         curr_prod_sales = {item['product__name']: item for item in curr_qs}
         
-        last_qs = get_advanced_product_sales(inv_last_month)
+        last_qs, last_daily = get_advanced_product_sales(inv_last_month)
         last_prod_sales = {item['product__name']: item for item in last_qs}
-        
-        # Pre-compute daily sparkline data efficiently
-        daily_prod_sales = InvoiceItem.objects.filter(invoice__in=inv_this_month).annotate(
-            date_only=TruncDate('invoice__creation_date'),
-            prop_discount=Case(
-                When(invoice__subtotal_amount__gt=0, then=(F('line_total') / F('invoice__subtotal_amount')) * F('invoice__total_discount')),
-                default=0.0,
-                output_field=DecimalField()
-            ),
-            item_ex_vat=ExpressionWrapper(F('line_total') - F('tax_amount') - F('prop_discount'), output_field=DecimalField())
-        ).values('product__name', 'date_only').annotate(daily_revenue=Sum('item_ex_vat'))
         
         sparkline_dict = {}
         for d in daily_prod_sales:
