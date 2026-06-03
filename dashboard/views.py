@@ -193,11 +193,11 @@ class DashboardDataAPI(LoginRequiredMixin, View):
             
             if 'confectionery' in cat:
                 cat_sums['confectionery'] += final_val
-            if 'sugar' in cat or 'sugar' in name:
+            elif 'sugar' in cat or 'sugar' in name:
                 cat_sums['sugar'] += final_val
-            if 'creamer' in cat or 'creamer' in name:
+            elif 'creamer' in cat or 'creamer' in name:
                 cat_sums['creamer'] += final_val
-            if 'tea' in cat or 'tea' in name:
+            elif 'tea' in cat or 'tea' in name:
                 cat_sums['tea'] += final_val
 
         conf_credits = sum((cn.quantity * cn.unit_price) for cn in credit_notes.filter(product__category__icontains='Confectionery'))
@@ -354,13 +354,50 @@ class DashboardDataAPI(LoginRequiredMixin, View):
         for group in ProductTargetGroup.objects.all().prefetch_related('products'):
             products = list(group.products.all())
             if not products:
-                sales = 0.0
+                group_sales = 0.0
                 achieved_qty = 0.0
             else:
-                items_group = invoice_items.filter(product__in=products)
-                sales = float(items_group.annotate(ex_vat=F('line_total') - F('tax_amount')).aggregate(s=Sum('ex_vat'))['s'] or 0)
-                achieved_qty = float(items_group.aggregate(s=Sum('quantity'))['s'] or 0)
-            
+                # Use two-pass Python discount logic for accurate group sales
+                group_item_ids = [p.id for p in products]
+                g_items = InvoiceItem.objects.filter(invoice__in=inv_qs, product__in=products).values(
+                    'invoice_id', 'quantity', 'unit_price', 'discount_type', 'discount'
+                )
+                g_inv_gross_sums = {}
+                g_processed = []
+                for gi in g_items:
+                    q = Decimal(str(gi['quantity']))
+                    p = Decimal(str(gi['unit_price']))
+                    d_val = Decimal(str(gi['discount'] or 0))
+                    if gi['discount_type'] == 'PERCENT':
+                        line_disc = (q * p) * (d_val / Decimal('100.0'))
+                    else:
+                        line_disc = d_val
+                    item_gross = (q * p) - line_disc
+                    inv_id = gi['invoice_id']
+                    g_inv_gross_sums[inv_id] = g_inv_gross_sums.get(inv_id, Decimal('0.00')) + item_gross
+                    g_processed.append({'gross': item_gross, 'inv_id': inv_id, 'qty': gi['quantity']})
+
+                group_sales = 0.0
+                achieved_qty = 0.0
+                for gp in g_processed:
+                    gi_inv = inv_map.get(gp['inv_id'])
+                    if not gi_inv:
+                        continue
+                    inv_gross = inv_gross_sums.get(gp['inv_id'], Decimal('0.00'))
+                    item_gross = gp['gross']
+                    c_type = gi_inv['custom_discount_type']
+                    c_val = Decimal(str(gi_inv['custom_discount_value'] or 0))
+                    if c_type == 'PERCENT':
+                        final_val = item_gross * (Decimal('1.0') - (c_val / Decimal('100.0')))
+                    else:
+                        if inv_gross > 0:
+                            ratio = item_gross / inv_gross
+                            final_val = item_gross - (ratio * c_val)
+                        else:
+                            final_val = item_gross
+                    group_sales += float(final_val)
+                    achieved_qty += float(gp['qty'])
+
             if using_custom_dates:
                 target_qty = 0.0
             else:
@@ -369,12 +406,13 @@ class DashboardDataAPI(LoginRequiredMixin, View):
             
             achievement_rows.append({
                 'category': group.name,
-                'sales': sales,
+                'sales': group_sales,
                 'achieved_qty': achieved_qty,
                 'target': target_qty,
                 'pct': _get_pct(achieved_qty, target_qty),
                 'has_target': not using_custom_dates and target_qty > 0
             })
+
 
         data = {
             "month": target_month if not using_custom_dates else None,
@@ -431,20 +469,41 @@ class ConfectioneryAnalyticsAPI(LoginRequiredMixin, View):
 
         invoices = inv_qs
 
-        # Pull every invoice item that belongs to a Confectionery product.
-        # We also bring customer_name, month, product name in one queryset.
+        # Pull every confectionery item with raw fields needed for accurate discount calculation
         raw_items = (
             InvoiceItem.objects
             .filter(invoice__in=invoices, product__category__iexact='Confectionery')
-            .annotate(ex_vat=F('line_total') - F('tax_amount'))
             .values(
+                'invoice_id',
                 'product__name',
                 'quantity',
-                'ex_vat',
+                'unit_price',
+                'discount_type',
+                'discount',
                 'invoice__customer__customer_name',
                 'invoice__creation_date__month',
+                'invoice__custom_discount_type',
+                'invoice__custom_discount_value',
             )
         )
+
+        # To apply global discounts proportionally we need the total gross per invoice
+        # across ALL items (not just confectionery items), so fetch that separately.
+        all_items_gross = (
+            InvoiceItem.objects
+            .filter(invoice__in=invoices)
+            .values('invoice_id', 'quantity', 'unit_price', 'discount_type', 'discount')
+        )
+        inv_gross_sums = {}
+        for row in all_items_gross:
+            q = Decimal(str(row['quantity']))
+            p = Decimal(str(row['unit_price']))
+            d_val = Decimal(str(row['discount'] or 0))
+            if row['discount_type'] == 'PERCENT':
+                line_disc = (q * p) * (d_val / Decimal('100.0'))
+            else:
+                line_disc = d_val
+            inv_gross_sums[row['invoice_id']] = inv_gross_sums.get(row['invoice_id'], Decimal('0.00')) + (q * p) - line_disc
 
         # ---------- accumulators ----------
         bucket_labels = [b[0] for b in CONFEC_BUCKETS]
@@ -460,19 +519,45 @@ class ConfectioneryAnalyticsAPI(LoginRequiredMixin, View):
 
         for row in raw_items:
             pname   = row['product__name'] or ''
-            qty     = float(row['quantity'] or 0)
-            exvat   = float(row['ex_vat']   or 0)
+            qty     = row['quantity'] or 0
             cust    = row['invoice__customer__customer_name'] or 'Unknown'
             m_idx   = (row['invoice__creation_date__month'] or 1) - 1  # 0-based
+
+            # Calculate item gross (after item-level discount, before global)
+            q = Decimal(str(qty))
+            p = Decimal(str(row['unit_price']))
+            d_val = Decimal(str(row['discount'] or 0))
+            if row['discount_type'] == 'PERCENT':
+                line_disc = (q * p) * (d_val / Decimal('100.0'))
+            else:
+                line_disc = d_val
+            item_gross = (q * p) - line_disc
+
+            # Apply proportional global discount
+            inv_id = row['invoice_id']
+            inv_gross = inv_gross_sums.get(inv_id, Decimal('0.00'))
+            c_type = row['invoice__custom_discount_type']
+            c_val = Decimal(str(row['invoice__custom_discount_value'] or 0))
+            if c_type == 'PERCENT':
+                final_val = item_gross * (Decimal('1.0') - (c_val / Decimal('100.0')))
+            else:
+                if inv_gross > 0:
+                    ratio = item_gross / inv_gross
+                    final_val = item_gross - (ratio * c_val)
+                else:
+                    final_val = item_gross
+
+            exvat = float(final_val)
 
             label = classify_product(pname)
             if label is None:
                 label = 'Other'
 
             sub_sales[label]  += exvat
-            sub_qty[label]    += qty
+            sub_qty[label]    += float(qty)
             cust_data[cust][label] += exvat
             month_sales[m_idx] += exvat
+
 
         # ---------- build response ----------
 
@@ -853,7 +938,7 @@ class ProductTargetsAPI(LoginRequiredMixin, View):
             if not products_list:
                 continue
 
-            # ── Actual sales for selected period ─────────────────────────
+            # ── Actual sales for selected period (with global discount) ──────
             items_qs = InvoiceItem.objects.filter(
                 product__in=products_list,
                 invoice__status__in=STATUSES,
@@ -871,13 +956,44 @@ class ProductTargetsAPI(LoginRequiredMixin, View):
                     invoice__creation_date__month=target_month
                 )
 
-            actual = float(
-                items_qs.annotate(ex_vat=F('line_total') - F('tax_amount'))
-                .aggregate(s=Sum('ex_vat'))['s'] or 0
+            # Two-pass: need per-invoice gross totals across ALL items (to prorate global discount)
+            inv_ids_in_qs = list(items_qs.values_list('invoice_id', flat=True).distinct())
+            all_inv_items = InvoiceItem.objects.filter(invoice_id__in=inv_ids_in_qs).values(
+                'invoice_id', 'quantity', 'unit_price', 'discount_type', 'discount'
             )
-            actual_qty = float(
-                items_qs.aggregate(q=Sum('quantity'))['q'] or 0
-            )
+            pt_inv_gross_sums = {}
+            for ai in all_inv_items:
+                q = Decimal(str(ai['quantity']))
+                p = Decimal(str(ai['unit_price']))
+                d_val = Decimal(str(ai['discount'] or 0))
+                ld = (q * p) * (d_val / Decimal('100.0')) if ai['discount_type'] == 'PERCENT' else d_val
+                pt_inv_gross_sums[ai['invoice_id']] = pt_inv_gross_sums.get(ai['invoice_id'], Decimal('0.00')) + (q * p) - ld
+
+            inv_meta = {
+                i['id']: i for i in
+                Invoice.objects.filter(id__in=inv_ids_in_qs).values('id', 'custom_discount_type', 'custom_discount_value')
+            }
+
+            pt_items_raw = items_qs.values('invoice_id', 'quantity', 'unit_price', 'discount_type', 'discount')
+            actual = 0.0
+            actual_qty = 0.0
+            for pi in pt_items_raw:
+                q = Decimal(str(pi['quantity']))
+                p = Decimal(str(pi['unit_price']))
+                d_val = Decimal(str(pi['discount'] or 0))
+                ld = (q * p) * (d_val / Decimal('100.0')) if pi['discount_type'] == 'PERCENT' else d_val
+                item_gross = (q * p) - ld
+                inv_id = pi['invoice_id']
+                inv_gross = pt_inv_gross_sums.get(inv_id, Decimal('0.00'))
+                inv_meta_row = inv_meta.get(inv_id, {})
+                c_type = inv_meta_row.get('custom_discount_type', 'AMOUNT')
+                c_val = Decimal(str(inv_meta_row.get('custom_discount_value') or 0))
+                if c_type == 'PERCENT':
+                    final_val = item_gross * (Decimal('1.0') - (c_val / Decimal('100.0')))
+                else:
+                    final_val = item_gross - ((item_gross / inv_gross) * c_val) if inv_gross > 0 else item_gross
+                actual += float(final_val)
+                actual_qty += float(pi['quantity'])
 
             # ── Target for this period ────────────────────────────────────
             if using_custom_dates:
@@ -895,18 +1011,48 @@ class ProductTargetsAPI(LoginRequiredMixin, View):
             pct = round(actual_qty / target_qty * 100, 1) if target_qty > 0 else 0
 
             # ── Monthly trend (always full 12 months) ─────────────────────
-            all_year_qs = InvoiceItem.objects.filter(
+            all_year_raw = InvoiceItem.objects.filter(
                 product__in=products_list,
                 invoice__creation_date__year=target_year,
                 invoice__status__in=STATUSES,
-            ).annotate(ex_vat=F('line_total') - F('tax_amount')).values(
-                'invoice__creation_date__month'
-            ).annotate(s=Sum('ex_vat'))
+            ).values('invoice_id', 'invoice__creation_date__month', 'quantity', 'unit_price', 'discount_type', 'discount')
+
+            # Need all-item grosses for the full year invoices as well
+            year_inv_ids = list(set(r['invoice_id'] for r in all_year_raw))
+            year_all_items = InvoiceItem.objects.filter(invoice_id__in=year_inv_ids).values(
+                'invoice_id', 'quantity', 'unit_price', 'discount_type', 'discount'
+            )
+            year_inv_gross = {}
+            for ai in year_all_items:
+                q2 = Decimal(str(ai['quantity']))
+                p2 = Decimal(str(ai['unit_price']))
+                dv2 = Decimal(str(ai['discount'] or 0))
+                ld2 = (q2 * p2) * (dv2 / Decimal('100.0')) if ai['discount_type'] == 'PERCENT' else dv2
+                year_inv_gross[ai['invoice_id']] = year_inv_gross.get(ai['invoice_id'], Decimal('0.00')) + (q2 * p2) - ld2
+            year_inv_meta = {
+                i['id']: i for i in
+                Invoice.objects.filter(id__in=year_inv_ids).values('id', 'custom_discount_type', 'custom_discount_value')
+            }
 
             monthly_trend = [0.0] * 12
-            for row in all_year_qs:
-                monthly_trend[row['invoice__creation_date__month'] - 1] = round(
-                    float(row['s'] or 0), 2)
+            for yr in all_year_raw:
+                q2 = Decimal(str(yr['quantity']))
+                p2 = Decimal(str(yr['unit_price']))
+                dv2 = Decimal(str(yr['discount'] or 0))
+                ld2 = (q2 * p2) * (dv2 / Decimal('100.0')) if yr['discount_type'] == 'PERCENT' else dv2
+                ig2 = (q2 * p2) - ld2
+                inv_id2 = yr['invoice_id']
+                inv_gross2 = year_inv_gross.get(inv_id2, Decimal('0.00'))
+                im2 = year_inv_meta.get(inv_id2, {})
+                ct2 = im2.get('custom_discount_type', 'AMOUNT')
+                cv2 = Decimal(str(im2.get('custom_discount_value') or 0))
+                if ct2 == 'PERCENT':
+                    fv2 = ig2 * (Decimal('1.0') - (cv2 / Decimal('100.0')))
+                else:
+                    fv2 = ig2 - ((ig2 / inv_gross2) * cv2) if inv_gross2 > 0 else ig2
+                m_idx2 = yr['invoice__creation_date__month'] - 1
+                monthly_trend[m_idx2] = round(monthly_trend[m_idx2] + float(fv2), 2)
+
 
             # ── Monthly targets ───────────────────────────────────────────
             monthly_targets = [0.0] * 12
@@ -1200,14 +1346,13 @@ class ForecastingView(LoginRequiredMixin, TemplateView):
         last_prod_sales = {item['product__name']: item for item in last_qs}
         
         sparkline_dict = {}
-        for d in daily_prod_sales:
-            p_name = d['product__name']
-            if p_name:
-                day = d['date_only'].day
-                if p_name not in sparkline_dict:
-                    sparkline_dict[p_name] = {}
+        for (prod_name, date_only), rev in curr_daily.items():
+            if prod_name:
+                day = date_only.day
+                if prod_name not in sparkline_dict:
+                    sparkline_dict[prod_name] = {}
                 if day <= max_day:
-                    sparkline_dict[p_name][day] = float(d['daily_revenue'] or 0)
+                    sparkline_dict[prod_name][day] = float(rev)
         
         prod_comparison = []
         all_prods = set([k for k in curr_prod_sales.keys() if k]).union(set([k for k in last_prod_sales.keys() if k]))

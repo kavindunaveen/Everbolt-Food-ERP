@@ -117,9 +117,11 @@ class SalesDashboardView(LoginRequiredMixin, TemplateView):
         active_invoices = invoices.filter(status__in=['ISSUED', 'PAID'])
         context['total_invoice_count'] = active_invoices.count()
         
-        # Calculate gross revenue
+        # Calculate gross revenue - use total_amount - tax_amount to correctly include converted quotation invoices
         revenue_with_vat = active_invoices.aggregate(Sum('total_amount'))['total_amount__sum'] or Decimal('0.00')
-        revenue_ex_vat = active_invoices.aggregate(Sum('subtotal_amount'))['subtotal_amount__sum'] or Decimal('0.00')
+        revenue_ex_vat = sum(
+            (inv.total_amount - inv.tax_amount) for inv in active_invoices.only('total_amount', 'tax_amount')
+        )
         
         # Subtract Credit Notes (Returns)
         # Note: We filter credit notes by the same salesperson/date filters if applied to invoices
@@ -183,13 +185,16 @@ class SalesDashboardView(LoginRequiredMixin, TemplateView):
             officer_cns = credit_notes.filter(original_invoice__in=officer_invs)
             
             off_rev_with = officer_invs.aggregate(Sum('total_amount'))['total_amount__sum'] or Decimal('0.00')
-            off_rev_ex = officer_invs.aggregate(Sum('subtotal_amount'))['subtotal_amount__sum'] or Decimal('0.00')
+            off_rev_ex = sum(
+                (inv.total_amount - inv.tax_amount) for inv in officer_invs.only('total_amount', 'tax_amount')
+            )
             
             off_cred = officer_cns.aggregate(Sum('credit_amount'))['credit_amount__sum'] or Decimal('0.00')
             off_cred_sub = sum((cn.quantity * cn.unit_price) for cn in officer_cns)
             
             net_with = off_rev_with - off_cred
-            net_ex = off_rev_ex - Decimal(str(off_cred_sub))
+            net_ex = Decimal(str(off_rev_ex)) - Decimal(str(off_cred_sub))
+
             
             sp_target_val = sp_targets_map.get(officer.id, Decimal('0.00'))
             
@@ -245,9 +250,10 @@ class SalesDashboardView(LoginRequiredMixin, TemplateView):
             trend_invoices = trend_invoices.filter(creation_date__date__gte=start_date)
             
         daily_revenue = trend_invoices.annotate(
-            date=TruncDate('creation_date')
+            date=TruncDate('creation_date'),
+            ex_vat=F('total_amount') - F('tax_amount')
         ).values('date').annotate(
-            daily_total=Sum('subtotal_amount')
+            daily_total=Sum('ex_vat')
         ).order_by('date')
         
         # To handle credit notes in trend, we can just map invoice creation date to revenue.
