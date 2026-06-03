@@ -236,7 +236,7 @@
 
         <!-- Month by Month Comparison -->
         <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-0 overflow-hidden flex flex-col">
-            <div class="px-6 py-5 border-b border-gray-100 bg-gray-50">
+            <div class="px-6 py-5 border-b border-gray-100 bg-gray-50 flex justify-between items-center">
                 <h3 class="text-lg font-bold text-gray-900">Month-by-Month Comparison</h3>
             </div>
             <div class="p-6 flex-1">
@@ -265,26 +265,45 @@
                 </div>
 
                 <h4 class="text-sm font-bold text-gray-900 mb-4">Top 10 Products Performance</h4>
-                <div class="overflow-y-auto max-h-64 pr-2">
+                <div class="overflow-y-auto max-h-[320px] pr-2">
                     <table class="min-w-full">
+                        <thead>
+                            <tr>
+                                <th class="text-left text-[10px] font-bold text-gray-400 uppercase tracking-widest pb-2">Product</th>
+                                <th class="text-center text-[10px] font-bold text-gray-400 uppercase tracking-widest pb-2">30-Day Trend</th>
+                                <th class="text-right text-[10px] font-bold text-gray-400 uppercase tracking-widest pb-2">Revenue vs Qty</th>
+                            </tr>
+                        </thead>
                         <tbody class="divide-y divide-gray-100">
                             {% for p in product_comparison %}
-                            <tr class="group">
-                                <td class="py-2 text-sm font-bold text-gray-800">{{ p.name }}</td>
-                                <td class="py-2 text-right text-sm font-medium text-gray-900">Rs {{ p.current|floatformat:0|intcomma }}</td>
-                                <td class="py-2 text-right">
-                                    {% if p.diff > 0 %}
-                                    <span class="text-xs font-bold text-emerald-600">+{{ p.pct|floatformat:1 }}%</span>
-                                    {% elif p.diff < 0 %}
-                                    <span class="text-xs font-bold text-red-600">{{ p.pct|floatformat:1 }}%</span>
-                                    {% else %}
-                                    <span class="text-xs font-bold text-gray-400">-</span>
-                                    {% endif %}
+                            <tr class="group hover:bg-gray-50 transition-colors">
+                                <td class="py-3 pr-2">
+                                    <div class="text-sm font-bold text-gray-900 truncate max-w-[120px]" title="{{ p.name }}">{{ p.name }}</div>
+                                    <div class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-0.5">
+                                        {% if p.diff > 0 %}
+                                        <span class="text-emerald-500">↑ +{{ p.pct|floatformat:1 }}% vs last mth</span>
+                                        {% elif p.diff < 0 %}
+                                        <span class="text-red-500">↓ {{ p.pct|floatformat:1 }}% vs last mth</span>
+                                        {% else %}
+                                        <span class="text-gray-400">-</span>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                                <td class="py-3 px-2 w-32">
+                                    <div class="h-8 w-full">
+                                        <canvas class="sparkline-chart" data-sparkline="{{ p.sparkline_json|safe }}"></canvas>
+                                    </div>
+                                </td>
+                                <td class="py-3 pl-2 text-right">
+                                    <div class="text-sm font-black text-indigo-600">Rs {{ p.current|floatformat:0|intcomma }}</div>
+                                    <div class="text-[10px] font-bold text-gray-500">
+                                        {{ p.current_qty|floatformat:0|intcomma }} units sold
+                                    </div>
                                 </td>
                             </tr>
                             {% empty %}
                             <tr>
-                                <td colspan="3" class="text-center py-4 text-xs font-medium text-gray-400 italic">No product data.</td>
+                                <td colspan="3" class="text-center py-6 text-xs font-medium text-gray-400 italic">No product data for this month.</td>
                             </tr>
                             {% endfor %}
                         </tbody>
@@ -294,4 +313,189 @@
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Modal functionality
+        const modal = document.getElementById('settingsModal');
+        const openBtn = document.getElementById('openSettingsBtn');
+        const closeBtn = document.getElementById('closeSettingsBtn');
+        const cancelBtn = document.getElementById('cancelSettingsBtn');
+
+        if(openBtn) openBtn.addEventListener('click', () => modal.classList.remove('hidden'));
+        if(closeBtn) closeBtn.addEventListener('click', () => modal.classList.add('hidden'));
+        if(cancelBtn) cancelBtn.addEventListener('click', () => modal.classList.add('hidden'));
+
+        // Close on clicking outside
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                modal.classList.add('hidden');
+            }
+        });
+
+        // Setup Chart.js for Monthly Comparison
+        const ctx = document.getElementById('monthlyComparisonChart');
+        if (!ctx) return;
+        
+        const labels = {{ chart_labels_json|safe }};
+        const actualData = {{ chart_actual_sales_json|safe }};
+        const targetData = {{ chart_target_sales_json|safe }};
+        const lastMonthData = {{ chart_last_month_sales_json|safe }};
+
+        new Chart(ctx.getContext('2d'), {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [
+                    {
+                        label: 'Actual Net Sales (This Month)',
+                        data: actualData,
+                        borderColor: '#2DD4BF', // Tailwind teal-400
+                        backgroundColor: '#2DD4BF',
+                        borderWidth: 3,
+                        pointBackgroundColor: '#2DD4BF',
+                        pointBorderColor: '#1a202c',
+                        pointBorderWidth: 2,
+                        pointRadius: 5,
+                        pointHoverRadius: 7,
+                        tension: 0.1,
+                        fill: false
+                    },
+                    {
+                        label: 'Actual Net Sales (Last Month)',
+                        data: lastMonthData,
+                        borderColor: '#a78bfa', // Tailwind purple-400
+                        backgroundColor: '#a78bfa',
+                        borderWidth: 3,
+                        pointBackgroundColor: '#a78bfa',
+                        pointBorderColor: '#1a202c',
+                        pointBorderWidth: 2,
+                        pointRadius: 4,
+                        pointHoverRadius: 6,
+                        tension: 0.1,
+                        fill: false
+                    },
+                    {
+                        label: 'Manual Target Line',
+                        data: targetData,
+                        borderColor: '#0284c7', // Tailwind sky-600
+                        borderWidth: 2,
+                        borderDash: [5, 5],
+                        pointRadius: 0,
+                        pointHoverRadius: 0,
+                        tension: 0,
+                        fill: false
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                color: '#9ca3af',
+                interaction: {
+                    mode: 'index',
+                    intersect: false,
+                },
+                plugins: {
+                    legend: {
+                        position: 'top',
+                        labels: {
+                            color: '#e5e7eb',
+                            usePointStyle: true,
+                            boxWidth: 8,
+                            padding: 20,
+                            font: {
+                                family: "'Inter', sans-serif",
+                                size: 12,
+                                weight: 'bold'
+                            }
+                        }
+                    },
+                    tooltip: {
+                        backgroundColor: 'rgba(17, 24, 39, 0.9)',
+                        titleColor: '#e5e7eb',
+                        bodyColor: '#e5e7eb',
+                        borderColor: '#374151',
+                        borderWidth: 1,
+                        padding: 12,
+                        callbacks: {
+                            label: function(context) {
+                                let label = context.dataset.label || '';
+                                if (label) {
+                                    label += ': ';
+                                }
+                                if (context.parsed.y !== null) {
+                                    label += 'Rs ' + new Intl.NumberFormat('en-IN').format(context.parsed.y);
+                                }
+                                return label;
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        grid: {
+                            color: '#374151',
+                        },
+                        ticks: {
+                            color: '#9ca3af',
+                            font: { family: "'Inter', sans-serif" }
+                        }
+                    },
+                    y: {
+                        beginAtZero: true,
+                        grid: {
+                            color: '#374151',
+                        },
+                        ticks: {
+                            color: '#9ca3af',
+                            font: { family: "'Inter', sans-serif" },
+                            callback: function(value, index, values) {
+                                return new Intl.NumberFormat('en-IN').format(value);
+                            }
+                        }
+                    }
+                }
+            }
+        });
+
+        // Setup Sparklines
+        const sparklineCanvases = document.querySelectorAll('.sparkline-chart');
+        sparklineCanvases.forEach(canvas => {
+            const dataStr = canvas.getAttribute('data-sparkline');
+            if (dataStr) {
+                const data = JSON.parse(dataStr);
+                const isPositive = data[data.length-1] >= data[0]; // simplistic trend
+                const color = isPositive ? '#10b981' : '#f43f5e'; // emerald or rose
+                
+                new Chart(canvas.getContext('2d'), {
+                    type: 'line',
+                    data: {
+                        labels: data.map((_, i) => i),
+                        datasets: [{
+                            data: data,
+                            borderColor: color,
+                            borderWidth: 2,
+                            tension: 0.3,
+                            pointRadius: 0,
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: { legend: { display: false }, tooltip: { enabled: false } },
+                        scales: {
+                            x: { display: false },
+                            y: { display: false }
+                        },
+                        layout: { padding: 0 }
+                    }
+                });
+            }
+        });
+    });
+</script>
 {% endblock %}

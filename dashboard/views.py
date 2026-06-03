@@ -979,9 +979,10 @@ class ForecastingView(LoginRequiredMixin, TemplateView):
             for day in range(1, num_days + 1):
                 cumulative_target.append(round(daily_linear_target * day, 2))
         
-        context['chart_labels'] = chart_labels
-        context['chart_actual_sales'] = cumulative_actual
-        context['chart_target_sales'] = cumulative_target
+        import json
+        context['chart_labels_json'] = json.dumps(chart_labels)
+        context['chart_actual_sales_json'] = json.dumps(cumulative_actual)
+        context['chart_target_sales_json'] = json.dumps(cumulative_target)
         
         # 5. Month-by-Month Comparison
         last_month = target_month - 1
@@ -999,34 +1000,79 @@ class ForecastingView(LoginRequiredMixin, TemplateView):
         total_sales_last_month = inv_last_month.aggregate(total=Sum('ex_vat'))['total'] or 0
         context['total_sales_last_month'] = float(total_sales_last_month)
         
-        # Product Comparison
+        # Calculate last month cumulative sales for chart
+        daily_sales_last_month = inv_last_month.annotate(date_only=TruncDate('creation_date')).values('date_only').annotate(daily_total=Sum('ex_vat'))
+        daily_sales_dict_last_month = {d['date_only'].day: float(d['daily_total'] or 0) for d in daily_sales_last_month}
+        
+        cumulative_last = []
+        current_cumulative_last = 0
+        _, num_days_last = calendar.monthrange(last_month_year, last_month)
+        
+        for day in range(1, num_days + 1):
+            if day <= num_days_last:
+                current_cumulative_last += daily_sales_dict_last_month.get(day, 0)
+            cumulative_last.append(current_cumulative_last)
+            
+        context['chart_last_month_sales_json'] = json.dumps(cumulative_last)
+        
+        # Product Comparison (Advanced)
         from sales.models import InvoiceItem
         
-        def get_product_sales(inv_qs):
+        def get_advanced_product_sales(inv_qs):
             return InvoiceItem.objects.filter(invoice__in=inv_qs).values(
                 'product__name'
-            ).annotate(total_revenue=Sum(F('unit_price') * F('quantity'))).order_by('-total_revenue')[:10]
+            ).annotate(
+                total_revenue=Sum(F('unit_price') * F('quantity')),
+                total_qty=Sum('quantity')
+            )
             
-        curr_prod_sales = {item['product__name']: item['total_revenue'] for item in get_product_sales(inv_this_month)}
-        last_prod_sales = {item['product__name']: item['total_revenue'] for item in get_product_sales(inv_last_month)}
+        curr_qs = get_advanced_product_sales(inv_this_month)
+        curr_prod_sales = {item['product__name']: item for item in curr_qs}
+        
+        last_qs = get_advanced_product_sales(inv_last_month)
+        last_prod_sales = {item['product__name']: item for item in last_qs}
+        
+        # Pre-compute daily sparkline data efficiently
+        daily_prod_sales = InvoiceItem.objects.filter(invoice__in=inv_this_month).annotate(
+            date_only=TruncDate('invoice__creation_date')
+        ).values('product__name', 'date_only').annotate(daily_revenue=Sum(F('unit_price') * F('quantity')))
+        
+        sparkline_dict = {}
+        for d in daily_prod_sales:
+            p_name = d['product__name']
+            if p_name:
+                day = d['date_only'].day
+                if p_name not in sparkline_dict:
+                    sparkline_dict[p_name] = {}
+                if day <= max_day:
+                    sparkline_dict[p_name][day] = float(d['daily_revenue'] or 0)
         
         prod_comparison = []
-        all_prods = set(curr_prod_sales.keys()).union(set(last_prod_sales.keys()))
+        all_prods = set([k for k in curr_prod_sales.keys() if k]).union(set([k for k in last_prod_sales.keys() if k]))
+        
         for p in all_prods:
-            c_val = float(curr_prod_sales.get(p, 0))
-            l_val = float(last_prod_sales.get(p, 0))
+            c_val = float(curr_prod_sales.get(p, {}).get('total_revenue', 0) or 0)
+            c_qty = float(curr_prod_sales.get(p, {}).get('total_qty', 0) or 0)
+            l_val = float(last_prod_sales.get(p, {}).get('total_revenue', 0) or 0)
+            l_qty = float(last_prod_sales.get(p, {}).get('total_qty', 0) or 0)
             diff = c_val - l_val
             pct = (diff / l_val * 100) if l_val > 0 else (100 if c_val > 0 else 0)
+            
+            sparkline_data = [sparkline_dict.get(p, {}).get(i, 0) for i in range(1, max_day + 1)]
+            
             prod_comparison.append({
                 'name': p,
                 'current': c_val,
+                'current_qty': c_qty,
                 'last': l_val,
+                'last_qty': l_qty,
                 'diff': diff,
-                'pct': pct
+                'pct': pct,
+                'sparkline_json': json.dumps(sparkline_data)
             })
             
         prod_comparison.sort(key=lambda x: x['current'], reverse=True)
-        context['product_comparison'] = prod_comparison
+        context['product_comparison'] = prod_comparison[:10]
 
         import calendar
         context['target_month_name'] = calendar.month_name[target_month]
