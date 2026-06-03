@@ -1122,11 +1122,11 @@ class ForecastingView(LoginRequiredMixin, TemplateView):
             creation_date__year=target_year,
             creation_date__month=target_month,
             status__in=[Invoice.Status.ISSUED, Invoice.Status.PAID]
-        )
-        total_sales_gross = inv_this_month.annotate(ex_vat=F('total_amount') - F('tax_amount')).aggregate(total=Sum('ex_vat'))['total'] or Decimal('0.00')
+        ).annotate(ex_vat=F('total_amount') - F('tax_amount'))
+        from decimal import Decimal
+        total_sales_gross = inv_this_month.aggregate(total=Sum('ex_vat'))['total'] or Decimal('0.00')
         
         from sales.models import CreditNote
-        from decimal import Decimal
         credit_notes = CreditNote.objects.filter(original_invoice__in=inv_this_month)
         credit_subtotal = sum((cn.quantity * cn.unit_price) for cn in credit_notes)
         
