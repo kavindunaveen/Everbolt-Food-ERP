@@ -128,6 +128,7 @@ class DashboardDataAPI(LoginRequiredMixin, View):
         total_packs = invoice_items.filter(product__stock_unit='pack').aggregate(Sum('quantity'))['quantity__sum'] or 0
 
         # Calculate precise Overall Sales (Ex-VAT) taking into account invoice-level discounts and credit notes
+        from decimal import Decimal
         revenue_ex_vat = inv_qs.annotate(inv_ex_vat=F('total_amount') - F('tax_amount')).aggregate(Sum('inv_ex_vat'))['inv_ex_vat__sum'] or Decimal('0.00')
         from sales.models import CreditNote
         credit_notes = CreditNote.objects.filter(original_invoice__in=inv_qs)
@@ -144,8 +145,8 @@ class DashboardDataAPI(LoginRequiredMixin, View):
         )
         
         # First pass: calculate gross ex-vat per item and sum per invoice
-        from decimal import Decimal
         inv_gross_sums = {}
+
         processed_items = []
         for item in items:
             q = Decimal(str(item['quantity']))
