@@ -8,4 +8,6 @@ urlpatterns = [
     path('api/product-search/', views.ProductSearchAPI.as_view(), name='product_search_api'),
     path('api/product-targets/', views.ProductTargetsAPI.as_view(), name='product_targets_api'),
     path('targets/', views.TargetManagementView.as_view(), name='target_management'),
+    path('forecasting/', views.ForecastingView.as_view(), name='forecasting'),
+    path('forecasting/settings/', views.ForecastingSettingsView.as_view(), name='forecasting_settings'),
 ]
