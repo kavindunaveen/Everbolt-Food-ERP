@@ -64,6 +64,12 @@ class SalesDashboardView(LoginRequiredMixin, TemplateView):
             'date_from': today_str,
             'date_to': today_str,
         })
+        yesterday_str = (today - timezone.timedelta(days=1)).strftime('%Y-%m-%d')
+        quick_months.append({
+            'label': 'Yesterday',
+            'date_from': yesterday_str,
+            'date_to': yesterday_str,
+        })
         for i in range(5):
             first_day = (today.replace(day=1) - timezone.timedelta(days=30 * i)).replace(day=1)
             last_day = calendar.monthrange(first_day.year, first_day.month)[1]
@@ -92,10 +98,16 @@ class SalesDashboardView(LoginRequiredMixin, TemplateView):
         else:
             quotations = Quotation.objects.all()
             invoices = Invoice.objects.all()
+        q = self.request.GET.get('q')
+        status = self.request.GET.get('status')
         
         if q:
             quotations = quotations.filter(quotation_number__icontains=q)
             invoices = invoices.filter(invoice_number__icontains=q)
+            
+        if status:
+            quotations = quotations.filter(status=status)
+            invoices = invoices.filter(status=status)
             
         if date_from:
             quotations = quotations.filter(creation_date__date__gte=date_from)
