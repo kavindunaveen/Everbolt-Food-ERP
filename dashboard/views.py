@@ -872,7 +872,7 @@ class ForecastingView(LoginRequiredMixin, TemplateView):
             creation_date__year=target_year,
             creation_date__month=target_month,
             status__in=[Invoice.Status.ISSUED, Invoice.Status.PAID]
-        ).annotate(ex_vat=F('line_total') - F('tax_amount'))
+        ).annotate(ex_vat=F('total_amount') - F('tax_amount'))
         
         total_sales = inv_this_month.aggregate(total=Sum('ex_vat'))['total'] or 0
         context['total_sales'] = float(total_sales)
@@ -932,7 +932,7 @@ class ForecastingView(LoginRequiredMixin, TemplateView):
             creation_date__year=last_month_year,
             creation_date__month=last_month,
             status__in=[Invoice.Status.ISSUED, Invoice.Status.PAID]
-        ).annotate(ex_vat=F('line_total') - F('tax_amount'))
+        ).annotate(ex_vat=F('total_amount') - F('tax_amount'))
         
         total_sales_last_month = inv_last_month.aggregate(total=Sum('ex_vat'))['total'] or 0
         context['total_sales_last_month'] = float(total_sales_last_month)
