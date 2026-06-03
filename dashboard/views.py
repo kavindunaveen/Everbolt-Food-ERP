@@ -128,30 +128,44 @@ class DashboardDataAPI(LoginRequiredMixin, View):
         total_packs = invoice_items.filter(product__stock_unit='pack').aggregate(Sum('quantity'))['quantity__sum'] or 0
 
         # Calculate precise Overall Sales (Ex-VAT) taking into account invoice-level discounts and credit notes
-        revenue_ex_vat = inv_qs.aggregate(Sum('subtotal_amount'))['subtotal_amount__sum'] or Decimal('0.00')
+        revenue_ex_vat = inv_qs.annotate(inv_ex_vat=F('total_amount') - F('tax_amount')).aggregate(Sum('inv_ex_vat'))['inv_ex_vat__sum'] or Decimal('0.00')
         from sales.models import CreditNote
         credit_notes = CreditNote.objects.filter(original_invoice__in=inv_qs)
         credit_subtotal = sum((cn.quantity * cn.unit_price) for cn in credit_notes)
         overall_sales_total = float(revenue_ex_vat - Decimal(str(credit_subtotal)))
-        confectionery_sales = invoice_items.filter(product__category__icontains='Confectionery').annotate(ex_vat=F('line_total') - F('tax_amount')).aggregate(Sum('ex_vat'))['ex_vat__sum'] or 0
+        
+        from django.db.models import Case, When, DecimalField, ExpressionWrapper
+        
+        prop_discount_annot = Case(
+            When(invoice__subtotal_amount__gt=0,
+                 then=(F('line_total') / F('invoice__subtotal_amount')) * F('invoice__total_discount')),
+            default=0.0,
+            output_field=DecimalField()
+        )
+        invoice_items = InvoiceItem.objects.filter(invoice__in=inv_qs).annotate(
+            prop_discount=prop_discount_annot,
+            ex_vat=ExpressionWrapper(F('line_total') - F('tax_amount') - F('prop_discount'), output_field=DecimalField())
+        )
+
+        confectionery_sales = invoice_items.filter(product__category__icontains='Confectionery').aggregate(Sum('ex_vat'))['ex_vat__sum'] or 0
         conf_credits = sum((cn.quantity * cn.unit_price) for cn in credit_notes.filter(product__category__icontains='Confectionery'))
         confectionery_sales = float(Decimal(str(confectionery_sales)) - conf_credits)
 
         sugar_items = invoice_items.filter(Q(product__category__icontains='Sugar') | Q(product__name__icontains='Sugar'))
         sugar_qty   = sugar_items.aggregate(Sum('quantity'))['quantity__sum'] or 0
-        sugar_sales = sugar_items.annotate(ex_vat=F('line_total') - F('tax_amount')).aggregate(Sum('ex_vat'))['ex_vat__sum'] or 0
+        sugar_sales = sugar_items.aggregate(Sum('ex_vat'))['ex_vat__sum'] or 0
         sugar_credits = sum((cn.quantity * cn.unit_price) for cn in credit_notes.filter(Q(product__category__icontains='Sugar') | Q(product__name__icontains='Sugar')))
         sugar_sales = float(Decimal(str(sugar_sales)) - sugar_credits)
 
         creamer_items = invoice_items.filter(Q(product__category__icontains='Creamer') | Q(product__name__icontains='Creamer'))
         creamer_qty   = creamer_items.aggregate(Sum('quantity'))['quantity__sum'] or 0
-        creamer_sales = creamer_items.annotate(ex_vat=F('line_total') - F('tax_amount')).aggregate(Sum('ex_vat'))['ex_vat__sum'] or 0
+        creamer_sales = creamer_items.aggregate(Sum('ex_vat'))['ex_vat__sum'] or 0
         creamer_credits = sum((cn.quantity * cn.unit_price) for cn in credit_notes.filter(Q(product__category__icontains='Creamer') | Q(product__name__icontains='Creamer')))
         creamer_sales = float(Decimal(str(creamer_sales)) - creamer_credits)
 
         tea_items = invoice_items.filter(Q(product__category__icontains='Tea') | Q(product__name__icontains='Tea'))
         tea_qty   = tea_items.aggregate(Sum('quantity'))['quantity__sum'] or 0
-        tea_sales = tea_items.annotate(ex_vat=F('line_total') - F('tax_amount')).aggregate(Sum('ex_vat'))['ex_vat__sum'] or 0
+        tea_sales = tea_items.aggregate(Sum('ex_vat'))['ex_vat__sum'] or 0
         tea_credits = sum((cn.quantity * cn.unit_price) for cn in credit_notes.filter(Q(product__category__icontains='Tea') | Q(product__name__icontains='Tea')))
         tea_sales = float(Decimal(str(tea_sales)) - tea_credits)
 
@@ -169,10 +183,13 @@ class DashboardDataAPI(LoginRequiredMixin, View):
             'tea_sales': [0] * 12, 'tea_qty': [0] * 12,
             'overall_sales': [0] * 12,
         }
-        monthly_items = all_items_year.values(
-            'invoice__creation_date__month', 'product__category', 'product__name'
-        ).annotate(
-            ex_vat_sales=F('line_total') - F('tax_amount')
+        monthly_items = all_items_year.annotate(
+            prop_discount=Case(
+                When(invoice__subtotal_amount__gt=0, then=(F('line_total') / F('invoice__subtotal_amount')) * F('invoice__total_discount')),
+                default=0.0,
+                output_field=DecimalField()
+            ),
+            ex_vat_sales=ExpressionWrapper(F('line_total') - F('tax_amount') - F('prop_discount'), output_field=DecimalField())
         ).values(
             'invoice__creation_date__month', 'product__category', 'product__name'
         ).annotate(t_sales=Sum('ex_vat_sales'), t_qty=Sum('quantity'))
@@ -1026,12 +1043,20 @@ class ForecastingView(LoginRequiredMixin, TemplateView):
         
         # Product Comparison (Advanced)
         from sales.models import InvoiceItem
+        from django.db.models import Case, When, DecimalField, ExpressionWrapper
         
         def get_advanced_product_sales(inv_qs):
-            return InvoiceItem.objects.filter(invoice__in=inv_qs).values(
+            return InvoiceItem.objects.filter(invoice__in=inv_qs).annotate(
+                prop_discount=Case(
+                    When(invoice__subtotal_amount__gt=0, then=(F('line_total') / F('invoice__subtotal_amount')) * F('invoice__total_discount')),
+                    default=0.0,
+                    output_field=DecimalField()
+                ),
+                item_ex_vat=ExpressionWrapper(F('line_total') - F('tax_amount') - F('prop_discount'), output_field=DecimalField())
+            ).values(
                 'product__name'
             ).annotate(
-                total_revenue=Sum(F('unit_price') * F('quantity')),
+                total_revenue=Sum('item_ex_vat'),
                 total_qty=Sum('quantity')
             )
             
@@ -1043,8 +1068,14 @@ class ForecastingView(LoginRequiredMixin, TemplateView):
         
         # Pre-compute daily sparkline data efficiently
         daily_prod_sales = InvoiceItem.objects.filter(invoice__in=inv_this_month).annotate(
-            date_only=TruncDate('invoice__creation_date')
-        ).values('product__name', 'date_only').annotate(daily_revenue=Sum(F('unit_price') * F('quantity')))
+            date_only=TruncDate('invoice__creation_date'),
+            prop_discount=Case(
+                When(invoice__subtotal_amount__gt=0, then=(F('line_total') / F('invoice__subtotal_amount')) * F('invoice__total_discount')),
+                default=0.0,
+                output_field=DecimalField()
+            ),
+            item_ex_vat=ExpressionWrapper(F('line_total') - F('tax_amount') - F('prop_discount'), output_field=DecimalField())
+        ).values('product__name', 'date_only').annotate(daily_revenue=Sum('item_ex_vat'))
         
         sparkline_dict = {}
         for d in daily_prod_sales:
