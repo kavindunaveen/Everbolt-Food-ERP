@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+{% load static %}
+<html lang="en">
+<head>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <meta charset="UTF-8">
+    <title>Print Delivery Note - {{ dn.dn_number }}</title>
+    <style>
+        @page {
+            size: 24.13cm 30.48cm;
+            margin: 10mm;
+        }
+        body {
+            font-family: Arial, Helvetica, sans-serif;
+            font-size: 11pt;
+            font-weight: bold;
+            color: #000;
+            background: #fff;
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            width: 100%;
+            max-width: 100%;
+            margin: 0;
+            padding: 5mm;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+        h1 {
+            text-align: center;
+            font-size: 16pt;
+            border: 2px solid #000;
+            padding: 5px;
+            display: inline-block;
+            margin: 0;
+            text-transform: uppercase;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 10px;
+        }
+        th, td {
+            border: 1px solid #000;
+            padding: 4px;
+            vertical-align: top;
+        }
+        .flex-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 5px;
+        }
+        .box {
+            border: 1px solid #000;
+            padding: 5px;
+            width: 49%;
+            box-sizing: border-box;
+        }
+        .full-box {
+            border: 1px solid #000;
+            padding: 5px;
+            margin-bottom: 10px;
+        }
+        .text-right { text-align: right; }
+        .text-center { text-align: center; }
+        .items-table th {
+            text-align: center;
+        }
+        
+        .no-print {
+            display: block;
+            margin: 20px 0;
+            text-align: center;
+        }
+        .no-print button {
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+            margin: 0 10px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+            background: #eee;
+        }
+        .no-print button.primary {
+            background: #10b981;
+            color: white;
+            border-color: #059669;
+        }
+        
+        @media print {
+            .no-print { display: none !important; }
+            body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+        }
+    </style>
+</head>
+<body>
+    <div class="no-print">
+        <button class="primary" onclick="window.print()">🖨️ Print Delivery Note</button>
+        <button onclick="if(window.history.length > 1 && document.referrer !== '') { window.history.back(); } else { window.close(); }">&larr; Go Back (Close)</button>
+    </div>
+
+    <div class="container" id="printable-area">
+        <div class="flex-row" style="align-items: center; margin-bottom: 10px;">
+            <div>
+                <h2 style="margin: 0; font-size: 18pt; font-weight: bold; font-family: sans-serif;">EVERBOLT FOOD PRODUCTS (PVT) LTD</h2>
+            </div>
+            <div style="text-align: right;">
+                <h1 style="margin: 0;">Delivery Note</h1>
+            </div>
+        </div>
+        
+        <div class="flex-row">
+            <div class="box">
+                <table style="border:none; margin:0;" width="100%">
+                    <tr><td style="border:none; padding:2px; font-weight:bold; width:140px;">Date of Delivery:</td><td style="border:none; padding:2px;">{{ dn.delivery_date|date:"Y-m-d"|default:"Pending" }}</td></tr>
+                </table>
+            </div>
+            <div class="box">
+                <table style="border:none; margin:0;" width="100%">
+                    <tr><td style="border:none; padding:2px; font-weight:bold; width:140px;">Delivery Note No.:</td><td style="border:none; padding:2px;">{{ dn.dn_number }}</td></tr>
+                </table>
+            </div>
+        </div>
+
+        <div class="flex-row">
+            <div class="box" style="min-height: 100px;">
+                <div style="font-weight:bold; margin-bottom: 2px;">Supplier's Name: <span style="font-weight:normal;">Everbolt Food Products (Pvt) Ltd</span></div>
+                <div style="font-weight:bold; margin-bottom: 2px;">Address: <br><span style="font-weight:normal;">No.548/B Nawala Rd,<br>Sri Jayawardenepura Kotte 10100.</span></div>
+                <div style="font-weight:bold; margin-top: 5px;">Telephone No: <span style="font-weight:normal;">076 540 0084</span></div>
+            </div>
+            <div class="box" style="min-height: 100px;">
+                <div style="font-weight:bold; margin-bottom: 2px;">Customer's Name: <span style="font-weight:normal;">{{ dn.customer_name }}</span></div>
+                <div style="font-weight:bold; margin-bottom: 2px;">Delivery Address: <br><span style="font-weight:normal;">{{ dn.delivery_address|linebreaksbr }}</span></div>
+                {% if dn.invoice and dn.invoice.customer and dn.invoice.customer.phone %}
+                <div style="font-weight:bold; margin-top: 5px;">Telephone No: <span style="font-weight:normal;">{{ dn.invoice.customer.phone }}</span></div>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="flex-row" style="margin-bottom: 15px;">
+            <div class="box" style="width: 32%;">
+                <strong>Delivered By:</strong><br>
+                {{ dn.delivered_by.get_full_name|default:dn.delivered_by.username|title|default:"N/A" }}
+            </div>
+            <div class="box" style="width: 32%;">
+                <strong>Related Invoice:</strong><br>
+                {{ dn.invoice.invoice_number|default:"-" }}
+            </div>
+            <div class="box" style="width: 32%;">
+                <strong>Status:</strong><br>
+                {{ dn.get_status_display }}
+            </div>
+        </div>
+
+        <div style="flex-grow: 1; display: flex; flex-direction: column;">
+            <table class="items-table" style="height: 100%; margin-bottom: 0;">
+            <thead>
+                <tr>
+                    <th width="15%">Product Code</th>
+                    <th width="50%">Description of Goods</th>
+                    <th width="15%">UOM</th>
+                    <th width="20%">Quantity</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in dn.items.all %}
+                <tr>
+                    <td class="text-center">{{ item.product.product_id }}</td>
+                    <td>{{ item.product.name }}</td>
+                    <td class="text-center">{{ item.product.get_selling_unit_display }}</td>
+                    <td class="text-center">{{ item.quantity }}</td>
+                </tr>
+                {% endfor %}
+
+                <tr style="height: 100%;">
+                    <td style="border-bottom: none; border-top: none;"></td>
+                    <td style="border-bottom: none; border-top: none;"></td>
+                    <td style="border-bottom: none; border-top: none;"></td>
+                    <td style="border-bottom: none; border-top: none;"></td>
+                </tr>
+            </tbody>
+        </table>
+        </div>
+        
+        <div class="full-box" style="margin-bottom: 5px; padding: 5px; margin-top: 10px;">
+            <strong>Remarks if any:</strong><br>
+            {{ dn.remarks|default:"-" }}
+        </div>
+
+        <!-- Standard signatures footers -->
+        <table style="border:none; margin-top: 20px; width: 100%; table-layout: fixed;">
+            <tr>
+                <td style="border:none; text-align:center; vertical-align: top; padding: 0 5px;">
+                    <div style="border-top: 1px solid #000; padding-top: 5px;">
+                        Handed Over By<br>
+                        <span style="font-size: 0.9em;">
+                            ({{ dn.delivered_by.get_full_name|default:dn.delivered_by.username|title|default:"...................." }})
+                        </span>
+                    </div>
+                </td>
+                <td style="border:none; text-align:center; vertical-align: top; padding: 0 5px;">
+                    <div style="border-top: 1px solid #000; padding-top: 5px;">
+                        Stores Signature
+                    </div>
+                </td>
+                <td style="border:none; text-align:center; vertical-align: top; padding: 0 5px;">
+                    <div style="border-top: 1px solid #000; padding-top: 5px;">
+                        Received By (Name)
+                    </div>
+                </td>
+                <td style="border:none; text-align:center; vertical-align: top; padding: 0 5px;">
+                    <div style="border-top: 1px solid #000; padding-top: 5px;">
+                        Customer Signature
+                    </div>
+                </td>
+            </tr>
+        </table>
+    </div>
+    
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.has('download')) {
+                const element = document.getElementById('printable-area');
+                const filename = '{{ dn.customer_name }} - Delivery Note {{ dn.dn_number }}.pdf';
+                
+                const opt = {
+                    margin:       10,
+                    filename:     filename,
+                    image:        { type: 'jpeg', quality: 1.0 },
+                    html2canvas:  { scale: 4, useCORS: true },
+                    jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+                };
+                html2pdf().from(element).set(opt).save().then(function() {
+                    setTimeout(() => { window.close(); }, 1000);
+                });
+            } else {
+                window.print();
+            }
+        });
+    </script>
+</body>
+</html>

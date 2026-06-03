@@ -1740,3 +1740,9 @@ def credit_note_print_view(request, pk):
     cn = get_object_or_404(CreditNote, pk=pk)
     return render(request, 'sales/credit_note_print.html', {'cn': cn})
 
+
+class DeliveryNotePrintView(LoginRequiredMixin, ERPPermissionRequiredMixin, DetailView):
+    model = DeliveryNote
+    template_name = 'sales/delivery_note_print.html'
+    context_object_name = 'dn'
+    permission_required = 'sales.view_deliverynote'
