@@ -1000,6 +1000,15 @@ class ForecastingView(LoginRequiredMixin, TemplateView):
         total_sales_last_month = inv_last_month.aggregate(total=Sum('ex_vat'))['total'] or 0
         context['total_sales_last_month'] = float(total_sales_last_month)
         
+        # Overall difference
+        diff = float(total_sales) - context['total_sales_last_month']
+        context['total_sales_diff'] = diff
+        context['abs_total_sales_diff'] = abs(diff)
+        if context['total_sales_last_month'] > 0:
+            context['total_sales_pct'] = (diff / context['total_sales_last_month']) * 100
+        else:
+            context['total_sales_pct'] = 100.0 if float(total_sales) > 0 else 0.0
+        
         # Calculate last month cumulative sales for chart
         daily_sales_last_month = inv_last_month.annotate(date_only=TruncDate('creation_date')).values('date_only').annotate(daily_total=Sum('ex_vat'))
         daily_sales_dict_last_month = {d['date_only'].day: float(d['daily_total'] or 0) for d in daily_sales_last_month}
