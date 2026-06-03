@@ -11,7 +11,7 @@
             <p class="text-gray-500 mt-1">Advanced analytics, pace tracking, and risk assessment for {{ target_month_name }}.</p>
         </div>
         <div>
-            <button onclick="document.getElementById('settingsModal').classList.remove('hidden')" class="bg-indigo-50 text-indigo-600 hover:bg-indigo-100 px-4 py-2 rounded-lg font-bold transition-colors">
+            <button id="openSettingsBtn" class="bg-indigo-50 text-indigo-600 hover:bg-indigo-100 px-4 py-2 rounded-lg font-bold transition-colors">
                 ⚙️ Settings
             </button>
         </div>
@@ -153,6 +153,29 @@
                     <p class="text-xs text-gray-500 mt-2 italic font-medium">If we go by this pace, we will end up with Rs {{ projected_sales|floatformat:0|intcomma }}</p>
                 </div>
                 
+            </div>
+        </div>
+    </div>
+
+    <!-- Monthly Comparison Chart (Dark Theme) -->
+    <div class="mb-8">
+        <div class="bg-[#1a202c] rounded-xl shadow-xl overflow-hidden border border-gray-800">
+            <!-- Progress Bar Header -->
+            <div class="p-4 border-b border-gray-800">
+                <div class="flex justify-between items-end mb-2">
+                    <div class="text-xs font-black text-[#2DD4BF] uppercase tracking-wider">Target Achieved: {{ target_achieved_pct|floatformat:1 }}%</div>
+                    <div class="text-xs font-bold text-gray-400 uppercase tracking-widest absolute left-1/2 transform -translate-x-1/2">Overall Goal Predictor</div>
+                    <div class="text-xs font-black text-[#F472B6] uppercase tracking-wider">Remaining: {{ remaining_target_pct|floatformat:1 }}%</div>
+                </div>
+                <div class="h-3 w-full bg-[#1a202c] rounded-full flex overflow-hidden border border-gray-700">
+                    <div style="width: {{ target_achieved_pct }}%" class="bg-[#2DD4BF] h-full shadow-[0_0_10px_#2DD4BF]"></div>
+                    <div style="width: {{ remaining_target_pct }}%" class="bg-[#F472B6] h-full shadow-[0_0_10px_#F472B6]"></div>
+                </div>
+            </div>
+            
+            <!-- Line Chart Canvas -->
+            <div class="p-4 relative" style="height: 350px;">
+                <canvas id="monthlyComparisonChart"></canvas>
             </div>
         </div>
     </div>

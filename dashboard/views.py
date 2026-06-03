@@ -951,6 +951,37 @@ class ForecastingView(LoginRequiredMixin, TemplateView):
                     current_milestone_target += float(settings.milestone_target)
                     
         context['milestones'] = milestones
+
+        # 5. Monthly Comparison Chart Data
+        # Calculate days in the target month
+        import calendar
+        _, num_days = calendar.monthrange(target_year, target_month)
+        
+        # We need cumulative actual sales up to today (if current month) or end of month (if past month)
+        chart_labels = list(range(1, num_days + 1))
+        
+        cumulative_actual = []
+        current_cumulative = 0
+        
+        # Convert daily_sales to a dictionary for O(1) lookup
+        daily_sales_dict = {d['date_only'].day: float(d['daily_total'] or 0) for d in daily_sales}
+        
+        max_day = today.day if (target_year == today.year and target_month == today.month) else num_days
+        
+        for day in range(1, max_day + 1):
+            current_cumulative += daily_sales_dict.get(day, 0)
+            cumulative_actual.append(current_cumulative)
+
+        # Calculate cumulative target line (Linear progression of overall target)
+        cumulative_target = []
+        if overall_target_val > 0:
+            daily_linear_target = overall_target_val / num_days
+            for day in range(1, num_days + 1):
+                cumulative_target.append(round(daily_linear_target * day, 2))
+        
+        context['chart_labels'] = chart_labels
+        context['chart_actual_sales'] = cumulative_actual
+        context['chart_target_sales'] = cumulative_target
         
         # 5. Month-by-Month Comparison
         last_month = target_month - 1
