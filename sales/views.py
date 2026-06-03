@@ -7,7 +7,7 @@ from django.contrib import messages
 from django.urls import reverse_lazy, reverse
 from django.db import transaction
 from django.utils import timezone
-from django.db.models import Sum
+from django.db.models import Sum, F
 from decimal import Decimal, ROUND_UP, ROUND_HALF_UP
 from .models import Quotation, Invoice, DeliveryNote, DeliveryNoteItem, SalesAuditLog, Return, CreditNote
 from .forms import QuotationForm, QuotationItemFormSet, InvoiceForm, InvoiceItemFormSet, DeliveryNoteForm
