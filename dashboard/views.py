@@ -876,7 +876,38 @@ class ForecastingView(LoginRequiredMixin, TemplateView):
         
         total_sales = inv_this_month.aggregate(total=Sum('ex_vat'))['total'] or 0
         context['total_sales'] = float(total_sales)
-        context['actual_pace'] = float(total_sales) / days_passed if days_passed > 0 else 0
+        actual_pace = float(total_sales) / days_passed if days_passed > 0 else 0
+        context['actual_pace'] = actual_pace
+
+        # 05. Work Days Remaining
+        working_days_remaining = max(0, settings.total_working_days - days_passed)
+        context['working_days_remaining'] = working_days_remaining
+
+        # 08. Target Achieved Percentage
+        target_achieved_pct = (context['total_sales'] / overall_target_val * 100) if overall_target_val else 0
+        context['target_achieved_pct'] = target_achieved_pct
+
+        # 09. Remaining Target Percentage
+        context['remaining_target_pct'] = max(0, 100 - target_achieved_pct) if overall_target_val else 0
+
+        # 11. Remaining Sales Amount
+        remaining_sales_amount = max(0, overall_target_val - context['total_sales'])
+        context['remaining_sales_amount'] = remaining_sales_amount
+
+        # 10. Required Daily Sales for Remaining Days
+        context['req_daily_sales_remaining'] = remaining_sales_amount / working_days_remaining if working_days_remaining > 0 else 0
+
+        # 06. Projected Month-End Sales
+        # Using the specific requested formula for projection but using actual_pace to make the dynamic "go by this pace" math work.
+        projected_sales = context['total_sales'] + (working_days_remaining * actual_pace)
+        context['projected_sales'] = projected_sales
+
+        # 12. Shortfall Against Target
+        shortfall = max(0, overall_target_val - projected_sales)
+        context['shortfall'] = shortfall
+
+        # 13. Target Status
+        context['target_status'] = "ON TRACK" if projected_sales >= overall_target_val else "FALLING SHORT"
 
         # 3. Top Performer
         top_performer = inv_this_month.values(

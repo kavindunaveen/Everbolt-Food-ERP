@@ -87,6 +87,76 @@
         </div>
     </div>
 
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+        <!-- Progress Ring -->
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 flex items-center justify-center relative col-span-1">
+            <div class="text-center w-full">
+                <div class="text-sm font-bold text-gray-400 uppercase tracking-widest mb-4">Target Progress</div>
+                
+                <div class="relative w-40 h-40 mx-auto">
+                    <svg class="w-full h-full transform -rotate-90" viewBox="0 0 36 36">
+                        <path class="text-gray-100" stroke-dasharray="100, 100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" stroke-width="3"></path>
+                        <path class="text-indigo-600 transition-all duration-1000 ease-out" stroke-dasharray="{{ target_achieved_pct|floatformat:0|default:0 }}, 100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" stroke-width="3"></path>
+                    </svg>
+                    <div class="absolute inset-0 flex flex-col items-center justify-center">
+                        <span class="text-3xl font-black text-gray-900">{{ target_achieved_pct|floatformat:0|default:0 }}%</span>
+                        <span class="text-[10px] font-bold text-gray-400 uppercase">Achieved</span>
+                    </div>
+                </div>
+                
+                <div class="mt-4 text-sm font-medium text-gray-500">
+                    Remaining: <span class="font-bold text-gray-900">{{ remaining_target_pct|floatformat:0 }}%</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Projections & Status -->
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-0 col-span-1 lg:col-span-2 overflow-hidden flex flex-col justify-between">
+            <div class="px-6 py-5 border-b border-gray-100 flex justify-between items-center bg-gray-50">
+                <h3 class="text-lg font-bold text-gray-900">End-of-Month Projections</h3>
+                {% if target_status == 'ON TRACK' %}
+                <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 uppercase tracking-widest">{{ target_status }}</span>
+                {% else %}
+                <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-red-100 text-red-800 uppercase tracking-widest">{{ target_status }}</span>
+                {% endif %}
+            </div>
+            <div class="p-6 grid grid-cols-2 sm:grid-cols-3 gap-6 flex-1 items-center">
+                
+                <div>
+                    <div class="text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-1">Work Days Remaining</div>
+                    <div class="text-2xl font-black text-gray-900">{{ working_days_remaining }}</div>
+                </div>
+                
+                <div>
+                    <div class="text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-1">Remaining Amount</div>
+                    <div class="text-xl font-black text-gray-900"><span class="text-sm text-gray-400 mr-1">Rs</span>{{ remaining_sales_amount|floatformat:0|intcomma }}</div>
+                </div>
+                
+                <div>
+                    <div class="text-[11px] font-bold text-indigo-400 uppercase tracking-widest mb-1">Required Daily Sales</div>
+                    <div class="text-xl font-black text-indigo-600"><span class="text-sm text-indigo-400 mr-1">Rs</span>{{ req_daily_sales_remaining|floatformat:0|intcomma }}</div>
+                </div>
+                
+                <div class="col-span-2 sm:col-span-3 border-t border-gray-100 pt-6 mt-2">
+                    <div class="text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-2">Projected Month-End Sales</div>
+                    <div class="flex items-end justify-between">
+                        <div class="text-4xl font-black text-gray-900">
+                            <span class="text-2xl text-gray-400 mr-1">Rs</span>{{ projected_sales|floatformat:0|intcomma }}
+                        </div>
+                        {% if shortfall > 0 %}
+                        <div class="text-right">
+                            <div class="text-[11px] font-bold text-red-400 uppercase tracking-widest mb-0.5">Shortfall Against Target</div>
+                            <div class="text-lg font-black text-red-600">Rs {{ shortfall|floatformat:0|intcomma }}</div>
+                        </div>
+                        {% endif %}
+                    </div>
+                    <p class="text-xs text-gray-500 mt-2 italic font-medium">If we go by this pace, we will end up with Rs {{ projected_sales|floatformat:0|intcomma }}</p>
+                </div>
+                
+            </div>
+        </div>
+    </div>
+
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
         <!-- Milestone Speed & Risk Calculation -->
         <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-0 overflow-hidden">
