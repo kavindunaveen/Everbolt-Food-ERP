@@ -75,3 +75,17 @@ class SalespersonTarget(models.Model):
     def __str__(self):
         import calendar as _cal
         return f"{self.salesperson.username} | {self.year} {_cal.month_abbr[self.month]} | Rs {self.target_value}"
+
+class ForecastingSettings(models.Model):
+    """Settings for Advanced Analytics Forecasting (Monthly)."""
+    year = models.IntegerField()
+    month = models.IntegerField()
+    milestone_target = models.DecimalField(max_digits=14, decimal_places=2, default=500000, help_text="e.g., 500000 for 500k milestones")
+    total_working_days = models.IntegerField(default=25, help_text="Total working days in the month (e.g., excluding Sundays and Poya)")
+
+    class Meta:
+        unique_together = ('year', 'month')
+
+    def __str__(self):
+        import calendar as _cal
+        return f"Forecasting Settings | {self.year} {_cal.month_abbr[self.month]}"

@@ -826,3 +826,163 @@ class ProductTargetsAPI(LoginRequiredMixin, View):
             })
 
         return JsonResponse({'year': target_year, 'month': target_month if not using_custom_dates else None, 'products': results})
+
+from django.db.models.functions import TruncDate
+from datetime import date, timedelta
+from .models import ForecastingSettings
+
+class ForecastingView(LoginRequiredMixin, TemplateView):
+    template_name = 'dashboard/forecasting.html'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        today = timezone.localtime().date()
+        target_year = today.year
+        target_month = today.month
+
+        # Get settings
+        settings, created = ForecastingSettings.objects.get_or_create(
+            year=target_year, month=target_month,
+            defaults={'milestone_target': 500000, 'total_working_days': 25}
+        )
+        context['settings'] = settings
+
+        # 1. Overall Target & Manual Daily Target
+        overall_target_val = 0
+        try:
+            st = SalesTarget.objects.get(year=target_year, month=target_month, target_type='OVERALL_SALES')
+            overall_target_val = float(st.target_value)
+        except SalesTarget.DoesNotExist:
+            pass
+        
+        context['overall_target'] = overall_target_val
+        context['manual_daily_target'] = overall_target_val / settings.total_working_days if settings.total_working_days > 0 else 0
+
+        # 2. Working Days Passed & Actual Pace
+        days_passed = 0
+        for d in range(1, today.day + 1):
+            date_obj = date(today.year, today.month, d)
+            if date_obj.weekday() != 6:  # 6 is Sunday
+                days_passed += 1
+        
+        context['working_days_passed'] = days_passed
+
+        # Total Net Sales this month
+        inv_this_month = Invoice.objects.filter(
+            creation_date__year=target_year,
+            creation_date__month=target_month,
+            status__in=[Invoice.Status.ISSUED, Invoice.Status.PAID]
+        ).annotate(ex_vat=F('line_total') - F('tax_amount'))
+        
+        total_sales = inv_this_month.aggregate(total=Sum('ex_vat'))['total'] or 0
+        context['total_sales'] = float(total_sales)
+        context['actual_pace'] = float(total_sales) / days_passed if days_passed > 0 else 0
+
+        # 3. Top Performer
+        top_performer = inv_this_month.values(
+            'salesperson__first_name', 'salesperson__last_name', 'salesperson__username'
+        ).annotate(total_revenue=Sum('ex_vat')).order_by('-total_revenue').first()
+        context['top_performer'] = top_performer
+
+        # 4. Milestone Speed Calculation & Risk
+        daily_sales = inv_this_month.annotate(date_only=TruncDate('creation_date')).values('date_only').annotate(daily_total=Sum('ex_vat')).order_by('date_only')
+        
+        milestones = []
+        cumulative = 0
+        current_milestone_target = float(settings.milestone_target)
+        prev_milestone_date = date(target_year, target_month, 1) - timedelta(days=1)
+        
+        if current_milestone_target > 0:
+            for day_data in daily_sales:
+                day_date = day_data['date_only']
+                daily_val = float(day_data['daily_total'] or 0)
+                cumulative += daily_val
+                
+                while cumulative >= current_milestone_target:
+                    # Calculate working days taken since last milestone
+                    days_taken = 0
+                    curr_date = prev_milestone_date + timedelta(days=1)
+                    while curr_date <= day_date:
+                        if curr_date.weekday() != 6: # Exclude Sunday
+                            days_taken += 1
+                        curr_date += timedelta(days=1)
+                    
+                    # If days_taken is 0 (e.g. hit two milestones in one day), treat as 1 for division/display if needed, or just 0
+                    
+                    milestones.append({
+                        'target': current_milestone_target,
+                        'date_reached': day_date,
+                        'days_taken': days_taken,
+                        'status': 'Risk' if days_taken >= 5 else 'Good speed'
+                    })
+                    
+                    prev_milestone_date = day_date
+                    current_milestone_target += float(settings.milestone_target)
+                    
+        context['milestones'] = milestones
+        
+        # 5. Month-by-Month Comparison
+        last_month = target_month - 1
+        last_month_year = target_year
+        if last_month == 0:
+            last_month = 12
+            last_month_year -= 1
+            
+        inv_last_month = Invoice.objects.filter(
+            creation_date__year=last_month_year,
+            creation_date__month=last_month,
+            status__in=[Invoice.Status.ISSUED, Invoice.Status.PAID]
+        ).annotate(ex_vat=F('line_total') - F('tax_amount'))
+        
+        total_sales_last_month = inv_last_month.aggregate(total=Sum('ex_vat'))['total'] or 0
+        context['total_sales_last_month'] = float(total_sales_last_month)
+        
+        # Product Comparison
+        from sales.models import InvoiceItem
+        
+        def get_product_sales(inv_qs):
+            return InvoiceItem.objects.filter(invoice__in=inv_qs).values(
+                'product__name'
+            ).annotate(total_revenue=Sum(F('unit_price') * F('quantity'))).order_by('-total_revenue')[:10]
+            
+        curr_prod_sales = {item['product__name']: item['total_revenue'] for item in get_product_sales(inv_this_month)}
+        last_prod_sales = {item['product__name']: item['total_revenue'] for item in get_product_sales(inv_last_month)}
+        
+        prod_comparison = []
+        all_prods = set(curr_prod_sales.keys()).union(set(last_prod_sales.keys()))
+        for p in all_prods:
+            c_val = float(curr_prod_sales.get(p, 0))
+            l_val = float(last_prod_sales.get(p, 0))
+            diff = c_val - l_val
+            pct = (diff / l_val * 100) if l_val > 0 else (100 if c_val > 0 else 0)
+            prod_comparison.append({
+                'name': p,
+                'current': c_val,
+                'last': l_val,
+                'diff': diff,
+                'pct': pct
+            })
+            
+        prod_comparison.sort(key=lambda x: x['current'], reverse=True)
+        context['product_comparison'] = prod_comparison
+
+        import calendar
+        context['target_month_name'] = calendar.month_name[target_month]
+        return context
+
+class ForecastingSettingsView(LoginRequiredMixin, View):
+    def post(self, request, *args, **kwargs):
+        from django.shortcuts import redirect
+        from django.contrib import messages
+        today = timezone.localtime().date()
+        settings, _ = ForecastingSettings.objects.get_or_create(
+            year=today.year, month=today.month
+        )
+        try:
+            settings.milestone_target = float(request.POST.get('milestone_target', 500000))
+            settings.total_working_days = int(request.POST.get('total_working_days', 25))
+            settings.save()
+            messages.success(request, "Forecasting settings updated successfully.")
+        except Exception as e:
+            messages.error(request, f"Error saving settings: {e}")
+        return redirect('forecasting')
