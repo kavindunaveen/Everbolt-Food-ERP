@@ -97,6 +97,16 @@ class CustomUserChangeForm(UserChangeForm, MatrixPermissionMixin):
         super().__init__(*args, **kwargs)
         self.fields['user_permissions'].queryset = get_custom_permissions()
 
+    def clean_role(self):
+        role = self.cleaned_data.get('role')
+        if self.instance and self.instance.pk and self.instance.is_superuser and role != 'ADMIN':
+            from .models import User
+            admin_count = User.objects.filter(is_superuser=True, is_active=True).count()
+            if admin_count <= 1:
+                from django.core.exceptions import ValidationError
+                raise ValidationError("Cannot change role. You are the last active Super Admin in the system.")
+        return role
+
     def save(self, commit=True):
         user = super().save(commit=False)
         new_pass = self.cleaned_data.get('new_password')

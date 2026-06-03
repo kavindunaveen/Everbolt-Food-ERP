@@ -2,7 +2,8 @@ from django.shortcuts import render, get_object_or_404
 from django.urls import reverse_lazy
 from django.db.models import Sum
 from django.views.generic import ListView, CreateView, UpdateView, DeleteView, DetailView
-from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
+from django.contrib.auth.mixins import LoginRequiredMixin
+from users.mixins import ERPPermissionRequiredMixin
 from django.http import JsonResponse
 from django.views.decorators.http import require_POST
 from django.contrib.auth.decorators import login_required
@@ -11,7 +12,7 @@ from sales.views import AdminRequiredMixin
 from .models import Customer, CustomerChangeLog, CustomerDeliveryAddress
 from .forms import CustomerForm
 
-class CustomerListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
+class CustomerListView(LoginRequiredMixin, ERPPermissionRequiredMixin, ListView):
     model = Customer
     template_name = 'crm/customer_list.html'
     context_object_name = 'customers'
@@ -46,7 +47,7 @@ class CustomerListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
         context['model_name'] = 'Customer'
         return context
 
-class CustomerCreateView(LoginRequiredMixin, PermissionRequiredMixin, CreateView):
+class CustomerCreateView(LoginRequiredMixin, ERPPermissionRequiredMixin, CreateView):
     model = Customer
     form_class = CustomerForm
     template_name = 'crm/customer_form.html'
@@ -62,7 +63,7 @@ class CustomerCreateView(LoginRequiredMixin, PermissionRequiredMixin, CreateView
         )
         return response
 
-class CustomerUpdateView(LoginRequiredMixin, PermissionRequiredMixin, UpdateView):
+class CustomerUpdateView(LoginRequiredMixin, ERPPermissionRequiredMixin, UpdateView):
     model = Customer
     form_class = CustomerForm
     template_name = 'crm/customer_form.html'
@@ -91,13 +92,13 @@ class CustomerUpdateView(LoginRequiredMixin, PermissionRequiredMixin, UpdateView
             )
         return super().form_valid(form)
 
-class CustomerDeleteView(LoginRequiredMixin, PermissionRequiredMixin, DeleteView):
+class CustomerDeleteView(LoginRequiredMixin, ERPPermissionRequiredMixin, DeleteView):
     model = Customer
     template_name = 'crm/customer_confirm_delete.html'
     success_url = reverse_lazy('customer_list')
     permission_required = 'crm.delete_customer'
 
-class CustomerDetailView(LoginRequiredMixin, PermissionRequiredMixin, DetailView):
+class CustomerDetailView(LoginRequiredMixin, ERPPermissionRequiredMixin, DetailView):
     model = Customer
     template_name = 'crm/customer_detail.html'
     context_object_name = 'customer'
@@ -150,7 +151,7 @@ import csv
 from django.http import HttpResponse
 from django.views.generic import View
 
-class CustomerExportView(LoginRequiredMixin, PermissionRequiredMixin, View):
+class CustomerExportView(LoginRequiredMixin, ERPPermissionRequiredMixin, View):
     permission_required = 'crm.view_customer'
     
     def get(self, request, *args, **kwargs):

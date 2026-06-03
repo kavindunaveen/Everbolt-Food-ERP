@@ -1,3 +1,4 @@
+from users.mixins import ERPPermissionRequiredMixin
 from django.shortcuts import render, redirect, get_object_or_404
 from django.urls import reverse_lazy, reverse
 from django.contrib import messages
@@ -17,14 +18,16 @@ from .services import confirm_production, cancel_production
 
 # --- BOM Views ---
 
-class BOMListView(LoginRequiredMixin, ListView):
+class BOMListView(LoginRequiredMixin, ERPPermissionRequiredMixin, ListView):
+    permission_required = 'manufacturing.view_bom'
     model = BOM
     template_name = 'manufacturing/bom_list.html'
     context_object_name = 'boms'
     paginate_by = 20
     ordering = ['-id']
 
-class BOMCreateView(LoginRequiredMixin, CreateView):
+class BOMCreateView(LoginRequiredMixin, ERPPermissionRequiredMixin, CreateView):
+    permission_required = 'manufacturing.add_bom'
     model = BOM
     form_class = BOMForm
     template_name = 'manufacturing/bom_form.html'
@@ -48,12 +51,14 @@ class BOMCreateView(LoginRequiredMixin, CreateView):
                 items.save()
         return super().form_valid(form)
 
-class BOMDetailView(LoginRequiredMixin, DetailView):
+class BOMDetailView(LoginRequiredMixin, ERPPermissionRequiredMixin, DetailView):
+    permission_required = 'manufacturing.view_bom'
     model = BOM
     template_name = 'manufacturing/bom_detail.html'
     context_object_name = 'bom'
 
-class BOMUpdateView(LoginRequiredMixin, UpdateView):
+class BOMUpdateView(LoginRequiredMixin, ERPPermissionRequiredMixin, UpdateView):
+    permission_required = 'manufacturing.change_bom'
     model = BOM
     form_class = BOMForm
     template_name = 'manufacturing/bom_form.html'
@@ -79,14 +84,16 @@ class BOMUpdateView(LoginRequiredMixin, UpdateView):
 
 # --- Production Views ---
 
-class ProductionListView(LoginRequiredMixin, ListView):
+class ProductionListView(LoginRequiredMixin, ERPPermissionRequiredMixin, ListView):
+    permission_required = 'manufacturing.view_production'
     model = Production
     template_name = 'manufacturing/production_list.html'
     context_object_name = 'productions'
     paginate_by = 20
     ordering = ['-id']
 
-class ProductionCreateView(LoginRequiredMixin, CreateView):
+class ProductionCreateView(LoginRequiredMixin, ERPPermissionRequiredMixin, CreateView):
+    permission_required = 'manufacturing.add_production'
     model = Production
     form_class = ProductionForm
     template_name = 'manufacturing/production_form.html'
@@ -124,7 +131,8 @@ class ProductionCreateView(LoginRequiredMixin, CreateView):
         messages.success(self.request, "Production order created as Draft.")
         return super().form_valid(form)
 
-class ProductionUpdateView(LoginRequiredMixin, UpdateView):
+class ProductionUpdateView(LoginRequiredMixin, ERPPermissionRequiredMixin, UpdateView):
+    permission_required = 'manufacturing.change_production'
     model = Production
     form_class = ProductionForm
     template_name = 'manufacturing/production_form.html'
@@ -154,7 +162,8 @@ class ProductionUpdateView(LoginRequiredMixin, UpdateView):
                 outputs.save()
         return super().form_valid(form)
 
-class ProductionDetailView(LoginRequiredMixin, DetailView):
+class ProductionDetailView(LoginRequiredMixin, ERPPermissionRequiredMixin, DetailView):
+    permission_required = 'manufacturing.view_production'
     model = Production
     template_name = 'manufacturing/production_detail.html'
     context_object_name = 'production'

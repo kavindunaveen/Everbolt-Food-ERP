@@ -1,7 +1,8 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.views.generic import TemplateView, ListView, CreateView, UpdateView, View, DetailView
 from django.http import HttpResponse, JsonResponse
-from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin, PermissionRequiredMixin
+from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
+from users.mixins import ERPPermissionRequiredMixin
 from django.contrib.auth.decorators import login_required, permission_required
 from django.contrib import messages
 from django.urls import reverse_lazy, reverse
@@ -21,15 +22,17 @@ from django.db.models.functions import TruncDate
 from num2words import num2words
 
 
-class AdminRequiredMixin(UserPassesTestMixin):
+from users.mixins import ERPUserPassesTestMixin
+class AdminRequiredMixin(ERPUserPassesTestMixin):
     def test_func(self):
         return self.request.user.is_admin()
 
 class MainDashboardView(LoginRequiredMixin, TemplateView):
     template_name = 'sales/main_dashboard.html'
 
-class SalesDashboardView(LoginRequiredMixin, TemplateView):
+class SalesDashboardView(LoginRequiredMixin, ERPPermissionRequiredMixin, TemplateView):
     template_name = 'sales/dashboard.html'
+    permission_required = 'sales.view_invoice'
     
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -92,12 +95,8 @@ class SalesDashboardView(LoginRequiredMixin, TemplateView):
         context['active_date_from'] = date_from
         context['active_date_to'] = date_to
         
-        if self.request.user.role == 'SALES_OFFICER':
-            quotations = Quotation.objects.filter(salesperson=self.request.user)
-            invoices = Invoice.objects.filter(salesperson=self.request.user)
-        else:
-            quotations = Quotation.objects.all()
-            invoices = Invoice.objects.all()
+        quotations = Quotation.objects.all()
+        invoices = Invoice.objects.all()
         q = self.request.GET.get('q')
         status = self.request.GET.get('status')
         
@@ -293,7 +292,7 @@ class SalesDashboardView(LoginRequiredMixin, TemplateView):
             
         return context
 
-class QuotationListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
+class QuotationListView(LoginRequiredMixin, ERPPermissionRequiredMixin, ListView):
     model = Quotation
     template_name = 'sales/quotation_list.html'
     context_object_name = 'quotations'
@@ -303,8 +302,6 @@ class QuotationListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
     def get_queryset(self):
         from django.db.models import Q
         qs = super().get_queryset().order_by('-creation_date')
-        if self.request.user.role == 'SALES_OFFICER':
-            qs = qs.filter(salesperson=self.request.user)
 
         status = self.request.GET.get('status')
         if status:
@@ -344,7 +341,7 @@ class QuotationListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
         context['model_name'] = 'Quotation'
         return context
 
-class InvoiceListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
+class InvoiceListView(LoginRequiredMixin, ERPPermissionRequiredMixin, ListView):
     model = Invoice
     template_name = 'sales/invoice_list.html'
     context_object_name = 'invoices'
@@ -354,8 +351,6 @@ class InvoiceListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
     def get_queryset(self):
         from django.db.models import Q
         qs = super().get_queryset().order_by('-creation_date')
-        if self.request.user.role == 'SALES_OFFICER':
-            qs = qs.filter(salesperson=self.request.user)
 
         status = self.request.GET.get('status')
         if status:
@@ -399,7 +394,7 @@ class InvoiceListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
         context['model_name'] = 'Invoice'
         return context
 
-class QuotationCreateView(LoginRequiredMixin, PermissionRequiredMixin, CreateView):
+class QuotationCreateView(LoginRequiredMixin, ERPPermissionRequiredMixin, CreateView):
     model = Quotation
     form_class = QuotationForm
     template_name = 'sales/quotation_form.html'
@@ -480,7 +475,7 @@ class QuotationCreateView(LoginRequiredMixin, PermissionRequiredMixin, CreateVie
         log_sales_event(self.object, self.request.user, "Quotation Created", new_value=self.object.get_status_display())
         return super().form_valid(form)
 
-class QuotationUpdateView(LoginRequiredMixin, PermissionRequiredMixin, UpdateView):
+class QuotationUpdateView(LoginRequiredMixin, ERPPermissionRequiredMixin, UpdateView):
     model = Quotation
     form_class = QuotationForm
     template_name = 'sales/quotation_form.html'
@@ -560,7 +555,7 @@ class QuotationUpdateView(LoginRequiredMixin, PermissionRequiredMixin, UpdateVie
         return super().form_valid(form)
 
 
-class InvoiceCreateView(LoginRequiredMixin, PermissionRequiredMixin, CreateView):
+class InvoiceCreateView(LoginRequiredMixin, ERPPermissionRequiredMixin, CreateView):
     model = Invoice
     form_class = InvoiceForm
     template_name = 'sales/invoice_form.html'
@@ -689,7 +684,7 @@ class InvoiceCreateView(LoginRequiredMixin, PermissionRequiredMixin, CreateView)
             
         return super().form_valid(form)
 
-class InvoiceUpdateView(LoginRequiredMixin, PermissionRequiredMixin, UpdateView):
+class InvoiceUpdateView(LoginRequiredMixin, ERPPermissionRequiredMixin, UpdateView):
     model = Invoice
     form_class = InvoiceForm
     template_name = 'sales/invoice_form.html'
@@ -815,7 +810,7 @@ class InvoiceUpdateView(LoginRequiredMixin, PermissionRequiredMixin, UpdateView)
             
         return super().form_valid(form)
 
-class QuotationExportView(LoginRequiredMixin, PermissionRequiredMixin, View):
+class QuotationExportView(LoginRequiredMixin, ERPPermissionRequiredMixin, View):
     permission_required = 'sales.view_quotation'
     
     def get(self, request, *args, **kwargs):
@@ -825,11 +820,7 @@ class QuotationExportView(LoginRequiredMixin, PermissionRequiredMixin, View):
         writer = csv.writer(response)
         writer.writerow(['Quotation Number', 'Customer', 'Creation Date', 'Salesperson', 'Valid Until', 'Total Amount', 'Status'])
         
-        if not request.user.has_perm('sales.approve_invoice'):
-            quotations = Quotation.objects.filter(salesperson=self.request.user)
-        else:
-            quotations = Quotation.objects.all()
-
+        quotations = Quotation.objects.all().order_by('-creation_date')
         q = request.GET.get('q')
         date_from = request.GET.get('date_from')
         date_to = request.GET.get('date_to')
@@ -856,7 +847,7 @@ class QuotationExportView(LoginRequiredMixin, PermissionRequiredMixin, View):
             
         return response
 
-class InvoiceExportView(LoginRequiredMixin, PermissionRequiredMixin, View):
+class InvoiceExportView(LoginRequiredMixin, ERPPermissionRequiredMixin, View):
     permission_required = 'sales.view_invoice'
     
     def get(self, request, *args, **kwargs):
@@ -866,11 +857,7 @@ class InvoiceExportView(LoginRequiredMixin, PermissionRequiredMixin, View):
         writer = csv.writer(response)
         writer.writerow(['Invoice Number', 'Type', 'Customer', 'Salesperson', 'Status', 'Delivery Date', 'Total Amount'])
         
-        if not request.user.has_perm('sales.approve_invoice'):
-            invoices = Invoice.objects.filter(salesperson=self.request.user)
-        else:
-            invoices = Invoice.objects.all()
-
+        invoices = Invoice.objects.all().order_by('-creation_date')
         q = request.GET.get('q')
         date_from = request.GET.get('date_from')
         date_to = request.GET.get('date_to')
@@ -902,7 +889,7 @@ class InvoiceExportView(LoginRequiredMixin, PermissionRequiredMixin, View):
 
 import math
 
-class InvoicePrintView(LoginRequiredMixin, PermissionRequiredMixin, DetailView):
+class InvoicePrintView(LoginRequiredMixin, ERPPermissionRequiredMixin, DetailView):
     model = Invoice
     template_name = 'sales/invoice_print.html'
     context_object_name = 'invoice'
@@ -928,7 +915,7 @@ class InvoicePrintView(LoginRequiredMixin, PermissionRequiredMixin, DetailView):
             context['amount_in_words'] = ""
         return context
 
-class QuotationPrintView(LoginRequiredMixin, PermissionRequiredMixin, DetailView):
+class QuotationPrintView(LoginRequiredMixin, ERPPermissionRequiredMixin, DetailView):
     model = Quotation
     template_name = 'sales/quotation_print.html'
     context_object_name = 'quotation'
@@ -1461,7 +1448,7 @@ def product_search_ajax(request):
     ]
     return JsonResponse({'results': results})
 
-class DeliveryNoteListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
+class DeliveryNoteListView(LoginRequiredMixin, ERPPermissionRequiredMixin, ListView):
     model = DeliveryNote
     template_name = 'sales/delivery_note_list.html'
     context_object_name = 'delivery_notes'
@@ -1516,7 +1503,7 @@ class DeliveryNoteListView(LoginRequiredMixin, PermissionRequiredMixin, ListView
             context['saved_filters'] = []
         return context
 
-class DeliveryNoteDetailView(LoginRequiredMixin, PermissionRequiredMixin, DetailView):
+class DeliveryNoteDetailView(LoginRequiredMixin, ERPPermissionRequiredMixin, DetailView):
     model = DeliveryNote
     template_name = 'sales/delivery_note_detail.html'
     context_object_name = 'dn'
@@ -1531,7 +1518,7 @@ class DeliveryNoteDetailView(LoginRequiredMixin, PermissionRequiredMixin, Detail
         ).order_by('-timestamp')
         return context
 
-class DeliveryNoteCreateView(LoginRequiredMixin, PermissionRequiredMixin, CreateView):
+class DeliveryNoteCreateView(LoginRequiredMixin, ERPPermissionRequiredMixin, CreateView):
     model = DeliveryNote
     form_class = DeliveryNoteForm
     template_name = 'sales/delivery_note_form.html'
@@ -1648,7 +1635,7 @@ def update_dn_status(request, pk):
 # RETURNS & CREDIT NOTES
 # ─────────────────────────────────────────────────────────────────────────────
 
-class ReturnListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
+class ReturnListView(LoginRequiredMixin, ERPPermissionRequiredMixin, ListView):
     model = Return
     template_name = 'sales/return_list.html'
     context_object_name = 'returns'
@@ -1727,7 +1714,7 @@ def return_create_view(request, invoice_pk):
     })
 
 
-class CreditNoteListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
+class CreditNoteListView(LoginRequiredMixin, ERPPermissionRequiredMixin, ListView):
     model = CreditNote
     template_name = 'sales/credit_note_list.html'
     context_object_name = 'credit_notes'

@@ -1,3 +1,4 @@
+from users.mixins import ERPPermissionRequiredMixin
 from django.shortcuts import render, redirect, get_object_or_404
 from django.urls import reverse_lazy, reverse
 from django.contrib import messages
@@ -14,14 +15,16 @@ from .models import GRN, GRNItem, PurchaseOrder, PurchaseOrderItem, POType
 from suppliers.models import Supplier
 from .services import confirm_grn, cancel_grn
 
-class GRNListView(LoginRequiredMixin, ListView):
+class GRNListView(LoginRequiredMixin, ERPPermissionRequiredMixin, ListView):
+    permission_required = 'purchases.view_grn'
     model = GRN
     template_name = 'purchases/grn_list.html'
     context_object_name = 'grns'
     paginate_by = 20
     ordering = ['-id']
 
-class GRNDetailView(LoginRequiredMixin, DetailView):
+class GRNDetailView(LoginRequiredMixin, ERPPermissionRequiredMixin, DetailView):
+    permission_required = 'purchases.view_grn'
     model = GRN
     template_name = 'purchases/grn_detail.html'
     context_object_name = 'grn'
@@ -195,7 +198,8 @@ def grn_receive_po(request, po_id):
 
 
 
-class PurchaseOrderListView(LoginRequiredMixin, ListView):
+class PurchaseOrderListView(LoginRequiredMixin, ERPPermissionRequiredMixin, ListView):
+    permission_required = 'purchases.view_purchaseorder'
     model = PurchaseOrder
     template_name = 'purchases/po_list.html'
     context_object_name = 'pos'
@@ -350,12 +354,14 @@ def purchase_order_edit(request, pk):
     }
     return render(request, 'purchases/po_form.html', context)
 
-class PurchaseOrderDetailView(LoginRequiredMixin, DetailView):
+class PurchaseOrderDetailView(LoginRequiredMixin, ERPPermissionRequiredMixin, DetailView):
+    permission_required = 'purchases.view_purchaseorder'
     model = PurchaseOrder
     template_name = 'purchases/po_detail.html'
     context_object_name = 'po'
 
-class PurchaseOrderPrintView(LoginRequiredMixin, DetailView):
+class PurchaseOrderPrintView(LoginRequiredMixin, ERPPermissionRequiredMixin, DetailView):
+    permission_required = 'purchases.view_purchaseorder'
     model = PurchaseOrder
     template_name = 'purchases/po_print.html'
     context_object_name = 'po'

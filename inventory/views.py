@@ -3,7 +3,8 @@ from django.db.models import Q
 from django.urls import reverse_lazy
 from django.contrib import messages
 from django.views.generic import ListView, CreateView, UpdateView, DeleteView, DetailView, View
-from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
+from django.contrib.auth.mixins import LoginRequiredMixin
+from users.mixins import ERPPermissionRequiredMixin
 from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse, HttpResponse
 import csv
@@ -28,7 +29,7 @@ class ProductDetailAPIView(LoginRequiredMixin, View):
         except Product.DoesNotExist:
             return JsonResponse({'error': 'Product not found'}, status=404)
 
-class ProductListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
+class ProductListView(LoginRequiredMixin, ERPPermissionRequiredMixin, ListView):
     model = Product
     template_name = 'inventory/product_list.html'
     context_object_name = 'products'
@@ -59,21 +60,21 @@ class ProductListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
             context['saved_filters'] = []
         return context
 
-class ProductCreateView(LoginRequiredMixin, PermissionRequiredMixin, CreateView):
+class ProductCreateView(LoginRequiredMixin, ERPPermissionRequiredMixin, CreateView):
     model = Product
     form_class = ProductForm
     template_name = 'inventory/product_form.html'
     success_url = reverse_lazy('product_list')
     permission_required = 'inventory.add_product'
 
-class ProductUpdateView(LoginRequiredMixin, PermissionRequiredMixin, UpdateView):
+class ProductUpdateView(LoginRequiredMixin, ERPPermissionRequiredMixin, UpdateView):
     model = Product
     form_class = ProductForm
     template_name = 'inventory/product_form.html'
     success_url = reverse_lazy('product_list')
     permission_required = 'inventory.change_product'
 
-class ProductDeleteView(LoginRequiredMixin, PermissionRequiredMixin, DeleteView):
+class ProductDeleteView(LoginRequiredMixin, ERPPermissionRequiredMixin, DeleteView):
     model = Product
     template_name = 'inventory/product_confirm_delete.html'
     success_url = reverse_lazy('product_list')
@@ -208,7 +209,7 @@ def bulk_delete_products(request):
             messages.success(request, f"Successfully deleted {count} products.")
     return redirect('product_list')
 
-class ProductImportView(LoginRequiredMixin, PermissionRequiredMixin, View):
+class ProductImportView(LoginRequiredMixin, ERPPermissionRequiredMixin, View):
     permission_required = 'inventory.add_product'
 
     def get(self, request):
