@@ -6,17 +6,23 @@
 <div class="px-4 py-6 sm:px-0">
     <div class="flex justify-between items-center mb-6">
         <h1 class="text-2xl font-bold text-gray-900 border-b-4 border-blue-500 inline-block pb-1">Adjustment: {{ adjustment.adjustment_number }}</h1>
-        <div class="flex space-x-3">
-            <a href="{% url 'adjustment_list' %}" class="bg-gray-100 hover:bg-gray-200 border border-gray-300 rounded-md px-4 py-2 text-gray-700">Back</a>
+        <div class="flex items-center gap-3">
+            <a href="{% url 'adjustment_list' %}" class="btn-secondary h-[42px] px-4 shadow-sm transition-all flex items-center">
+                Back
+            </a>
             {% if adjustment.status == 'DRAFT' %}
-            <form action="{% url 'adjustment_confirm' adjustment.pk %}" method="post" class="inline">
+            <form action="{% url 'adjustment_confirm' adjustment.pk %}" method="post" class="inline m-0">
                 {% csrf_token %}
-                <button type="submit" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md shadow" onclick="return confirm('Confirm Adjustment?');">Confirm Adjustment</button>
+                <button type="submit" class="btn-primary bg-emerald-600 hover:bg-emerald-700 hover:shadow-emerald-600/20 h-[42px] px-5 shadow-sm transition-all flex items-center" onclick="return confirm('Confirm Adjustment?');">
+                    Confirm Adjustment
+                </button>
             </form>
             {% elif adjustment.status == 'CONFIRMED' %}
-            <form action="{% url 'adjustment_cancel' adjustment.pk %}" method="post" class="inline">
+            <form action="{% url 'adjustment_cancel' adjustment.pk %}" method="post" class="inline m-0">
                 {% csrf_token %}
-                <button type="submit" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md shadow" onclick="return confirm('Cancel Adjustment? This will reverse the stock entries.');">Cancel Adjustment</button>
+                <button type="submit" class="btn-primary h-[42px] px-5 shadow-sm transition-all flex items-center" onclick="return confirm('Cancel Adjustment? This will reverse the stock entries.');">
+                    Cancel Adjustment
+                </button>
             </form>
             {% endif %}
         </div>
