@@ -221,7 +221,13 @@
                 <td style="border:none; text-align:center; vertical-align: top; padding: 0 5px;">
                     <div style="border-top: 1px solid #000; padding-top: 5px;">
                         Prepared By<br>
-                        <span style="font-size: 0.9em;">({{ quotation.salesperson.get_full_name|default:quotation.salesperson.username|title }})</span>
+                        <span style="font-size: 0.9em;">
+                            {% if quotation.created_by %}
+                                ({{ quotation.created_by.get_full_name|default:quotation.created_by.username|title }})
+                            {% else %}
+                                ({{ quotation.salesperson.get_full_name|default:quotation.salesperson.username|title }})
+                            {% endif %}
+                        </span>
                     </div>
                 </td>
                 <td style="border:none; text-align:center; vertical-align: top; padding: 0 5px;">

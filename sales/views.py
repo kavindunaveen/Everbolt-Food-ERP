@@ -418,6 +418,7 @@ class QuotationCreateView(LoginRequiredMixin, ERPPermissionRequiredMixin, Create
         with transaction.atomic():
             self.object = form.save(commit=False)
             self.object.salesperson = self.object.customer.assigned_sales_officer or self.request.user
+            self.object.created_by = self.request.user
             # Quotation number is generated automatically in Quotation.save()
             
             if items.is_valid():

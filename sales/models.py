@@ -15,6 +15,7 @@ class Quotation(models.Model):
     quotation_number = models.CharField(max_length=50, unique=True)
     customer = models.ForeignKey(Customer, on_delete=models.PROTECT)
     salesperson = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True)
+    created_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name='created_quotations')
     creation_date = models.DateTimeField(auto_now_add=True)
     valid_until = models.DateField()
     customer_po_number = models.CharField(max_length=50, blank=True, null=True)
