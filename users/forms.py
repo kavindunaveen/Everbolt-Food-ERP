@@ -26,15 +26,15 @@ class MatrixPermissionMixin:
     def get_permission_matrix(self):
         user_perms_ids = []
         if self.instance and self.instance.pk:
-            # Note: We still support individual user permissions overriding role defaults
-            user_perms_ids = list(self.instance.user_permissions.values_list('pk', flat=True))
-            # Also get role permissions
-            if self.instance.role:
-                user_perms_ids.extend(self.instance.role.permissions.values_list('pk', flat=True))
-                
-        # If it's a Role instance
-        if hasattr(self.instance, 'is_system') and self.instance.pk:
-            user_perms_ids = list(self.instance.permissions.values_list('pk', flat=True))
+            # If it's a User instance
+            if hasattr(self.instance, 'user_permissions'):
+                user_perms_ids = list(self.instance.user_permissions.values_list('pk', flat=True))
+                # Also get role permissions
+                if self.instance.role:
+                    user_perms_ids.extend(self.instance.role.permissions.values_list('pk', flat=True))
+            # If it's a Role instance
+            elif hasattr(self.instance, 'permissions'):
+                user_perms_ids = list(self.instance.permissions.values_list('pk', flat=True))
 
         rows = []
         for display_name, app_label, model_name, actions in PERMISSION_MODULES:
