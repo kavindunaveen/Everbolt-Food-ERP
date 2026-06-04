@@ -2,66 +2,72 @@ from django import forms
 from django.contrib.auth.forms import UserCreationForm, UserChangeForm
 from django.contrib.auth.models import Permission
 from django.contrib.contenttypes.models import ContentType
-from .models import User
+from .models import User, Role
 
-def get_custom_permissions():
-    """Returns permissions only for our custom apps."""
-    return Permission.objects.filter(content_type__app_label__in=[
-        'crm', 'inventory', 'sales', 'purchases', 'suppliers', 'users', 'manufacturing'
-    ]).exclude(codename__icontains='logentry').exclude(codename__icontains='session')
+# The curated list of permission rows the admin should see
+PERMISSION_MODULES = [
+    # (Display Name, app_label, model_name, actions)
+    ("Customers",           "crm",           "customer",        ["view", "add", "change", "delete"]),
+    ("Suppliers",           "suppliers",     "supplier",        ["view", "add", "change", "delete"]),
+    ("Quotations",          "sales",         "quotation",       ["view", "add", "change", "delete"]),
+    ("Invoices",            "sales",         "invoice",         ["view", "add", "change", "delete", "approve"]),
+    ("Delivery Notes",      "sales",         "deliverynote",    ["view", "add", "change", "delete"]),
+    ("Returns",             "sales",         "return",          ["view", "add", "change", "delete"]),
+    ("Products",            "inventory",     "product",         ["view", "add", "change", "delete"]),
+    ("Stock Adjustments",   "inventory",     "stockadjustment", ["view", "add", "change", "delete"]),
+    ("Purchase Orders",     "purchases",     "purchaseorder",   ["view", "add", "change", "delete"]),
+    ("GRN",                 "purchases",     "grn",             ["view", "add", "change", "delete"]),
+    ("BOM",                 "manufacturing", "bom",             ["view", "add", "change", "delete"]),
+    ("Production Orders",   "manufacturing", "production",      ["view", "add", "change", "delete"]),
+    ("Users",               "users",         "user",            ["view", "add", "change", "delete"]),
+]
 
 class MatrixPermissionMixin:
     def get_permission_matrix(self):
-        matrix = {}
         user_perms_ids = []
         if self.instance and self.instance.pk:
+            # Note: We still support individual user permissions overriding role defaults
             user_perms_ids = list(self.instance.user_permissions.values_list('pk', flat=True))
-            
-        perms = get_custom_permissions().select_related('content_type')
-        
-        # Define the columns we care about
-        actions = ['view', 'add', 'change', 'delete', 'approve']
-        
-        for perm in perms:
-            # Model name formatted nicely
-            model_name = perm.content_type.name.title()
-            # Replace some names to match the 9 modules
-            if model_name == 'User': model_name = 'Users'
-            elif model_name == 'Customer': model_name = 'Contacts (Customers)'
-            elif model_name == 'Supplier': model_name = 'Contacts (Suppliers)'
-            elif model_name == 'Product': model_name = 'Products'
-            elif model_name == 'Purchaseorder': model_name = 'Purchase Orders'
-            elif model_name == 'Grn': model_name = 'GRN'
-            elif model_name == 'Stockledger': model_name = 'Reports (Stock Ledger)'
-            elif model_name == 'Productionorder': model_name = 'Manufacturing (Production Orders)'
-            elif model_name == 'Bom': model_name = 'Manufacturing (BOM)'
-            elif model_name == 'Bom Item': model_name = 'Manufacturing (BOM Items)'
-            
-            if model_name not in matrix:
-                matrix[model_name] = {action: None for action in actions}
-                matrix[model_name]['model'] = model_name
+            # Also get role permissions
+            if self.instance.role:
+                user_perms_ids.extend(self.instance.role.permissions.values_list('pk', flat=True))
                 
-            action = perm.codename.split('_')[0]
-            if action in actions:
-                matrix[model_name][action] = {
-                    'pk': perm.pk,
-                    'checked': perm.pk in user_perms_ids or (self.instance and self.instance.pk and self.instance.is_admin())
-                }
-                
+        # If it's a Role instance
+        if hasattr(self.instance, 'is_system') and self.instance.pk:
+            user_perms_ids = list(self.instance.permissions.values_list('pk', flat=True))
+
         rows = []
-        for model_name, actions_dict in matrix.items():
-            if any(actions_dict[a] for a in actions):
-                cols = [actions_dict.get(a) for a in actions]
-                rows.append({
-                    'model': model_name,
-                    'cols': cols
-                })
-        rows.sort(key=lambda x: x['model'])
+        for display_name, app_label, model_name, actions in PERMISSION_MODULES:
+            row = {
+                'model': display_name,
+                'cols': []
+            }
+            # For each action, find the exact permission
+            for action in ['view', 'add', 'change', 'delete', 'approve']:
+                if action in actions:
+                    codename = f"{action}_{model_name}"
+                    perm = Permission.objects.filter(content_type__app_label=app_label, codename=codename).first()
+                    if perm:
+                        checked = perm.pk in user_perms_ids
+                        # If user is admin, everything is checked in UI
+                        if hasattr(self.instance, 'is_admin') and self.instance.pk and self.instance.is_admin():
+                            checked = True
+                        
+                        row['cols'].append({
+                            'pk': perm.pk,
+                            'checked': checked
+                        })
+                    else:
+                        row['cols'].append(None)
+                else:
+                    row['cols'].append(None)
+            rows.append(row)
         return rows
+
 
 class CustomUserCreationForm(UserCreationForm, MatrixPermissionMixin):
     user_permissions = forms.ModelMultipleChoiceField(
-        queryset=Permission.objects.none(),
+        queryset=Permission.objects.all(),
         widget=forms.CheckboxSelectMultiple,
         required=False,
     )
@@ -70,9 +76,6 @@ class CustomUserCreationForm(UserCreationForm, MatrixPermissionMixin):
         model = User
         fields = ('username', 'email', 'first_name', 'last_name', 'role', 'contact_number', 'assigned_area', 'is_delivery_officer', 'can_set_targets', 'user_permissions')
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.fields['user_permissions'].queryset = get_custom_permissions()
 
 class CustomUserChangeForm(UserChangeForm, MatrixPermissionMixin):
     password = None
@@ -84,7 +87,7 @@ class CustomUserChangeForm(UserChangeForm, MatrixPermissionMixin):
     )
     
     user_permissions = forms.ModelMultipleChoiceField(
-        queryset=Permission.objects.none(),
+        queryset=Permission.objects.all(),
         widget=forms.CheckboxSelectMultiple,
         required=False,
     )
@@ -93,18 +96,15 @@ class CustomUserChangeForm(UserChangeForm, MatrixPermissionMixin):
         model = User
         fields = ('username', 'email', 'first_name', 'last_name', 'role', 'contact_number', 'assigned_area', 'is_delivery_officer', 'can_set_targets', 'is_active', 'user_permissions')
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.fields['user_permissions'].queryset = get_custom_permissions()
-
     def clean_role(self):
         role = self.cleaned_data.get('role')
-        if self.instance and self.instance.pk and self.instance.is_superuser and role != 'ADMIN':
-            from .models import User
-            admin_count = User.objects.filter(is_superuser=True, is_active=True).count()
-            if admin_count <= 1:
-                from django.core.exceptions import ValidationError
-                raise ValidationError("Cannot change role. You are the last active Super Admin in the system.")
+        if self.instance and self.instance.pk and self.instance.is_superuser:
+            if not role or role.name != 'Administrator':
+                from .models import User
+                admin_count = User.objects.filter(is_superuser=True, is_active=True).count()
+                if admin_count <= 1:
+                    from django.core.exceptions import ValidationError
+                    raise ValidationError("Cannot change role. You are the last active Administrator in the system.")
         return role
 
     def save(self, commit=True):
@@ -116,3 +116,22 @@ class CustomUserChangeForm(UserChangeForm, MatrixPermissionMixin):
             user.save()
             self.save_m2m()
         return user
+
+
+class RoleForm(forms.ModelForm, MatrixPermissionMixin):
+    permissions = forms.ModelMultipleChoiceField(
+        queryset=Permission.objects.all(),
+        widget=forms.CheckboxSelectMultiple,
+        required=False,
+    )
+
+    class Meta:
+        model = Role
+        fields = ('name', 'description', 'permissions')
+
+    def clean_name(self):
+        name = self.cleaned_data.get('name')
+        if self.instance and self.instance.is_system and self.instance.name != name:
+            from django.core.exceptions import ValidationError
+            raise ValidationError("You cannot rename a system role.")
+        return name

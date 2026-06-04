@@ -1,13 +1,19 @@
-from django.contrib.auth.models import AbstractUser
+from django.contrib.auth.models import AbstractUser, Permission
 from django.db import models
 
-class User(AbstractUser):
-    class Roles(models.TextChoices):
-        ADMIN = 'ADMIN', 'Admin'
-        SALES_OFFICER = 'SALES_OFFICER', 'Sales Officer'
-        USER = 'USER', 'User'
+class Role(models.Model):
+    name = models.CharField(max_length=100, unique=True)
+    description = models.TextField(blank=True)
+    permissions = models.ManyToManyField(Permission, blank=True)
+    is_system = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    def __str__(self):
+        return self.name
 
-    role = models.CharField(max_length=50, choices=Roles.choices, default=Roles.SALES_OFFICER)
+class User(AbstractUser):
+    role = models.ForeignKey(Role, on_delete=models.PROTECT, related_name="users")
+    
     contact_number = models.CharField(max_length=20, blank=True, null=True)
     assigned_area = models.CharField(max_length=100, blank=True, null=True)
     is_delivery_officer = models.BooleanField(default=False, verbose_name="Is a Delivery Officer?", help_text="User can be assigned to deliver orders.")
@@ -15,10 +21,14 @@ class User(AbstractUser):
     can_set_targets = models.BooleanField(default=False, verbose_name="Can Set Sales Targets?", help_text="Allow this user to access the Analytics Target Management page.")
     
     def is_admin(self):
-        return self.role == self.Roles.ADMIN or self.is_superuser
+        if self.role:
+            return self.is_superuser or (self.role.name == 'Administrator' and self.role.is_system)
+        return self.is_superuser
         
     def is_sales_officer(self):
-        return self.role == self.Roles.SALES_OFFICER
+        if self.role:
+            return self.role.name == 'Sales Officer'
+        return False
 
     # Prevent normal sales officers from accessing the main Django Admin completely
     # They should use our custom dashboard frontend instead.
@@ -43,18 +53,19 @@ class User(AbstractUser):
         return super().has_module_perms(app_label)
 
     def save(self, *args, **kwargs):
-        if self.role == self.Roles.ADMIN:
-            self.is_superuser = True
-            self.is_staff = True
-        else:
-            # We don't want to demote the hardcoded superadmin 'admin'
-            if self.username != 'admin':
+        if self.role:
+            if self.role.name == 'Administrator':
+                self.is_superuser = True
+                self.is_staff = True
+            elif self.username != 'admin':
                 self.is_superuser = False
                 self.is_staff = False
         super().save(*args, **kwargs)
 
     def __str__(self):
-        return f"{self.username} - {self.get_role_display()}"
+        if self.role:
+            return f"{self.username} - {self.role.name}"
+        return f"{self.username} - No Role"
 
 
 class Notification(models.Model):

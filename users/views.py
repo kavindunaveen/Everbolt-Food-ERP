@@ -1,11 +1,12 @@
-from django.shortcuts import render
+from django.shortcuts import render, redirect
 from django.urls import reverse_lazy
 from django.views.generic import ListView, CreateView, UpdateView, DeleteView
 from django.contrib.auth.mixins import LoginRequiredMixin
 from users.mixins import ERPPermissionRequiredMixin
-from .models import User
-from .forms import CustomUserCreationForm, CustomUserChangeForm
+from .models import User, Role
+from .forms import CustomUserCreationForm, CustomUserChangeForm, RoleForm
 from django.db.models import Q
+from django.contrib import messages
 
 from django.contrib.auth.mixins import UserPassesTestMixin
 from users.mixins import ERPUserPassesTestMixin
@@ -22,6 +23,7 @@ class UserListView(LoginRequiredMixin, AdminRequiredMixin, ListView):
     def get_queryset(self):
         qs = super().get_queryset()
         q = self.request.GET.get('q')
+        role_filter = self.request.GET.get('role')
         if q:
             qs = qs.filter(
                 Q(username__icontains=q) | 
@@ -29,7 +31,18 @@ class UserListView(LoginRequiredMixin, AdminRequiredMixin, ListView):
                 Q(last_name__icontains=q) | 
                 Q(email__icontains=q)
             )
+        if role_filter:
+            qs = qs.filter(role__pk=role_filter)
         return qs
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['roles'] = Role.objects.all()
+        context['total_users'] = User.objects.count()
+        context['active_users'] = User.objects.filter(is_active=True).count()
+        context['inactive_users'] = User.objects.filter(is_active=False).count()
+        context['total_roles'] = Role.objects.count()
+        return context
 
 class UserCreateView(LoginRequiredMixin, AdminRequiredMixin, CreateView):
     model = User
@@ -47,6 +60,46 @@ class UserDeleteView(LoginRequiredMixin, AdminRequiredMixin, DeleteView):
     model = User
     template_name = 'users/user_confirm_delete.html'
     success_url = reverse_lazy('user_list')
+
+
+# ==========================================
+# Role Management Views
+# ==========================================
+
+class RoleListView(LoginRequiredMixin, AdminRequiredMixin, ListView):
+    model = Role
+    template_name = 'users/role_list.html'
+    context_object_name = 'roles'
+    paginate_by = 20
+
+class RoleCreateView(LoginRequiredMixin, AdminRequiredMixin, CreateView):
+    model = Role
+    form_class = RoleForm
+    template_name = 'users/role_form.html'
+    success_url = reverse_lazy('role_list')
+
+class RoleUpdateView(LoginRequiredMixin, AdminRequiredMixin, UpdateView):
+    model = Role
+    form_class = RoleForm
+    template_name = 'users/role_form.html'
+    success_url = reverse_lazy('role_list')
+
+class RoleDeleteView(LoginRequiredMixin, AdminRequiredMixin, DeleteView):
+    model = Role
+    template_name = 'users/role_confirm_delete.html'
+    success_url = reverse_lazy('role_list')
+
+    def post(self, request, *args, **kwargs):
+        role = self.get_object()
+        if role.is_system:
+            messages.error(request, "Cannot delete system roles.")
+            return redirect('role_list')
+        if role.users.exists():
+            messages.error(request, "Cannot delete role because it is assigned to users.")
+            return redirect('role_list')
+        return super().post(request, *args, **kwargs)
+
+# ==========================================
 
 from django import forms
 class ProfileUpdateForm(forms.ModelForm):

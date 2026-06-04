@@ -374,30 +374,36 @@ def download_import_template(request):
     return response
 
 # Stock Adjustment Views
-class StockAdjustmentListView(LoginRequiredMixin, ListView):
+class StockAdjustmentListView(LoginRequiredMixin, ERPPermissionRequiredMixin, ListView):
     model = StockAdjustment
     template_name = 'inventory/adjustment_list.html'
     context_object_name = 'adjustments'
     paginate_by = 20
     ordering = ['-id']
+    permission_required = 'inventory.view_stockadjustment'
 
-class StockAdjustmentCreateView(LoginRequiredMixin, CreateView):
+class StockAdjustmentCreateView(LoginRequiredMixin, ERPPermissionRequiredMixin, CreateView):
     model = StockAdjustment
     form_class = StockAdjustmentForm
     template_name = 'inventory/adjustment_form.html'
     success_url = reverse_lazy('adjustment_list')
+    permission_required = 'inventory.add_stockadjustment'
 
     def form_valid(self, form):
         form.instance.created_by = self.request.user
         messages.success(self.request, "Stock Adjustment created as Draft.")
         return super().form_valid(form)
 
-class StockAdjustmentDetailView(LoginRequiredMixin, DetailView):
+class StockAdjustmentDetailView(LoginRequiredMixin, ERPPermissionRequiredMixin, DetailView):
     model = StockAdjustment
     template_name = 'inventory/adjustment_detail.html'
     context_object_name = 'adjustment'
+    permission_required = 'inventory.view_stockadjustment'
+
+from django.contrib.auth.decorators import permission_required
 
 @login_required
+@permission_required('inventory.change_stockadjustment', raise_exception=True)
 def confirm_adjustment_view(request, pk):
     adjustment = get_object_or_404(StockAdjustment, pk=pk)
     if request.method == 'POST':
@@ -409,6 +415,7 @@ def confirm_adjustment_view(request, pk):
     return redirect('adjustment_list')
 
 @login_required
+@permission_required('inventory.change_stockadjustment', raise_exception=True)
 def cancel_adjustment_view(request, pk):
     adjustment = get_object_or_404(StockAdjustment, pk=pk)
     if request.method == 'POST':
@@ -420,21 +427,23 @@ def cancel_adjustment_view(request, pk):
     return redirect('adjustment_list')
 
 # Inventory Reports/Views
-class StockSummaryView(LoginRequiredMixin, ListView):
+class StockSummaryView(LoginRequiredMixin, ERPPermissionRequiredMixin, ListView):
     model = Product
     template_name = 'inventory/stock_summary.html'
     context_object_name = 'products'
     paginate_by = 20
+    permission_required = 'inventory.view_product'
 
     def get_queryset(self):
         return Product.objects.filter(track_stock=True, status=True)
 
-class StockLedgerView(LoginRequiredMixin, ListView):
+class StockLedgerView(LoginRequiredMixin, ERPPermissionRequiredMixin, ListView):
     model = StockLedger
     template_name = 'inventory/stock_ledger.html'
     context_object_name = 'entries'
     paginate_by = 20
     ordering = ['-date']
+    permission_required = 'inventory.view_product'
 
     def get_queryset(self):
         qs = super().get_queryset()

@@ -184,6 +184,7 @@
         {% endif %}
 
         <!-- Manufacturing Map -->
+        {% if perms.manufacturing.view_bom or perms.manufacturing.view_production %}
         <a href="{% url 'production_list' %}" class="block group">
             <div class="card-premium p-6 h-full">
                 <div
@@ -199,8 +200,10 @@
                 <p class="text-sm text-gray-500">BOM management and Production order tracking.</p>
             </div>
         </a>
+        {% endif %}
 
         <!-- Reports Map -->
+        {% if perms.inventory.view_product %}
         <a href="{% url 'stock_summary' %}" class="block group">
             <div class="card-premium p-6 h-full">
                 <div
@@ -216,6 +219,7 @@
                 <p class="text-sm text-gray-500">Live stock summary and detailed transaction ledgers.</p>
             </div>
         </a>
+        {% endif %}
 
         <!-- Users Map -->
         {% if perms.users.view_user %}

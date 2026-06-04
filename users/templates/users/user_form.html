@@ -1,199 +1,181 @@
 {% extends 'layouts/base.html' %}
-{% load static %}
 
-{% block title %}
-{% if object %}Edit User | {{ object.username }}{% else %}Create User{% endif %} | ERP System
-{% endblock %}
+{% block title %}{% if form.instance.pk %}Edit User{% else %}New User{% endif %} | ERP System{% endblock %}
 
 {% block content %}
-<div class="px-4 py-6 sm:px-0">
-    <div class="mb-6">
-        <h1 class="text-2xl font-bold text-gray-900">
-            {% if object %}Edit User: {{ object.get_full_name|default:object.username }}{% else %}Create New User{% endif %}
-        </h1>
-        <p class="mt-1 text-sm text-gray-500">
-            {% if object %}Update staff details and role permissions.{% else %}Add a new staff member to the system and set their role.{% endif %}
-        </p>
+<div class="px-4 py-6 sm:px-0 max-w-5xl mx-auto" x-data="{ 
+    activeTab: 'profile',
+    selectedRole: '{{ form.role.value|default:'' }}',
+    systemRoles: {
+        {% for role in form.fields.role.queryset %}
+            '{{ role.pk }}': {
+                'name': '{{ role.name|escapejs }}',
+                'perms': [{% for p in role.permissions.all %}'{{ p.pk }}',{% endfor %}]
+            }{% if not forloop.last %},{% endif %}
+        {% endfor %}
+    },
+    updatePermissions() {
+        if (!this.selectedRole) return;
+        const roleData = this.systemRoles[this.selectedRole];
+        if (!roleData) return;
+        
+        // If it's the admin role, check everything
+        const isAdmin = roleData.name === 'Administrator';
+        
+        const checkboxes = document.querySelectorAll('.perm-checkbox');
+        checkboxes.forEach(cb => {
+            if (isAdmin) {
+                cb.checked = true;
+            } else {
+                cb.checked = roleData.perms.includes(cb.value);
+            }
+        });
+    }
+}">
+    <div class="mb-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+            <div class="flex items-center gap-2 text-sm text-gray-500 mb-2 font-medium">
+                <a href="{% url 'user_list' %}" class="hover:text-gray-900 transition-colors">Users</a>
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                <span class="text-gray-900">{% if form.instance.pk %}Edit User{% else %}New User{% endif %}</span>
+            </div>
+            <h1 class="text-3xl font-extrabold text-gray-900 tracking-tight">{% if form.instance.pk %}{{ form.instance.username }}{% else %}Create New User{% endif %}</h1>
+        </div>
+        
+        <!-- Tabs -->
+        <div class="flex bg-gray-100 p-1 rounded-xl w-full md:w-auto overflow-x-auto">
+            <button type="button" @click="activeTab = 'profile'" :class="{'bg-white shadow-sm text-gray-900': activeTab === 'profile', 'text-gray-600 hover:text-gray-900': activeTab !== 'profile'}" class="px-6 py-2.5 rounded-lg text-sm font-bold whitespace-nowrap transition-all">Profile</button>
+            <button type="button" @click="activeTab = 'access'" :class="{'bg-white shadow-sm text-gray-900': activeTab === 'access', 'text-gray-600 hover:text-gray-900': activeTab !== 'access'}" class="px-6 py-2.5 rounded-lg text-sm font-bold whitespace-nowrap transition-all">Role & Access</button>
+            <button type="button" @click="activeTab = 'permissions'" :class="{'bg-white shadow-sm text-gray-900': activeTab === 'permissions', 'text-gray-600 hover:text-gray-900': activeTab !== 'permissions'}" class="px-6 py-2.5 rounded-lg text-sm font-bold whitespace-nowrap transition-all">Matrix</button>
+        </div>
     </div>
 
-    <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-        <form method="post" class="divide-y divide-gray-200">
-            {% csrf_token %}
-            
-            <div class="p-6">
-                {% if form.non_field_errors %}
-                <div class="bg-red-50 border-l-4 border-red-500 p-4 mb-6 rounded-md">
-                    <div class="flex">
-                        <div class="flex-shrink-0">
-                            <svg class="h-5 w-5 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
-                            </svg>
-                        </div>
-                        <div class="ml-3">
-                            <h3 class="text-sm font-medium text-red-800">Please fix the following errors:</h3>
-                            <ul class="mt-1 text-sm text-red-700 list-disc list-inside">
-                                {% for error in form.non_field_errors %}
-                                <li>{{ error }}</li>
-                                {% endfor %}
-                            </ul>
-                        </div>
-                    </div>
-                </div>
-                {% endif %}
+    <form method="post" class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+        {% csrf_token %}
+        
+        {% if form.non_field_errors %}
+        <div class="bg-red-50 border-l-4 border-red-500 p-4 m-6 rounded-md">
+            <ul class="text-sm text-red-700 list-disc list-inside font-medium">
+                {% for error in form.non_field_errors %}<li>{{ error }}</li>{% endfor %}
+            </ul>
+        </div>
+        {% endif %}
 
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {% for field in form %}
-                    {% if field.name != 'user_permissions' %}
-                    <div class="space-y-1">
-                        <label for="{{ field.id_for_label }}" class="block text-sm font-bold text-gray-700">
+        <!-- Tab: Profile -->
+        <div x-show="activeTab === 'profile'" class="p-8">
+            <div class="grid grid-cols-1 gap-y-6 gap-x-8 sm:grid-cols-2">
+                {% for field in form %}
+                    {% if field.name in 'username,email,first_name,last_name,contact_number,assigned_area,new_password' %}
+                    <div class="sm:col-span-1">
+                        <label for="{{ field.id_for_label }}" class="block text-sm font-semibold text-gray-700 mb-2">
                             {{ field.label }} {% if field.field.required %}<span class="text-red-500">*</span>{% endif %}
                         </label>
-                        {% if field.errors %}
-                        <div class="text-red-600 text-xs font-bold mt-1 mb-1">
-                            {% for error in field.errors %}
-                                <p>{{ error }}</p>
-                            {% endfor %}
-                        </div>
-                        {% endif %}
-                        
-                        <div class="relative rounded-md shadow-sm">
-                            {% if field.field.widget.input_type == 'checkbox' %}
-                                <div class="flex items-center h-5 mt-2">
-                                    <input type="{{ field.field.widget.input_type }}" name="{{ field.html_name }}" id="{{ field.id_for_label }}" {% if field.value %}checked{% endif %} class="focus:ring-red-500 h-4 w-4 text-red-600 border-gray-300 rounded transition-all">
-                                    <label for="{{ field.id_for_label }}" class="ml-3 text-sm text-gray-600">{{ field.help_text|default:"Active account" }}</label>
-                                </div>
-                            {% elif field.field.widget.choices %}
-                                <select name="{{ field.html_name }}" id="{{ field.id_for_label }}" 
-                                        class="focus:ring-red-500 focus:border-red-500 block w-full sm:text-sm border-gray-300 rounded-md py-2.5 px-3 border {% if field.errors %}border-red-300 bg-red-50{% endif %} transition-all">
-                                    {% for choice in field.field.choices %}
-                                        <option value="{{ choice.0 }}" {% if field.value|stringformat:"s" == choice.0|stringformat:"s" %}selected{% endif %}>{{ choice.1 }}</option>
-                                    {% endfor %}
-                                </select>
-                            {% else %}
-                                <input type="{{ field.field.widget.input_type|default:'text' }}" name="{{ field.html_name }}" id="{{ field.id_for_label }}" value="{{ field.value|default:'' }}" 
-                                       class="focus:ring-red-500 focus:border-red-500 block w-full sm:text-sm border-gray-300 rounded-md py-2.5 px-3 border {% if field.errors %}border-red-300 bg-red-50{% endif %} transition-all" 
-                                       {% if field.field.required %}required{% endif %} {% if field.field.widget.attrs.placeholder %}placeholder="{{ field.field.widget.attrs.placeholder }}"{% endif %}>
-                            {% endif %}
-                        </div>
-                        {% if field.help_text and field.field.widget.input_type != 'checkbox' %}
-                        <p class="text-[10px] text-gray-400 font-medium italic mt-1">{{ field.help_text|safe }}</p>
+                        {{ field.errors }}
+                        <input type="{{ field.field.widget.input_type|default:'text' }}" name="{{ field.html_name }}" id="{{ field.id_for_label }}" value="{{ field.value|default:'' }}" 
+                               class="block w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-4 focus:ring-red-500/10 focus:border-red-500 sm:text-sm transition-all"
+                               {% if field.field.required %}required{% endif %}
+                               {% if field.name == 'new_password' %}placeholder="{{ field.field.widget.attrs.placeholder }}"{% endif %}>
+                        {% if field.help_text %}
+                        <p class="mt-2 text-xs text-gray-500 font-medium">{{ field.help_text }}</p>
                         {% endif %}
                     </div>
                     {% endif %}
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Tab: Access & Role -->
+        <div x-show="activeTab === 'access'" x-cloak class="p-8">
+            <div class="max-w-2xl space-y-8">
+                <!-- Role Selection -->
+                <div class="bg-gray-50 rounded-xl p-6 border border-gray-100">
+                    <label for="{{ form.role.id_for_label }}" class="block text-sm font-bold text-gray-900 mb-2">
+                        System Role <span class="text-red-500">*</span>
+                    </label>
+                    <p class="text-sm text-gray-500 font-medium mb-4">Selecting a role will automatically configure the user's permissions matrix.</p>
+                    {{ form.role.errors }}
+                    <select name="{{ form.role.html_name }}" id="{{ form.role.id_for_label }}" x-model="selectedRole" @change="updatePermissions()" required class="block w-full px-4 py-3 bg-white border border-gray-200 rounded-xl focus:ring-4 focus:ring-red-500/10 focus:border-red-500 sm:text-sm transition-all font-semibold cursor-pointer">
+                        <option value="">-- Select a Role --</option>
+                        {% for x, y in form.fields.role.choices %}
+                            {% if x %}
+                            <option value="{{ x }}" {% if form.role.value|stringformat:'s' == x|stringformat:'s' %}selected{% endif %}>{{ y }}</option>
+                            {% endif %}
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <!-- Toggles -->
+                <div class="space-y-4">
+                    {% for field in form %}
+                        {% if field.name in 'is_active,is_delivery_officer,can_set_targets' %}
+                        <div class="relative flex items-start p-4 border border-gray-100 rounded-xl hover:bg-gray-50 transition-colors">
+                            <div class="flex items-center h-5">
+                                <input id="{{ field.id_for_label }}" name="{{ field.html_name }}" type="checkbox" {% if field.value %}checked{% endif %} class="focus:ring-red-500 h-5 w-5 text-red-600 border-gray-300 rounded cursor-pointer">
+                            </div>
+                            <div class="ml-3 text-sm">
+                                <label for="{{ field.id_for_label }}" class="font-bold text-gray-900 cursor-pointer">{{ field.label }}</label>
+                                {% if field.help_text %}
+                                <p class="text-gray-500 font-medium mt-1">{{ field.help_text }}</p>
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% endif %}
                     {% endfor %}
                 </div>
-
-                <!-- Odoo-style Advanced Access Rights Matrix -->
-                <div class="mt-10 border-t border-gray-200 pt-8">
-                    <div class="flex items-center justify-between mb-6">
-                        <h3 class="text-sm font-bold text-gray-900 uppercase tracking-wider">Advanced Access Rights (Matrix)</h3>
-                        <div class="flex space-x-2">
-                            <button type="button" onclick="window.setAllPermissions(true)" class="text-[10px] font-black uppercase tracking-widest text-emerald-600 hover:text-emerald-700">Check All</button>
-                            <span class="text-gray-300">|</span>
-                            <button type="button" onclick="window.setAllPermissions(false)" class="text-[10px] font-black uppercase tracking-widest text-red-600 hover:text-red-700">Uncheck All</button>
-                        </div>
-                    </div>
-                    
-                    <div class="overflow-x-auto shadow-sm rounded-xl border border-gray-200">
-                        <table class="min-w-full divide-y divide-gray-200" id="permission-matrix">
-                            <thead class="bg-gray-50">
-                                <tr>
-                                    <th scope="col" class="px-6 py-3 text-left text-xs font-black text-gray-500 uppercase tracking-wider border-r border-gray-200">Module / Document</th>
-                                    <th scope="col" class="px-6 py-3 text-center text-xs font-black text-gray-500 uppercase tracking-wider">View</th>
-                                    <th scope="col" class="px-6 py-3 text-center text-xs font-black text-gray-500 uppercase tracking-wider">Create</th>
-                                    <th scope="col" class="px-6 py-3 text-center text-xs font-black text-gray-500 uppercase tracking-wider">Edit</th>
-                                    <th scope="col" class="px-6 py-3 text-center text-xs font-black text-gray-500 uppercase tracking-wider">Delete</th>
-                                    <th scope="col" class="px-6 py-3 text-center text-xs font-black text-gray-500 uppercase tracking-wider border-l border-gray-200">Approve</th>
-                                </tr>
-                            </thead>
-                            <tbody class="bg-white divide-y divide-gray-100">
-                                {% for row in form.get_permission_matrix %}
-                                <tr class="hover:bg-gray-50 transition-colors" data-model="{{ row.model|lower }}">
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-900 border-r border-gray-100">{{ row.model }}</td>
-                                    {% for item in row.cols %}
-                                        <td class="px-6 py-4 whitespace-nowrap text-center {% if forloop.last %}border-l border-gray-100 bg-gray-50/50{% endif %}">
-                                            {% if item %}
-                                                <input type="checkbox" name="user_permissions" value="{{ item.pk }}" id="perm_{{ item.pk }}" 
-                                                       class="focus:ring-red-500 h-5 w-5 text-red-600 border-gray-300 rounded cursor-pointer transition-transform hover:scale-110 shadow-sm"
-                                                       {% if item.checked %}checked{% endif %}
-                                                       data-action-index="{{ forloop.counter0 }}">
-                                            {% else %}
-                                                <span class="text-gray-200 select-none">-</span>
-                                            {% endif %}
-                                        </td>
-                                    {% endfor %}
-                                </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
-                    </div>
-                    {% if form.user_permissions.errors %}
-                    <div class="text-red-600 text-xs font-bold mt-2">
-                        {{ form.user_permissions.errors }}
-                    </div>
-                    {% endif %}
-                </div>
             </div>
+        </div>
 
-            <div class="px-6 py-4 bg-gray-50 flex items-center justify-end gap-3">
-                <a href="{% url 'user_list' %}" class="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-bold rounded-lg text-gray-700 bg-white hover:bg-gray-50 focus:outline-none transition-all">
-                    Cancel
-                </a>
-                <button type="submit" class="inline-flex items-center px-4 py-2 border border-transparent shadow-lg text-sm font-bold rounded-lg text-white bg-red-600 hover:bg-red-700 focus:outline-none transition-all active:scale-95">
-                    {% if object %}Save Changes{% else %}Create User{% endif %}
-                </button>
+        <!-- Tab: Permissions Matrix -->
+        <div x-show="activeTab === 'permissions'" x-cloak class="p-8">
+            <div class="mb-6">
+                <h3 class="text-lg font-bold text-gray-900">Advanced Access Rights</h3>
+                <p class="text-sm text-gray-500 font-medium mt-1">Fine-tune individual permissions. Changes here will override the selected Role's defaults.</p>
             </div>
-        </form>
-    </div>
+            
+            <div class="overflow-x-auto border border-gray-200 rounded-xl">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th scope="col" class="px-6 py-4 text-left text-xs font-black text-gray-500 uppercase tracking-wider w-1/3">Business Module</th>
+                            <th scope="col" class="px-6 py-4 text-center text-xs font-black text-gray-500 uppercase tracking-wider">View</th>
+                            <th scope="col" class="px-6 py-4 text-center text-xs font-black text-gray-500 uppercase tracking-wider">Create</th>
+                            <th scope="col" class="px-6 py-4 text-center text-xs font-black text-gray-500 uppercase tracking-wider">Edit</th>
+                            <th scope="col" class="px-6 py-4 text-center text-xs font-black text-gray-500 uppercase tracking-wider">Delete</th>
+                            <th scope="col" class="px-6 py-4 text-center text-xs font-black text-gray-500 uppercase tracking-wider">Approve</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-100">
+                        {% for row in form.get_permission_matrix %}
+                        <tr class="hover:bg-gray-50 transition-colors group">
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-900">
+                                {{ row.model }}
+                            </td>
+                            {% for col in row.cols %}
+                            <td class="px-6 py-4 whitespace-nowrap text-center">
+                                {% if col %}
+                                <label class="inline-flex items-center cursor-pointer">
+                                    <input type="checkbox" name="user_permissions" value="{{ col.pk }}" class="perm-checkbox w-5 h-5 text-red-600 bg-gray-100 border-gray-300 rounded focus:ring-red-500 focus:ring-2 cursor-pointer transition-all" {% if col.checked %}checked{% endif %}>
+                                </label>
+                                {% else %}
+                                <span class="text-gray-300">-</span>
+                                {% endif %}
+                            </td>
+                            {% endfor %}
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="px-8 py-5 bg-gray-50 border-t border-gray-100 flex items-center justify-end gap-3">
+            <a href="{% url 'user_list' %}" class="inline-flex items-center px-6 py-2.5 border border-gray-300 shadow-sm text-sm font-bold rounded-xl text-gray-700 bg-white hover:bg-gray-50 transition-colors">
+                Cancel
+            </a>
+            <button type="submit" class="inline-flex items-center px-6 py-2.5 border border-transparent shadow-sm text-sm font-bold rounded-xl text-white bg-gray-900 hover:bg-black transition-colors transform hover:-translate-y-0.5">
+                Save User Account
+            </button>
+        </div>
+    </form>
 </div>
-
-<script>
-    document.addEventListener('DOMContentLoaded', function() {
-        // More robust selector for role field
-        const roleSelect = document.querySelector('select[name="role"]') || document.getElementById('id_role');
-        const checkboxes = document.querySelectorAll('input[name="user_permissions"]');
-        
-        window.setAllPermissions = function(checked) {
-            checkboxes.forEach(cb => cb.checked = checked);
-        };
-
-        if (roleSelect) {
-            roleSelect.addEventListener('change', function(e) {
-                const role = e.target.value;
-                console.log('Role changed to:', role);
-                
-                if (role === 'ADMIN') {
-                    window.setAllPermissions(true);
-                } else if (role === 'SALES_OFFICER') {
-                    // Uncheck everything first
-                    window.setAllPermissions(false);
-                    
-                    const rows = document.querySelectorAll('#permission-matrix tbody tr');
-                    rows.forEach(row => {
-                        const rowCheckboxes = row.querySelectorAll('input[type="checkbox"]');
-                        const modelName = row.getAttribute('data-model');
-                        
-                        rowCheckboxes.forEach(cb => {
-                            const actionIndex = parseInt(cb.getAttribute('data-action-index'));
-                            
-                            // View is always checked for Sales Officer (actionIndex 0)
-                            if (actionIndex === 0) {
-                                cb.checked = true;
-                            }
-                            
-                            // Sales and Contact models get Add (1) and Edit (2)
-                            if (modelName && (modelName.includes('sales') || modelName.includes('contact') || modelName.includes('customer') || modelName.includes('supplier'))) {
-                                if (actionIndex === 1 || actionIndex === 2) {
-                                    cb.checked = true;
-                                }
-                            }
-                        });
-                    });
-                } else if (role === 'USER') {
-                    window.setAllPermissions(false);
-                }
-            });
-        }
-    });
-</script>
 {% endblock %}
