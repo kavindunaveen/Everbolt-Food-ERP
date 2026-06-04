@@ -653,6 +653,16 @@
 
         // Run calculations on load for existing items
         $('.formset-row').each(function() {
+            // Restore custom product names for Select2
+            let customNameInput = $(this).find('input[name$="-custom_product_name"]');
+            let productSelect = $(this).find('select[name$="-product"]');
+            let customName = customNameInput.val();
+            
+            if (customName && !productSelect.val()) {
+                var newOption = new Option(customName, customName, true, true);
+                productSelect.append(newOption).trigger('change');
+            }
+
             ['quantity', 'unit_price', 'discount'].forEach(field => {
                 const input = $(this).find(`input[name$="-${field}"]`);
                 if (input.val()) {
