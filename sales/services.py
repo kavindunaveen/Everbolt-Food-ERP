@@ -216,7 +216,7 @@ def send_invoice_approval_email(invoice, request):
     else:
         approvers = User.objects.filter(
             Q(is_superuser=True) | 
-            Q(role='ADMIN') | 
+            Q(role__name='Administrator') | 
             Q(user_permissions__codename='approve_invoice')
         ).filter(is_active=True).distinct()
     
