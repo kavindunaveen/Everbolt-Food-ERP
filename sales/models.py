@@ -101,6 +101,10 @@ class Invoice(models.Model):
     designated_approver = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name='invoices_to_approve')
     created_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name='created_invoices')
     is_approved = models.BooleanField(default=False)
+    
+    # Indicates if physical stock has already been deducted for this invoice
+    # Used to transition to Delivery-Note driven inventory without double deducting legacy invoices
+    stock_deducted = models.BooleanField(default=False)
 
     # Snapshot of the delivery address at invoice creation — never changes after creation
     snap_delivery_line1    = models.CharField(max_length=255, blank=True, null=True)

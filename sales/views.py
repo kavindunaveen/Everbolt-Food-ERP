@@ -12,7 +12,10 @@ from django.db.models import Sum, F
 from decimal import Decimal, ROUND_UP, ROUND_HALF_UP
 from .models import Quotation, Invoice, DeliveryNote, DeliveryNoteItem, SalesAuditLog, Return, CreditNote
 from .forms import QuotationForm, QuotationItemFormSet, InvoiceForm, InvoiceItemFormSet, DeliveryNoteForm
-from .services import issue_invoice, cancel_invoice, send_invoice_approval_email, log_sales_event, update_stock_reserves, process_return
+from .services import (
+    issue_invoice, cancel_invoice, send_invoice_approval_email, process_return,
+    deduct_dn_stock, restore_dn_stock, log_sales_event, update_stock_reserves
+)
 from users.models import SavedFilter
 from django.contrib.contenttypes.models import ContentType
 import csv
@@ -1554,7 +1557,10 @@ class DeliveryNoteCreateView(LoginRequiredMixin, ERPPermissionRequiredMixin, Cre
                     invoiced_quantity=item.quantity,  # hard cap — never exceed this
                 )
 
-            messages.success(self.request, f"Delivery Note {self.object.dn_number} created successfully.")
+            # Deduct stock instantly upon DN creation
+            deduct_dn_stock(self.object, self.request.user)
+
+            messages.success(self.request, f"Delivery Note {self.object.dn_number} created successfully. Stock has been deducted.")
 
             log_sales_event(
                 obj=self.object,
@@ -1617,6 +1623,14 @@ def update_dn_status(request, pk):
             old_display = dn.get_status_display()
             dn.status = new_status
             dn.save()
+            
+            if new_status == 'FAILED' and old_display != 'Failed':
+                restore_dn_stock(dn, request.user)
+                messages.warning(request, f"Stock for {dn.dn_number} has been restored to inventory.")
+            elif old_display == 'Failed' and new_status != 'FAILED':
+                # Re-deduct if moved out of FAILED
+                deduct_dn_stock(dn, request.user)
+                messages.success(request, f"Stock for {dn.dn_number} has been deducted again.")
             
             log_sales_event(
                 obj=dn,

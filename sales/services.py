@@ -52,9 +52,8 @@ def log_sales_event(obj, user, action, old_value=None, new_value=None, notes=Non
 def issue_invoice(invoice, user):
     """
     Confirms/Issues a Sales Invoice.
-    - Creates StockLedger entries (SALES_ISS) for each item.
-    - Updates Product current_stock cache.
     - Changes invoice status to ISSUED.
+    - Stock deduction is now deferred to Delivery Note creation.
     """
     if invoice.status != 'DRAFT':
         raise ValueError("Only DRAFT invoices can be issued.")
@@ -70,14 +69,24 @@ def issue_invoice(invoice, user):
             action="Invoice Issued",
             old_value=old_status,
             new_value=invoice.get_status_display(),
-            notes="Stock deducted and invoice finalized."
+            notes="Invoice finalized. Stock will be deducted upon Delivery Note creation."
         )
+            
+        update_stock_reserves(invoice)
+
+def deduct_dn_stock(dn, user):
+    """
+    Deducts stock for a Delivery Note if the associated invoice hasn't already.
+    """
+    invoice = dn.invoice
+    if invoice.stock_deducted:
+        return
         
-        ledgers = []
-        for item in invoice.items.all():
+    ledgers = []
+    with transaction.atomic():
+        for item in dn.items.all():
             qty = item.quantity
             if qty > 0:
-                # Check for negative stock
                 prod_obj = Product.objects.select_for_update().get(id=item.product.id)
                 if not prod_obj.allow_negative_stock and prod_obj.current_stock < qty:
                     raise ValueError(f"Insufficient stock for {prod_obj.name}. Available: {prod_obj.current_stock}")
@@ -87,10 +96,10 @@ def issue_invoice(invoice, user):
                     tx_type=StockLedger.TransactionTypes.SALES_ISS,
                     qty_in=0,
                     qty_out=qty,
-                    reference_type='INV',
-                    reference_id=invoice.id,
-                    reference_number=invoice.invoice_number,
-                    remarks=f"Sales Issue for {invoice.invoice_number} to {invoice.customer.customer_name}",
+                    reference_type='DN',
+                    reference_id=dn.id,
+                    reference_number=dn.dn_number,
+                    remarks=f"Delivery Note Issue {dn.dn_number} for Invoice {invoice.invoice_number}",
                     user=user
                 ))
                 
@@ -100,12 +109,52 @@ def issue_invoice(invoice, user):
         if ledgers:
             StockLedger.objects.bulk_create(ledgers)
             
-        update_stock_reserves(invoice)
+        invoice.stock_deducted = True
+        invoice.save(update_fields=['stock_deducted'])
+
+def restore_dn_stock(dn, user, remark_prefix="Delivery Failed"):
+    """
+    Restores stock if a Delivery Note fails.
+    """
+    invoice = dn.invoice
+    if not invoice.stock_deducted:
+        return
+        
+    ledgers = []
+    with transaction.atomic():
+        for item in dn.items.all():
+            qty = item.quantity
+            if qty > 0:
+                ledgers.append(StockLedger(
+                    product=item.product,
+                    tx_type=StockLedger.TransactionTypes.SALES_RET,
+                    qty_in=qty,
+                    qty_out=0,
+                    reference_type='DN-RESTORE',
+                    reference_id=dn.id,
+                    reference_number=dn.dn_number,
+                    remarks=f"{remark_prefix} ({dn.dn_number})",
+                    user=user
+                ))
+                
+                prod_obj = Product.objects.select_for_update().get(id=item.product.id)
+                prod_obj.current_stock += qty
+                prod_obj.save(update_fields=['current_stock'])
+                
+        if ledgers:
+            StockLedger.objects.bulk_create(ledgers)
+            
+        invoice.stock_deducted = False
+        invoice.save(update_fields=['stock_deducted'])
 
 def restore_stock(invoice, user, remark_prefix="Stock Restoration"):
     """
     Internal helper to restore stock for all items in an invoice.
+    Only restores stock if it was actually deducted (stock_deducted=True).
     """
+    if not invoice.stock_deducted:
+        return
+        
     ledgers = []
     for item in invoice.items.all():
         qty = item.quantity
@@ -128,6 +177,9 @@ def restore_stock(invoice, user, remark_prefix="Stock Restoration"):
             
     if ledgers:
         StockLedger.objects.bulk_create(ledgers)
+        
+    invoice.stock_deducted = False
+    invoice.save(update_fields=['stock_deducted'])
     update_stock_reserves(invoice)
 
 def cancel_invoice(invoice, user):
