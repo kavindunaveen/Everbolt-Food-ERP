@@ -722,7 +722,7 @@ class TargetManagementView(LoginRequiredMixin, View):
             sp_existing[(spt.salesperson_id, spt.month)] = float(spt.target_value)
 
         salesperson_rows = []
-        for sp in User.objects.filter(role=User.Roles.SALES_OFFICER).order_by('username'):
+        for sp in User.objects.filter(role__name='Sales Officer').order_by('username'):
             periods = []
             for m in range(1, 13):
                 periods.append({
@@ -848,7 +848,7 @@ class TargetManagementView(LoginRequiredMixin, View):
             for m in range(1, 13):
                 _upsert_group_target(group, year, m, request.POST.get(f"gt_{group.id}_m{m}"))
 
-        for sp in User.objects.filter(role=User.Roles.SALES_OFFICER):
+        for sp in User.objects.filter(role__name='Sales Officer'):
             for m in range(1, 13):
                 val_str = (request.POST.get(f"st_{sp.id}_m{m}") or '').strip()
                 if val_str:

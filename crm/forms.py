@@ -18,7 +18,7 @@ class CustomerForm(forms.ModelForm):
         if 'assigned_sales_officer' in self.fields:
             from users.models import User
             self.fields['assigned_sales_officer'].queryset = User.objects.filter(
-                role=User.Roles.SALES_OFFICER,
+                role__name='Sales Officer',
                 is_active=True
             )
             self.fields['assigned_sales_officer'].empty_label = "--- Select Sales Officer ---"

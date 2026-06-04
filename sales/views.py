@@ -41,7 +41,7 @@ class SalesDashboardView(LoginRequiredMixin, ERPPermissionRequiredMixin, Templat
         context = super().get_context_data(**kwargs)
         from users.models import User
         from django.db.models import Q
-        context['sales_officers'] = User.objects.filter(role=User.Roles.SALES_OFFICER, is_active=True).distinct()
+        context['sales_officers'] = User.objects.filter(role__name='Sales Officer', is_active=True).distinct()
         context['model_name'] = 'SalesDashboard'
         
         q = self.request.GET.get('q')
@@ -335,7 +335,7 @@ class QuotationListView(LoginRequiredMixin, ERPPermissionRequiredMixin, ListView
         context = super().get_context_data(**kwargs)
         from users.models import User
         from django.db.models import Q
-        context['sales_officers'] = User.objects.filter(role=User.Roles.SALES_OFFICER, is_active=True).distinct()
+        context['sales_officers'] = User.objects.filter(role__name='Sales Officer', is_active=True).distinct()
         try:
             from users.models import SavedFilter
             context['saved_filters'] = SavedFilter.objects.filter(user=self.request.user, model_name='Quotation')
@@ -388,7 +388,7 @@ class InvoiceListView(LoginRequiredMixin, ERPPermissionRequiredMixin, ListView):
         context = super().get_context_data(**kwargs)
         from users.models import User
         from django.db.models import Q
-        context['sales_officers'] = User.objects.filter(role=User.Roles.SALES_OFFICER, is_active=True).distinct()
+        context['sales_officers'] = User.objects.filter(role__name='Sales Officer', is_active=True).distinct()
         try:
             from users.models import SavedFilter
             context['saved_filters'] = SavedFilter.objects.filter(user=self.request.user, model_name='Invoice')
