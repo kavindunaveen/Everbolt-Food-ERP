@@ -444,8 +444,10 @@ class QuotationCreateView(LoginRequiredMixin, ERPPermissionRequiredMixin, Create
                     obj.delete()
                     
                 # Calculate aggregated values for quotation
-                gross_total = sum((item.quantity * item.unit_price) for item in self.object.items.all())
-                line_discount = sum(item.get_discount_amount for item in self.object.items.all())
+                from .models import QuotationItem
+                current_items = QuotationItem.objects.filter(quotation=self.object)
+                gross_total = sum((item.quantity * item.unit_price) for item in current_items)
+                line_discount = sum(item.get_discount_amount for item in current_items)
                 subtotal = gross_total - line_discount
                 
                 custom_val = self.object.custom_discount_value or Decimal('0.00')
@@ -524,9 +526,14 @@ class QuotationUpdateView(LoginRequiredMixin, ERPPermissionRequiredMixin, Update
                     item.line_total = (item.quantity * item.unit_price) - discount_amt + item.tax_amount
                     item.save()
                     
+                for obj in items.deleted_objects:
+                    obj.delete()
+                    
                 # Re-calculate totals from ALL items associated with this quotation
-                gross_total = sum((item.quantity * item.unit_price) for item in self.object.items.all())
-                line_discount = sum(item.get_discount_amount for item in self.object.items.all())
+                from .models import QuotationItem
+                current_items = QuotationItem.objects.filter(quotation=self.object)
+                gross_total = sum((item.quantity * item.unit_price) for item in current_items)
+                line_discount = sum(item.get_discount_amount for item in current_items)
                 subtotal = gross_total - line_discount
                 
                 custom_val = self.object.custom_discount_value or Decimal('0.00')
@@ -642,8 +649,10 @@ class InvoiceCreateView(LoginRequiredMixin, ERPPermissionRequiredMixin, CreateVi
                     obj.delete()
                 
                 # Calculate aggregated values for invoice
-                gross_total = sum((item.quantity * item.unit_price) for item in self.object.items.all())
-                line_discount = sum(item.get_discount_amount for item in self.object.items.all())
+                from .models import InvoiceItem
+                current_items = InvoiceItem.objects.filter(invoice=self.object)
+                gross_total = sum((item.quantity * item.unit_price) for item in current_items)
+                line_discount = sum(item.get_discount_amount for item in current_items)
                 subtotal = gross_total - line_discount
                 
                 custom_val = self.object.custom_discount_value or Decimal('0.00')
@@ -776,8 +785,10 @@ class InvoiceUpdateView(LoginRequiredMixin, ERPPermissionRequiredMixin, UpdateVi
                     obj.delete()
                     
                 # Calculate aggregated values for invoice
-                gross_total = sum((item.quantity * item.unit_price) for item in self.object.items.all())
-                line_discount = sum(item.get_discount_amount for item in self.object.items.all())
+                from .models import InvoiceItem
+                current_items = InvoiceItem.objects.filter(invoice=self.object)
+                gross_total = sum((item.quantity * item.unit_price) for item in current_items)
+                line_discount = sum(item.get_discount_amount for item in current_items)
                 subtotal = gross_total - line_discount
                 
                 custom_val = self.object.custom_discount_value or Decimal('0.00')
