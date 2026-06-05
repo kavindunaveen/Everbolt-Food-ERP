@@ -1,13 +1,10 @@
 {% extends 'layouts/base.html' %}
 
-{% block title %}New Order Alert Generator{% endblock %}
-
-{% block extra_head %}
-{% endblock %}
+{% block title %}Create Order | ERP System{% endblock %}
 
 {% block breadcrumbs %}
 <li class="flex items-center space-x-2 border-l border-gray-100 pl-4 ml-2">
-    <a href="{% url 'order_generator' %}" class="flex items-center gap-1.5 text-cyan-600 font-semibold">
+    <a href="{% url 'order_generator' %}" class="flex items-center gap-1.5 text-cyan-600 font-semibold hover:text-cyan-800 transition-colors">
         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
         Create Order
     </a>
@@ -15,214 +12,102 @@
 {% endblock %}
 
 {% block content %}
-<div class="px-4 py-6 sm:px-0">
-    <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 overflow-hidden relative">
-        <style>
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: #f4f7f6;
-            color: #333;
-            line-height: 1.6;
-            padding: 20px;
-            margin: 0;
-        }
-        .container {
-            max-width: 800px;
-            margin: auto;
-            background: #fff;
-            padding: 30px;
-            border-radius: 10px;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-        }
-        h2 {
-            text-align: center;
-            color: #2c3e50;
-        }
-        .form-group {
-            margin-bottom: 15px;
-        }
-        label {
-            display: block;
-            font-weight: bold;
-            margin-bottom: 5px;
-        }
-        input[type="text"], input[type="date"], input[type="number"], select, textarea {
-            width: 100%;
-            padding: 10px;
-            border: 1px solid #ccc;
-            border-radius: 5px;
-            box-sizing: border-box;
-            font-size: 16px; 
-        }
-        .order-row {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 10px;
-            align-items: center;
-            background: #f9f9f9;
-            padding: 10px;
-            border-radius: 5px;
-            border: 1px solid #eee;
-        }
-        .order-row > div {
-            flex: 1;
-        }
-        .order-row > div.small-col {
-            flex: 0.5;
-            text-align: center;
-            font-weight: bold;
-        }
-        .order-row > div.price-col {
-            flex: 0.65;
-            text-align: center;
-            font-weight: bold;
-            color: #2c3e50;
-            white-space: nowrap;
-        }
-        .price-label {
-            display: block;
-            font-size: 11px;
-            color: #777;
-            font-weight: 600;
-            margin-bottom: 2px;
-        }
-        button {
-            background-color: #3498db;
-            color: #fff;
-            border: none;
-            padding: 10px 15px;
-            cursor: pointer;
-            border-radius: 5px;
-            font-size: 14px;
-            transition: background 0.3s;
-        }
-        button:hover {
-            background-color: #2980b9;
-        }
-        .btn-remove {
-            background-color: #e74c3c;
-            width: 100%;
-        }
-        .btn-remove:hover {
-            background-color: #c0392b;
-        }
-        
-        /* NEW: Styling for the UI Grand Total */
-        .ui-grand-total {
-            text-align: right;
-            font-size: 18px;
-            font-weight: bold;
-            color: #2c3e50;
-            background-color: #e8f8f5;
-            padding: 15px;
-            margin-top: 15px;
-            border-radius: 5px;
-            border: 1px solid #d1f2eb;
-        }
-
-        .btn-generate {
-            background-color: #2ecc71;
-            width: 100%;
-            font-size: 16px;
-            font-weight: bold;
-            margin-top: 20px;
-            padding: 15px;
-        }
-        .btn-generate:hover {
-            background-color: #27ae60;
-        }
-        .output-section {
-            margin-top: 30px;
-            border-top: 2px dashed #ccc;
-            padding-top: 20px;
-        }
-        textarea#finalMessage {
-            height: 350px;
-            resize: vertical;
-            font-family: monospace;
-            background-color: #fafafa;
-        }
-
-        /* Mobile Responsiveness */
-        @media (max-width: 600px) {
-            .container {
-                padding: 15px;
-            }
-            .order-row {
-                flex-direction: column;
-                align-items: stretch;
-            }
-            .order-row > div {
-                width: 100%;
-            }
-            .order-row > div.small-col,
-            .order-row > div.price-col {
-                text-align: left;
-                margin-top: 5px;
-            }
-            .ui-grand-total {
-                text-align: center;
-            }
-        }
-    </style>
-        <div id="legacy-tool-wrapper">
-            
-
-<div class="container">
-    <h2>🚨 New Order Generator</h2>
-    
-    <div class="form-group">
-        <label>👤 Customer Name:</label>
-        <input type="text" id="customer" placeholder="Enter customer name">
-    </div>
-
-    <div class="form-group">
-        <label>📍 Billing Address:</label>
-        <input type="text" id="address" placeholder="Enter billing address">
-    </div>
-
-    <div class="form-group">
-        <label>📞 Billing Contact:</label>
-        <input type="text" id="contact" placeholder="Enter 10-digit contact number" maxlength="10" inputmode="numeric" pattern="[0-9]{10}" oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 10);">
-    </div>
-
-    <div class="form-group">
-        <label>📅 Delivery Date:</label>
-        <input type="date" id="date">
-    </div>
-
-    <div class="form-group">
-        <label>🚚 Delivery Method:</label>
-        <select id="method">
-            <option value="">-- Select Method --</option>
-            <option value="Inhouse">Inhouse</option>
-            <option value="COD">COD</option>
-            <option value="Customer Collect">Customer Collect</option>
-            <option value="Pick Me">Pick Me</option>
-            <option value="Sales/Delivery Person">Sales/Delivery Person</option>
-        </select>
-    </div>
-
-    <hr>
-    <h3>🛒 Order Details</h3>
-    <div id="orderItemsContainer">
+<div class="px-4 py-6 sm:px-0 max-w-5xl mx-auto">
+    <!-- Header -->
+    <div class="mb-8 flex justify-between items-end">
+        <div>
+            <h1 class="text-3xl font-extrabold text-gray-900 tracking-tight">Create Order</h1>
+            <p class="mt-2 text-sm text-gray-500 font-medium">Quickly generate and copy formatted order messages.</p>
         </div>
-    
-    <button type="button" onclick="addOrderRow()">+ Add Product</button>
-
-    <div class="ui-grand-total">
-        Grand Total: <span id="displayGrandTotal">Rs.0.00</span>
     </div>
 
-    <button type="button" class="btn-generate" onclick="generateMessage()">Generate Message</button>
+    <!-- Main Card -->
+    <div class="card-premium">
+        
+        <!-- Section: Customer Details -->
+        <div class="p-6 border-b border-gray-100 bg-gray-50/50 rounded-t-2xl">
+            <h2 class="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
+                <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
+                Customer & Delivery Details
+            </h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <label for="customer">Customer Name</label>
+                    <input type="text" id="customer" placeholder="Enter customer name">
+                </div>
+                <div>
+                    <label for="address">Billing Address</label>
+                    <input type="text" id="address" placeholder="Enter billing address">
+                </div>
+                <div>
+                    <label for="contact">Billing Contact</label>
+                    <input type="text" id="contact" placeholder="Enter 10-digit contact number" maxlength="10" inputmode="numeric" pattern="[0-9]{10}" oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 10);">
+                </div>
+                <div>
+                    <label for="date">Delivery Date</label>
+                    <input type="date" id="date">
+                </div>
+                <div class="md:col-span-2">
+                    <label for="method">Delivery Method</label>
+                    <select id="method">
+                        <option value="">-- Select Method --</option>
+                        <option value="Inhouse">Inhouse</option>
+                        <option value="COD">COD</option>
+                        <option value="Customer Collect">Customer Collect</option>
+                        <option value="Pick Me">Pick Me</option>
+                        <option value="Sales/Delivery Person">Sales/Delivery Person</option>
+                    </select>
+                </div>
+            </div>
+        </div>
 
-    <div class="output-section">
-        <label>📋 Generated Message (Ready to Copy):</label>
-        <textarea id="finalMessage" readonly></textarea>
-        <button type="button" onclick="copyToClipboard()" style="margin-top:10px; width:100%; padding: 15px; font-weight: bold;">Copy to Clipboard</button>
+        <!-- Section: Order Items -->
+        <div class="p-6">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-lg font-bold text-gray-800 flex items-center gap-2">
+                    <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
+                    Order Items
+                </h2>
+            </div>
+            
+            <!-- Items Container -->
+            <div id="orderItemsContainer" class="space-y-4">
+                <!-- Rows will be dynamically injected here -->
+            </div>
+
+            <div class="mt-4 flex items-center justify-between">
+                <button type="button" onclick="addOrderRow()" class="btn-secondary text-sm flex items-center gap-1.5">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                    Add Product
+                </button>
+
+                <div class="bg-red-50 text-red-900 px-6 py-3 rounded-xl border border-red-100 flex items-center gap-4">
+                    <span class="text-xs font-bold uppercase tracking-wider text-red-600">Grand Total</span>
+                    <span id="displayGrandTotal" class="text-xl font-extrabold font-display tracking-tight">Rs. 0.00</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Section: Output -->
+        <div class="p-6 bg-gray-50/50 border-t border-gray-100 rounded-b-2xl">
+            <button type="button" class="btn-primary w-full py-4 text-lg shadow-md mb-6 flex justify-center items-center gap-2" onclick="generateMessage()">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                Generate Message
+            </button>
+            
+            <label for="finalMessage">Generated Message (Ready to Copy)</label>
+            <textarea id="finalMessage" readonly class="font-mono text-sm h-64 bg-white" placeholder="Click 'Generate Message' to see output here..."></textarea>
+            
+            <button type="button" onclick="copyToClipboard()" class="btn-secondary w-full mt-3 flex justify-center items-center gap-2">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"></path></svg>
+                Copy to Clipboard
+            </button>
+        </div>
     </div>
 </div>
+{% endblock %}
 
+{% block extra_js %}
 <script>
     // Strict order for categories
     const categoryOrder = [
@@ -233,348 +118,61 @@
         "HERBAL TEA",
         "FLAVORED TEA",
         "DEHYDRATED ITEMS AND POWDERS"
-];
+    ];
 
     // Product Database
     const productData = {
         "SPICES": {
-                "Black Pepper Powder - 1000g": 3285,
-                "Black Pepper Powder - 500g": 1645,
-                "Black Pepper Powder - 200g": 665,
-                "Black Pepper Powder - 100g": 340,
-                "Chilli Flakes - 1000g": 1610,
-                "Chilli Flakes - 500g": 810,
-                "Chilli Flakes - 200g": 330,
-                "Chilli Flakes - 100g": 170,
-                "Chilli Powder - 1000g": 1435,
-                "Chilli Powder - 500g": 720,
-                "Chilli Powder - 200g": 295,
-                "Chilli Powder - 100g": 155,
-                "Curry Powder - 1000g": 1720,
-                "Curry Powder - 500g": 865,
-                "Curry Powder - 200g": 355,
-                "Curry Powder - 100g": 180,
-                "Roasted Curry Powder - 1000g": 1860,
-                "Roasted Curry Powder - 500g": 935,
-                "Roasted Curry Powder - 200g": 380,
-                "Roasted Curry Powder - 100g": 200,
-                "Turmeric Powder - 1000g": 4065,
-                "Turmeric Powder - 500g": 2040,
-                "Turmeric Powder - 200g": 820,
-                "Turmeric Powder - 100g": 420
+            "Black Pepper Powder - 1000g": 3285, "Black Pepper Powder - 500g": 1645, "Black Pepper Powder - 200g": 665, "Black Pepper Powder - 100g": 340,
+            "Chilli Flakes - 1000g": 1610, "Chilli Flakes - 500g": 810, "Chilli Flakes - 200g": 330, "Chilli Flakes - 100g": 170,
+            "Chilli Powder - 1000g": 1435, "Chilli Powder - 500g": 720, "Chilli Powder - 200g": 295, "Chilli Powder - 100g": 155,
+            "Curry Powder - 1000g": 1720, "Curry Powder - 500g": 865, "Curry Powder - 200g": 355, "Curry Powder - 100g": 180,
+            "Roasted Curry Powder - 1000g": 1860, "Roasted Curry Powder - 500g": 935, "Roasted Curry Powder - 200g": 380, "Roasted Curry Powder - 100g": 200,
+            "Turmeric Powder - 1000g": 4065, "Turmeric Powder - 500g": 2040, "Turmeric Powder - 200g": 820, "Turmeric Powder - 100g": 420
         },
         "KITHUL PRODUCTS": {
-                "kithul flour- 250g": 720,
-                "kithul jaggery pieces - 200g": 1060,
-                "Kithul sugar powder - 200g": 1120,
-                "Kithul treacle - Small - 375ml": 2140,
-                "Kithul treacle - round - 375ml": 1700,
-                "Kithul half - 500ml": 2400
+            "kithul flour- 250g": 720, "kithul jaggery pieces - 200g": 1060, "Kithul sugar powder - 200g": 1120, "Kithul treacle - Small - 375ml": 2140, "Kithul treacle - round - 375ml": 1700, "Kithul half - 500ml": 2400
         },
         "ARTISAN TEA": {
-                "Everleaf Artisan Green Tea - 50g": 1790,
-                "Everleaf Artisan Green Tea - 100g": 2550,
-                "Everleaf Artisan Black Tea - 50g": 1790,
-                "Everleaf Artisan Black Tea - 100g": 2550,
-                "Everleaf Artisan White Tea - 50g": 1790,
-                "Everleaf Artisan White Tea - 100g": 2550,
-                "Everleaf Arisan Wangedi Pakoe - 50g": 1350,
-                "Everleaf Arisan Wangedi Pakoe - 100g": 1750
+            "Everleaf Artisan Green Tea - 50g": 1790, "Everleaf Artisan Green Tea - 100g": 2550, "Everleaf Artisan Black Tea - 50g": 1790, "Everleaf Artisan Black Tea - 100g": 2550,
+            "Everleaf Artisan White Tea - 50g": 1790, "Everleaf Artisan White Tea - 100g": 2550, "Everleaf Arisan Wangedi Pakoe - 50g": 1350, "Everleaf Arisan Wangedi Pakoe - 100g": 1750
         },
         "CONFECTIONARIES": {
-                "Sugar  sachet - White -5g": [
-                        {
-                                "min": 1,
-                                "price": 5,
-                                "max": 249
-                        },
-                        {
-                                "min": 250,
-                                "price": 4.8,
-                                "max": 499
-                        },
-                        {
-                                "min": 500,
-                                "price": 4.65
-                        }
-                ],
-                "Sugar sachet  - Brown -5g": [
-                        {
-                                "min": 1,
-                                "price": 5.5,
-                                "max": 249
-                        },
-                        {
-                                "min": 250,
-                                "price": 5.35,
-                                "max": 499
-                        },
-                        {
-                                "min": 500,
-                                "price": 5.25
-                        }
-                ],
-                "Sugar  sachet - White -7g": [
-                        {
-                                "min": 1,
-                                "price": 5.75,
-                                "max": 249
-                        },
-                        {
-                                "min": 250,
-                                "price": 5.65,
-                                "max": 499
-                        },
-                        {
-                                "min": 500,
-                                "price": 5.5
-                        }
-                ],
-                "Sugar  sachet - Brown -7g": [
-                        {
-                                "min": 1,
-                                "price": 6.15,
-                                "max": 249
-                        },
-                        {
-                                "min": 250,
-                                "price": 6.05,
-                                "max": 499
-                        },
-                        {
-                                "min": 500,
-                                "price": 5.95
-                        }
-                ],
-                "Sugar  stick - White -5g": [
-                        {
-                                "min": 1,
-                                "price": 5.25,
-                                "max": 249
-                        },
-                        {
-                                "min": 250,
-                                "price": 5,
-                                "max": 499
-                        },
-                        {
-                                "min": 500,
-                                "price": 4.75
-                        }
-                ],
-                "Sugar stick  - Brown -5g": [
-                        {
-                                "min": 1,
-                                "price": 6,
-                                "max": 249
-                        },
-                        {
-                                "min": 250,
-                                "price": 5.75,
-                                "max": 499
-                        },
-                        {
-                                "min": 500,
-                                "price": 5.5
-                        }
-                ],
-                "Sugar  stick - White -7g": [
-                        {
-                                "min": 1,
-                                "price": 5.95,
-                                "max": 249
-                        },
-                        {
-                                "min": 250,
-                                "price": 5.85,
-                                "max": 499
-                        },
-                        {
-                                "min": 500,
-                                "price": 5.75
-                        }
-                ],
-                "Sugar stick  - Brown -7g": [
-                        {
-                                "min": 1,
-                                "price": 6.65,
-                                "max": 249
-                        },
-                        {
-                                "min": 250,
-                                "price": 6.6,
-                                "max": 499
-                        },
-                        {
-                                "min": 500,
-                                "price": 6.5
-                        }
-                ],
-                "Creamer Sachet - 5g": [
-                        {
-                                "min": 1,
-                                "price": 25,
-                                "max": 249
-                        },
-                        {
-                                "min": 250,
-                                "price": 24,
-                                "max": 499
-                        },
-                        {
-                                "min": 500,
-                                "price": 23
-                        }
-                ],
-                "EverLeaf Tea Envelop -2g": [
-                        {
-                                "min": 1,
-                                "price": 17,
-                                "max": 249
-                        },
-                        {
-                                "min": 250,
-                                "price": 16.5,
-                                "max": 499
-                        },
-                        {
-                                "min": 500,
-                                "price": 15.5
-                        }
-                ],
-                "Nescafe Instant coffee - 1.2g": [
-                        {
-                                "min": 1,
-                                "price": 25,
-                                "max": 249
-                        },
-                        {
-                                "min": 250,
-                                "price": 24.5,
-                                "max": 499
-                        },
-                        {
-                                "min": 500,
-                                "price": 24
-                        }
-                ],
-                "Coffee Mate - 5g": [
-                        {
-                                "min": 1,
-                                "price": 34,
-                                "max": 249
-                        },
-                        {
-                                "min": 250,
-                                "price": 33,
-                                "max": 499
-                        },
-                        {
-                                "min": 500,
-                                "price": 32
-                        }
-                ],
-                "Tea Bag (catering Tea)": [
-                        {
-                                "min": 1,
-                                "price": 800,
-                                "max": 249
-                        },
-                        {
-                                "min": 250,
-                                "price": 800,
-                                "max": 499
-                        },
-                        {
-                                "min": 500,
-                                "price": 800
-                        }
-                ],
-                "EverLeaf Green Tea Envelope": [
-                        {
-                                "min": 1,
-                                "price": 18.6,
-                                "max": 249
-                        },
-                        {
-                                "min": 250,
-                                "price": 18.55,
-                                "max": 499
-                        },
-                        {
-                                "min": 500,
-                                "price": 18.5
-                        }
-                ],
-                "Salt 1g": [
-                        {
-                                "min": 1,
-                                "price": 3.55,
-                                "max": 249
-                        },
-                        {
-                                "min": 250,
-                                "price": 3.4,
-                                "max": 499
-                        },
-                        {
-                                "min": 500,
-                                "price": 3.28
-                        }
-                ]
+            "Sugar  sachet - White -5g": [{min: 1, price: 5, max: 249}, {min: 250, price: 4.8, max: 499}, {min: 500, price: 4.65}],
+            "Sugar sachet  - Brown -5g": [{min: 1, price: 5.5, max: 249}, {min: 250, price: 5.35, max: 499}, {min: 500, price: 5.25}],
+            "Sugar  sachet - White -7g": [{min: 1, price: 5.75, max: 249}, {min: 250, price: 5.65, max: 499}, {min: 500, price: 5.5}],
+            "Sugar  sachet - Brown -7g": [{min: 1, price: 6.15, max: 249}, {min: 250, price: 6.05, max: 499}, {min: 500, price: 5.95}],
+            "Sugar  stick - White -5g": [{min: 1, price: 5.25, max: 249}, {min: 250, price: 5, max: 499}, {min: 500, price: 4.75}],
+            "Sugar stick  - Brown -5g": [{min: 1, price: 6, max: 249}, {min: 250, price: 5.75, max: 499}, {min: 500, price: 5.5}],
+            "Sugar  stick - White -7g": [{min: 1, price: 5.95, max: 249}, {min: 250, price: 5.85, max: 499}, {min: 500, price: 5.75}],
+            "Sugar stick  - Brown -7g": [{min: 1, price: 6.65, max: 249}, {min: 250, price: 6.6, max: 499}, {min: 500, price: 6.5}],
+            "Creamer Sachet - 5g": [{min: 1, price: 25, max: 249}, {min: 250, price: 24, max: 499}, {min: 500, price: 23}],
+            "EverLeaf Tea Envelop -2g": [{min: 1, price: 17, max: 249}, {min: 250, price: 16.5, max: 499}, {min: 500, price: 15.5}],
+            "Nescafe Instant coffee - 1.2g": [{min: 1, price: 25, max: 249}, {min: 250, price: 24.5, max: 499}, {min: 500, price: 24}],
+            "Coffee Mate - 5g": [{min: 1, price: 34, max: 249}, {min: 250, price: 33, max: 499}, {min: 500, price: 32}],
+            "Tea Bag (catering Tea)": [{min: 1, price: 800, max: 249}, {min: 250, price: 800, max: 499}, {min: 500, price: 800}],
+            "EverLeaf Green Tea Envelope": [{min: 1, price: 18.6, max: 249}, {min: 250, price: 18.55, max: 499}, {min: 500, price: 18.5}],
+            "Salt 1g": [{min: 1, price: 3.55, max: 249}, {min: 250, price: 3.4, max: 499}, {min: 500, price: 3.28}]
         },
         "HERBAL TEA": {
-                "Ushma - 30g": 1190,
-                "Slim Herb - 30g": 1190,
-                "Island Spicy Fusion - 30g": 1100,
-                "Special Hibiscus - 30g": 1250,
-                "Herbal Soothe - 30g": 1000,
-                "Harmony Brew - 30g": 1270,
-                "Fat Burn - 30g": 1150,
-                "Detox - 30g": 1110,
-                "Citrus - 30g": 1180,
-                "Calm Mind - 30g": 1240,
-                "Balance Blend - 30g": 1150,
-                "Moringa Morning - 30g": 1030,
-                "Immuno Up - 30g": 1150,
-                "Glyco guard - 30g": 1000,
-                "Green Guard - 30g": 1090,
-                "Vita Cure - 30g": 1060
+            "Ushma - 30g": 1190, "Slim Herb - 30g": 1190, "Island Spicy Fusion - 30g": 1100, "Special Hibiscus - 30g": 1250, "Herbal Soothe - 30g": 1000,
+            "Harmony Brew - 30g": 1270, "Fat Burn - 30g": 1150, "Detox - 30g": 1110, "Citrus - 30g": 1180, "Calm Mind - 30g": 1240,
+            "Balance Blend - 30g": 1150, "Moringa Morning - 30g": 1030, "Immuno Up - 30g": 1150, "Glyco guard - 30g": 1000, "Green Guard - 30g": 1090, "Vita Cure - 30g": 1060
         },
         "FLAVORED TEA": {
-                "Jasmine green tea with natural buds  - 50g": 950,
-                "Mango black tea  - 30g": 630,
-                "Ginger black tea  - 30g": 695,
-                "Caramel black tea  - 30g": 645,
-                "Lemon Green Tea - 30g": 675,
-                "Pineapple black tea  - 30g": 660,
-                "Strawberry black tea  - 30g": 650,
-                "Passion Fruit black tea  - 30g": 900,
-                "Green tea   - 30g": 650,
-                "Black tea - 30g": 585
+            "Jasmine green tea with natural buds  - 50g": 950, "Mango black tea  - 30g": 630, "Ginger black tea  - 30g": 695, "Caramel black tea  - 30g": 645,
+            "Lemon Green Tea - 30g": 675, "Pineapple black tea  - 30g": 660, "Strawberry black tea  - 30g": 650, "Passion Fruit black tea  - 30g": 900, "Green tea   - 30g": 650, "Black tea - 30g": 585
         },
         "DEHYDRATED ITEMS AND POWDERS": {
-                "Dehydrated Bitter Gourd - 50g": 775,
-                "Dehydrated Breadfruit - 50g": 525,
-                "Dehydrated Curry Leaves - 50g": 390,
-                "Dehydrated Jackfruit - 50g": 440,
-                "Dehydrated Leaks - 50g": 615,
-                "Dehydrated Banana - 50g": 340,
-                "Dehydrated Mango - 50g": 485,
-                "Dehydrated Papaya - 50g": 460,
-                "Dehydrated Pineapple rings - 50g": 680,
-                "Beetroot Powder - 50g": 540,
-                "Carrot Powder - 50g": 535,
-                "Curry Leaves Powder - 50g": 355,
-                "Moringa Powder - 50g": 415,
-                "Pumpkin Powder - 50g": 485,
-                "Tomato Powder - 50g": 550
+            "Dehydrated Bitter Gourd - 50g": 775, "Dehydrated Breadfruit - 50g": 525, "Dehydrated Curry Leaves - 50g": 390, "Dehydrated Jackfruit - 50g": 440,
+            "Dehydrated Leaks - 50g": 615, "Dehydrated Banana - 50g": 340, "Dehydrated Mango - 50g": 485, "Dehydrated Papaya - 50g": 460,
+            "Dehydrated Pineapple rings - 50g": 680, "Beetroot Powder - 50g": 540, "Carrot Powder - 50g": 535, "Curry Leaves Powder - 50g": 355,
+            "Moringa Powder - 50g": 415, "Pumpkin Powder - 50g": 485, "Tomato Powder - 50g": 550
         }
-};
+    };
 
     let rowCount = 0;
 
-    // Load initial row
     window.onload = function() {
         addOrderRow();
     };
@@ -584,40 +182,38 @@
         const container = document.getElementById('orderItemsContainer');
         
         const row = document.createElement('div');
-        row.className = 'order-row';
+        row.className = 'grid grid-cols-12 gap-3 items-center bg-white p-3 border border-gray-200 rounded-xl shadow-sm relative group transition-all duration-200 hover:border-gray-300 hover:shadow-md';
         row.id = `row-${rowCount}`;
 
-        // Populate Category Options in the specific order
         let catOptions = `<option value="">Select Category</option>`;
-        categoryOrder.forEach(cat => {
-            catOptions += `<option value="${cat}">${cat}</option>`;
-        });
+        categoryOrder.forEach(cat => { catOptions += `<option value="${cat}">${cat}</option>`; });
 
         row.innerHTML = `
-            <div>
-                <select class="category-select" onchange="updateProducts(${rowCount}, this.value)">
+            <div class="col-span-12 md:col-span-4 lg:col-span-3">
+                <select class="category-select bg-gray-50 text-sm py-2" onchange="updateProducts(${rowCount}, this.value)">
                     ${catOptions}
                 </select>
             </div>
-            <div>
-                <select class="product-select" id="prod-${rowCount}" onchange="updatePrice(${rowCount})">
+            <div class="col-span-12 md:col-span-4 lg:col-span-4">
+                <select class="product-select bg-gray-50 text-sm py-2" id="prod-${rowCount}" onchange="updatePrice(${rowCount})">
                     <option value="">Select Product</option>
                 </select>
             </div>
-            <div class="small-col">
-                <input type="number" id="qty-${rowCount}" placeholder="Qty" min="1" value="1" oninput="calculateTotal(${rowCount})">
+            <div class="col-span-4 md:col-span-2 lg:col-span-1">
+                <input type="number" class="text-sm py-2 bg-gray-50 text-center font-bold" id="qty-${rowCount}" placeholder="Qty" min="1" value="1" oninput="calculateTotal(${rowCount})">
             </div>
-            <div class="price-col">
-                <span class="price-label">Unit Price</span>
-                <span id="unit-${rowCount}">Rs.0.00</span>
+            <div class="col-span-4 md:col-span-1 lg:col-span-2 text-right flex flex-col justify-center">
+                <span class="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Unit Price</span>
+                <span id="unit-${rowCount}" class="font-semibold text-gray-700 text-sm">Rs. 0.00</span>
             </div>
-            <div class="price-col">
-                <span class="price-label">Total</span>
-                <span id="price-${rowCount}" data-total="0" data-unit-price="0">Rs.0.00</span>
+            <div class="col-span-4 md:col-span-1 lg:col-span-2 text-right flex flex-col justify-center border-l border-gray-100 pl-3">
+                <span class="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Total</span>
+                <span id="price-${rowCount}" class="font-bold text-gray-900" data-total="0" data-unit-price="0">Rs. 0.00</span>
             </div>
-            <div>
-                <button type="button" class="btn-remove" onclick="removeRow(${rowCount})">Remove</button>
-            </div>
+            
+            <button type="button" onclick="removeRow(${rowCount})" class="absolute -top-2 -right-2 bg-white text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-full p-1 border border-gray-200 shadow-sm opacity-0 group-hover:opacity-100 transition-all duration-200">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+            </button>
         `;
         container.appendChild(row);
     }
@@ -626,7 +222,7 @@
         const row = document.getElementById(`row-${id}`);
         if(row) {
             row.remove();
-            updateUIGrandTotal(); // Update total when a row is removed
+            updateUIGrandTotal();
         }
     }
 
@@ -635,10 +231,10 @@
         prodSelect.innerHTML = `<option value="">Select Product</option>`;
         const priceDisplay = document.getElementById(`price-${rowId}`);
         const unitDisplay = document.getElementById(`unit-${rowId}`);
-        priceDisplay.innerText = "Rs.0.00";
+        priceDisplay.innerText = "Rs. 0.00";
         priceDisplay.setAttribute('data-total', 0);
         priceDisplay.setAttribute('data-unit-price', 0);
-        if (unitDisplay) unitDisplay.innerText = "Rs.0.00";
+        if (unitDisplay) unitDisplay.innerText = "Rs. 0.00";
         
         if (category && productData[category]) {
             for (let prod in productData[category]) {
@@ -652,9 +248,7 @@
         updateUIGrandTotal();
     }
 
-    function updatePrice(rowId) {
-        calculateTotal(rowId);
-    }
+    function updatePrice(rowId) { calculateTotal(rowId); }
 
     function getUnitPrice(priceInfo, qty) {
         if (Array.isArray(priceInfo)) {
@@ -675,88 +269,70 @@
             const qty = parseFloat(qtyInput.value) || 0;
             const unitPrice = getUnitPrice(priceInfo, qty);
             const total = unitPrice * qty;
-            if (unitDisplay) unitDisplay.innerText = `Rs.${unitPrice.toFixed(2)}`;
-            priceDisplay.innerText = `Rs.${total.toFixed(2)}`;
+            if (unitDisplay) unitDisplay.innerText = `Rs. ${unitPrice.toFixed(2)}`;
+            priceDisplay.innerText = `Rs. ${total.toFixed(2)}`;
             priceDisplay.setAttribute('data-total', total);
             priceDisplay.setAttribute('data-unit-price', unitPrice);
         } else {
-            if (unitDisplay) unitDisplay.innerText = "Rs.0.00";
-            priceDisplay.innerText = "Rs.0.00";
+            if (unitDisplay) unitDisplay.innerText = "Rs. 0.00";
+            priceDisplay.innerText = "Rs. 0.00";
             priceDisplay.setAttribute('data-total', 0);
             priceDisplay.setAttribute('data-unit-price', 0);
         }
         updateUIGrandTotal();
     }
 
-    // NEW: Function to calculate and update the total on the screen
     function updateUIGrandTotal() {
         let grandTotal = 0;
-        const priceSpans = document.querySelectorAll('span[id^="price-"]');
-        
-        priceSpans.forEach(span => {
+        document.querySelectorAll('span[id^="price-"]').forEach(span => {
             grandTotal += parseFloat(span.getAttribute('data-total')) || 0;
         });
-        
-        document.getElementById('displayGrandTotal').innerText = `Rs.${grandTotal.toFixed(2)}`;
+        document.getElementById('displayGrandTotal').innerText = `Rs. ${grandTotal.toLocaleString("en-LK", {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
     }
 
     function generateMessage() {
-        // Get Date Logged (Current System Date)
         const today = new Date();
-        const dateLogged = today.toLocaleDateString('en-GB', { 
-            day: '2-digit', month: 'short', year: 'numeric' 
-        });
+        const dateLogged = today.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
 
         const customer = document.getElementById('customer').value || "[Not Provided]";
         const address = document.getElementById('address').value || "[Not Provided]";
         const contactInput = document.getElementById('contact');
         const contact = contactInput.value || "[Not Provided]";
         if (contact !== "[Not Provided]" && contact.length !== 10) {
-            alert("Billing Contact must be exactly 10 digits.");
+            if(window.dispatchEvent) {
+                window.dispatchEvent(new CustomEvent('toast', { detail: { type: 'error', message: 'Billing Contact must be exactly 10 digits.' }}));
+            } else alert("Billing Contact must be exactly 10 digits.");
             contactInput.focus();
             return;
         }
         const date = document.getElementById('date').value || "[Not Selected]";
         const method = document.getElementById('method').value || "[Not Selected]";
 
-        // Group orders by category
         let orderGroups = {};
-
-        const rows = document.querySelectorAll('.order-row');
-        rows.forEach(row => {
+        document.querySelectorAll('div[id^="row-"]').forEach(row => {
             const catSelect = row.querySelector('.category-select');
             const prodSelect = row.querySelector('.product-select');
             const qtyInput = row.querySelector('input[type="number"]');
 
-            if (catSelect.value && prodSelect.value) {
+            if (catSelect && prodSelect && catSelect.value && prodSelect.value) {
                 const category = catSelect.value;
                 const product = prodSelect.value;
                 const qty = qtyInput.value;
 
-                if (!orderGroups[category]) {
-                    orderGroups[category] = [];
-                }
-                
-                // ADDING TO MESSAGE WITHOUT ANY PRICES
+                if (!orderGroups[category]) orderGroups[category] = [];
                 orderGroups[category].push(`  - ${product} (Qty: ${qty})`);
             }
         });
 
-        // Format Order Details in the strict category order requested
         let orderDetailsText = "";
         categoryOrder.forEach(cat => {
             if (orderGroups[cat] && orderGroups[cat].length > 0) {
-                orderDetailsText += `\n[${cat}]\n`;
-                orderDetailsText += orderGroups[cat].join('\n');
-                orderDetailsText += `\n`;
+                orderDetailsText += `\n[${cat}]\n${orderGroups[cat].join('\n')}\n`;
             }
         });
 
-        if (orderDetailsText === "") {
-            orderDetailsText = "  [No items added]\n";
-        }
+        if (orderDetailsText === "") orderDetailsText = "  [No items added]\n";
 
-        // Build Final String WITHOUT the Grand Total
         const message = 
 `🚨 NEW ORDER ALERT! 
 🗓️ *Date Logged: ${dateLogged}*
@@ -770,19 +346,21 @@
 🚚 Delivery Method: ${method}`;
 
         document.getElementById('finalMessage').value = message;
+        if(window.dispatchEvent) window.dispatchEvent(new CustomEvent('toast', { detail: { type: 'success', message: 'Order message generated successfully!' }}));
     }
 
     function copyToClipboard() {
         const textarea = document.getElementById('finalMessage');
+        if(!textarea.value) return;
         textarea.select();
-        textarea.setSelectionRange(0, 99999); // For mobile devices
-        document.execCommand('copy');
-        alert("Message copied to clipboard!");
+        textarea.setSelectionRange(0, 99999);
+        navigator.clipboard.writeText(textarea.value).then(() => {
+            if(window.dispatchEvent) window.dispatchEvent(new CustomEvent('toast', { detail: { type: 'success', message: 'Message copied to clipboard!' }}));
+            else alert("Copied!");
+        }).catch(err => {
+            document.execCommand('copy');
+            if(window.dispatchEvent) window.dispatchEvent(new CustomEvent('toast', { detail: { type: 'info', message: 'Message copied via fallback method.' }}));
+        });
     }
 </script>
-
-
-        </div>
-    </div>
-</div>
 {% endblock %}
