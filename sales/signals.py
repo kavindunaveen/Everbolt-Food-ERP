@@ -31,22 +31,4 @@ def increment_stock_on_invoice_delete(sender, instance, **kwargs):
         
     product.save()
 
-@receiver(post_save, sender=Return)
-def handle_stock_on_return(sender, instance, created, **kwargs):
-    """
-    When a Return is logged, if the condition is SELLABLE and stock hasn't been updated yet,
-    add the stock back to the inventory.
-    """
-    # Only process if this return is new OR if stock hasn't been updated yet
-    if not instance.stock_updated and instance.condition == Return.Condition.SELLABLE:
-        product = instance.returned_product
-        product.current_stock += instance.quantity
-        
-        if product.current_stock > 0:
-            product.status = True
-            
-        product.save()
-        
-        # Mark as updated to prevent double counting if the return record is edited later
-        # We use .update() to avoid triggering the save() signal recursively
-        Return.objects.filter(pk=instance.pk).update(stock_updated=True)
+

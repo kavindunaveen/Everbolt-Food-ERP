@@ -294,7 +294,7 @@ def process_return(return_obj, user):
             total_credit_value += credit_amount
             items_summary.append(f"{qty}x {product.name}")
 
-            # Write stock ledger entry
+            # Write stock ledger entry for the return (inward)
             StockLedger.objects.create(
                 product=product,
                 tx_type=StockLedger.TransactionTypes.SALES_RET,
@@ -311,9 +311,26 @@ def process_return(return_obj, user):
                 user=user,
             )
 
-            # Update product stock cache
-            product.current_stock += qty
-            product.save(update_fields=['current_stock'])
+            if return_item.condition == 'SELLABLE':
+                # Update product stock cache
+                product.current_stock += qty
+                if product.current_stock > 0:
+                    product.status = True
+                product.save(update_fields=['current_stock', 'status'])
+            else:
+                # If DAMAGED, the stock came back but shouldn't be added to sellable stock.
+                # We write an immediate OUT adjustment so the ledger stays balanced with current_stock.
+                StockLedger.objects.create(
+                    product=product,
+                    tx_type=StockLedger.TransactionTypes.ADJ_NEG,
+                    qty_in=0,
+                    qty_out=qty,
+                    reference_type='RTN_DMG',
+                    reference_id=return_obj.pk,
+                    reference_number=f"{return_obj.return_number}-DMG",
+                    remarks=f"Auto write-off for damaged return {return_obj.return_number}",
+                    user=user,
+                )
 
             # Generate Credit Note Item
             CreditNoteItem.objects.create(
