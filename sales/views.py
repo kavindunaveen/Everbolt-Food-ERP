@@ -140,13 +140,11 @@ class SalesDashboardView(LoginRequiredMixin, ERPPermissionRequiredMixin, Templat
         # Subtract Credit Notes (Returns)
         # Note: We filter credit notes by the same salesperson/date filters if applied to invoices
         credit_notes = CreditNote.objects.filter(original_invoice__in=active_invoices)
-        total_credit = credit_notes.aggregate(Sum('credit_amount'))['credit_amount__sum'] or Decimal('0.00')
+        total_credit = credit_notes.aggregate(Sum('items__credit_amount'))['items__credit_amount__sum'] or Decimal('0.00')
         
-        # Approximate tax for credit notes to subtract from Ex-VAT (based on original invoice customer VAT status)
-        # For simplicity, we can sum the proportions or just use a reasonable estimation if tax isn't stored on CN
-        # Here we'll just subtract the total credit from With-VAT and an estimated proportion from Ex-VAT
-        # However, a better way is to sum (CN.quantity * CN.unit_price) which is effectively the subtotal.
-        credit_subtotal = sum((cn.quantity * cn.unit_price) for cn in credit_notes)
+        # We can just use total_credit for both ex-vat and with-vat estimations if tax isn't explicitly split on CN, 
+        # or we can assume credit_amount is Ex-VAT and calculate accordingly. Currently we just use the raw credit_amount.
+        credit_subtotal = total_credit
         
         total_revenue_with_vat = revenue_with_vat - total_credit
         total_revenue_ex_vat = revenue_ex_vat - Decimal(str(credit_subtotal))
@@ -203,8 +201,8 @@ class SalesDashboardView(LoginRequiredMixin, ERPPermissionRequiredMixin, Templat
                 (inv.total_amount - inv.tax_amount) for inv in officer_invs.only('total_amount', 'tax_amount')
             )
             
-            off_cred = officer_cns.aggregate(Sum('credit_amount'))['credit_amount__sum'] or Decimal('0.00')
-            off_cred_sub = sum((cn.quantity * cn.unit_price) for cn in officer_cns)
+            off_cred = officer_cns.aggregate(Sum('items__credit_amount'))['items__credit_amount__sum'] or Decimal('0.00')
+            off_cred_sub = off_cred
             
             net_with = off_rev_with - off_cred
             net_ex = Decimal(str(off_rev_ex)) - Decimal(str(off_cred_sub))
