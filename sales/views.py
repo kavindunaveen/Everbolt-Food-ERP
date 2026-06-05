@@ -1683,6 +1683,16 @@ class ReturnListView(LoginRequiredMixin, ERPPermissionRequiredMixin, ListView):
     paginate_by = 20
     permission_required = 'sales.view_return'
 
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['model_name'] = 'Return'
+        try:
+            from users.models import SavedFilter
+            context['saved_filters'] = SavedFilter.objects.filter(user=self.request.user, model_name='Return')
+        except ImportError:
+            context['saved_filters'] = []
+        return context
+
     def get_queryset(self):
         qs = Return.objects.select_related('original_invoice', 'created_by').prefetch_related('items', 'items__product').order_by('-created_date')
         q = self.request.GET.get('q')
@@ -1785,6 +1795,16 @@ class CreditNoteListView(LoginRequiredMixin, ERPPermissionRequiredMixin, ListVie
     context_object_name = 'credit_notes'
     paginate_by = 20
     permission_required = 'sales.view_return'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['model_name'] = 'CreditNote'
+        try:
+            from users.models import SavedFilter
+            context['saved_filters'] = SavedFilter.objects.filter(user=self.request.user, model_name='CreditNote')
+        except ImportError:
+            context['saved_filters'] = []
+        return context
 
     def get_queryset(self):
         qs = CreditNote.objects.select_related('customer', 'original_invoice').prefetch_related('items', 'items__product').order_by('-issued_date')

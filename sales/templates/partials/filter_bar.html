@@ -143,6 +143,20 @@
                             <input type="date" name="date_to" class="text-xs border-gray-200 rounded-lg focus:ring-indigo-500 focus:border-indigo-500 p-2" value="{{ request.GET.date_to }}" placeholder="To">
                         </div>
                     </div>
+                    {% elif model_name == 'Return' %}
+                    <div>
+                        <label class="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2">Return Status</label>
+                        <select name="status" class="w-full border-gray-200 rounded-lg text-sm font-medium focus:ring-indigo-500 focus:border-indigo-500">
+                            <option value="">All Statuses</option>
+                            <option value="pending" {% if request.GET.status == 'pending' %}selected{% endif %}>Pending</option>
+                            <option value="processed" {% if request.GET.status == 'processed' %}selected{% endif %}>Processed</option>
+                        </select>
+                    </div>
+                    {% elif model_name == 'CreditNote' %}
+                    <!-- No advanced filters needed currently, but we can add Date Range if we want -->
+                    <div>
+                        <p class="text-xs text-gray-500">Use the main search bar to find credit notes by CN#, invoice#, or customer.</p>
+                    </div>
                     {% endif %}
                 </div>
                 <div class="px-5 py-4 bg-gray-50 border-t border-gray-100 flex gap-3">

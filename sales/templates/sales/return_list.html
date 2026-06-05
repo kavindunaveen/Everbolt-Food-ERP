@@ -13,17 +13,9 @@
     </div>
 
     <!-- Search / Filter -->
-    <form method="get" class="mb-5 flex gap-3 flex-wrap">
-        <input type="text" name="q" value="{{ request.GET.q }}" placeholder="Search by return#, invoice#, product..."
-               class="px-3 py-2 border border-gray-300 rounded-lg text-sm w-72 focus:ring-emerald-500 focus:border-emerald-500">
-        <select name="status" class="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-emerald-500 focus:border-emerald-500">
-            <option value="">All Status</option>
-            <option value="pending" {% if request.GET.status == 'pending' %}selected{% endif %}>Pending</option>
-            <option value="processed" {% if request.GET.status == 'processed' %}selected{% endif %}>Processed</option>
-        </select>
-        <button type="submit" class="px-4 py-2 bg-emerald-600 text-white text-sm font-bold rounded-lg hover:bg-emerald-700">Filter</button>
-        <a href="{% url 'return_list' %}" class="px-4 py-2 border border-gray-200 text-sm font-medium rounded-lg text-gray-600 bg-white hover:bg-gray-50">Reset</a>
-    </form>
+    <div class="mb-5 flex gap-3 flex-wrap">
+        {% include 'partials/filter_bar.html' with search_placeholder="Search by return#, invoice#, product..." %}
+    </div>
 
     <div class="bg-white shadow-md rounded-2xl border border-gray-100 overflow-hidden">
         <div class="overflow-x-auto">
@@ -44,8 +36,8 @@
                 </thead>
                 <tbody class="bg-white divide-y divide-gray-100">
                     {% for ret in returns %}
-                    <tr class="hover:bg-gray-50 transition-colors">
-                        <td class="px-6 py-4 text-sm font-bold text-emerald-700">{{ ret.return_number }}</td>
+                    <tr class="hover:bg-gray-50 transition-colors group">
+                        <td class="px-6 py-4 text-sm font-bold text-emerald-600 cursor-pointer group-hover:underline" onclick="window.location.href='{% url 'invoice_edit' ret.original_invoice.pk %}'">{{ ret.return_number }}</td>
                         <td class="px-6 py-4 text-sm text-gray-700">{{ ret.original_invoice.invoice_number }}</td>
                         <td class="px-6 py-4 text-sm text-gray-700">
                             {% for item in ret.items.all %}

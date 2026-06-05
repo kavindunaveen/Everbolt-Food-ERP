@@ -12,12 +12,9 @@
         </a>
     </div>
 
-    <form method="get" class="mb-5 flex gap-3">
-        <input type="text" name="q" value="{{ request.GET.q }}" placeholder="Search by CN#, invoice#, customer..."
-               class="px-3 py-2 border border-gray-300 rounded-lg text-sm w-72 focus:ring-emerald-500 focus:border-emerald-500">
-        <button type="submit" class="px-4 py-2 bg-emerald-600 text-white text-sm font-bold rounded-lg hover:bg-emerald-700">Filter</button>
-        <a href="{% url 'credit_note_list' %}" class="px-4 py-2 border border-gray-200 text-sm font-medium rounded-lg text-gray-600 bg-white hover:bg-gray-50">Reset</a>
-    </form>
+    <div class="mb-5 flex gap-3 flex-wrap">
+        {% include 'partials/filter_bar.html' with search_placeholder="Search by CN#, invoice#, customer..." %}
+    </div>
 
     <div class="bg-white shadow-md rounded-2xl border border-gray-100 overflow-hidden">
         <div class="overflow-x-auto">
@@ -37,8 +34,8 @@
                 </thead>
                 <tbody class="bg-white divide-y divide-gray-100">
                     {% for cn in credit_notes %}
-                    <tr class="hover:bg-gray-50 transition-colors">
-                        <td class="px-6 py-4 text-sm font-bold text-blue-700">{{ cn.credit_note_number }}</td>
+                    <tr class="hover:bg-gray-50 transition-colors group">
+                        <td class="px-6 py-4 text-sm font-bold text-blue-600 cursor-pointer group-hover:underline" onclick="window.open('{% url 'credit_note_print' cn.pk %}', '_blank')">{{ cn.credit_note_number }}</td>
                         <td class="px-6 py-4 text-sm text-gray-700">{{ cn.original_invoice.invoice_number }}</td>
                         <td class="px-6 py-4 text-sm text-gray-700">{{ cn.customer.customer_name }}</td>
                         <td class="px-6 py-4 text-sm text-gray-700">
