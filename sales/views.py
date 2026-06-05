@@ -1684,15 +1684,15 @@ class ReturnListView(LoginRequiredMixin, ERPPermissionRequiredMixin, ListView):
     permission_required = 'sales.view_return'
 
     def get_queryset(self):
-        qs = Return.objects.select_related('original_invoice', 'returned_product', 'created_by').order_by('-created_date')
+        qs = Return.objects.select_related('original_invoice', 'created_by').prefetch_related('items', 'items__product').order_by('-created_date')
         q = self.request.GET.get('q')
         if q:
             from django.db.models import Q
             qs = qs.filter(
                 Q(return_number__icontains=q) |
                 Q(original_invoice__invoice_number__icontains=q) |
-                Q(returned_product__name__icontains=q)
-            )
+                Q(items__product__name__icontains=q)
+            ).distinct()
         status = self.request.GET.get('status')
         if status == 'processed':
             qs = qs.filter(stock_updated=True)
@@ -1787,7 +1787,7 @@ class CreditNoteListView(LoginRequiredMixin, ERPPermissionRequiredMixin, ListVie
     permission_required = 'sales.view_return'
 
     def get_queryset(self):
-        qs = CreditNote.objects.select_related('customer', 'product', 'original_invoice').order_by('-issued_date')
+        qs = CreditNote.objects.select_related('customer', 'original_invoice').prefetch_related('items', 'items__product').order_by('-issued_date')
         q = self.request.GET.get('q')
         if q:
             from django.db.models import Q
@@ -1795,7 +1795,7 @@ class CreditNoteListView(LoginRequiredMixin, ERPPermissionRequiredMixin, ListVie
                 Q(credit_note_number__icontains=q) |
                 Q(original_invoice__invoice_number__icontains=q) |
                 Q(customer__customer_name__icontains=q)
-            )
+            ).distinct()
         return qs
 
 

@@ -47,11 +47,29 @@
                     <tr class="hover:bg-gray-50 transition-colors">
                         <td class="px-6 py-4 text-sm font-bold text-emerald-700">{{ ret.return_number }}</td>
                         <td class="px-6 py-4 text-sm text-gray-700">{{ ret.original_invoice.invoice_number }}</td>
-                        <td class="px-6 py-4 text-sm text-gray-700">{{ ret.returned_product.name }}</td>
-                        <td class="px-6 py-4 text-sm text-gray-700">{{ ret.quantity }}</td>
-                        <td class="px-6 py-4 text-sm font-semibold text-gray-900">Rs {{ ret.credit_value|floatformat:2 }}</td>
-                        <td class="px-6 py-4 text-sm text-gray-600">{{ ret.get_reason_display }}</td>
-                        <td class="px-6 py-4 text-sm text-gray-600">{{ ret.get_condition_display }}</td>
+                        <td class="px-6 py-4 text-sm text-gray-700">
+                            {% for item in ret.items.all %}
+                                <div class="mb-1">{{ item.product.name }}</div>
+                            {% endfor %}
+                        </td>
+                        <td class="px-6 py-4 text-sm text-gray-700">
+                            {% for item in ret.items.all %}
+                                <div class="mb-1">{{ item.quantity }}</div>
+                            {% endfor %}
+                        </td>
+                        <td class="px-6 py-4 text-sm font-semibold text-gray-900">
+                            Rs {{ ret.total_credit_value|floatformat:2 }}
+                        </td>
+                        <td class="px-6 py-4 text-sm text-gray-600">
+                            {% for item in ret.items.all %}
+                                <div class="mb-1">{{ item.get_reason_display }}</div>
+                            {% endfor %}
+                        </td>
+                        <td class="px-6 py-4 text-sm text-gray-600">
+                            {% for item in ret.items.all %}
+                                <div class="mb-1">{{ item.get_condition_display }}</div>
+                            {% endfor %}
+                        </td>
                         <td class="px-6 py-4">
                             {% if ret.stock_updated %}
                             <span class="px-2.5 py-1 text-[10px] font-bold rounded-md bg-emerald-100 text-emerald-700 uppercase">Processed</span>

@@ -41,9 +41,19 @@
                         <td class="px-6 py-4 text-sm font-bold text-blue-700">{{ cn.credit_note_number }}</td>
                         <td class="px-6 py-4 text-sm text-gray-700">{{ cn.original_invoice.invoice_number }}</td>
                         <td class="px-6 py-4 text-sm text-gray-700">{{ cn.customer.customer_name }}</td>
-                        <td class="px-6 py-4 text-sm text-gray-700">{{ cn.product.name }}</td>
-                        <td class="px-6 py-4 text-sm text-gray-700">{{ cn.quantity }}</td>
-                        <td class="px-6 py-4 text-right text-sm font-bold text-gray-900">Rs {{ cn.credit_amount|floatformat:2 }}</td>
+                        <td class="px-6 py-4 text-sm text-gray-700">
+                            {% for item in cn.items.all %}
+                                <div class="mb-1">{{ item.product.name }}</div>
+                            {% endfor %}
+                        </td>
+                        <td class="px-6 py-4 text-sm text-gray-700">
+                            {% for item in cn.items.all %}
+                                <div class="mb-1">{{ item.quantity }}</div>
+                            {% endfor %}
+                        </td>
+                        <td class="px-6 py-4 text-right text-sm font-bold text-gray-900">
+                            Rs {{ cn.total_credit_amount|floatformat:2 }}
+                        </td>
                         <td class="px-6 py-4 text-sm text-gray-600">{{ cn.issued_by.get_full_name|default:cn.issued_by.username }}</td>
                         <td class="px-6 py-4 text-sm text-gray-500">{{ cn.issued_date|date:"M d, Y" }}</td>
                         <td class="px-6 py-4 text-center">
