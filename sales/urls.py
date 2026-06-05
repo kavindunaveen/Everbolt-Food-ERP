@@ -32,9 +32,10 @@ urlpatterns = [
     path('api/customers/search/', views.customer_search_ajax, name='customer_search_ajax'),
     path('api/products/search/', views.product_search_ajax, name='product_search_ajax'),
 
-    # Delivery Note URLs
-    path('sales/delivery-notes/', views.DeliveryNoteListView.as_view(), name='delivery_note_list'),
-    path('sales/delivery-notes/new/', views.DeliveryNoteCreateView.as_view(), name='delivery_note_create'),
+    # Delivery & Logistics
+    path('sales/delivery/', views.DeliveryDashboardView.as_view(), name='delivery_dashboard'),
+    path('sales/delivery/notes/', views.DeliveryNoteListView.as_view(), name='delivery_note_list'),
+    path('sales/delivery/notes/new/', views.DeliveryNoteCreateView.as_view(), name='delivery_note_create'),
     path('sales/delivery-notes/<int:pk>/', views.DeliveryNoteDetailView.as_view(), name='delivery_note_detail'),
     path('sales/delivery-notes/<int:pk>/print/', views.DeliveryNotePrintView.as_view(), name='delivery_note_print'),
     path('sales/delivery-notes/<int:pk>/update-status/', views.update_dn_status, name='delivery_note_update_status'),
@@ -45,4 +46,8 @@ urlpatterns = [
     path('sales/invoices/<int:invoice_pk>/return/', views.return_create_view, name='return_create'),
     path('sales/credit-notes/', views.CreditNoteListView.as_view(), name='credit_note_list'),
     path('sales/credit-notes/<int:pk>/print/', views.credit_note_print_view, name='credit_note_print'),
+
+    # Tools
+    path('sales/tools/create-order/', views.OrderGeneratorView.as_view(), name='order_generator'),
+    path('sales/delivery/courier-calculator/', views.CourierCalculatorView.as_view(), name='courier_calculator'),
 ]

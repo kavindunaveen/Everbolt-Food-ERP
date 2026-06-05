@@ -1772,3 +1772,19 @@ class DeliveryNotePrintView(LoginRequiredMixin, ERPPermissionRequiredMixin, Deta
     template_name = 'sales/delivery_note_print.html'
     context_object_name = 'dn'
     permission_required = 'sales.view_deliverynote'
+
+# =============================================================================
+# Dashboard & Tool Views
+# =============================================================================
+
+class DeliveryDashboardView(LoginRequiredMixin, ERPPermissionRequiredMixin, TemplateView):
+    template_name = 'sales/delivery_dashboard.html'
+    permission_required = 'sales.view_deliverynote'
+
+class OrderGeneratorView(LoginRequiredMixin, ERPPermissionRequiredMixin, TemplateView):
+    template_name = 'sales/tools/order_generator.html'
+    permission_required = 'sales.add_quotation'
+
+class CourierCalculatorView(LoginRequiredMixin, ERPPermissionRequiredMixin, TemplateView):
+    template_name = 'sales/tools/courier_calculator.html'
+    permission_required = 'sales.view_deliverynote'

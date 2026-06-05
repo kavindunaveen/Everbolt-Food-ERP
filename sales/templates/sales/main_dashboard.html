@@ -141,9 +141,29 @@
         </a>
         {% endif %}
 
-        <!-- Delivery Notes Map -->
+        <!-- Create Order Tool Map -->
+        {% if perms.sales.add_quotation %}
+        <a href="{% url 'order_generator' %}" class="block group">
+            <div class="card-premium p-6 h-full border-2 border-transparent hover:border-cyan-500/20">
+                <div class="w-12 h-12 bg-cyan-50 text-cyan-600 rounded-lg flex items-center justify-center mb-4 group-hover:bg-cyan-600 group-hover:text-white transition-all duration-500 shadow-sm">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+                    </svg>
+                </div>
+                <div class="flex justify-between items-start">
+                    <div>
+                        <h3 class="text-xl font-bold text-gray-900 mb-1">Create Order</h3>
+                        <p class="text-sm text-gray-500">Quick order message generator.</p>
+                    </div>
+                    <span class="px-2 py-1 bg-cyan-50 text-cyan-700 text-[10px] font-black uppercase rounded-md tracking-tighter shrink-0 ml-2">Tool</span>
+                </div>
+            </div>
+        </a>
+        {% endif %}
+
+        <!-- Delivery Map -->
         {% if perms.sales.view_deliverynote %}
-        <a href="{% url 'delivery_note_list' %}" class="block group">
+        <a href="{% url 'delivery_dashboard' %}" class="block group">
             <div class="card-premium p-6 h-full border-2 border-transparent hover:border-indigo-500/20">
                 <div
                     class="w-12 h-12 bg-indigo-50 text-indigo-600 rounded-lg flex items-center justify-center mb-4 group-hover:bg-indigo-600 group-hover:text-white transition-all duration-500 shadow-sm">
@@ -153,8 +173,8 @@
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h1m8-1a1 1 0 01-1 1H9m4-1V8a1 1 0 011-1h2.586a1 1 0 01.707.293l3.414 3.414a1 1 0 01.293.707V16a1 1 0 01-1 1h-1m-6-1a1 1 0 001 1h1M5 17a2 2 0 104 0m-4 0a2 2 0 114 0m6 0a2 2 0 104 0m-4 0a2 2 0 114 0"></path>
                     </svg>
                 </div>
-                <h3 class="text-xl font-bold text-gray-900 mb-1">Delivery Notes</h3>
-                <p class="text-sm text-gray-500">Track stock dispatch and delivery status.</p>
+                <h3 class="text-xl font-bold text-gray-900 mb-1">Delivery</h3>
+                <p class="text-sm text-gray-500">Manage delivery notes and couriers.</p>
             </div>
         </a>
         {% endif %}

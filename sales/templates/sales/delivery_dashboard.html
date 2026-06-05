@@ -1,0 +1,65 @@
+{% extends 'layouts/base.html' %}
+
+{% block title %}Delivery Dashboard | ERP System{% endblock %}
+
+{% block breadcrumbs %}
+<li class="flex items-center space-x-2 border-l border-gray-100 pl-4 ml-2">
+    <a href="{% url 'delivery_dashboard' %}" class="flex items-center gap-1.5 text-indigo-600 font-semibold">
+        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h1m8-1a1 1 0 01-1 1H9m4-1V8a1 1 0 011-1h2.586a1 1 0 01.707.293l3.414 3.414a1 1 0 01.293.707V16a1 1 0 01-1 1h-1m-6-1a1 1 0 001 1h1M5 17a2 2 0 104 0m-4 0a2 2 0 114 0m6 0a2 2 0 104 0m-4 0a2 2 0 114 0"></path></svg>
+        Delivery
+    </a>
+</li>
+{% endblock %}
+
+{% block content %}
+<div class="px-4 py-6 sm:px-0">
+    <div class="mb-8">
+        <h1 class="text-3xl font-extrabold text-gray-900 tracking-tight">Delivery Hub</h1>
+        <p class="mt-2 text-lg text-gray-600 font-medium">Manage dispatch, delivery notes, and calculate courier charges.</p>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+
+        <!-- Delivery Notes Map -->
+        {% if perms.sales.view_deliverynote %}
+        <a href="{% url 'delivery_note_list' %}" class="block group">
+            <div class="card-premium p-6 h-full border-2 border-transparent hover:border-indigo-500/20 flex flex-col justify-between">
+                <div>
+                    <div class="w-12 h-12 bg-indigo-50 text-indigo-600 rounded-lg flex items-center justify-center mb-4 group-hover:bg-indigo-600 group-hover:text-white transition-all duration-500 shadow-sm">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17a2 2 0 11-4 0 2 2 0 014 0zM19 17a2 2 0 11-4 0 2 2 0 014 0z"></path>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h1m8-1a1 1 0 01-1 1H9m4-1V8a1 1 0 011-1h2.586a1 1 0 01.707.293l3.414 3.414a1 1 0 01.293.707V16a1 1 0 01-1 1h-1m-6-1a1 1 0 001 1h1M5 17a2 2 0 104 0m-4 0a2 2 0 114 0m6 0a2 2 0 104 0m-4 0a2 2 0 114 0"></path>
+                        </svg>
+                    </div>
+                    <h3 class="text-xl font-bold text-gray-900 mb-1">Delivery Notes</h3>
+                    <p class="text-sm text-gray-500">Track stock dispatch and delivery status.</p>
+                </div>
+            </div>
+        </a>
+        {% endif %}
+
+        <!-- Courier Charge Calculator Map -->
+        {% if perms.sales.view_deliverynote %}
+        <a href="{% url 'courier_calculator' %}" class="block group">
+            <div class="card-premium p-6 h-full border-2 border-transparent hover:border-pink-500/20 flex flex-col justify-between">
+                <div>
+                    <div class="w-12 h-12 bg-pink-50 text-pink-600 rounded-lg flex items-center justify-center mb-4 group-hover:bg-pink-600 group-hover:text-white transition-all duration-500 shadow-sm">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
+                        </svg>
+                    </div>
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <h3 class="text-xl font-bold text-gray-900 mb-1">Courier Charge Calculator</h3>
+                            <p class="text-sm text-gray-500">Calculate delivery charges by district and weight.</p>
+                        </div>
+                        <span class="px-2 py-1 bg-pink-50 text-pink-700 text-[10px] font-black uppercase rounded-md tracking-tighter shrink-0 ml-2">Tool</span>
+                    </div>
+                </div>
+            </div>
+        </a>
+        {% endif %}
+
+    </div>
+</div>
+{% endblock %}
