@@ -130,9 +130,9 @@ class DashboardDataAPI(LoginRequiredMixin, View):
         # Calculate precise Overall Sales (Ex-VAT) taking into account invoice-level discounts and credit notes
         from decimal import Decimal
         revenue_ex_vat = inv_qs.annotate(inv_ex_vat=F('total_amount') - F('tax_amount')).aggregate(Sum('inv_ex_vat'))['inv_ex_vat__sum'] or Decimal('0.00')
-        from sales.models import CreditNote
-        credit_notes = CreditNote.objects.filter(original_invoice__in=inv_qs)
-        credit_subtotal = sum((cn.quantity * cn.unit_price) for cn in credit_notes)
+        from sales.models import CreditNoteItem
+        cn_items = CreditNoteItem.objects.filter(credit_note__original_invoice__in=inv_qs)
+        credit_subtotal = cn_items.aggregate(Sum('credit_amount'))['credit_amount__sum'] or Decimal('0.00')
         overall_sales_total = float(revenue_ex_vat - Decimal(str(credit_subtotal)))
         
         # Calculate Category Sales Accurately (Handling Global Discounts)
@@ -201,19 +201,19 @@ class DashboardDataAPI(LoginRequiredMixin, View):
             elif 'tea' in cat or 'tea' in name:
                 cat_sums['tea'] += final_val
 
-        conf_credits = sum((cn.quantity * cn.unit_price) for cn in credit_notes.filter(product__category__icontains='Confectionery'))
+        conf_credits = cn_items.filter(product__category__icontains='Confectionery').aggregate(Sum('credit_amount'))['credit_amount__sum'] or Decimal('0.00')
         confectionery_sales = float(cat_sums['confectionery'] - Decimal(str(conf_credits)))
 
         sugar_qty   = InvoiceItem.objects.filter(invoice__in=inv_qs).filter(Q(product__category__icontains='Sugar') | Q(product__name__icontains='Sugar')).aggregate(Sum('quantity'))['quantity__sum'] or 0
-        sugar_credits = sum((cn.quantity * cn.unit_price) for cn in credit_notes.filter(Q(product__category__icontains='Sugar') | Q(product__name__icontains='Sugar')))
+        sugar_credits = cn_items.filter(Q(product__category__icontains='Sugar') | Q(product__name__icontains='Sugar')).aggregate(Sum('credit_amount'))['credit_amount__sum'] or Decimal('0.00')
         sugar_sales = float(cat_sums['sugar'] - Decimal(str(sugar_credits)))
 
         creamer_qty   = InvoiceItem.objects.filter(invoice__in=inv_qs).filter(Q(product__category__icontains='Creamer') | Q(product__name__icontains='Creamer')).aggregate(Sum('quantity'))['quantity__sum'] or 0
-        creamer_credits = sum((cn.quantity * cn.unit_price) for cn in credit_notes.filter(Q(product__category__icontains='Creamer') | Q(product__name__icontains='Creamer')))
+        creamer_credits = cn_items.filter(Q(product__category__icontains='Creamer') | Q(product__name__icontains='Creamer')).aggregate(Sum('credit_amount'))['credit_amount__sum'] or Decimal('0.00')
         creamer_sales = float(cat_sums['creamer'] - Decimal(str(creamer_credits)))
 
         tea_qty   = InvoiceItem.objects.filter(invoice__in=inv_qs).filter(Q(product__category__icontains='Tea') | Q(product__name__icontains='Tea')).aggregate(Sum('quantity'))['quantity__sum'] or 0
-        tea_credits = sum((cn.quantity * cn.unit_price) for cn in credit_notes.filter(Q(product__category__icontains='Tea') | Q(product__name__icontains='Tea')))
+        tea_credits = cn_items.filter(Q(product__category__icontains='Tea') | Q(product__name__icontains='Tea')).aggregate(Sum('credit_amount'))['credit_amount__sum'] or Decimal('0.00')
         tea_sales = float(cat_sums['tea'] - Decimal(str(tea_credits)))
 
         # Monthly Trends (always show full year trend regardless of month filter)
@@ -1126,9 +1126,9 @@ class ForecastingView(LoginRequiredMixin, TemplateView):
         from decimal import Decimal
         total_sales_gross = inv_this_month.aggregate(total=Sum('ex_vat'))['total'] or Decimal('0.00')
         
-        from sales.models import CreditNote
-        credit_notes = CreditNote.objects.filter(original_invoice__in=inv_this_month)
-        credit_subtotal = sum((cn.quantity * cn.unit_price) for cn in credit_notes)
+        from sales.models import CreditNoteItem
+        cn_items = CreditNoteItem.objects.filter(credit_note__original_invoice__in=inv_this_month)
+        credit_subtotal = cn_items.aggregate(Sum('credit_amount'))['credit_amount__sum'] or Decimal('0.00')
         
         total_sales = float(total_sales_gross - Decimal(str(credit_subtotal)))
         context['total_sales'] = total_sales
