@@ -1,0 +1,590 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Courier Charge Calculator Based on District Rate Sheet</title>
+  <style>
+    * { box-sizing: border-box; }
+    :root {
+      --green-950:#4a044e; --green-900:#831843; --green-800:#9d174d; --green-700:#be123c;
+      --green-600:#e11d48; --green-100:#ffe4e6; --green-50:#fff1f2;
+      --amber-100:#fef3c7; --amber-700:#b45309;
+      --slate-950:#020617; --slate-800:#1e293b; --slate-700:#334155; --slate-500:#64748b;
+      --slate-300:#cbd5e1; --slate-200:#e2e8f0; --slate-100:#f1f5f9; --white:#ffffff;
+      --danger:#dc2626;
+    }
+    body {
+      margin: 0;
+      font-family: Inter, Arial, Helvetica, sans-serif;
+      background:
+        radial-gradient(circle at top left, rgba(244,63,94,.32), transparent 34%),
+        linear-gradient(135deg, #4a044e 0%, #be123c 48%, #111827 100%);
+      min-height: 100vh;
+      padding: 22px;
+      color: var(--slate-950);
+    }
+    .app {
+      max-width: 1120px;
+      margin: auto;
+      display: grid;
+      grid-template-columns: 1.05fr .95fr;
+      gap: 18px;
+      align-items: start;
+    }
+    .hero, .panel, .result-panel {
+      background: rgba(255,255,255,.98);
+      border-radius: 24px;
+      box-shadow: 0 24px 70px rgba(0,0,0,.28);
+      overflow: hidden;
+    }
+    .hero {
+      grid-column: 1 / -1;
+      padding: 24px 26px;
+      color: white;
+      background: linear-gradient(135deg, rgba(74,4,78,.98), rgba(190,18,60,.96));
+      display: flex;
+      justify-content: space-between;
+      gap: 18px;
+      align-items: center;
+    }
+    .brand h1 { margin: 0 0 7px; font-size: clamp(24px, 3vw, 36px); letter-spacing: -.8px; }
+    .brand p { margin: 0; color: var(--green-100); line-height: 1.55; max-width: 720px; }
+    .pill {
+      background: rgba(255,255,255,.12);
+      border: 1px solid rgba(255,255,255,.22);
+      padding: 10px 14px;
+      border-radius: 999px;
+      font-weight: 800;
+      white-space: nowrap;
+    }
+    .panel, .result-panel { padding: 22px; }
+    .section-title {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      margin: 2px 0 16px;
+      font-size: 18px;
+      color: var(--green-900);
+      font-weight: 900;
+    }
+    .section-title::before {
+      content: "";
+      width: 9px; height: 28px;
+      background: var(--green-600);
+      border-radius: 999px;
+    }
+    .grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 15px; }
+    .full { grid-column: 1 / -1; }
+    label { display: block; font-weight: 800; margin-bottom: 7px; color: var(--slate-700); font-size: 14px; }
+    select, input {
+      width: 100%;
+      padding: 13px 14px;
+      border: 1px solid var(--slate-300);
+      border-radius: 14px;
+      font-size: 15px;
+      outline: none;
+      background: white;
+      transition: .2s ease;
+    }
+    select:focus, input:focus {
+      border-color: var(--green-600);
+      box-shadow: 0 0 0 4px rgba(5,150,105,.13);
+    }
+    .hint { margin-top: 6px; font-size: 12px; color: var(--slate-500); line-height: 1.4; }
+    .actions { display: grid; grid-template-columns: 1fr 1fr; gap: 11px; margin-top: 18px; }
+    button {
+      border: none;
+      padding: 13px 15px;
+      border-radius: 14px;
+      font-weight: 900;
+      cursor: pointer;
+      font-size: 14px;
+      transition: transform .15s ease, background .15s ease, box-shadow .15s ease;
+    }
+    button:hover { transform: translateY(-1px); }
+    .primary { background: var(--green-700); color: white; box-shadow: 0 10px 22px rgba(225,29,72,.28); }
+    .primary:hover { background: var(--green-900); }
+    .secondary { background: var(--slate-100); color: var(--slate-800); border: 1px solid var(--slate-200); }
+    .secondary:hover { background: var(--slate-200); }
+    .download { background: var(--slate-950); color: white; }
+    .download:hover { background: var(--slate-800); }
+    .ghost { background: #fff; color: var(--green-900); border: 1px solid #fecdd3; }
+    .result-panel { position: sticky; top: 18px; }
+    .empty-state {
+      border: 1px dashed var(--slate-300);
+      background: var(--slate-100);
+      border-radius: 18px;
+      padding: 18px;
+      color: var(--slate-500);
+      line-height: 1.55;
+    }
+    .result { display: none; }
+    .charge-card {
+      background: linear-gradient(135deg, var(--green-950), var(--green-800));
+      color: white;
+      padding: 20px;
+      border-radius: 20px;
+      margin-bottom: 14px;
+      position: relative;
+      overflow: hidden;
+    }
+    .charge-card::after {
+      content: "";
+      position: absolute;
+      width: 170px; height: 170px;
+      border-radius: 50%;
+      background: rgba(255,255,255,.09);
+      right: -55px; top: -70px;
+    }
+    .charge-card span { display:block; color: var(--green-100); font-weight: 700; margin-bottom: 7px; }
+    .charge-card strong { display:block; font-size: clamp(32px, 4vw, 48px); letter-spacing: -1.3px; }
+    .summary-grid { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 10px; }
+    .mini-card { background: white; border: 1px solid var(--slate-200); border-radius: 16px; padding: 13px; }
+    .mini-card span { display: block; color: var(--slate-500); font-size: 12px; font-weight: 800; margin-bottom: 5px; }
+    .mini-card strong { display: block; color: var(--slate-950); font-size: 18px; overflow-wrap: anywhere; }
+    .message-box { margin-top: 13px; background: var(--green-50); border: 1px solid #fecdd3; border-radius: 18px; padding: 14px; }
+    textarea {
+      width: 100%; min-height: 96px; border: 1px solid #fecdd3; border-radius: 14px;
+      padding: 12px; resize: vertical; font-family: Arial, Helvetica, sans-serif; line-height: 1.5;
+      background: white;
+    }
+    .formula { margin-top: 12px; background: var(--amber-100); color: var(--amber-700); border-radius: 14px; padding: 12px; font-size: 13px; line-height: 1.5; }
+
+    .friendly-note {
+      margin-top: 14px;
+      padding: 13px 14px;
+      border-radius: 16px;
+      background: var(--green-50);
+      border: 1px solid #fecdd3;
+      color: var(--slate-700);
+      font-size: 13px;
+      line-height: 1.5;
+    }
+    .quick-weights {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 10px;
+    }
+    .quick-weights button {
+      width: auto;
+      padding: 8px 11px;
+      border-radius: 999px;
+      background: #fff;
+      color: var(--green-900);
+      border: 1px solid #fecdd3;
+      font-size: 12px;
+      box-shadow: none;
+    }
+    .live-preview {
+      margin-top: 10px;
+      padding: 11px 12px;
+      border-radius: 14px;
+      background: var(--slate-100);
+      border: 1px solid var(--slate-200);
+      color: var(--slate-700);
+      font-size: 13px;
+      line-height: 1.45;
+      display: none;
+    }
+    .live-preview strong { color: var(--green-900); }
+    .rate-table-wrap { margin-top: 18px; overflow: auto; border-radius: 16px; border: 1px solid var(--slate-200); }
+    table { border-collapse: collapse; width: 100%; min-width: 520px; font-size: 14px; }
+    th, td { padding: 11px 12px; border-bottom: 1px solid var(--slate-200); text-align: left; }
+    th { background: var(--green-950); color: white; }
+    td:nth-child(2), td:nth-child(3) { text-align: right; font-weight: 700; }
+    .toast {
+      position: fixed; left: 50%; bottom: 22px; transform: translateX(-50%) translateY(20px);
+      background: var(--slate-950); color: white; padding: 12px 16px; border-radius: 999px;
+      opacity: 0; pointer-events: none; transition: .25s ease; font-weight: 800; z-index: 20;
+    }
+    .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+    @media (max-width: 900px) {
+      .app { grid-template-columns: 1fr; }
+      .result-panel { position: static; }
+      .hero { align-items: flex-start; flex-direction: column; }
+    }
+    @media (max-width: 640px) {
+      body { padding: 10px; }
+      .panel, .result-panel { padding: 17px; border-radius: 20px; }
+      .grid, .summary-grid, .actions { grid-template-columns: 1fr; }
+      .hero { padding: 20px; border-radius: 20px; }
+      button { width: 100%; }
+    }
+    @media print {
+      body { background: white; padding: 0; }
+      .hero, .panel, .empty-state, .actions, .rate-table-wrap, .message-box, .formula { display: none !important; }
+      .app { display: block; max-width: 100%; }
+      .result-panel { box-shadow: none; border-radius: 0; padding: 0; position: static; }
+      .result { display: block !important; }
+      .charge-card { color: black; background: white; border: 2px solid #111827; }
+      .mini-card { break-inside: avoid; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header class="hero">
+      <div class="brand">
+        <h1>Courier Charge Calculator Based on District Rate Sheet</h1>
+        <p>Calculate courier delivery charge using the district/area and parcel weight according to the attached rate sheet. This calculator uses nearest-kg rounding with a minimum chargeable weight of 1kg.</p>
+      </div>
+      <div class="pill">Weight Based</div>
+    </header>
+
+    <main class="panel">
+      <div class="section-title">Customer & Delivery Details</div>
+      <div class="grid">
+        <div>
+          <label for="customerName">Customer Name</label>
+          <input id="customerName" type="text" placeholder="Example: Nimal Perera" />
+        </div>
+        <div>
+          <label for="referenceNo">Order / Reference No.</label>
+          <input id="referenceNo" type="text" placeholder="Example: Order #1439" />
+        </div>
+        <div>
+          <label for="locationType">Delivery Area Type</label>
+          <select id="locationType" onchange="loadLocations(); clearCalculationView();">
+            <option value="district">District</option>
+            <option value="colomboCity">Colombo 1 - 15</option>
+            <option value="colomboSuburb">Greater Colombo / Suburbs</option>
+          </select>
+          <div class="hint">Select the correct category first.</div>
+        </div>
+
+        <div>
+          <label for="location">District / Area</label>
+          <select id="location" onchange="calculateLive()"></select>
+          <div class="hint">Select a district or area. Rate and province will appear only after selection.</div>
+        </div>
+
+        <div class="full">
+          <label for="weight">Parcel Weight (kg)</label>
+          <input id="weight" type="number" inputmode="decimal" step="0.01" min="0" placeholder="Example: 2.4" oninput="calculateLive()" onkeydown="handleEnter(event)" />
+          <div class="hint">Weight is rounded to the nearest full kg. Example: 2.1kg–2.4kg = 2kg, and 2.5kg–2.9kg = 3kg. Minimum chargeable weight is 1kg.</div>
+          <div class="quick-weights" aria-label="Quick weight examples">
+            <button type="button" onclick="setWeight(1)">1kg</button>
+            <button type="button" onclick="setWeight(2.3)">2.3kg</button>
+            <button type="button" onclick="setWeight(2.5)">2.5kg</button>
+            <button type="button" onclick="setWeight(5)">5kg</button>
+          </div>
+          <div id="weightPreview" class="live-preview"></div>
+        </div>
+      </div>
+
+      <div class="friendly-note">
+        <strong>How to use:</strong> Select the delivery type, choose the exact district/area, enter parcel weight, and the system will automatically show province, rate category, chargeable weight, and final courier charge.
+      </div>
+
+      <div class="actions">
+        <button class="primary" onclick="calculateCharge(true)">Calculate</button>
+        <button class="secondary" onclick="resetForm()">Reset</button>
+        <button class="ghost" onclick="copyMessage()">Copy Message</button>
+        <button class="download" onclick="downloadCustomerDetails()">Download Details</button>
+        <button class="secondary" onclick="printDetails()">Print / Save PDF</button>
+      </div>
+
+      <div class="rate-table-wrap">
+        <table>
+          <thead>
+            <tr><th>Zone / Area Type</th><th>Base Charge for First 1kg</th><th>Additional Charge per Extra 1kg</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Colombo 1 - 15</td><td>Rs. 350.00</td><td>Rs. 100.00</td></tr>
+            <tr><td>Greater Colombo / Suburbs</td><td>Rs. 400.00</td><td>Rs. 100.00</td></tr>
+            <tr><td>Normal Districts</td><td>Rs. 450.00</td><td>Rs. 100.00</td></tr>
+            <tr><td>Far Districts</td><td>Rs. 500.00</td><td>Rs. 125.00</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </main>
+
+    <aside class="result-panel">
+      <div id="emptyState" class="empty-state">
+        Enter the delivery area and parcel weight, then the final customer courier charge will appear here.
+      </div>
+
+      <div id="result" class="result">
+        <div class="charge-card">
+          <span>Final Courier Charge</span>
+          <strong id="deliveryCharge">Rs. 0.00</strong>
+        </div>
+
+        <div class="summary-grid">
+          <div class="mini-card"><span>Customer</span><strong id="customerOut">-</strong></div>
+          <div class="mini-card"><span>Reference</span><strong id="refOut">-</strong></div>
+          <div class="mini-card"><span>Selected Area</span><strong id="selectedArea">-</strong></div>
+          <div class="mini-card"><span>Province</span><strong id="provinceOut">-</strong></div>
+          <div class="mini-card"><span>Rate Category</span><strong id="detectedZone">-</strong></div>
+          <div class="mini-card"><span>Actual Weight</span><strong id="actualWeight">-</strong></div>
+          <div class="mini-card"><span>Chargeable Weight</span><strong id="chargeableWeight">-</strong></div>
+          <div class="mini-card"><span>Extra Weight</span><strong id="extraWeight">-</strong></div>
+          <div class="mini-card"><span>Base Charge</span><strong id="baseCharge">-</strong></div>
+          <div class="mini-card"><span>Extra 1kg Charge</span><strong id="extraKgCharge">-</strong></div>
+          <div class="mini-card"><span>Total Extra Weight Charge</span><strong id="extraCharge">-</strong></div>
+        </div>
+
+        <div class="message-box">
+          <label for="customerMessage">Customer Message</label>
+          <textarea id="customerMessage" readonly></textarea>
+        </div>
+
+        <div class="formula">
+          Formula: Courier Charge = First 1kg Base Charge + (Chargeable Extra Weight × Extra 1kg Charge).<br>
+          Chargeable weight is rounded to the nearest full kg. Minimum chargeable weight is 1kg.<br>
+          Note: The attached sheet name mentions COD, but the available rate data includes only delivery charges by district/area and weight. Therefore, COD percentage or collection fee is not added in this calculator.
+        </div>
+      </div>
+    </aside>
+  </div>
+
+  <div id="toast" class="toast">Done</div>
+
+  <script>
+    const districtRates = [
+      { province: "Western Province", name: "Gampaha", base: 450, extra: 100, zone: "Normal District" },
+      { province: "Western Province", name: "Kalutara", base: 450, extra: 100, zone: "Normal District" },
+      { province: "Central Province", name: "Kandy", base: 450, extra: 100, zone: "Normal District" },
+      { province: "Central Province", name: "Matale", base: 450, extra: 100, zone: "Normal District" },
+      { province: "Central Province", name: "Nuwara Eliya", base: 450, extra: 100, zone: "Normal District" },
+      { province: "Southern Province", name: "Galle", base: 450, extra: 100, zone: "Normal District" },
+      { province: "Southern Province", name: "Matara", base: 450, extra: 100, zone: "Normal District" },
+      { province: "Southern Province", name: "Hambantota", base: 450, extra: 100, zone: "Normal District" },
+      { province: "Northern Province", name: "Jaffna", base: 500, extra: 125, zone: "Far District" },
+      { province: "Northern Province", name: "Kilinochchi", base: 500, extra: 125, zone: "Far District" },
+      { province: "Northern Province", name: "Mannar", base: 500, extra: 125, zone: "Far District" },
+      { province: "Northern Province", name: "Mullaitivu", base: 500, extra: 125, zone: "Far District" },
+      { province: "Northern Province", name: "Vavuniya", base: 500, extra: 125, zone: "Far District" },
+      { province: "Eastern Province", name: "Trincomalee", base: 500, extra: 125, zone: "Far District" },
+      { province: "Eastern Province", name: "Batticaloa", base: 500, extra: 125, zone: "Far District" },
+      { province: "Eastern Province", name: "Ampara", base: 500, extra: 125, zone: "Far District" },
+      { province: "North Western Province", name: "Kurunegala", base: 450, extra: 100, zone: "Normal District" },
+      { province: "North Western Province", name: "Puttalam", base: 450, extra: 100, zone: "Normal District" },
+      { province: "North Central Province", name: "Anuradhapura", base: 450, extra: 100, zone: "Normal District" },
+      { province: "North Central Province", name: "Polonnaruwa", base: 450, extra: 100, zone: "Normal District" },
+      { province: "Uva Province", name: "Badulla", base: 450, extra: 100, zone: "Normal District" },
+      { province: "Uva Province", name: "Monaragala", base: 450, extra: 100, zone: "Normal District" },
+      { province: "Sabaragamuwa Province", name: "Ratnapura", base: 450, extra: 100, zone: "Normal District" },
+      { province: "Sabaragamuwa Province", name: "Kegalle", base: 450, extra: 100, zone: "Normal District" }
+    ];
+
+    const colomboCityAreas = [
+      "Colombo 01 – Fort", "Colombo 02 – Slave Island", "Colombo 03 – Kollupitiya", "Colombo 04 – Bambalapitiya",
+      "Colombo 05 – Havelock Town", "Colombo 06 – Wellawatte", "Colombo 07 – Cinnamon Gardens", "Colombo 08 – Borella",
+      "Colombo 09 – Dematagoda", "Colombo 10 – Maradana", "Colombo 11 – Pettah", "Colombo 12 – Hulftsdorp",
+      "Colombo 13 – Kotahena", "Colombo 14 – Grandpass", "Colombo 15 – Modara"
+    ];
+
+    const colomboSuburbs = [
+      "Dehiwala", "Mount Lavinia", "Ratmalana", "Moratuwa", "Maharagama", "Nugegoda", "Kohuwala", "Piliyandala",
+      "Kesbewa", "Kottawa", "Homagama", "Battaramulla", "Kotte (Sri Jayawardenepura Kotte)", "Rajagiriya",
+      "Malabe", "Talawatugoda", "Pelawatte", "Athurugiriya", "Pannipitiya", "Kaduwela", "Angoda", "Kolonnawa",
+      "Wellampitiya", "Kelaniya", "Wattala (bordering Colombo)"
+    ];
+
+    let lastCalculation = null;
+
+    function money(value) {
+      return "Rs. " + Number(value).toLocaleString("en-LK", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+
+    function cleanFileName(text) {
+      return (text || "courier-details").replace(/[^a-z0-9_-]+/gi, "-").replace(/-+/g, "-").replace(/^-|-$/g, "").toLowerCase();
+    }
+
+    function showToast(text) {
+      const toast = document.getElementById("toast");
+      toast.textContent = text;
+      toast.classList.add("show");
+      setTimeout(() => toast.classList.remove("show"), 1800);
+    }
+
+    function loadLocations() {
+      const type = document.getElementById("locationType").value;
+      const location = document.getElementById("location");
+      location.innerHTML = "";
+
+      const placeholder = document.createElement("option");
+      placeholder.value = "";
+      placeholder.textContent = type === "district" ? "Select district" : "Select area";
+      placeholder.disabled = true;
+      placeholder.selected = true;
+      location.appendChild(placeholder);
+
+      let data = [];
+      if (type === "district") data = districtRates.map(item => item.name);
+      if (type === "colomboCity") data = colomboCityAreas;
+      if (type === "colomboSuburb") data = colomboSuburbs;
+      data.forEach(name => {
+        const option = document.createElement("option");
+        option.value = name;
+        option.textContent = name;
+        location.appendChild(option);
+      });
+    }
+
+    function getSelectedRate() {
+      const type = document.getElementById("locationType").value;
+      const locationName = document.getElementById("location").value;
+      if (!locationName) return null;
+      if (type === "colomboCity") return { name: locationName, province: "Western Province", base: 350, extra: 100, zone: "Colombo 1 - 15" };
+      if (type === "colomboSuburb") return { name: locationName, province: "Western Province", base: 400, extra: 100, zone: "Greater Colombo / Suburb" };
+      return districtRates.find(item => item.name === locationName);
+    }
+
+    function getChargeableWeight(weight) {
+      // Courier rule requested: 2.1kg-2.4kg => 2kg, 2.5kg-2.9kg => 3kg.
+      // Any positive parcel below 1kg is still charged as minimum 1kg.
+      return Math.max(1, Math.round(Number(weight)));
+    }
+
+    function updateWeightPreview() {
+      const preview = document.getElementById("weightPreview");
+      const weight = parseFloat(document.getElementById("weight").value);
+      if (!weight || weight <= 0) {
+        preview.style.display = "none";
+        preview.textContent = "";
+        return;
+      }
+      const chargeableWeight = getChargeableWeight(weight);
+      preview.style.display = "block";
+      preview.innerHTML = `Entered weight: <strong>${weight.toFixed(2)}kg</strong> → Chargeable weight: <strong>${chargeableWeight}kg</strong>`;
+    }
+
+    function setWeight(value) {
+      document.getElementById("weight").value = value;
+      calculateLive();
+    }
+
+    function buildCalculation(showAlert = false) {
+      const rate = getSelectedRate();
+      const weight = parseFloat(document.getElementById("weight").value);
+      if (!rate) {
+        if (showAlert) alert("Please select a valid district or area.");
+        return null;
+      }
+      if (!weight || weight <= 0) {
+        if (showAlert) alert("Please enter a valid parcel weight in kg.");
+        return null;
+      }
+      const chargeableWeight = getChargeableWeight(weight);
+      const extraWeight = Math.max(chargeableWeight - 1, 0);
+      const extraCharge = extraWeight * rate.extra;
+      const deliveryCharge = rate.base + extraCharge;
+      const customerName = document.getElementById("customerName").value.trim();
+      const ref = document.getElementById("referenceNo").value.trim();
+      const now = new Date();
+
+      return { rate, weight, chargeableWeight, extraWeight, extraCharge, deliveryCharge, customerName, ref, now };
+    }
+
+    function renderCalculation(calc) {
+      lastCalculation = calc;
+      document.getElementById("emptyState").style.display = "none";
+      document.getElementById("result").style.display = "block";
+      document.getElementById("customerOut").textContent = calc.customerName || "-";
+      document.getElementById("refOut").textContent = calc.ref || "-";
+      document.getElementById("selectedArea").textContent = calc.rate.name;
+      document.getElementById("provinceOut").textContent = calc.rate.province || "-";
+      document.getElementById("detectedZone").textContent = calc.rate.zone;
+      document.getElementById("actualWeight").textContent = calc.weight.toFixed(2) + " kg";
+      document.getElementById("chargeableWeight").textContent = calc.chargeableWeight + " kg";
+      document.getElementById("extraWeight").textContent = calc.extraWeight + " kg";
+      document.getElementById("baseCharge").textContent = money(calc.rate.base);
+      document.getElementById("extraKgCharge").textContent = money(calc.rate.extra);
+      document.getElementById("extraCharge").textContent = money(calc.extraCharge);
+      document.getElementById("deliveryCharge").textContent = money(calc.deliveryCharge);
+
+      const greeting = calc.customerName ? `Dear ${calc.customerName}, ` : "";
+      const refText = calc.ref ? ` Reference: ${calc.ref}.` : "";
+      document.getElementById("customerMessage").value = `${greeting}Courier charge to ${calc.rate.name}, ${calc.rate.province || "Sri Lanka"} for a ${calc.weight.toFixed(2)}kg parcel is ${money(calc.deliveryCharge)}. The chargeable weight is ${calc.chargeableWeight}kg.${refText}`;
+    }
+
+    function calculateCharge(showAlert = false) {
+      const calc = buildCalculation(showAlert);
+      if (!calc) return null;
+      renderCalculation(calc);
+      return calc;
+    }
+
+    function clearCalculationView() {
+      document.getElementById("result").style.display = "none";
+      document.getElementById("emptyState").style.display = "block";
+      lastCalculation = null;
+    }
+
+    function calculateLive() {
+      updateWeightPreview();
+      const calc = buildCalculation(false);
+      if (calc) {
+        renderCalculation(calc);
+      } else if (!document.getElementById("location").value) {
+        clearCalculationView();
+      }
+    }
+
+    function customerDetailsText(calc) {
+      const dateText = calc.now.toLocaleString("en-LK");
+      return `COURIER CHARGE DETAILS\n\nDate: ${dateText}\nCustomer Name: ${calc.customerName || "-"}\nOrder / Reference No: ${calc.ref || "-"}\n\nDelivery Area: ${calc.rate.name}\nProvince: ${calc.rate.province || "-"}\nRate Category: ${calc.rate.zone}\nActual Weight: ${calc.weight.toFixed(2)} kg\nChargeable Weight: ${calc.chargeableWeight} kg\nBase Charge: ${money(calc.rate.base)}\nExtra 1kg Charge: ${money(calc.rate.extra)}\nExtra Weight: ${calc.extraWeight} kg\nTotal Extra Weight Charge: ${money(calc.extraCharge)}\n\nFINAL COURIER CHARGE: ${money(calc.deliveryCharge)}\n\nFormula: Courier Charge = First 1kg Base Charge + (Chargeable Extra Weight x Extra 1kg Charge)\nNote: Chargeable weight is rounded to the nearest full kg. Minimum chargeable weight is 1kg. The attached sheet name mentions COD, but COD percentage or collection fee is not added because the sheet only provides delivery charges by district/area and weight.\n\nCustomer Message:\n${document.getElementById("customerMessage").value}\n`;
+    }
+
+    function downloadCustomerDetails() {
+      const calc = calculateCharge(true);
+      if (!calc) return;
+      const blob = new Blob([customerDetailsText(calc)], { type: "text/plain;charset=utf-8" });
+      const link = document.createElement("a");
+      const baseName = cleanFileName(calc.ref || calc.customerName || calc.rate.name || "courier-details");
+      link.href = URL.createObjectURL(blob);
+      link.download = `${baseName}-courier-charge.txt`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(link.href);
+      showToast("Details downloaded");
+    }
+
+    function copyMessage() {
+      const calc = calculateCharge(true);
+      if (!calc) return;
+      const box = document.getElementById("customerMessage");
+      box.select();
+      box.setSelectionRange(0, 99999);
+      navigator.clipboard.writeText(box.value).then(() => showToast("Customer message copied")).catch(() => {
+        document.execCommand("copy");
+        showToast("Message selected. Copy manually if needed.");
+      });
+    }
+
+    function printDetails() {
+      const calc = calculateCharge(true);
+      if (!calc) return;
+      window.print();
+    }
+
+    function resetForm() {
+      ["customerName", "referenceNo", "weight"].forEach(id => document.getElementById(id).value = "");
+      document.getElementById("locationType").value = "district";
+      loadLocations();
+      document.getElementById("result").style.display = "none";
+      document.getElementById("emptyState").style.display = "block";
+      document.getElementById("customerMessage").value = "";
+      document.getElementById("weightPreview").style.display = "none";
+      document.getElementById("weightPreview").textContent = "";
+      lastCalculation = null;
+      showToast("Form reset");
+    }
+
+    function handleEnter(event) {
+      if (event.key === "Enter") calculateCharge(true);
+    }
+
+    ["customerName", "referenceNo"].forEach(id => {
+      document.addEventListener("DOMContentLoaded", () => document.getElementById(id).addEventListener("input", calculateLive));
+    });
+
+    loadLocations();
+  </script>
+</body>
+</html>

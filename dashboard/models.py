@@ -89,3 +89,18 @@ class ForecastingSettings(models.Model):
     def __str__(self):
         import calendar as _cal
         return f"Forecasting Settings | {self.year} {_cal.month_abbr[self.month]}"
+
+class CompanySettings(models.Model):
+    """Global system settings for the company profile."""
+    company_name = models.CharField(max_length=200, default="Everbolt Food Products (Pvt) Ltd")
+    company_address = models.TextField(default="No.548/B Nawala Rd,\nSri Jayawardenepura Kotte 10100.")
+    telephone_number = models.CharField(max_length=50, default="076 540 0084")
+    tin_number = models.CharField(max_length=50, default="108438134")
+    logo = models.ImageField(upload_to='company_logos/', null=True, blank=True)
+
+    class Meta:
+        verbose_name = "Company Settings"
+        verbose_name_plural = "Company Settings"
+
+    def __str__(self):
+        return self.company_name

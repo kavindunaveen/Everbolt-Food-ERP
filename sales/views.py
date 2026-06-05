@@ -870,7 +870,7 @@ class InvoiceExportView(LoginRequiredMixin, ERPPermissionRequiredMixin, View):
         response['Content-Disposition'] = 'attachment; filename="invoices.csv"'
         
         writer = csv.writer(response)
-        writer.writerow(['Invoice Number', 'Type', 'Customer', 'Salesperson', 'Status', 'Delivery Date', 'Total Amount'])
+        writer.writerow(['Invoice Number', 'Type', 'Customer', 'Salesperson', 'Status', 'Delivery Date', 'Gross Amount', 'Credit Note Value', 'Net Amount'])
         
         invoices = Invoice.objects.all().order_by('-creation_date')
         q = request.GET.get('q')
@@ -880,7 +880,7 @@ class InvoiceExportView(LoginRequiredMixin, ERPPermissionRequiredMixin, View):
         status = request.GET.get('status')
         is_returned = request.GET.get('is_returned')
         
-        from django.db.models import Q
+        from django.db.models import Q, Sum
         if q:
             invoices = invoices.filter(
                 Q(invoice_number__icontains=q) |
@@ -897,8 +897,25 @@ class InvoiceExportView(LoginRequiredMixin, ERPPermissionRequiredMixin, View):
         if is_returned == 'true':
             invoices = invoices.filter(status__in=['CANCELLED', 'CANCEL_PENDING'], cancellation_reason__icontains='Customer Return')
             
+        # Annotate total credit note value per invoice
+        invoices = invoices.annotate(
+            total_cn_value=Sum('credit_notes__items__credit_amount')
+        )
+            
         for inv in invoices.order_by('-creation_date'):
-            writer.writerow([inv.invoice_number, inv.get_invoice_type_display(), inv.customer.customer_name, inv.salesperson.username.title() if inv.salesperson else 'N/A', inv.get_status_display(), inv.delivery_date, inv.total_amount])
+            cn_value = inv.total_cn_value or 0
+            net_amount = inv.total_amount - cn_value
+            writer.writerow([
+                inv.invoice_number, 
+                inv.get_invoice_type_display(), 
+                inv.customer.customer_name, 
+                inv.salesperson.username.title() if inv.salesperson else 'N/A', 
+                inv.get_status_display(), 
+                inv.delivery_date, 
+                inv.total_amount,
+                cn_value,
+                net_amount
+            ])
             
         return response
 
@@ -1686,10 +1703,12 @@ class ReturnListView(LoginRequiredMixin, ERPPermissionRequiredMixin, ListView):
         return qs
 
 
+from .forms import ReturnForm, ReturnItemFormSet
+
 @login_required
 @permission_required('sales.add_return', raise_exception=True)
 def return_create_view(request, invoice_pk):
-    """Create a Return against a specific ISSUED invoice."""
+    """Create a Return with multiple items against a specific ISSUED/PAID invoice."""
     invoice = get_object_or_404(Invoice, pk=invoice_pk)
 
     if invoice.status not in ['ISSUED', 'PAID']:
@@ -1697,46 +1716,68 @@ def return_create_view(request, invoice_pk):
         return redirect('invoice_list')
 
     if request.method == 'POST':
-        product_id = request.POST.get('returned_product')
-        quantity = int(request.POST.get('quantity', 0))
-        unit_price = request.POST.get('unit_price', '0')
-        reason = request.POST.get('reason')
-        condition = request.POST.get('condition')
-        notes = request.POST.get('notes', '')
+        form = ReturnForm(request.POST)
+        formset = ReturnItemFormSet(request.POST)
+        
+        if form.is_valid() and formset.is_valid():
+            # Check if any items were submitted
+            has_items = False
+            for inline_form in formset:
+                if inline_form.cleaned_data and not inline_form.cleaned_data.get('DELETE', False):
+                    has_items = True
+                    break
+            
+            if not has_items:
+                messages.error(request, "You must select at least one product to return.")
+            else:
+                try:
+                    ret = form.save(commit=False)
+                    ret.original_invoice = invoice
+                    ret.created_by = request.user
+                    ret.save()
+                    
+                    formset.instance = ret
+                    formset.save()
 
-        from inventory.models import Product
-        product = get_object_or_404(Product, pk=product_id)
-
-        if quantity <= 0:
-            messages.error(request, "Quantity must be greater than zero.")
+                    # Immediately process: restore stock + generate credit note
+                    credit_note = process_return(ret, request.user)
+                    messages.success(
+                        request,
+                        f"Return {ret.return_number} processed. Stock restored. "
+                        f"Credit Note {credit_note.credit_note_number} issued (Rs {credit_note.total_credit_amount})."
+                    )
+                    return redirect('credit_note_list')
+                except Exception as e:
+                    messages.error(request, f"Error processing return: {e}")
+                    # If error occurs, we should technically delete the Return we just saved, but atomic tx in process_return will handle partials. If it failed before process_return, we might have an orphaned Return.
+                    # Best to delete it if process_return fails.
+                    try:
+                        ret.delete()
+                    except:
+                        pass
         else:
-            ret = Return.objects.create(
-                original_invoice=invoice,
-                returned_product=product,
-                quantity=quantity,
-                unit_price=unit_price,
-                reason=reason,
-                condition=condition,
-                notes=notes,
-                created_by=request.user,
-            )
-            # Immediately process: restore stock + generate credit note
-            try:
-                credit_note = process_return(ret, request.user)
-                messages.success(
-                    request,
-                    f"Return {ret.return_number} processed. Stock restored. "
-                    f"Credit Note {credit_note.credit_note_number} issued (Rs {credit_note.credit_amount})."
-                )
-                return redirect('credit_note_print', pk=credit_note.pk)
-            except Exception as e:
-                messages.error(request, f"Error processing return: {e}")
+            messages.error(request, "Please correct the errors in the form.")
+    else:
+        form = ReturnForm()
+        formset = ReturnItemFormSet()
 
+    # Pass invoice items to the template so JS can fetch unit prices easily
+    items_data = []
+    for item in invoice.items.select_related('product').all():
+        items_data.append({
+            'product_id': item.product.id,
+            'name': item.product.name,
+            'code': item.product.product_id,
+            'unit_price': float(item.unit_price),
+            'max_quantity': item.quantity
+        })
+
+    import json
     return render(request, 'sales/return_form.html', {
+        'form': form,
+        'formset': formset,
         'invoice': invoice,
-        'invoice_items': invoice.items.select_related('product').all(),
-        'return_reasons': Return.ReturnReason.choices,
-        'conditions': Return.Condition.choices,
+        'items_data_json': json.dumps(items_data),
     })
 
 

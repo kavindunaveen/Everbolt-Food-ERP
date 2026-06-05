@@ -1408,3 +1408,29 @@ class ForecastingSettingsView(LoginRequiredMixin, View):
         except Exception as e:
             messages.error(request, f"Error saving settings: {e}")
         return redirect('forecasting')
+
+from .models import CompanySettings
+from .forms import CompanySettingsForm
+
+class CompanySettingsView(LoginRequiredMixin, View):
+    def get(self, request):
+        if not request.user.is_superuser:
+            messages.error(request, "Only administrators can access company settings.")
+            return redirect('analytics_dashboard')
+            
+        settings_obj, created = CompanySettings.objects.get_or_create(id=1)
+        form = CompanySettingsForm(instance=settings_obj)
+        return render(request, 'dashboard/settings.html', {'form': form, 'settings': settings_obj})
+
+    def post(self, request):
+        if not request.user.is_superuser:
+            return redirect('analytics_dashboard')
+            
+        settings_obj, created = CompanySettings.objects.get_or_create(id=1)
+        form = CompanySettingsForm(request.POST, request.FILES, instance=settings_obj)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Company settings updated successfully.")
+            return redirect('company_settings')
+        
+        return render(request, 'dashboard/settings.html', {'form': form, 'settings': settings_obj})

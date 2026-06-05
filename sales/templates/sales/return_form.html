@@ -1,7 +1,7 @@
 {% extends 'layouts/base.html' %}
 {% block title %}Create Return | {{ invoice.invoice_number }}{% endblock %}
 {% block content %}
-<div class="px-4 py-6 sm:px-0 max-w-3xl mx-auto">
+<div class="px-4 py-6 sm:px-0 max-w-5xl mx-auto">
     <div class="mb-6">
         <a href="{% url 'invoice_list' %}" class="text-sm text-emerald-600 hover:underline">&larr; Back to Invoices</a>
         <h1 class="text-2xl font-extrabold text-gray-900 mt-2">Raise Customer Return</h1>
@@ -13,69 +13,86 @@
     <div class="mb-4 p-4 rounded-xl text-sm font-medium {% if msg.tags == 'error' %}bg-red-50 text-red-700 border border-red-200{% else %}bg-emerald-50 text-emerald-700 border border-emerald-200{% endif %}">{{ msg }}</div>
     {% endfor %}
     {% endif %}
+    
+    {% if form.errors or formset.errors %}
+    <div class="mb-4 p-4 rounded-xl text-sm font-medium bg-red-50 text-red-700 border border-red-200">
+        Please correct the errors below.
+        {{ formset.non_form_errors }}
+        {% for f in formset %}
+            {% if f.errors %}
+                Line error: {{ f.errors }}
+            {% endif %}
+        {% endfor %}
+    </div>
+    {% endif %}
 
     <div class="bg-white rounded-2xl shadow-md border border-gray-100 p-8">
-        <form method="post">
+        <form method="post" id="return-form">
             {% csrf_token %}
+            {{ formset.management_form }}
 
-            <div class="mb-5">
-                <label class="block text-sm font-bold text-gray-700 mb-1">Returned Product <span class="text-red-500">*</span></label>
-                <select name="returned_product" id="returned_product" required onchange="fillPrice(this)"
-                        class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-emerald-500 focus:border-emerald-500">
-                    <option value="">-- Select a product from this invoice --</option>
-                    {% for item in invoice_items %}
-                    <option value="{{ item.product.pk }}" data-price="{{ item.unit_price }}">
-                        [{{ item.product.product_id }}] {{ item.product.name }} (Invoiced: {{ item.quantity }} @ Rs {{ item.unit_price }})
-                    </option>
-                    {% endfor %}
-                </select>
-            </div>
-
-            <div class="grid grid-cols-2 gap-5 mb-5">
-                <div>
-                    <label class="block text-sm font-bold text-gray-700 mb-1">Return Quantity <span class="text-red-500">*</span></label>
-                    <input type="number" name="quantity" id="quantity" min="1" required
-                           class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-emerald-500 focus:border-emerald-500">
-                </div>
-                <div>
-                    <label class="block text-sm font-bold text-gray-700 mb-1">Unit Price (Rs) <span class="text-red-500">*</span></label>
-                    <input type="number" name="unit_price" id="unit_price" step="0.01" min="0" required
-                           class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-emerald-500 focus:border-emerald-500"
-                           placeholder="Auto-filled from invoice">
-                </div>
-            </div>
-
-            <div class="grid grid-cols-2 gap-5 mb-5">
-                <div>
-                    <label class="block text-sm font-bold text-gray-700 mb-1">Return Reason <span class="text-red-500">*</span></label>
-                    <select name="reason" required class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-emerald-500 focus:border-emerald-500">
-                        <option value="">-- Select reason --</option>
-                        {% for val, label in return_reasons %}
-                        <option value="{{ val }}">{{ label }}</option>
+            <div class="mb-6 overflow-x-auto">
+                <h3 class="text-lg font-bold text-gray-800 mb-3 border-b pb-2">Return Items</h3>
+                <table class="min-w-full divide-y divide-gray-200" id="items-table">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th scope="col" class="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider w-1/4">Product <span class="text-red-500">*</span></th>
+                            <th scope="col" class="px-4 py-3 text-center text-xs font-bold text-gray-500 uppercase tracking-wider w-32">Qty <span class="text-red-500">*</span></th>
+                            <th scope="col" class="px-4 py-3 text-right text-xs font-bold text-gray-500 uppercase tracking-wider w-32">Unit Price <span class="text-red-500">*</span></th>
+                            <th scope="col" class="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider w-1/4">Reason <span class="text-red-500">*</span></th>
+                            <th scope="col" class="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider w-1/4">Condition <span class="text-red-500">*</span></th>
+                            <th scope="col" class="px-4 py-3 text-center text-xs font-bold text-gray-500 uppercase tracking-wider w-16">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200" id="formset-container">
+                        {% for item_form in formset %}
+                        <tr class="item-row hover:bg-gray-50">
+                            {% for hidden in item_form.hidden_fields %}
+                                {{ hidden }}
+                            {% endfor %}
+                            <td class="px-2 py-2">
+                                {{ item_form.product }}
+                            </td>
+                            <td class="px-2 py-2">
+                                {{ item_form.quantity }}
+                            </td>
+                            <td class="px-2 py-2">
+                                {{ item_form.unit_price }}
+                            </td>
+                            <td class="px-2 py-2">
+                                {{ item_form.reason }}
+                            </td>
+                            <td class="px-2 py-2">
+                                {{ item_form.condition }}
+                            </td>
+                            <td class="px-2 py-2 text-center align-middle">
+                                {% if item_form.instance.pk %}{{ item_form.DELETE }}{% endif %}
+                                <button type="button" class="remove-row text-red-500 hover:text-red-700 focus:outline-none" title="Remove Line">
+                                    <svg class="h-5 w-5 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                                </button>
+                            </td>
+                        </tr>
                         {% endfor %}
-                    </select>
-                </div>
-                <div>
-                    <label class="block text-sm font-bold text-gray-700 mb-1">Product Condition <span class="text-red-500">*</span></label>
-                    <select name="condition" required class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-emerald-500 focus:border-emerald-500">
-                        <option value="">-- Select condition --</option>
-                        {% for val, label in conditions %}
-                        <option value="{{ val }}">{{ label }}</option>
-                        {% endfor %}
-                    </select>
+                    </tbody>
+                </table>
+                <div class="mt-4">
+                    <button type="button" id="add-row" class="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none">
+                        <svg class="-ml-1 mr-2 h-5 w-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
+                        Add Another Product
+                    </button>
                 </div>
             </div>
 
             <div class="mb-6">
-                <label class="block text-sm font-bold text-gray-700 mb-1">Notes</label>
-                <textarea name="notes" rows="3" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-emerald-500 focus:border-emerald-500" placeholder="Optional remarks..."></textarea>
+                <label class="block text-sm font-bold text-gray-700 mb-1">General Notes</label>
+                {{ form.notes }}
             </div>
 
             <div class="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-6 text-sm text-amber-800">
                 <strong>&#9432; What happens on submit:</strong>
                 <ul class="list-disc ml-5 mt-1 space-y-1">
-                    <li>Stock is immediately restored to inventory.</li>
-                    <li>A Credit Note is automatically generated and printed.</li>
+                    <li>Stock is immediately restored to inventory for all listed products.</li>
+                    <li>A single Credit Note is automatically generated encompassing all returned items.</li>
                     <li>The audit log on the original invoice is updated.</li>
                 </ul>
             </div>
@@ -89,10 +106,113 @@
         </form>
     </div>
 </div>
+
+<!-- Template for new dynamic row -->
+<template id="empty-row-template">
+    <tr class="item-row hover:bg-gray-50">
+        <td class="px-2 py-2">{{ formset.empty_form.product }}</td>
+        <td class="px-2 py-2">{{ formset.empty_form.quantity }}</td>
+        <td class="px-2 py-2">{{ formset.empty_form.unit_price }}</td>
+        <td class="px-2 py-2">{{ formset.empty_form.reason }}</td>
+        <td class="px-2 py-2">{{ formset.empty_form.condition }}</td>
+        <td class="px-2 py-2 text-center align-middle">
+            <button type="button" class="remove-row text-red-500 hover:text-red-700 focus:outline-none" title="Remove Line">
+                <svg class="h-5 w-5 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+            </button>
+        </td>
+    </tr>
+</template>
+
 <script>
-function fillPrice(sel) {
-    const price = sel.options[sel.selectedIndex].dataset.price || '';
-    document.getElementById('unit_price').value = price ? parseFloat(price).toFixed(2) : '';
-}
+    const itemsData = {{ items_data_json|safe }};
+    const productPrices = {};
+    const productMaxQtys = {};
+    const productOptions = '<option value="">-- Select Product --</option>' + itemsData.map(item => `<option value="${item.product_id}">[${item.code}] ${item.name} (Inv: ${item.max_quantity} @ Rs ${item.unit_price})</option>`).join('');
+
+    itemsData.forEach(item => {
+        productPrices[item.product_id] = item.unit_price;
+        productMaxQtys[item.product_id] = item.max_quantity;
+    });
+
+    document.addEventListener('DOMContentLoaded', function() {
+        const addBtn = document.getElementById('add-row');
+        const container = document.getElementById('formset-container');
+        const template = document.getElementById('empty-row-template').innerHTML;
+        const totalForms = document.getElementById('id_items-TOTAL_FORMS');
+        let formCount = parseInt(totalForms.value);
+
+        function updateSelectOptions(row) {
+            const select = row.querySelector('.product-select');
+            const currentVal = select.value;
+            select.innerHTML = productOptions;
+            if (currentVal) {
+                select.value = currentVal;
+            }
+        }
+
+        function attachEvents(row) {
+            updateSelectOptions(row);
+
+            const select = row.querySelector('.product-select');
+            const priceInput = row.querySelector('input[name$="-unit_price"]');
+            const qtyInput = row.querySelector('input[name$="-quantity"]');
+            const removeBtn = row.querySelector('.remove-row');
+
+            if(select) {
+                select.addEventListener('change', function() {
+                    const pid = this.value;
+                    if(pid && productPrices[pid]) {
+                        priceInput.value = parseFloat(productPrices[pid]).toFixed(2);
+                        qtyInput.max = productMaxQtys[pid];
+                    } else {
+                        priceInput.value = '';
+                        qtyInput.max = '';
+                    }
+                });
+            }
+
+            if(removeBtn) {
+                removeBtn.addEventListener('click', function() {
+                    // Check if it has a DELETE checkbox
+                    const delInput = row.querySelector('input[name$="-DELETE"]');
+                    if (delInput) {
+                        delInput.checked = true;
+                        row.style.display = 'none';
+                    } else {
+                        row.remove();
+                        updateFormIndices();
+                    }
+                });
+            }
+        }
+
+        function updateFormIndices() {
+            const rows = container.querySelectorAll('.item-row:not([style*="display: none"])');
+            rows.forEach((row, index) => {
+                const inputs = row.querySelectorAll('input, select, textarea');
+                inputs.forEach(input => {
+                    if (input.name) {
+                        input.name = input.name.replace(/-\d+-/, `-${index}-`);
+                        input.id = input.id.replace(/-\d+-/, `-${index}-`);
+                    }
+                });
+            });
+            totalForms.value = container.querySelectorAll('.item-row').length;
+        }
+
+        // Initialize existing rows
+        document.querySelectorAll('.item-row').forEach(row => {
+            attachEvents(row);
+        });
+
+        addBtn.addEventListener('click', function() {
+            const newRowHtml = template.replace(/__prefix__/g, formCount);
+            container.insertAdjacentHTML('beforeend', newRowHtml);
+            const newRow = container.lastElementChild;
+            attachEvents(newRow);
+            formCount++;
+            totalForms.value = formCount;
+        });
+    });
 </script>
 {% endblock %}

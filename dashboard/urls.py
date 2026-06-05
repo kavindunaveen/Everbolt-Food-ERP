@@ -10,4 +10,5 @@ urlpatterns = [
     path('targets/', views.TargetManagementView.as_view(), name='target_management'),
     path('forecasting/', views.ForecastingView.as_view(), name='forecasting'),
     path('forecasting/settings/', views.ForecastingSettingsView.as_view(), name='forecasting_settings'),
+    path('company-settings/', views.CompanySettingsView.as_view(), name='company_settings'),
 ]

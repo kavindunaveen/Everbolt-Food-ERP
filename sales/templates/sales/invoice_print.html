@@ -153,7 +153,11 @@
     <div class="container" id="printable-area">
         <div class="flex-row" style="align-items: center; margin-bottom: 10px;">
             <div>
-                <h2 style="margin: 0; font-size: 18pt; font-weight: bold; font-family: sans-serif;">EVERBOLT FOOD PRODUCTS (PVT) LTD</h2>
+                {% if company_settings and company_settings.logo %}
+                <img src="{{ company_settings.logo.url }}" alt="Company Logo" style="max-height: 60px; object-fit: contain;">
+                {% else %}
+                <h2 style="margin: 0; font-size: 18pt; font-weight: bold; font-family: sans-serif;">{{ company_settings.company_name|default:"EVERBOLT FOOD PRODUCTS (PVT) LTD" }}</h2>
+                {% endif %}
             </div>
             <div style="text-align: right;">
                 <h1 style="margin: 0;">Tax Invoice</h1>
@@ -175,10 +179,10 @@
 
         <div class="flex-row">
             <div class="box" style="min-height: 100px;">
-                <div style="font-weight:bold; margin-bottom: 2px;">Supplier's TIN: <span style="font-weight:normal;">108438134</span></div>
-                <div style="font-weight:bold; margin-bottom: 2px;">Supplier's Name: <span style="font-weight:normal;">Everbolt Food Products (Pvt) Ltd</span></div>
-                <div style="font-weight:bold; margin-bottom: 2px;">Address: <br><span style="font-weight:normal;">No.548/B Nawala Rd,<br>Sri Jayawardenepura Kotte 10100.</span></div>
-                <div style="font-weight:bold; margin-top: 5px;">Telephone No: <span style="font-weight:normal;">076 540 0084</span></div>
+                <div style="font-weight:bold; margin-bottom: 2px;">Supplier's TIN: <span style="font-weight:normal;">{{ company_settings.tin_number|default:"108438134" }}</span></div>
+                <div style="font-weight:bold; margin-bottom: 2px;">Supplier's Name: <span style="font-weight:normal;">{{ company_settings.company_name|default:"Everbolt Food Products (Pvt) Ltd" }}</span></div>
+                <div style="font-weight:bold; margin-bottom: 2px;">Address: <br><span style="font-weight:normal;">{{ company_settings.company_address|linebreaksbr|default:"No.548/B Nawala Rd,<br>Sri Jayawardenepura Kotte 10100." }}</span></div>
+                <div style="font-weight:bold; margin-top: 5px;">Telephone No: <span style="font-weight:normal;">{{ company_settings.telephone_number|default:"076 540 0084" }}</span></div>
             </div>
             <div class="box" style="min-height: 100px;">
                 <div style="font-weight:bold; margin-bottom: 2px;">Purchaser's TIN: <span style="font-weight:normal;">{{ invoice.customer.tin_number|default:"N/A" }}</span></div>

@@ -246,12 +246,6 @@ class Return(models.Model):
 
     return_number = models.CharField(max_length=50, unique=True, blank=True)
     original_invoice = models.ForeignKey(Invoice, on_delete=models.PROTECT, related_name='returns')
-    returned_product = models.ForeignKey(Product, on_delete=models.PROTECT)
-    quantity = models.PositiveIntegerField()
-    unit_price = models.DecimalField(max_digits=12, decimal_places=5, default=0.00000,
-                                     help_text="Price per unit at time of return (used for credit note value)")
-    reason = models.CharField(max_length=50, choices=ReturnReason.choices)
-    condition = models.CharField(max_length=50, choices=Condition.choices)
     notes = models.TextField(blank=True, null=True)
 
     credit_note_issued = models.BooleanField(default=False)
@@ -260,9 +254,8 @@ class Return(models.Model):
     created_date = models.DateTimeField(auto_now_add=True, null=True, blank=True)
 
     @property
-    def credit_value(self):
-        from decimal import Decimal
-        return Decimal(self.quantity) * Decimal(self.unit_price)
+    def total_credit_value(self):
+        return sum(item.credit_value for item in self.items.all())
 
     def save(self, *args, **kwargs):
         if not self.return_number:
@@ -281,6 +274,22 @@ class Return(models.Model):
     def __str__(self):
         return self.return_number
 
+class ReturnItem(models.Model):
+    return_record = models.ForeignKey(Return, on_delete=models.CASCADE, related_name='items')
+    product = models.ForeignKey(Product, on_delete=models.PROTECT)
+    quantity = models.PositiveIntegerField()
+    unit_price = models.DecimalField(max_digits=12, decimal_places=5, default=0.00000)
+    reason = models.CharField(max_length=50, choices=Return.ReturnReason.choices)
+    condition = models.CharField(max_length=50, choices=Return.Condition.choices)
+
+    @property
+    def credit_value(self):
+        from decimal import Decimal
+        return Decimal(self.quantity) * Decimal(self.unit_price)
+
+    def __str__(self):
+        return f"{self.return_record.return_number} - {self.product.name}"
+
 
 class CreditNote(models.Model):
     credit_note_number = models.CharField(max_length=50, unique=True, blank=True)
@@ -288,14 +297,13 @@ class CreditNote(models.Model):
     original_invoice = models.ForeignKey(Invoice, on_delete=models.PROTECT, related_name='credit_notes')
     customer = models.ForeignKey('crm.Customer', on_delete=models.PROTECT)
 
-    product = models.ForeignKey(Product, on_delete=models.PROTECT)
-    quantity = models.PositiveIntegerField()
-    unit_price = models.DecimalField(max_digits=12, decimal_places=5)
-    credit_amount = models.DecimalField(max_digits=12, decimal_places=5)
-
     issued_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True)
     issued_date = models.DateTimeField(auto_now_add=True)
     notes = models.TextField(blank=True, null=True)
+
+    @property
+    def total_credit_amount(self):
+        return sum(item.credit_amount for item in self.items.all())
 
     def save(self, *args, **kwargs):
         if not self.credit_note_number:
@@ -313,6 +321,16 @@ class CreditNote(models.Model):
 
     def __str__(self):
         return self.credit_note_number
+
+class CreditNoteItem(models.Model):
+    credit_note = models.ForeignKey(CreditNote, on_delete=models.CASCADE, related_name='items')
+    product = models.ForeignKey(Product, on_delete=models.PROTECT)
+    quantity = models.PositiveIntegerField()
+    unit_price = models.DecimalField(max_digits=12, decimal_places=5)
+    credit_amount = models.DecimalField(max_digits=12, decimal_places=5)
+
+    def __str__(self):
+        return f"{self.credit_note.credit_note_number} - {self.product.name}"
 
 from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.contenttypes.models import ContentType

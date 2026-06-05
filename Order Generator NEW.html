@@ -1,0 +1,772 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>New Order Alert Generator</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f4f7f6;
+            color: #333;
+            line-height: 1.6;
+            padding: 20px;
+            margin: 0;
+        }
+        .container {
+            max-width: 800px;
+            margin: auto;
+            background: #fff;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        h2 {
+            text-align: center;
+            color: #2c3e50;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        input[type="text"], input[type="date"], input[type="number"], select, textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            box-sizing: border-box;
+            font-size: 16px; 
+        }
+        .order-row {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+            align-items: center;
+            background: #f9f9f9;
+            padding: 10px;
+            border-radius: 5px;
+            border: 1px solid #eee;
+        }
+        .order-row > div {
+            flex: 1;
+        }
+        .order-row > div.small-col {
+            flex: 0.5;
+            text-align: center;
+            font-weight: bold;
+        }
+        .order-row > div.price-col {
+            flex: 0.65;
+            text-align: center;
+            font-weight: bold;
+            color: #2c3e50;
+            white-space: nowrap;
+        }
+        .price-label {
+            display: block;
+            font-size: 11px;
+            color: #777;
+            font-weight: 600;
+            margin-bottom: 2px;
+        }
+        button {
+            background-color: #3498db;
+            color: #fff;
+            border: none;
+            padding: 10px 15px;
+            cursor: pointer;
+            border-radius: 5px;
+            font-size: 14px;
+            transition: background 0.3s;
+        }
+        button:hover {
+            background-color: #2980b9;
+        }
+        .btn-remove {
+            background-color: #e74c3c;
+            width: 100%;
+        }
+        .btn-remove:hover {
+            background-color: #c0392b;
+        }
+        
+        /* NEW: Styling for the UI Grand Total */
+        .ui-grand-total {
+            text-align: right;
+            font-size: 18px;
+            font-weight: bold;
+            color: #2c3e50;
+            background-color: #e8f8f5;
+            padding: 15px;
+            margin-top: 15px;
+            border-radius: 5px;
+            border: 1px solid #d1f2eb;
+        }
+
+        .btn-generate {
+            background-color: #2ecc71;
+            width: 100%;
+            font-size: 16px;
+            font-weight: bold;
+            margin-top: 20px;
+            padding: 15px;
+        }
+        .btn-generate:hover {
+            background-color: #27ae60;
+        }
+        .output-section {
+            margin-top: 30px;
+            border-top: 2px dashed #ccc;
+            padding-top: 20px;
+        }
+        textarea#finalMessage {
+            height: 350px;
+            resize: vertical;
+            font-family: monospace;
+            background-color: #fafafa;
+        }
+
+        /* Mobile Responsiveness */
+        @media (max-width: 600px) {
+            .container {
+                padding: 15px;
+            }
+            .order-row {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            .order-row > div {
+                width: 100%;
+            }
+            .order-row > div.small-col,
+            .order-row > div.price-col {
+                text-align: left;
+                margin-top: 5px;
+            }
+            .ui-grand-total {
+                text-align: center;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>🚨 New Order Generator</h2>
+    
+    <div class="form-group">
+        <label>👤 Customer Name:</label>
+        <input type="text" id="customer" placeholder="Enter customer name">
+    </div>
+
+    <div class="form-group">
+        <label>📍 Billing Address:</label>
+        <input type="text" id="address" placeholder="Enter billing address">
+    </div>
+
+    <div class="form-group">
+        <label>📞 Billing Contact:</label>
+        <input type="text" id="contact" placeholder="Enter 10-digit contact number" maxlength="10" inputmode="numeric" pattern="[0-9]{10}" oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 10);">
+    </div>
+
+    <div class="form-group">
+        <label>📅 Delivery Date:</label>
+        <input type="date" id="date">
+    </div>
+
+    <div class="form-group">
+        <label>🚚 Delivery Method:</label>
+        <select id="method">
+            <option value="">-- Select Method --</option>
+            <option value="Inhouse">Inhouse</option>
+            <option value="COD">COD</option>
+            <option value="Customer Collect">Customer Collect</option>
+            <option value="Pick Me">Pick Me</option>
+            <option value="Sales/Delivery Person">Sales/Delivery Person</option>
+        </select>
+    </div>
+
+    <hr>
+    <h3>🛒 Order Details</h3>
+    <div id="orderItemsContainer">
+        </div>
+    
+    <button type="button" onclick="addOrderRow()">+ Add Product</button>
+
+    <div class="ui-grand-total">
+        Grand Total: <span id="displayGrandTotal">Rs.0.00</span>
+    </div>
+
+    <button type="button" class="btn-generate" onclick="generateMessage()">Generate Message</button>
+
+    <div class="output-section">
+        <label>📋 Generated Message (Ready to Copy):</label>
+        <textarea id="finalMessage" readonly></textarea>
+        <button type="button" onclick="copyToClipboard()" style="margin-top:10px; width:100%; padding: 15px; font-weight: bold;">Copy to Clipboard</button>
+    </div>
+</div>
+
+<script>
+    // Strict order for categories
+    const categoryOrder = [
+        "SPICES",
+        "KITHUL PRODUCTS",
+        "ARTISAN TEA",
+        "CONFECTIONARIES",
+        "HERBAL TEA",
+        "FLAVORED TEA",
+        "DEHYDRATED ITEMS AND POWDERS"
+];
+
+    // Product Database
+    const productData = {
+        "SPICES": {
+                "Black Pepper Powder - 1000g": 3285,
+                "Black Pepper Powder - 500g": 1645,
+                "Black Pepper Powder - 200g": 665,
+                "Black Pepper Powder - 100g": 340,
+                "Chilli Flakes - 1000g": 1610,
+                "Chilli Flakes - 500g": 810,
+                "Chilli Flakes - 200g": 330,
+                "Chilli Flakes - 100g": 170,
+                "Chilli Powder - 1000g": 1435,
+                "Chilli Powder - 500g": 720,
+                "Chilli Powder - 200g": 295,
+                "Chilli Powder - 100g": 155,
+                "Curry Powder - 1000g": 1720,
+                "Curry Powder - 500g": 865,
+                "Curry Powder - 200g": 355,
+                "Curry Powder - 100g": 180,
+                "Roasted Curry Powder - 1000g": 1860,
+                "Roasted Curry Powder - 500g": 935,
+                "Roasted Curry Powder - 200g": 380,
+                "Roasted Curry Powder - 100g": 200,
+                "Turmeric Powder - 1000g": 4065,
+                "Turmeric Powder - 500g": 2040,
+                "Turmeric Powder - 200g": 820,
+                "Turmeric Powder - 100g": 420
+        },
+        "KITHUL PRODUCTS": {
+                "kithul flour- 250g": 720,
+                "kithul jaggery pieces - 200g": 1060,
+                "Kithul sugar powder - 200g": 1120,
+                "Kithul treacle - Small - 375ml": 2140,
+                "Kithul treacle - round - 375ml": 1700,
+                "Kithul half - 500ml": 2400
+        },
+        "ARTISAN TEA": {
+                "Everleaf Artisan Green Tea - 50g": 1790,
+                "Everleaf Artisan Green Tea - 100g": 2550,
+                "Everleaf Artisan Black Tea - 50g": 1790,
+                "Everleaf Artisan Black Tea - 100g": 2550,
+                "Everleaf Artisan White Tea - 50g": 1790,
+                "Everleaf Artisan White Tea - 100g": 2550,
+                "Everleaf Arisan Wangedi Pakoe - 50g": 1350,
+                "Everleaf Arisan Wangedi Pakoe - 100g": 1750
+        },
+        "CONFECTIONARIES": {
+                "Sugar  sachet - White -5g": [
+                        {
+                                "min": 1,
+                                "price": 5,
+                                "max": 249
+                        },
+                        {
+                                "min": 250,
+                                "price": 4.8,
+                                "max": 499
+                        },
+                        {
+                                "min": 500,
+                                "price": 4.65
+                        }
+                ],
+                "Sugar sachet  - Brown -5g": [
+                        {
+                                "min": 1,
+                                "price": 5.5,
+                                "max": 249
+                        },
+                        {
+                                "min": 250,
+                                "price": 5.35,
+                                "max": 499
+                        },
+                        {
+                                "min": 500,
+                                "price": 5.25
+                        }
+                ],
+                "Sugar  sachet - White -7g": [
+                        {
+                                "min": 1,
+                                "price": 5.75,
+                                "max": 249
+                        },
+                        {
+                                "min": 250,
+                                "price": 5.65,
+                                "max": 499
+                        },
+                        {
+                                "min": 500,
+                                "price": 5.5
+                        }
+                ],
+                "Sugar  sachet - Brown -7g": [
+                        {
+                                "min": 1,
+                                "price": 6.15,
+                                "max": 249
+                        },
+                        {
+                                "min": 250,
+                                "price": 6.05,
+                                "max": 499
+                        },
+                        {
+                                "min": 500,
+                                "price": 5.95
+                        }
+                ],
+                "Sugar  stick - White -5g": [
+                        {
+                                "min": 1,
+                                "price": 5.25,
+                                "max": 249
+                        },
+                        {
+                                "min": 250,
+                                "price": 5,
+                                "max": 499
+                        },
+                        {
+                                "min": 500,
+                                "price": 4.75
+                        }
+                ],
+                "Sugar stick  - Brown -5g": [
+                        {
+                                "min": 1,
+                                "price": 6,
+                                "max": 249
+                        },
+                        {
+                                "min": 250,
+                                "price": 5.75,
+                                "max": 499
+                        },
+                        {
+                                "min": 500,
+                                "price": 5.5
+                        }
+                ],
+                "Sugar  stick - White -7g": [
+                        {
+                                "min": 1,
+                                "price": 5.95,
+                                "max": 249
+                        },
+                        {
+                                "min": 250,
+                                "price": 5.85,
+                                "max": 499
+                        },
+                        {
+                                "min": 500,
+                                "price": 5.75
+                        }
+                ],
+                "Sugar stick  - Brown -7g": [
+                        {
+                                "min": 1,
+                                "price": 6.65,
+                                "max": 249
+                        },
+                        {
+                                "min": 250,
+                                "price": 6.6,
+                                "max": 499
+                        },
+                        {
+                                "min": 500,
+                                "price": 6.5
+                        }
+                ],
+                "Creamer Sachet - 5g": [
+                        {
+                                "min": 1,
+                                "price": 25,
+                                "max": 249
+                        },
+                        {
+                                "min": 250,
+                                "price": 24,
+                                "max": 499
+                        },
+                        {
+                                "min": 500,
+                                "price": 23
+                        }
+                ],
+                "EverLeaf Tea Envelop -2g": [
+                        {
+                                "min": 1,
+                                "price": 17,
+                                "max": 249
+                        },
+                        {
+                                "min": 250,
+                                "price": 16.5,
+                                "max": 499
+                        },
+                        {
+                                "min": 500,
+                                "price": 15.5
+                        }
+                ],
+                "Nescafe Instant coffee - 1.2g": [
+                        {
+                                "min": 1,
+                                "price": 25,
+                                "max": 249
+                        },
+                        {
+                                "min": 250,
+                                "price": 24.5,
+                                "max": 499
+                        },
+                        {
+                                "min": 500,
+                                "price": 24
+                        }
+                ],
+                "Coffee Mate - 5g": [
+                        {
+                                "min": 1,
+                                "price": 34,
+                                "max": 249
+                        },
+                        {
+                                "min": 250,
+                                "price": 33,
+                                "max": 499
+                        },
+                        {
+                                "min": 500,
+                                "price": 32
+                        }
+                ],
+                "Tea Bag (catering Tea)": [
+                        {
+                                "min": 1,
+                                "price": 800,
+                                "max": 249
+                        },
+                        {
+                                "min": 250,
+                                "price": 800,
+                                "max": 499
+                        },
+                        {
+                                "min": 500,
+                                "price": 800
+                        }
+                ],
+                "EverLeaf Green Tea Envelope": [
+                        {
+                                "min": 1,
+                                "price": 18.6,
+                                "max": 249
+                        },
+                        {
+                                "min": 250,
+                                "price": 18.55,
+                                "max": 499
+                        },
+                        {
+                                "min": 500,
+                                "price": 18.5
+                        }
+                ],
+                "Salt 1g": [
+                        {
+                                "min": 1,
+                                "price": 3.55,
+                                "max": 249
+                        },
+                        {
+                                "min": 250,
+                                "price": 3.4,
+                                "max": 499
+                        },
+                        {
+                                "min": 500,
+                                "price": 3.28
+                        }
+                ]
+        },
+        "HERBAL TEA": {
+                "Ushma - 30g": 1190,
+                "Slim Herb - 30g": 1190,
+                "Island Spicy Fusion - 30g": 1100,
+                "Special Hibiscus - 30g": 1250,
+                "Herbal Soothe - 30g": 1000,
+                "Harmony Brew - 30g": 1270,
+                "Fat Burn - 30g": 1150,
+                "Detox - 30g": 1110,
+                "Citrus - 30g": 1180,
+                "Calm Mind - 30g": 1240,
+                "Balance Blend - 30g": 1150,
+                "Moringa Morning - 30g": 1030,
+                "Immuno Up - 30g": 1150,
+                "Glyco guard - 30g": 1000,
+                "Green Guard - 30g": 1090,
+                "Vita Cure - 30g": 1060
+        },
+        "FLAVORED TEA": {
+                "Jasmine green tea with natural buds  - 50g": 950,
+                "Mango black tea  - 30g": 630,
+                "Ginger black tea  - 30g": 695,
+                "Caramel black tea  - 30g": 645,
+                "Lemon Green Tea - 30g": 675,
+                "Pineapple black tea  - 30g": 660,
+                "Strawberry black tea  - 30g": 650,
+                "Passion Fruit black tea  - 30g": 900,
+                "Green tea   - 30g": 650,
+                "Black tea - 30g": 585
+        },
+        "DEHYDRATED ITEMS AND POWDERS": {
+                "Dehydrated Bitter Gourd - 50g": 775,
+                "Dehydrated Breadfruit - 50g": 525,
+                "Dehydrated Curry Leaves - 50g": 390,
+                "Dehydrated Jackfruit - 50g": 440,
+                "Dehydrated Leaks - 50g": 615,
+                "Dehydrated Banana - 50g": 340,
+                "Dehydrated Mango - 50g": 485,
+                "Dehydrated Papaya - 50g": 460,
+                "Dehydrated Pineapple rings - 50g": 680,
+                "Beetroot Powder - 50g": 540,
+                "Carrot Powder - 50g": 535,
+                "Curry Leaves Powder - 50g": 355,
+                "Moringa Powder - 50g": 415,
+                "Pumpkin Powder - 50g": 485,
+                "Tomato Powder - 50g": 550
+        }
+};
+
+    let rowCount = 0;
+
+    // Load initial row
+    window.onload = function() {
+        addOrderRow();
+    };
+
+    function addOrderRow() {
+        rowCount++;
+        const container = document.getElementById('orderItemsContainer');
+        
+        const row = document.createElement('div');
+        row.className = 'order-row';
+        row.id = `row-${rowCount}`;
+
+        // Populate Category Options in the specific order
+        let catOptions = `<option value="">Select Category</option>`;
+        categoryOrder.forEach(cat => {
+            catOptions += `<option value="${cat}">${cat}</option>`;
+        });
+
+        row.innerHTML = `
+            <div>
+                <select class="category-select" onchange="updateProducts(${rowCount}, this.value)">
+                    ${catOptions}
+                </select>
+            </div>
+            <div>
+                <select class="product-select" id="prod-${rowCount}" onchange="updatePrice(${rowCount})">
+                    <option value="">Select Product</option>
+                </select>
+            </div>
+            <div class="small-col">
+                <input type="number" id="qty-${rowCount}" placeholder="Qty" min="1" value="1" oninput="calculateTotal(${rowCount})">
+            </div>
+            <div class="price-col">
+                <span class="price-label">Unit Price</span>
+                <span id="unit-${rowCount}">Rs.0.00</span>
+            </div>
+            <div class="price-col">
+                <span class="price-label">Total</span>
+                <span id="price-${rowCount}" data-total="0" data-unit-price="0">Rs.0.00</span>
+            </div>
+            <div>
+                <button type="button" class="btn-remove" onclick="removeRow(${rowCount})">Remove</button>
+            </div>
+        `;
+        container.appendChild(row);
+    }
+
+    function removeRow(id) {
+        const row = document.getElementById(`row-${id}`);
+        if(row) {
+            row.remove();
+            updateUIGrandTotal(); // Update total when a row is removed
+        }
+    }
+
+    function updateProducts(rowId, category) {
+        const prodSelect = document.getElementById(`prod-${rowId}`);
+        prodSelect.innerHTML = `<option value="">Select Product</option>`;
+        const priceDisplay = document.getElementById(`price-${rowId}`);
+        const unitDisplay = document.getElementById(`unit-${rowId}`);
+        priceDisplay.innerText = "Rs.0.00";
+        priceDisplay.setAttribute('data-total', 0);
+        priceDisplay.setAttribute('data-unit-price', 0);
+        if (unitDisplay) unitDisplay.innerText = "Rs.0.00";
+        
+        if (category && productData[category]) {
+            for (let prod in productData[category]) {
+                const option = document.createElement('option');
+                option.value = prod;
+                option.textContent = prod;
+                option.setAttribute('data-price-info', JSON.stringify(productData[category][prod]));
+                prodSelect.appendChild(option);
+            }
+        }
+        updateUIGrandTotal();
+    }
+
+    function updatePrice(rowId) {
+        calculateTotal(rowId);
+    }
+
+    function getUnitPrice(priceInfo, qty) {
+        if (Array.isArray(priceInfo)) {
+            const matchingTier = priceInfo.find(tier => qty >= tier.min && (tier.max === undefined || qty <= tier.max));
+            return matchingTier ? parseFloat(matchingTier.price) : 0;
+        }
+        return parseFloat(priceInfo) || 0;
+    }
+
+    function calculateTotal(rowId) {
+        const prodSelect = document.getElementById(`prod-${rowId}`);
+        const qtyInput = document.getElementById(`qty-${rowId}`);
+        const priceDisplay = document.getElementById(`price-${rowId}`);
+        const unitDisplay = document.getElementById(`unit-${rowId}`);
+
+        if (prodSelect.selectedIndex > 0) {
+            const priceInfo = JSON.parse(prodSelect.options[prodSelect.selectedIndex].getAttribute('data-price-info'));
+            const qty = parseFloat(qtyInput.value) || 0;
+            const unitPrice = getUnitPrice(priceInfo, qty);
+            const total = unitPrice * qty;
+            if (unitDisplay) unitDisplay.innerText = `Rs.${unitPrice.toFixed(2)}`;
+            priceDisplay.innerText = `Rs.${total.toFixed(2)}`;
+            priceDisplay.setAttribute('data-total', total);
+            priceDisplay.setAttribute('data-unit-price', unitPrice);
+        } else {
+            if (unitDisplay) unitDisplay.innerText = "Rs.0.00";
+            priceDisplay.innerText = "Rs.0.00";
+            priceDisplay.setAttribute('data-total', 0);
+            priceDisplay.setAttribute('data-unit-price', 0);
+        }
+        updateUIGrandTotal();
+    }
+
+    // NEW: Function to calculate and update the total on the screen
+    function updateUIGrandTotal() {
+        let grandTotal = 0;
+        const priceSpans = document.querySelectorAll('span[id^="price-"]');
+        
+        priceSpans.forEach(span => {
+            grandTotal += parseFloat(span.getAttribute('data-total')) || 0;
+        });
+        
+        document.getElementById('displayGrandTotal').innerText = `Rs.${grandTotal.toFixed(2)}`;
+    }
+
+    function generateMessage() {
+        // Get Date Logged (Current System Date)
+        const today = new Date();
+        const dateLogged = today.toLocaleDateString('en-GB', { 
+            day: '2-digit', month: 'short', year: 'numeric' 
+        });
+
+        const customer = document.getElementById('customer').value || "[Not Provided]";
+        const address = document.getElementById('address').value || "[Not Provided]";
+        const contactInput = document.getElementById('contact');
+        const contact = contactInput.value || "[Not Provided]";
+        if (contact !== "[Not Provided]" && contact.length !== 10) {
+            alert("Billing Contact must be exactly 10 digits.");
+            contactInput.focus();
+            return;
+        }
+        const date = document.getElementById('date').value || "[Not Selected]";
+        const method = document.getElementById('method').value || "[Not Selected]";
+
+        // Group orders by category
+        let orderGroups = {};
+
+        const rows = document.querySelectorAll('.order-row');
+        rows.forEach(row => {
+            const catSelect = row.querySelector('.category-select');
+            const prodSelect = row.querySelector('.product-select');
+            const qtyInput = row.querySelector('input[type="number"]');
+
+            if (catSelect.value && prodSelect.value) {
+                const category = catSelect.value;
+                const product = prodSelect.value;
+                const qty = qtyInput.value;
+
+                if (!orderGroups[category]) {
+                    orderGroups[category] = [];
+                }
+                
+                // ADDING TO MESSAGE WITHOUT ANY PRICES
+                orderGroups[category].push(`  - ${product} (Qty: ${qty})`);
+            }
+        });
+
+        // Format Order Details in the strict category order requested
+        let orderDetailsText = "";
+        categoryOrder.forEach(cat => {
+            if (orderGroups[cat] && orderGroups[cat].length > 0) {
+                orderDetailsText += `\n[${cat}]\n`;
+                orderDetailsText += orderGroups[cat].join('\n');
+                orderDetailsText += `\n`;
+            }
+        });
+
+        if (orderDetailsText === "") {
+            orderDetailsText = "  [No items added]\n";
+        }
+
+        // Build Final String WITHOUT the Grand Total
+        const message = 
+`🚨 NEW ORDER ALERT! 
+🗓️ *Date Logged: ${dateLogged}*
+
+👤 Customer: ${customer}
+📍 Address: ${address}
+📞 Contact: ${contact}
+
+🛒 Order Details:${orderDetailsText}
+📅 Delivery Date: ${date}
+🚚 Delivery Method: ${method}`;
+
+        document.getElementById('finalMessage').value = message;
+    }
+
+    function copyToClipboard() {
+        const textarea = document.getElementById('finalMessage');
+        textarea.select();
+        textarea.setSelectionRange(0, 99999); // For mobile devices
+        document.execCommand('copy');
+        alert("Message copied to clipboard!");
+    }
+</script>
+
+</body>
+</html>

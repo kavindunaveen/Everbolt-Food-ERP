@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Quotation, QuotationItem, Invoice, InvoiceItem, Return, SalesAuditLog
+from .models import Quotation, QuotationItem, Invoice, InvoiceItem, Return, ReturnItem, SalesAuditLog, CreditNote, CreditNoteItem
 
 @admin.register(SalesAuditLog)
 class SalesAuditLogAdmin(admin.ModelAdmin):
@@ -30,8 +30,25 @@ class InvoiceAdmin(admin.ModelAdmin):
     search_fields = ('invoice_number', 'customer__customer_name', 'customer__company_name')
     inlines = [InvoiceItemInline]
 
+from .models import Quotation, QuotationItem, Invoice, InvoiceItem, Return, ReturnItem, SalesAuditLog, CreditNote, CreditNoteItem
+
+class ReturnItemInline(admin.TabularInline):
+    model = ReturnItem
+    extra = 1
+
 @admin.register(Return)
 class ReturnAdmin(admin.ModelAdmin):
-    list_display = ('return_number', 'original_invoice', 'returned_product', 'quantity', 'reason', 'condition', 'credit_note_issued')
-    list_filter = ('reason', 'condition', 'credit_note_issued', 'stock_updated')
+    list_display = ('return_number', 'original_invoice', 'credit_note_issued', 'stock_updated')
+    list_filter = ('credit_note_issued', 'stock_updated')
     search_fields = ('return_number', 'original_invoice__invoice_number')
+    inlines = [ReturnItemInline]
+
+class CreditNoteItemInline(admin.TabularInline):
+    model = CreditNoteItem
+    extra = 1
+
+@admin.register(CreditNote)
+class CreditNoteAdmin(admin.ModelAdmin):
+    list_display = ('credit_note_number', 'original_invoice', 'customer', 'issued_date')
+    search_fields = ('credit_note_number', 'original_invoice__invoice_number', 'customer__customer_name')
+    inlines = [CreditNoteItemInline]

@@ -1,6 +1,6 @@
 from django import forms
 from django.forms import inlineformset_factory
-from .models import Quotation, QuotationItem, Invoice, InvoiceItem, DeliveryNote, DeliveryNoteItem
+from .models import Quotation, QuotationItem, Invoice, InvoiceItem, DeliveryNote, DeliveryNoteItem, Return, ReturnItem
 
 class QuotationForm(forms.ModelForm):
     class Meta:
@@ -102,6 +102,33 @@ class DeliveryNoteForm(forms.ModelForm):
         self.fields['invoice'].queryset = Invoice.objects.filter(status='ISSUED')
         
         from users.models import User
+        if self.instance and self.instance.pk:
+            self.fields['invoice'].widget.attrs['disabled'] = True
         if 'delivered_by' in self.fields:
             self.fields['delivered_by'].queryset = User.objects.filter(is_active=True, is_delivery_officer=True)
             self.fields['delivered_by'].empty_label = "--- Select Delivery Officer ---"
+
+class ReturnForm(forms.ModelForm):
+    class Meta:
+        model = Return
+        fields = ['notes']
+        widgets = {
+            'notes': forms.Textarea(attrs={'class': 'w-full px-3 py-2 border border-gray-300 rounded-md', 'rows': 2}),
+        }
+
+class ReturnItemForm(forms.ModelForm):
+    class Meta:
+        model = ReturnItem
+        fields = ['product', 'quantity', 'unit_price', 'reason', 'condition']
+        widgets = {
+            'product': forms.Select(attrs={'class': 'w-full px-3 py-2 border border-gray-300 rounded-md text-sm product-select'}),
+            'quantity': forms.NumberInput(attrs={'class': 'w-full px-2 py-2 border border-gray-300 rounded-md text-center text-sm', 'min': '1'}),
+            'unit_price': forms.NumberInput(attrs={'class': 'w-full px-2 py-2 border border-gray-300 rounded-md text-right text-sm step-any', 'readonly': 'readonly'}),
+            'reason': forms.Select(attrs={'class': 'w-full px-2 py-2 border border-gray-300 rounded-md text-sm'}),
+            'condition': forms.Select(attrs={'class': 'w-full px-2 py-2 border border-gray-300 rounded-md text-sm'}),
+        }
+
+ReturnItemFormSet = inlineformset_factory(
+    Return, ReturnItem, form=ReturnItemForm,
+    extra=1, can_delete=True
+)
