@@ -9,13 +9,14 @@ def decrement_stock_on_invoice(sender, instance, created, **kwargs):
     """
     if created:
         product = instance.product
-        product.current_stock -= instance.quantity
-        
-        # If stock logic dictates it should go out of stock
-        if product.current_stock <= 0:
-            product.status = False
+        if product.track_stock:
+            product.current_stock -= instance.quantity
             
-        product.save()
+            # If stock logic dictates it should go out of stock
+            if product.current_stock <= 0:
+                product.status = False
+                
+            product.save()
 
 @receiver(post_delete, sender=InvoiceItem)
 def increment_stock_on_invoice_delete(sender, instance, **kwargs):
@@ -24,11 +25,12 @@ def increment_stock_on_invoice_delete(sender, instance, **kwargs):
     return the stock.
     """
     product = instance.product
-    product.current_stock += instance.quantity
-    
-    if product.current_stock > 0:
-        product.status = True
+    if product.track_stock:
+        product.current_stock += instance.quantity
         
-    product.save()
+        if product.current_stock > 0:
+            product.status = True
+            
+        product.save()
 
 
