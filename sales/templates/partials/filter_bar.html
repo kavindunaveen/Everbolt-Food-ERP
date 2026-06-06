@@ -70,6 +70,14 @@
                             <span>Show Returned Invoices Only</span>
                         </label>
                     </div>
+                    <div>
+                        <label class="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2">Delivery Status</label>
+                        <select name="dn_status" class="w-full border-gray-200 rounded-lg text-sm font-medium focus:ring-indigo-500 focus:border-indigo-500">
+                            <option value="">All Invoices</option>
+                            <option value="has_dn" {% if request.GET.dn_status == 'has_dn' %}selected{% endif %}>Has Delivery Note</option>
+                            <option value="pending_dn" {% if request.GET.dn_status == 'pending_dn' %}selected{% endif %}>Pending Delivery Note</option>
+                        </select>
+                    </div>
                     {% endif %}
                     <div>
                         <label class="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2">Date Range</label>

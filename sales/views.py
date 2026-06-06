@@ -380,6 +380,12 @@ class InvoiceListView(LoginRequiredMixin, ERPPermissionRequiredMixin, ListView):
         if is_returned == 'true':
             qs = qs.filter(status__in=['CANCELLED', 'CANCEL_PENDING'], cancellation_reason__icontains='Customer Return')
 
+        dn_status = self.request.GET.get('dn_status')
+        if dn_status == 'has_dn':
+            qs = qs.filter(delivery_notes__isnull=False).distinct()
+        elif dn_status == 'pending_dn':
+            qs = qs.filter(status='ISSUED', delivery_notes__isnull=True).distinct()
+
         return qs
 
     def get_context_data(self, **kwargs):
