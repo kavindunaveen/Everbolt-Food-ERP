@@ -205,6 +205,25 @@ class Invoice(models.Model):
         StockReserve.objects.filter(reference_type='INV', reference_id=self.pk).delete()
         super().delete(*args, **kwargs)
 
+    @property
+    def delivery_status_display(self):
+        dns = self.delivery_notes.all()
+        if not dns.exists():
+            if self.status in ['ISSUED', 'PAID']:
+                return "PENDING DN"
+            return "-"
+            
+        if dns.filter(status='FAILED').exists():
+            return "FAILED"
+            
+        if dns.filter(status='PARTIAL').exists():
+            return "PARTIAL"
+            
+        if dns.filter(status='DELIVERED').count() == dns.count():
+            return "DELIVERED"
+            
+        return dns.first().get_status_display().upper()
+
     class Meta:
         permissions = [
             ("approve_invoice", "Can approve pending invoices"),

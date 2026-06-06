@@ -63,6 +63,7 @@
                         <th scope="col" :class="compactMode ? 'px-6 py-2' : 'px-6 py-4'" class="text-left text-[11px] font-bold text-gray-400 uppercase tracking-widest">Customer</th>
                         <th scope="col" :class="compactMode ? 'px-6 py-2' : 'px-6 py-4'" class="text-left text-[11px] font-bold text-gray-400 uppercase tracking-widest">Sales Officer</th>
                         <th scope="col" :class="compactMode ? 'px-6 py-2' : 'px-6 py-4'" class="text-left text-[11px] font-bold text-gray-400 uppercase tracking-widest">Status</th>
+                        <th scope="col" :class="compactMode ? 'px-6 py-2' : 'px-6 py-4'" class="text-left text-[11px] font-bold text-gray-400 uppercase tracking-widest">Delivery</th>
                         <th scope="col" :class="compactMode ? 'px-6 py-2' : 'px-6 py-4'" class="text-right text-[11px] font-bold text-gray-400 uppercase tracking-widest">Total Amount</th>
                         <th scope="col" :class="compactMode ? 'px-6 py-2' : 'px-6 py-4'" class="text-center text-[11px] font-bold text-gray-400 uppercase tracking-widest">Actions</th>
                     </tr>
@@ -97,6 +98,16 @@
                                 OVERDUE
                             </span>
                             {% endif %}
+                        </td>
+                        <td :class="compactMode ? 'px-6 py-2' : 'px-6 py-4'" class="whitespace-nowrap">
+                            <span class="px-2.5 py-1 text-[10px] font-extrabold rounded-md uppercase tracking-wider
+                                {% if inv.delivery_status_display == 'DELIVERED' %}bg-green-100 text-green-700
+                                {% elif inv.delivery_status_display == 'PARTIAL' %}bg-blue-100 text-blue-700
+                                {% elif inv.delivery_status_display == 'PENDING DN' or inv.delivery_status_display == 'PENDING' %}bg-orange-100 text-orange-700
+                                {% elif inv.delivery_status_display == 'FAILED' %}bg-red-100 text-red-700
+                                {% else %}text-gray-400{% endif %}">
+                                {{ inv.delivery_status_display }}
+                            </span>
                         </td>
                         <td :class="compactMode ? 'px-6 py-2' : 'px-6 py-4'" class="whitespace-nowrap text-right text-sm font-bold text-gray-900">
                             Rs {{ inv.total_amount|floatformat:2 }}

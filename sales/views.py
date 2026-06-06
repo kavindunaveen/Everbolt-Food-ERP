@@ -351,7 +351,7 @@ class InvoiceListView(LoginRequiredMixin, ERPPermissionRequiredMixin, ListView):
     
     def get_queryset(self):
         from django.db.models import Q
-        qs = super().get_queryset().order_by('-creation_date')
+        qs = super().get_queryset().prefetch_related('delivery_notes').order_by('-creation_date')
 
         status = self.request.GET.get('status')
         if status:
