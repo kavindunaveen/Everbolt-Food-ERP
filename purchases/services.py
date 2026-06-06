@@ -16,21 +16,22 @@ def confirm_grn(grn, user):
         
         ledgers = []
         for item in grn.items.all():
-            ledgers.append(StockLedger(
-                product=item.product,
-                tx_type=StockLedger.TransactionTypes.GRN,
-                qty_in=item.qty,
-                qty_out=0,
-                reference_type='GRN',
-                reference_id=grn.id,
-                reference_number=grn.grn_number,
-                remarks=f"Received via {grn.supplier}",
-                user=user
-            ))
-            
-            product = Product.objects.select_for_update().get(id=item.product.id)
-            product.current_stock += item.qty
-            product.save(update_fields=['current_stock'])
+            if item.product.track_stock:
+                ledgers.append(StockLedger(
+                    product=item.product,
+                    tx_type=StockLedger.TransactionTypes.GRN,
+                    qty_in=item.qty,
+                    qty_out=0,
+                    reference_type='GRN',
+                    reference_id=grn.id,
+                    reference_number=grn.grn_number,
+                    remarks=f"Received via {grn.supplier}",
+                    user=user
+                ))
+                
+                product = Product.objects.select_for_update().get(id=item.product.id)
+                product.current_stock += item.qty
+                product.save(update_fields=['current_stock'])
             
         if ledgers:
             StockLedger.objects.bulk_create(ledgers)
@@ -48,21 +49,22 @@ def cancel_grn(grn, user):
         
         ledgers = []
         for item in grn.items.all():
-            ledgers.append(StockLedger(
-                product=item.product,
-                tx_type=StockLedger.TransactionTypes.ADJ_NEG,  # Reversal is a negative adjustment, not a GRN
-                qty_in=0,
-                qty_out=item.qty,  # Reverse the original stock-IN
-                reference_type='GRN-CANCEL',
-                reference_id=grn.id,
-                reference_number=grn.grn_number,
-                remarks=f"Cancelled GRN",
-                user=user
-            ))
-            
-            product = Product.objects.select_for_update().get(id=item.product.id)
-            product.current_stock -= item.qty
-            product.save(update_fields=['current_stock'])
+            if item.product.track_stock:
+                ledgers.append(StockLedger(
+                    product=item.product,
+                    tx_type=StockLedger.TransactionTypes.ADJ_NEG,  # Reversal is a negative adjustment, not a GRN
+                    qty_in=0,
+                    qty_out=item.qty,  # Reverse the original stock-IN
+                    reference_type='GRN-CANCEL',
+                    reference_id=grn.id,
+                    reference_number=grn.grn_number,
+                    remarks=f"Cancelled GRN",
+                    user=user
+                ))
+                
+                product = Product.objects.select_for_update().get(id=item.product.id)
+                product.current_stock -= item.qty
+                product.save(update_fields=['current_stock'])
             
         if ledgers:
             StockLedger.objects.bulk_create(ledgers)

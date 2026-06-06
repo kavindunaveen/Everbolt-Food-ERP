@@ -86,7 +86,7 @@ def deduct_dn_stock(dn, user):
     with transaction.atomic():
         for item in dn.items.all():
             qty = item.quantity
-            if qty > 0:
+            if qty > 0 and item.product.track_stock:
                 prod_obj = Product.objects.select_for_update().get(id=item.product.id)
                 if not prod_obj.allow_negative_stock and prod_obj.current_stock < qty:
                     raise ValueError(f"Insufficient stock for {prod_obj.name}. Available: {prod_obj.current_stock}")
@@ -124,7 +124,7 @@ def restore_dn_stock(dn, user, remark_prefix="Delivery Failed"):
     with transaction.atomic():
         for item in dn.items.all():
             qty = item.quantity
-            if qty > 0:
+            if qty > 0 and item.product.track_stock:
                 ledgers.append(StockLedger(
                     product=item.product,
                     tx_type=StockLedger.TransactionTypes.SALES_RET,
@@ -158,7 +158,7 @@ def restore_stock(invoice, user, remark_prefix="Stock Restoration"):
     ledgers = []
     for item in invoice.items.all():
         qty = item.quantity
-        if qty > 0:
+        if qty > 0 and item.product.track_stock:
             ledgers.append(StockLedger(
                 product=item.product,
                 tx_type=StockLedger.TransactionTypes.SALES_RET,
@@ -294,43 +294,45 @@ def process_return(return_obj, user):
             total_credit_value += credit_amount
             items_summary.append(f"{qty}x {product.name}")
 
-            # Write stock ledger entry for the return (inward)
-            StockLedger.objects.create(
-                product=product,
-                tx_type=StockLedger.TransactionTypes.SALES_RET,
-                qty_in=qty,
-                qty_out=0,
-                reference_type='RTN',
-                reference_id=return_obj.pk,
-                reference_number=return_obj.return_number,
-                remarks=(
-                    f"Return {return_obj.return_number} | "
-                    f"Inv: {return_obj.original_invoice.invoice_number} | "
-                    f"Cond: {return_item.get_condition_display()}"
-                ),
-                user=user,
-            )
-
-            if return_item.condition == 'SELLABLE':
-                # Update product stock cache
-                product.current_stock += qty
-                if product.current_stock > 0:
-                    product.status = True
-                product.save(update_fields=['current_stock', 'status'])
-            else:
-                # If DAMAGED, the stock came back but shouldn't be added to sellable stock.
-                # We write an immediate OUT adjustment so the ledger stays balanced with current_stock.
+            # Handle Stock Ledger & Cache if product tracks stock
+            if product.track_stock:
+                # Write stock ledger entry for the return (inward)
                 StockLedger.objects.create(
                     product=product,
-                    tx_type=StockLedger.TransactionTypes.ADJ_NEG,
-                    qty_in=0,
-                    qty_out=qty,
-                    reference_type='RTN_DMG',
+                    tx_type=StockLedger.TransactionTypes.SALES_RET,
+                    qty_in=qty,
+                    qty_out=0,
+                    reference_type='RTN',
                     reference_id=return_obj.pk,
-                    reference_number=f"{return_obj.return_number}-DMG",
-                    remarks=f"Auto write-off for damaged return {return_obj.return_number}",
+                    reference_number=return_obj.return_number,
+                    remarks=(
+                        f"Return {return_obj.return_number} | "
+                        f"Inv: {return_obj.original_invoice.invoice_number} | "
+                        f"Cond: {return_item.get_condition_display()}"
+                    ),
                     user=user,
                 )
+
+                if return_item.condition == 'SELLABLE':
+                    # Update product stock cache
+                    product.current_stock += qty
+                    if product.current_stock > 0:
+                        product.status = True
+                    product.save(update_fields=['current_stock', 'status'])
+                else:
+                    # If DAMAGED, the stock came back but shouldn't be added to sellable stock.
+                    # We write an immediate OUT adjustment so the ledger stays balanced with current_stock.
+                    StockLedger.objects.create(
+                        product=product,
+                        tx_type=StockLedger.TransactionTypes.ADJ_NEG,
+                        qty_in=0,
+                        qty_out=qty,
+                        reference_type='RTN_DMG',
+                        reference_id=return_obj.pk,
+                        reference_number=f"{return_obj.return_number}-DMG",
+                        remarks=f"Auto write-off for damaged return {return_obj.return_number}",
+                        user=user,
+                    )
 
             # Generate Credit Note Item
             CreditNoteItem.objects.create(

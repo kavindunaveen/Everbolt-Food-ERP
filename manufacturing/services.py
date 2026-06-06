@@ -22,7 +22,7 @@ def confirm_production(production, user):
         # 1. Handle Materials (Consumption)
         for mat in production.materials.all():
             qty = mat.actual_used_qty
-            if qty > 0:
+            if qty > 0 and mat.component_product.track_stock:
                 ledgers.append(StockLedger(
                     product=mat.component_product,
                     tx_type=StockLedger.TransactionTypes.PROD_CONS,
@@ -46,7 +46,7 @@ def confirm_production(production, user):
         # 2. Handle Outputs (Production)
         for out in production.outputs.all():
             qty = out.produced_qty
-            if qty > 0:
+            if qty > 0 and out.output_product.track_stock:
                 ledgers.append(StockLedger(
                     product=out.output_product,
                     tx_type=StockLedger.TransactionTypes.PROD_OUT,
@@ -82,7 +82,7 @@ def cancel_production(production, user):
         # 1. Reverse Materials (Add back stock)
         for mat in production.materials.all():
             qty = mat.actual_used_qty
-            if qty > 0:
+            if qty > 0 and mat.component_product.track_stock:
                 ledgers.append(StockLedger(
                     product=mat.component_product,
                     tx_type=StockLedger.TransactionTypes.PROD_CONS,
@@ -102,7 +102,7 @@ def cancel_production(production, user):
         # 2. Reverse Outputs (Remove stock)
         for out in production.outputs.all():
             qty = out.produced_qty
-            if qty > 0:
+            if qty > 0 and out.output_product.track_stock:
                 ledgers.append(StockLedger(
                     product=out.output_product,
                     tx_type=StockLedger.TransactionTypes.PROD_OUT,
