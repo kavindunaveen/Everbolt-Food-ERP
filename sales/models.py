@@ -414,6 +414,11 @@ class DeliveryNote(models.Model):
     def __str__(self):
         return self.dn_number
 
+    class Meta:
+        permissions = [
+            ("change_dn_status", "Can change delivery note status"),
+        ]
+
 class DeliveryNoteItem(models.Model):
     delivery_note = models.ForeignKey(DeliveryNote, related_name='items', on_delete=models.CASCADE)
     product = models.ForeignKey(Product, on_delete=models.PROTECT)

@@ -42,7 +42,9 @@
                         <th scope="col" :class="compactMode ? 'px-6 py-2' : 'px-6 py-4'" class="text-left text-[11px] font-bold text-gray-400 uppercase tracking-widest">Customer</th>
                         <th scope="col" :class="compactMode ? 'px-6 py-2' : 'px-6 py-4'" class="text-left text-[11px] font-bold text-gray-400 uppercase tracking-widest">Delivered By</th>
                         <th scope="col" :class="compactMode ? 'px-6 py-2' : 'px-6 py-4'" class="text-left text-[11px] font-bold text-gray-400 uppercase tracking-widest">Status</th>
+                        {% if perms.sales.change_dn_status %}
                         <th scope="col" :class="compactMode ? 'px-6 py-2' : 'px-6 py-4'" class="text-center text-[11px] font-bold text-gray-400 uppercase tracking-widest">Change Status</th>
+                        {% endif %}
                     </tr>
                 </thead>
                 <tbody class="bg-white divide-y divide-gray-100">
@@ -73,6 +75,7 @@
                                 {{ dn.get_status_display }}
                             </span>
                         </td>
+                        {% if perms.sales.change_dn_status %}
                         <td :class="compactMode ? 'px-6 py-2' : 'px-6 py-4'" class="whitespace-nowrap text-center">
                             <form action="{% url 'delivery_note_update_status' dn.pk %}" method="post" class="flex items-center justify-center space-x-2">
                                 {% csrf_token %}
@@ -83,6 +86,7 @@
                                 </select>
                             </form>
                         </td>
+                        {% endif %}
                     </tr>
                     {% empty %}
                     <tr>

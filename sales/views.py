@@ -1648,6 +1648,7 @@ def get_invoice_details(request, pk):
     return JsonResponse(data)
 
 @login_required
+@permission_required('sales.change_dn_status', raise_exception=True)
 def update_dn_status(request, pk):
     dn = get_object_or_404(DeliveryNote, pk=pk)
     if request.method == 'POST':
