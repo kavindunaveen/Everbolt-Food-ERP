@@ -11,7 +11,7 @@ PERMISSION_MODULES = [
     ("Suppliers",           "suppliers",     "supplier",        ["view", "add", "change", "delete"]),
     ("Quotations",          "sales",         "quotation",       ["view", "add", "change", "delete"]),
     ("Invoices",            "sales",         "invoice",         ["view", "add", "change", "delete", "approve"]),
-    ("Delivery Notes",      "sales",         "deliverynote",    ["view", "add", "change", "delete"]),
+    ("Delivery Notes",      "sales",         "deliverynote",    ["view", "add", "change", "delete", "approve"]),
     ("Returns",             "sales",         "return",          ["view", "add", "change", "delete"]),
     ("Products",            "inventory",     "product",         ["view", "add", "change", "delete"]),
     ("Stock Adjustments",   "inventory",     "stockadjustment", ["view", "add", "change", "delete"]),
@@ -45,7 +45,11 @@ class MatrixPermissionMixin:
             # For each action, find the exact permission
             for action in ['view', 'add', 'change', 'delete', 'approve']:
                 if action in actions:
-                    codename = f"{action}_{model_name}"
+                    if action == 'approve' and model_name == 'deliverynote':
+                        codename = "change_dn_status"
+                    else:
+                        codename = f"{action}_{model_name}"
+                    
                     perm = Permission.objects.filter(content_type__app_label=app_label, codename=codename).first()
                     if perm:
                         checked = perm.pk in user_perms_ids
