@@ -4,24 +4,6 @@ from django.contrib.auth.models import Permission
 from django.contrib.contenttypes.models import ContentType
 from .models import User, Role
 
-# The curated list of permission rows the admin should see
-PERMISSION_MODULES = [
-    # (Display Name, app_label, model_name, actions)
-    ("Customers",           "crm",           "customer",        ["view", "add", "change", "delete"]),
-    ("Suppliers",           "suppliers",     "supplier",        ["view", "add", "change", "delete"]),
-    ("Quotations",          "sales",         "quotation",       ["view", "add", "change", "delete"]),
-    ("Invoices",            "sales",         "invoice",         ["view", "add", "change", "delete", "approve"]),
-    ("Delivery Notes",      "sales",         "deliverynote",    ["view", "add", "change", "delete", "approve"]),
-    ("Returns",             "sales",         "return",          ["view", "add", "change", "delete"]),
-    ("Products",            "inventory",     "product",         ["view", "add", "change", "delete"]),
-    ("Stock Adjustments",   "inventory",     "stockadjustment", ["view", "add", "change", "delete"]),
-    ("Purchase Orders",     "purchases",     "purchaseorder",   ["view", "add", "change", "delete"]),
-    ("GRN",                 "purchases",     "grn",             ["view", "add", "change", "delete"]),
-    ("BOM",                 "manufacturing", "bom",             ["view", "add", "change", "delete"]),
-    ("Production Orders",   "manufacturing", "production",      ["view", "add", "change", "delete"]),
-    ("Users",               "users",         "user",            ["view", "add", "change", "delete"]),
-]
-
 class MatrixPermissionMixin:
     def get_permission_matrix(self):
         user_perms_ids = []
@@ -36,37 +18,61 @@ class MatrixPermissionMixin:
             elif hasattr(self.instance, 'permissions'):
                 user_perms_ids = list(self.instance.permissions.values_list('pk', flat=True))
 
+        target_apps = ['crm', 'suppliers', 'sales', 'inventory', 'manufacturing', 'purchases', 'users', 'dashboard', 'website']
+        from django.contrib.contenttypes.models import ContentType
+        from django.contrib.auth.models import Permission
+
+        content_types = ContentType.objects.filter(app_label__in=target_apps)
+        all_perms = Permission.objects.filter(content_type__in=content_types).select_related('content_type')
+
+        action_map = {}
+        for p in all_perms:
+            codename = p.codename
+            model_name = p.content_type.model
+            if codename.endswith(f"_{model_name}"):
+                action = codename[:-(len(model_name) + 1)]
+            else:
+                action = codename
+            action_map[p.pk] = action
+
+        base_actions = ['view', 'add', 'change', 'delete']
+        other_actions = list(set(action_map.values()) - set(base_actions))
+        other_actions.sort()
+        all_actions = base_actions + other_actions
+
         rows = []
-        for display_name, app_label, model_name, actions in PERMISSION_MODULES:
+        for ct in content_types:
+            ct_perms = [p for p in all_perms if p.content_type == ct]
+            if not ct_perms:
+                continue
+
+            display_name = ct.name.title()
             row = {
                 'model': display_name,
                 'cols': []
             }
-            # For each action, find the exact permission
-            for action in ['view', 'add', 'change', 'delete', 'approve']:
-                if action in actions:
-                    if action == 'approve' and model_name == 'deliverynote':
-                        codename = "change_dn_status"
-                    else:
-                        codename = f"{action}_{model_name}"
-                    
-                    perm = Permission.objects.filter(content_type__app_label=app_label, codename=codename).first()
-                    if perm:
-                        checked = perm.pk in user_perms_ids
-                        # If user is admin, everything is checked in UI
-                        if hasattr(self.instance, 'is_admin') and self.instance.pk and self.instance.is_admin():
-                            checked = True
-                        
-                        row['cols'].append({
-                            'pk': perm.pk,
-                            'checked': checked
-                        })
-                    else:
-                        row['cols'].append(None)
+            
+            for action in all_actions:
+                matching_perms = [p for p in ct_perms if action_map[p.pk] == action]
+                if matching_perms:
+                    perm = matching_perms[0]
+                    checked = perm.pk in user_perms_ids
+                    if hasattr(self.instance, 'is_admin') and getattr(self.instance, 'pk', None) and self.instance.is_admin():
+                        checked = True
+                    row['cols'].append({
+                        'pk': perm.pk,
+                        'name': perm.name,
+                        'checked': checked
+                    })
                 else:
                     row['cols'].append(None)
+                    
             rows.append(row)
-        return rows
+            
+        return {
+            'headers': [a.replace('_', ' ').title() for a in all_actions],
+            'rows': rows
+        }
 
 
 class CustomUserCreationForm(UserCreationForm, MatrixPermissionMixin):
