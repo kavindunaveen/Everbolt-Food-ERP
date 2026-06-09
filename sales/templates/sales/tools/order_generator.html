@@ -93,7 +93,8 @@
                 </button>
 
                 <div class="flex flex-col items-end gap-1">
-                    <div class="text-sm font-semibold text-gray-500" id="displayVatTotal">VAT (18%): Rs. 0.00</div>
+                    <div class="text-sm font-semibold text-gray-500" id="displaySubTotal">Subtotal (Ex VAT): Rs. 0.00</div>
+                    <div class="text-sm font-semibold text-gray-500 border-b border-gray-200 pb-1 mb-1" id="displayVatTotal">VAT (18%): Rs. 0.00</div>
                     <div class="bg-red-50 text-red-900 px-6 py-3 rounded-xl border border-red-100 flex items-center gap-4">
                         <span class="text-xs font-bold uppercase tracking-wider text-red-600">Grand Total</span>
                         <span id="displayGrandTotal" class="text-xl font-extrabold font-display tracking-tight">Rs. 0.00</span>
@@ -163,7 +164,7 @@
                 <span id="unit-${rowCount}" class="font-semibold text-gray-700 text-sm">Rs. 0.00</span>
             </div>
             <div class="col-span-4 md:col-span-1 lg:col-span-2 text-right flex flex-col justify-center border-l border-gray-100 pl-3">
-                <span class="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Total (Inc VAT)</span>
+                <span class="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Total (Ex VAT)</span>
                 <span id="price-${rowCount}" class="font-bold text-gray-900" data-total="0" data-ex-vat="0" data-unit-price="0">Rs. 0.00</span>
             </div>
             
@@ -229,7 +230,7 @@
             const totalIncVat = totalExVat * 1.18;
             
             if (unitDisplay) unitDisplay.innerText = `Rs. ${unitPriceExVat.toFixed(2)}`;
-            priceDisplay.innerText = `Rs. ${totalIncVat.toFixed(2)}`;
+            priceDisplay.innerText = `Rs. ${totalExVat.toFixed(2)}`;
             priceDisplay.setAttribute('data-total', totalIncVat);
             priceDisplay.setAttribute('data-ex-vat', totalExVat);
             priceDisplay.setAttribute('data-unit-price', unitPriceExVat);
@@ -253,6 +254,7 @@
         
         let vatAmount = incVatTotal - exVatTotal;
 
+        document.getElementById('displaySubTotal').innerText = `Subtotal (Ex VAT): Rs. ${exVatTotal.toLocaleString("en-LK", {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
         document.getElementById('displayVatTotal').innerText = `VAT (18%): Rs. ${vatAmount.toLocaleString("en-LK", {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
         document.getElementById('displayGrandTotal').innerText = `Rs. ${incVatTotal.toLocaleString("en-LK", {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
     }
