@@ -109,67 +109,9 @@
 
 {% block extra_js %}
 <script>
-    // Strict order for categories
-    const categoryOrder = [
-        "SPICES",
-        "KITHUL PRODUCTS",
-        "ARTISAN TEA",
-        "CONFECTIONARIES",
-        "HERBAL TEA",
-        "FLAVORED TEA",
-        "DEHYDRATED ITEMS AND POWDERS"
-    ];
-
-    // Product Database
-    const productData = {
-        "SPICES": {
-            "Black Pepper Powder - 1000g": 3285, "Black Pepper Powder - 500g": 1645, "Black Pepper Powder - 200g": 665, "Black Pepper Powder - 100g": 340,
-            "Chilli Flakes - 1000g": 1610, "Chilli Flakes - 500g": 810, "Chilli Flakes - 200g": 330, "Chilli Flakes - 100g": 170,
-            "Chilli Powder - 1000g": 1435, "Chilli Powder - 500g": 720, "Chilli Powder - 200g": 295, "Chilli Powder - 100g": 155,
-            "Curry Powder - 1000g": 1720, "Curry Powder - 500g": 865, "Curry Powder - 200g": 355, "Curry Powder - 100g": 180,
-            "Roasted Curry Powder - 1000g": 1860, "Roasted Curry Powder - 500g": 935, "Roasted Curry Powder - 200g": 380, "Roasted Curry Powder - 100g": 200,
-            "Turmeric Powder - 1000g": 4065, "Turmeric Powder - 500g": 2040, "Turmeric Powder - 200g": 820, "Turmeric Powder - 100g": 420
-        },
-        "KITHUL PRODUCTS": {
-            "kithul flour- 250g": 720, "kithul jaggery pieces - 200g": 1060, "Kithul sugar powder - 200g": 1120, "Kithul treacle - Small - 375ml": 2140, "Kithul treacle - round - 375ml": 1700, "Kithul half - 500ml": 2400
-        },
-        "ARTISAN TEA": {
-            "Everleaf Artisan Green Tea - 50g": 1790, "Everleaf Artisan Green Tea - 100g": 2550, "Everleaf Artisan Black Tea - 50g": 1790, "Everleaf Artisan Black Tea - 100g": 2550,
-            "Everleaf Artisan White Tea - 50g": 1790, "Everleaf Artisan White Tea - 100g": 2550, "Everleaf Arisan Wangedi Pakoe - 50g": 1350, "Everleaf Arisan Wangedi Pakoe - 100g": 1750
-        },
-        "CONFECTIONARIES": {
-            "Sugar  sachet - White -5g": [{min: 1, price: 5, max: 249}, {min: 250, price: 4.8, max: 499}, {min: 500, price: 4.65}],
-            "Sugar sachet  - Brown -5g": [{min: 1, price: 5.5, max: 249}, {min: 250, price: 5.35, max: 499}, {min: 500, price: 5.25}],
-            "Sugar  sachet - White -7g": [{min: 1, price: 5.75, max: 249}, {min: 250, price: 5.65, max: 499}, {min: 500, price: 5.5}],
-            "Sugar  sachet - Brown -7g": [{min: 1, price: 6.15, max: 249}, {min: 250, price: 6.05, max: 499}, {min: 500, price: 5.95}],
-            "Sugar  stick - White -5g": [{min: 1, price: 5.25, max: 249}, {min: 250, price: 5, max: 499}, {min: 500, price: 4.75}],
-            "Sugar stick  - Brown -5g": [{min: 1, price: 6, max: 249}, {min: 250, price: 5.75, max: 499}, {min: 500, price: 5.5}],
-            "Sugar  stick - White -7g": [{min: 1, price: 5.95, max: 249}, {min: 250, price: 5.85, max: 499}, {min: 500, price: 5.75}],
-            "Sugar stick  - Brown -7g": [{min: 1, price: 6.65, max: 249}, {min: 250, price: 6.6, max: 499}, {min: 500, price: 6.5}],
-            "Creamer Sachet - 5g": [{min: 1, price: 25, max: 249}, {min: 250, price: 24, max: 499}, {min: 500, price: 23}],
-            "EverLeaf Tea Envelop -2g": [{min: 1, price: 17, max: 249}, {min: 250, price: 16.5, max: 499}, {min: 500, price: 15.5}],
-            "Nescafe Instant coffee - 1.2g": [{min: 1, price: 25, max: 249}, {min: 250, price: 24.5, max: 499}, {min: 500, price: 24}],
-            "Coffee Mate - 5g": [{min: 1, price: 34, max: 249}, {min: 250, price: 33, max: 499}, {min: 500, price: 32}],
-            "Tea Bag (catering Tea)": [{min: 1, price: 800, max: 249}, {min: 250, price: 800, max: 499}, {min: 500, price: 800}],
-            "EverLeaf Green Tea Envelope": [{min: 1, price: 18.6, max: 249}, {min: 250, price: 18.55, max: 499}, {min: 500, price: 18.5}],
-            "Salt 1g": [{min: 1, price: 3.55, max: 249}, {min: 250, price: 3.4, max: 499}, {min: 500, price: 3.28}]
-        },
-        "HERBAL TEA": {
-            "Ushma - 30g": 1190, "Slim Herb - 30g": 1190, "Island Spicy Fusion - 30g": 1100, "Special Hibiscus - 30g": 1250, "Herbal Soothe - 30g": 1000,
-            "Harmony Brew - 30g": 1270, "Fat Burn - 30g": 1150, "Detox - 30g": 1110, "Citrus - 30g": 1180, "Calm Mind - 30g": 1240,
-            "Balance Blend - 30g": 1150, "Moringa Morning - 30g": 1030, "Immuno Up - 30g": 1150, "Glyco guard - 30g": 1000, "Green Guard - 30g": 1090, "Vita Cure - 30g": 1060
-        },
-        "FLAVORED TEA": {
-            "Jasmine green tea with natural buds  - 50g": 950, "Mango black tea  - 30g": 630, "Ginger black tea  - 30g": 695, "Caramel black tea  - 30g": 645,
-            "Lemon Green Tea - 30g": 675, "Pineapple black tea  - 30g": 660, "Strawberry black tea  - 30g": 650, "Passion Fruit black tea  - 30g": 900, "Green tea   - 30g": 650, "Black tea - 30g": 585
-        },
-        "DEHYDRATED ITEMS AND POWDERS": {
-            "Dehydrated Bitter Gourd - 50g": 775, "Dehydrated Breadfruit - 50g": 525, "Dehydrated Curry Leaves - 50g": 390, "Dehydrated Jackfruit - 50g": 440,
-            "Dehydrated Leaks - 50g": 615, "Dehydrated Banana - 50g": 340, "Dehydrated Mango - 50g": 485, "Dehydrated Papaya - 50g": 460,
-            "Dehydrated Pineapple rings - 50g": 680, "Beetroot Powder - 50g": 540, "Carrot Powder - 50g": 535, "Curry Leaves Powder - 50g": 355,
-            "Moringa Powder - 50g": 415, "Pumpkin Powder - 50g": 485, "Tomato Powder - 50g": 550
-        }
-    };
+    // Categories and Products mapped dynamically from system database (Ex-VAT prices)
+    const categoryOrder = JSON.parse('{{ category_order_json|escapejs }}');
+    const productData = JSON.parse('{{ product_data_json|escapejs }}');
 
     let rowCount = 0;
 

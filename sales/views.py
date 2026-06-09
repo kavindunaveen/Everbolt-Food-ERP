@@ -1847,9 +1847,48 @@ class DeliveryDashboardView(LoginRequiredMixin, ERPPermissionRequiredMixin, Temp
     template_name = 'sales/delivery_dashboard.html'
     permission_required = 'sales.view_deliverynote'
 
+import json
+
 class OrderGeneratorView(LoginRequiredMixin, ERPPermissionRequiredMixin, TemplateView):
     template_name = 'sales/tools/order_generator.html'
     permission_required = 'sales.add_quotation'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        from inventory.models import Product
+        
+        products = Product.objects.filter(status=True).order_by('category', 'tea_type', 'name')
+        
+        categories = []
+        product_data = {}
+        
+        for p in products:
+            cat = (p.tea_type if p.category == 'Tea' and p.tea_type else p.category).upper()
+            if cat not in categories:
+                categories.append(cat)
+                product_data[cat] = {}
+                
+            if p.price_tier_100 or p.price_tier_250 or p.price_tier_500:
+                tiers = []
+                if p.price_tier_100:
+                    tiers.append({"min": 1, "max": 100, "price": float(p.price_tier_100)})
+                if p.price_tier_250:
+                    prev_max = 100 if p.price_tier_100 else 0
+                    tiers.append({"min": prev_max + 1, "max": 250, "price": float(p.price_tier_250)})
+                if p.price_tier_500:
+                    prev_max = 250 if p.price_tier_250 else (100 if p.price_tier_100 else 0)
+                    tiers.append({"min": prev_max + 1, "price": float(p.price_tier_500)})
+                
+                if not tiers:
+                    product_data[cat][p.name] = float(p.selling_price)
+                else:
+                    product_data[cat][p.name] = tiers
+            else:
+                product_data[cat][p.name] = float(p.selling_price)
+                
+        context['category_order_json'] = json.dumps(categories)
+        context['product_data_json'] = json.dumps(product_data)
+        return context
 
 class CourierCalculatorView(LoginRequiredMixin, ERPPermissionRequiredMixin, TemplateView):
     template_name = 'sales/tools/courier_calculator.html'
