@@ -65,7 +65,7 @@
         <div x-show="activeTab === 'profile'" class="p-8">
             <div class="grid grid-cols-1 gap-y-6 gap-x-8 sm:grid-cols-2">
                 {% for field in form %}
-                    {% if field.name in 'username,email,first_name,last_name,contact_number,assigned_area,new_password' %}
+                    {% if field.name in 'username,email,first_name,last_name,contact_number,assigned_area,new_password,password1,password2' %}
                     <div class="sm:col-span-1">
                         <label for="{{ field.id_for_label }}" class="block text-sm font-semibold text-gray-700 mb-2">
                             {{ field.label }} {% if field.field.required %}<span class="text-red-500">*</span>{% endif %}
