@@ -167,11 +167,29 @@
                         </div>
                         <div class="flex items-center pt-4 border-t border-gray-100">
                             <div class="flex items-center h-5">
+                                {{ form.track_stock }}
+                            </div>
+                            <div class="ml-3 text-sm">
+                                <label class="font-bold text-gray-900">Track Stock</label>
+                                <p class="text-gray-500 text-xs">Enable to manage inventory levels via GRN & Adjustments.</p>
+                            </div>
+                        </div>
+                        <div class="flex items-center pt-4 border-t border-gray-100">
+                            <div class="flex items-center h-5">
+                                {{ form.allow_negative_stock }}
+                            </div>
+                            <div class="ml-3 text-sm">
+                                <label class="font-bold text-gray-900">Allow Negative Stock</label>
+                                <p class="text-gray-500 text-xs">Allow sales/manufacturing even when stock drops below 0.</p>
+                            </div>
+                        </div>
+                        <div class="flex items-center pt-4 border-t border-gray-100">
+                            <div class="flex items-center h-5">
                                 {{ form.status }}
                             </div>
                             <div class="ml-3 text-sm">
                                 <label class="font-bold text-gray-900">Active Status</label>
-                                <p class="text-gray-500 text-xs">Visibile in POS and Manufacturing.</p>
+                                <p class="text-gray-500 text-xs">Visible in POS and Manufacturing.</p>
                             </div>
                         </div>
                     </div>
