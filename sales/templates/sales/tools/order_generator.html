@@ -12,6 +12,17 @@
 {% endblock %}
 
 {% block content %}
+<style>
+    /* Remove arrows from number inputs */
+    input[type=number]::-webkit-inner-spin-button, 
+    input[type=number]::-webkit-outer-spin-button { 
+        -webkit-appearance: none; 
+        margin: 0; 
+    }
+    input[type=number] {
+        -moz-appearance: textfield;
+    }
+</style>
 <div class="px-4 py-6 sm:px-0 max-w-5xl mx-auto">
     <!-- Header -->
     <div class="mb-8 flex justify-between items-end">
@@ -81,9 +92,12 @@
                     Add Product
                 </button>
 
-                <div class="bg-red-50 text-red-900 px-6 py-3 rounded-xl border border-red-100 flex items-center gap-4">
-                    <span class="text-xs font-bold uppercase tracking-wider text-red-600">Grand Total</span>
-                    <span id="displayGrandTotal" class="text-xl font-extrabold font-display tracking-tight">Rs. 0.00</span>
+                <div class="flex flex-col items-end gap-1">
+                    <div class="text-sm font-semibold text-gray-500" id="displayVatTotal">VAT (18%): Rs. 0.00</div>
+                    <div class="bg-red-50 text-red-900 px-6 py-3 rounded-xl border border-red-100 flex items-center gap-4">
+                        <span class="text-xs font-bold uppercase tracking-wider text-red-600">Grand Total</span>
+                        <span id="displayGrandTotal" class="text-xl font-extrabold font-display tracking-tight">Rs. 0.00</span>
+                    </div>
                 </div>
             </div>
         </div>
@@ -132,25 +146,25 @@
 
         row.innerHTML = `
             <div class="col-span-12 md:col-span-4 lg:col-span-3">
-                <select class="category-select bg-gray-50 text-sm py-2" onchange="updateProducts(${rowCount}, this.value)">
+                <select class="category-select bg-gray-50 text-sm py-2 w-full" onchange="updateProducts(${rowCount}, this.value)">
                     ${catOptions}
                 </select>
             </div>
-            <div class="col-span-12 md:col-span-4 lg:col-span-4">
-                <select class="product-select bg-gray-50 text-sm py-2" id="prod-${rowCount}" onchange="updatePrice(${rowCount})">
+            <div class="col-span-12 md:col-span-4 lg:col-span-3">
+                <select class="product-select bg-gray-50 text-sm py-2 w-full" id="prod-${rowCount}" onchange="updatePrice(${rowCount})">
                     <option value="">Select Product</option>
                 </select>
             </div>
-            <div class="col-span-4 md:col-span-2 lg:col-span-1">
-                <input type="number" class="text-sm py-2 bg-gray-50 text-center font-bold" id="qty-${rowCount}" placeholder="Qty" min="1" value="1" oninput="calculateTotal(${rowCount})">
+            <div class="col-span-4 md:col-span-2 lg:col-span-2">
+                <input type="number" class="text-sm py-2 bg-gray-50 text-center font-bold w-full" id="qty-${rowCount}" placeholder="Qty" min="1" value="1" oninput="calculateTotal(${rowCount})">
             </div>
             <div class="col-span-4 md:col-span-1 lg:col-span-2 text-right flex flex-col justify-center">
-                <span class="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Unit Price</span>
+                <span class="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Unit (Ex VAT)</span>
                 <span id="unit-${rowCount}" class="font-semibold text-gray-700 text-sm">Rs. 0.00</span>
             </div>
             <div class="col-span-4 md:col-span-1 lg:col-span-2 text-right flex flex-col justify-center border-l border-gray-100 pl-3">
-                <span class="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Total</span>
-                <span id="price-${rowCount}" class="font-bold text-gray-900" data-total="0" data-unit-price="0">Rs. 0.00</span>
+                <span class="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Total (Inc VAT)</span>
+                <span id="price-${rowCount}" class="font-bold text-gray-900" data-total="0" data-ex-vat="0" data-unit-price="0">Rs. 0.00</span>
             </div>
             
             <button type="button" onclick="removeRow(${rowCount})" class="absolute -top-2 -right-2 bg-white text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-full p-1 border border-gray-200 shadow-sm opacity-0 group-hover:opacity-100 transition-all duration-200">
@@ -175,6 +189,7 @@
         const unitDisplay = document.getElementById(`unit-${rowId}`);
         priceDisplay.innerText = "Rs. 0.00";
         priceDisplay.setAttribute('data-total', 0);
+        priceDisplay.setAttribute('data-ex-vat', 0);
         priceDisplay.setAttribute('data-unit-price', 0);
         if (unitDisplay) unitDisplay.innerText = "Rs. 0.00";
         
@@ -209,27 +224,37 @@
         if (prodSelect.selectedIndex > 0) {
             const priceInfo = JSON.parse(prodSelect.options[prodSelect.selectedIndex].getAttribute('data-price-info'));
             const qty = parseFloat(qtyInput.value) || 0;
-            const unitPrice = getUnitPrice(priceInfo, qty);
-            const total = unitPrice * qty;
-            if (unitDisplay) unitDisplay.innerText = `Rs. ${unitPrice.toFixed(2)}`;
-            priceDisplay.innerText = `Rs. ${total.toFixed(2)}`;
-            priceDisplay.setAttribute('data-total', total);
-            priceDisplay.setAttribute('data-unit-price', unitPrice);
+            const unitPriceExVat = getUnitPrice(priceInfo, qty);
+            const totalExVat = unitPriceExVat * qty;
+            const totalIncVat = totalExVat * 1.18;
+            
+            if (unitDisplay) unitDisplay.innerText = `Rs. ${unitPriceExVat.toFixed(2)}`;
+            priceDisplay.innerText = `Rs. ${totalIncVat.toFixed(2)}`;
+            priceDisplay.setAttribute('data-total', totalIncVat);
+            priceDisplay.setAttribute('data-ex-vat', totalExVat);
+            priceDisplay.setAttribute('data-unit-price', unitPriceExVat);
         } else {
             if (unitDisplay) unitDisplay.innerText = "Rs. 0.00";
             priceDisplay.innerText = "Rs. 0.00";
             priceDisplay.setAttribute('data-total', 0);
+            priceDisplay.setAttribute('data-ex-vat', 0);
             priceDisplay.setAttribute('data-unit-price', 0);
         }
         updateUIGrandTotal();
     }
 
     function updateUIGrandTotal() {
-        let grandTotal = 0;
+        let exVatTotal = 0;
+        let incVatTotal = 0;
         document.querySelectorAll('span[id^="price-"]').forEach(span => {
-            grandTotal += parseFloat(span.getAttribute('data-total')) || 0;
+            incVatTotal += parseFloat(span.getAttribute('data-total')) || 0;
+            exVatTotal += parseFloat(span.getAttribute('data-ex-vat')) || 0;
         });
-        document.getElementById('displayGrandTotal').innerText = `Rs. ${grandTotal.toLocaleString("en-LK", {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+        
+        let vatAmount = incVatTotal - exVatTotal;
+
+        document.getElementById('displayVatTotal').innerText = `VAT (18%): Rs. ${vatAmount.toLocaleString("en-LK", {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+        document.getElementById('displayGrandTotal').innerText = `Rs. ${incVatTotal.toLocaleString("en-LK", {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
     }
 
     function generateMessage() {
