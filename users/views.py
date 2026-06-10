@@ -139,6 +139,29 @@ def notification_read(request, pk):
         return redirect(referer)
     return redirect('sales_dashboard')
 
+@login_required
+def action_center(request):
+    from .models import Notification
+    from sales.models import Invoice
+    
+    # All notifications history
+    notifications = Notification.objects.filter(recipient=request.user).order_by('-created_at')
+    
+    # Pending approvals assigned to this user
+    pending_edits = Invoice.objects.filter(status='EDIT_PENDING', designated_approver=request.user)
+    
+    # Unassigned general approvals (only if user has perm)
+    if request.user.has_perm('sales.approve_invoice'):
+        pending_general = Invoice.objects.filter(status__in=['APPROVAL_PENDING', 'CANCEL_PENDING'])
+    else:
+        pending_general = Invoice.objects.none()
+        
+    return render(request, 'users/action_center.html', {
+        'notifications': notifications,
+        'pending_edits': pending_edits,
+        'pending_general': pending_general,
+    })
+
 from django.views import View
 from django.http import JsonResponse
 from .models import SavedFilter

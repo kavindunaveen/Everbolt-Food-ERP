@@ -19,6 +19,7 @@ class User(AbstractUser):
     is_delivery_officer = models.BooleanField(default=False, verbose_name="Is a Delivery Officer?", help_text="User can be assigned to deliver orders.")
     monthly_target = models.DecimalField(max_digits=12, decimal_places=2, default=0.00, help_text="Monthly sales target (Ex-VAT) for this officer.")
     can_set_targets = models.BooleanField(default=False, verbose_name="Can Set Sales Targets?", help_text="Allow this user to access the Analytics Target Management page.")
+    receive_email_alerts = models.BooleanField(default=True, verbose_name="Receive Email Alerts", help_text="Receive email notifications for approvals and alerts.")
     
     def is_admin(self):
         if self.role:
@@ -69,10 +70,17 @@ class User(AbstractUser):
 
 
 class Notification(models.Model):
+    NOTIFICATION_TYPES = (
+        ('info', 'Information'),
+        ('approval_required', 'Approval Required'),
+    )
     recipient = models.ForeignKey(User, on_delete=models.CASCADE, related_name='notifications')
+    notification_type = models.CharField(max_length=20, choices=NOTIFICATION_TYPES, default='info')
     title = models.CharField(max_length=255)
     message = models.TextField()
     link = models.CharField(max_length=255, blank=True, null=True)
+    action_approve_url = models.CharField(max_length=255, blank=True, null=True)
+    action_reject_url = models.CharField(max_length=255, blank=True, null=True)
     is_read = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
 

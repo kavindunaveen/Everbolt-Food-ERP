@@ -14,6 +14,7 @@ urlpatterns = [
     path('roles/<int:pk>/delete/', views.RoleDeleteView.as_view(), name='role_delete'),
     
     path('notification/<int:pk>/read/', views.notification_read, name='notification_read'),
+    path('action-center/', views.action_center, name='action_center'),
     path('filter/save/', views.SaveFilterView.as_view(), name='save_filter'),
     path('filter/<int:pk>/delete/', views.DeleteFilterView.as_view(), name='delete_filter'),
 ]

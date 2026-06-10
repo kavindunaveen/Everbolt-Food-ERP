@@ -1075,12 +1075,30 @@ def request_edit_invoice_view(request, pk):
         )
         
         from users.models import Notification
+        from django.core.mail import send_mail
+        from django.conf import settings
+        
         Notification.objects.create(
             recipient=approver,
+            notification_type='approval_required',
             title="Edit Approval Required",
             message=f"Edit requested for Invoice {invoice.invoice_number} by {request.user.get_full_name()}.",
-            link=reverse('invoice_list')
+            link=reverse('invoice_list'),
+            action_approve_url=reverse('invoice_approve', kwargs={'pk': invoice.pk}),
+            action_reject_url=reverse('invoice_reject', kwargs={'pk': invoice.pk})
         )
+        
+        if approver.receive_email_alerts and approver.email:
+            try:
+                send_mail(
+                    subject=f"Approval Required: Edit Invoice {invoice.invoice_number}",
+                    message=f"{request.user.get_full_name()} has requested to edit Invoice {invoice.invoice_number}.\n\nReason: {reason}\n\nPlease log in to Everbolt ERP Action Center to approve or reject this request.",
+                    from_email=settings.DEFAULT_FROM_EMAIL,
+                    recipient_list=[approver.email],
+                    fail_silently=True,
+                )
+            except Exception:
+                pass
             
         messages.success(request, f"Edit request for {invoice.invoice_number} has been sent to {approver.get_full_name()} for approval.")
     return redirect('invoice_list')
