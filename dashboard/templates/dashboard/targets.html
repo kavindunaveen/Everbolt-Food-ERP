@@ -347,10 +347,10 @@
                 </table>
             </div>
 
-            <!-- Reorder Level Table -->
-            <h2 style="margin-top: 30px;">5. Manage Minimum Stock (Reorder Levels)</h2>
+            <!-- Stock Limits Table -->
+            <h2 style="margin-top: 30px;">5. Manage Stock Limits (Minimum Stock & Reorder Levels)</h2>
             <div style="margin-bottom: 15px; max-width: 600px;">
-                <label style="display: block; font-weight: bold; font-size: 12px; color: #666; margin-bottom: 5px;">🔍 Add Product to Reorder Watchlist</label>
+                <label style="display: block; font-weight: bold; font-size: 12px; color: #666; margin-bottom: 5px;">🔍 Add Product to Stock Limits Watchlist</label>
                 <div style="position: relative;">
                     <input type="text" id="reorderSearchInput" placeholder="Type product code or name to add..." style="width: 100%; box-sizing: border-box; padding: 8px 12px; border: 1px solid #ccc; border-radius: 4px; font-size: 13px;">
                     <div id="reorderSearchResults" style="position: absolute; left: 0; right: 0; background: #fff; border: 1px solid #ccc; border-radius: 4px; max-height: 250px; overflow-y: auto; z-index: 1000; box-shadow: 0 4px 6px rgba(0,0,0,0.1); display: none; margin-top: 2px;">
@@ -363,12 +363,13 @@
                     <thead>
                         <tr>
                             <th style="min-width: 250px;">Product</th>
-                            <th style="text-align: center; width: 150px;">Current Stock</th>
-                            <th style="text-align: center; width: 150px;">Reorder Level</th>
+                            <th style="text-align: center; width: 120px;">Current Stock</th>
+                            <th style="text-align: center; width: 150px;">Minimum Stock<br><span style="font-size: 10px; font-weight: normal;">(Blocks Invoicing)</span></th>
+                            <th style="text-align: center; width: 150px;">Reorder Level<br><span style="font-size: 10px; font-weight: normal;">(Notification Only)</span></th>
                         </tr>
                     </thead>
                     <tbody>
-                        {% for product in reorder_products %}
+                        {% for product in stock_limit_products %}
                         <tr>
                             <td>
                                 <div style="font-weight: bold; font-size: 14px; color: #000;">
@@ -377,6 +378,16 @@
                             </td>
                             <td style="text-align: center; font-weight: bold;">
                                 {{ product.current_stock|floatformat:"0" }}
+                            </td>
+                            <td style="text-align: center; padding: 6px 4px;">
+                                <input type="number"
+                                       name="minimum_stock_{{ product.id }}"
+                                       value="{{ product.minimum_stock }}"
+                                       min="0"
+                                       step="0.001"
+                                       placeholder="0.00"
+                                       class="admin-input"
+                                       style="width: 120px; display: inline-block;">
                             </td>
                             <td style="text-align: center; padding: 6px 4px;">
                                 <input type="number"
@@ -391,8 +402,8 @@
                         </tr>
                         {% empty %}
                         <tr>
-                            <td colspan="3" style="text-align: center; padding: 30px; color: #999; font-style: italic;">
-                                No products are currently configured with a reorder level. Search above to add one.
+                            <td colspan="4" style="text-align: center; padding: 30px; color: #999; font-style: italic;">
+                                No products are currently configured with stock limits. Search above to add one.
                             </td>
                         </tr>
                         {% endfor %}
@@ -698,7 +709,7 @@ async function addReorderProduct(productId) {
 
     const formData = new FormData();
     formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
-    formData.append('action', 'add_reorder_product');
+    formData.append('action', 'add_stock_limit_product');
     formData.append('product_db_id', productId);
     formData.append('year', '{{ year }}');
 

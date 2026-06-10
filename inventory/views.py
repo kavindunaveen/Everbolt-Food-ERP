@@ -25,7 +25,10 @@ class ProductDetailAPIView(LoginRequiredMixin, View):
                 'price_tier_250': str(product.price_tier_250) if product.price_tier_250 else None,
                 'price_tier_500': str(product.price_tier_500) if product.price_tier_500 else None,
                 'current_stock': str(product.current_stock),
-                'reorder_level': str(product.reorder_level)
+                'available_stock': str(product.available_stock),
+                'reorder_level': str(product.reorder_level),
+                'minimum_stock': str(product.minimum_stock),
+                'allow_negative_stock': product.allow_negative_stock
             })
         except Product.DoesNotExist:
             return JsonResponse({'error': 'Product not found'}, status=404)
@@ -95,7 +98,7 @@ def generate_products_excel(products=None, is_template=False):
         'Category', 'Brand', 'Tea Type', 'Packet Size', 'Stock Unit', 'Selling Unit',
         'Inventory Class', 'Production Type',
         'Selling Price', 'Custom Load Price',
-        'Reorder Level', 'Track Stock', 'Allow Negative Stock', 'Tax Rate', 'Status',
+        'Reorder Level', 'Minimum Stock', 'Track Stock', 'Allow Negative Stock', 'Tax Rate', 'Status',
         'Current Stock'
     ]
     ws.append(headers)
@@ -105,7 +108,7 @@ def generate_products_excel(products=None, is_template=False):
         'Category': 18, 'Brand': 15, 'Tea Type': 18, 'Packet Size': 15,
         'Stock Unit': 12, 'Selling Unit': 12, 'Inventory Class': 18,
         'Production Type': 22, 'Selling Price': 15, 'Custom Load Price': 18,
-        'Reorder Level': 15, 'Track Stock': 15, 'Allow Negative Stock': 22,
+        'Reorder Level': 15, 'Minimum Stock': 15, 'Track Stock': 15, 'Allow Negative Stock': 22,
         'Tax Rate': 12, 'Status': 10, 'Current Stock': 15
     }
 
@@ -119,7 +122,7 @@ def generate_products_excel(products=None, is_template=False):
             'Tea', 'Everbolt', 'Herbal Tea', '500g', 'pcs', 'pcs',
             'FINISHED', 'Direct Packing',
             '1500.00', '', 
-            '10.00', 'TRUE', 'FALSE', '18.00', 'TRUE',
+            '10.00', '0.00', 'TRUE', 'FALSE', '18.00', 'TRUE',
             '100'
         ])
     elif products:
@@ -132,7 +135,7 @@ def generate_products_excel(products=None, is_template=False):
                 p.packet_size or '', p.stock_unit, p.selling_unit,
                 p.inventory_class, p.product_type,
                 str(p.selling_price), str(p.custom_load_price) if p.custom_load_price else '',
-                str(p.reorder_level), str(p.track_stock), str(p.allow_negative_stock), str(p.tax_rate), str(p.status),
+                str(p.reorder_level), str(p.minimum_stock), str(p.track_stock), str(p.allow_negative_stock), str(p.tax_rate), str(p.status),
                 str(p.current_stock)
             ])
 
@@ -282,6 +285,7 @@ class ProductImportView(LoginRequiredMixin, ERPPermissionRequiredMixin, View):
                 selling_price = row.get('Selling Price')
                 custom_price = row.get('Custom Load Price')
                 reorder_lvl = row.get('Reorder Level')
+                min_stock = row.get('Minimum Stock')
                 tax_rate = row.get('Tax Rate')
                 
                 def parse_bool(val, default):
@@ -302,6 +306,7 @@ class ProductImportView(LoginRequiredMixin, ERPPermissionRequiredMixin, View):
                     'selling_price': Decimal(selling_price.replace(',', '')) if selling_price else Decimal('0.00'),
                     'custom_load_price': Decimal(custom_price.replace(',', '')) if custom_price else None,
                     'reorder_level': Decimal(reorder_lvl.replace(',', '')) if reorder_lvl else Decimal('0.000'),
+                    'minimum_stock': Decimal(min_stock.replace(',', '')) if min_stock else Decimal('0.000'),
                     'tax_rate': Decimal(tax_rate.replace(',', '')) if tax_rate else Decimal('18.00'),
                     'track_stock': track_stock,
                     'allow_negative_stock': allow_neg,

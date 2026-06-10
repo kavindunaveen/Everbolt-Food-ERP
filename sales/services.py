@@ -35,6 +35,11 @@ def update_stock_reserves(invoice):
         
         if reserves:
             StockReserve.objects.bulk_create(reserves)
+            
+        # Re-evaluate stock levels since reserves affect available_stock
+        from inventory.services import check_and_notify_stock_levels
+        for item in invoice.items.all():
+            check_and_notify_stock_levels(item.product)
 
 def log_sales_event(obj, user, action, old_value=None, new_value=None, notes=None):
     """
@@ -109,6 +114,11 @@ def deduct_dn_stock(dn, user):
         if ledgers:
             StockLedger.objects.bulk_create(ledgers)
             
+        from inventory.services import check_and_notify_stock_levels
+        for item in dn.items.all():
+            if item.product.track_stock:
+                check_and_notify_stock_levels(item.product)
+            
         invoice.stock_deducted = True
         invoice.save(update_fields=['stock_deducted'])
 
@@ -144,6 +154,11 @@ def restore_dn_stock(dn, user, remark_prefix="Delivery Failed"):
         if ledgers:
             StockLedger.objects.bulk_create(ledgers)
             
+        from inventory.services import check_and_notify_stock_levels
+        for item in dn.items.all():
+            if item.product.track_stock:
+                check_and_notify_stock_levels(item.product)
+            
         invoice.stock_deducted = False
         invoice.save(update_fields=['stock_deducted'])
 
@@ -177,6 +192,11 @@ def restore_stock(invoice, user, remark_prefix="Stock Restoration"):
             
     if ledgers:
         StockLedger.objects.bulk_create(ledgers)
+        
+    from inventory.services import check_and_notify_stock_levels
+    for item in invoice.items.all():
+        if item.quantity > 0 and item.product.track_stock:
+            check_and_notify_stock_levels(item.product)
         
     invoice.stock_deducted = False
     invoice.save(update_fields=['stock_deducted'])
@@ -333,6 +353,9 @@ def process_return(return_obj, user):
                         remarks=f"Auto write-off for damaged return {return_obj.return_number}",
                         user=user,
                     )
+                
+                from inventory.services import check_and_notify_stock_levels
+                check_and_notify_stock_levels(product)
 
             # Generate Credit Note Item
             CreditNoteItem.objects.create(

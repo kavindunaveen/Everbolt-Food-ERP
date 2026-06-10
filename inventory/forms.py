@@ -11,7 +11,7 @@ class ProductForm(forms.ModelForm):
             'product_id', 'name', 'brand', 'category', 'tea_type',
             'packet_size', 'stock_unit', 'selling_unit',
             'inventory_class', 'product_type',
-            'track_stock', 'allow_negative_stock', 'reorder_level',
+            'track_stock', 'allow_negative_stock', 'reorder_level', 'minimum_stock',
             'selling_price', 'price_tier_100', 'price_tier_250', 'price_tier_500',
             'custom_load_price', 'tax_rate',
             'status',

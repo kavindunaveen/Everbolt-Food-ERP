@@ -366,7 +366,7 @@
                     </thead>
                     <tbody id="formset-container" class="divide-y divide-gray-50">
                         {% for item_form in items %}
-                        <tr class="formset-row hover:bg-gray-50/30 transition-colors" data-current_stock="{{ item_form.instance.product.current_stock|default:0 }}" data-reorder_level="{{ item_form.instance.product.reorder_level|default:0 }}">
+                        <tr class="formset-row hover:bg-gray-50/30 transition-colors" data-current_stock="{{ item_form.instance.product.current_stock|default:0 }}" data-available_stock="{{ item_form.instance.product.available_stock|default:0 }}" data-reorder_level="{{ item_form.instance.product.reorder_level|default:0 }}" data-minimum_stock="{{ item_form.instance.product.minimum_stock|default:0 }}" data-allow_negative_stock="{{ item_form.instance.product.allow_negative_stock|yesno:'true,false' }}">
                             {{ item_form.id }}
                             <td class="px-2 py-3 w-[35%] align-top">
                                 {{ item_form.product }}
@@ -918,6 +918,7 @@
             {% if not form.instance.is_approved %}
             const customerId = $('#id_customer').val();
             let isBlocked = false;
+            let isHardBlocked = false;
             let blockReason = "";
 
             if (customerId && (customerStatus[customerId] === 'BLACKLIST' || customerStatus[customerId] === 'ONHOLD')) {
@@ -925,23 +926,30 @@
                 const statusTxt = customerStatus[customerId] === 'BLACKLIST' ? 'blacklisted' : 'onhold';
                 blockReason = `We can't draft the invoice because this customer is already ${statusTxt}. Please select a manager and send for approval.`;
             } else {
-                // Check Reorder levels
-                let reorderBreached = false;
+                // Check Minimum Stock levels and Out of Stock
+                let minStockBreached = false;
                 $('#items-table-body tr:visible').each(function() {
-                    const currentStock = $(this).data('current_stock');
-                    const reorderLevel = $(this).data('reorder_level');
+                    const availableStock = $(this).data('available_stock');
+                    const minimumStock = $(this).data('minimum_stock') || 0;
+                    const allowNegative = $(this).data('allow_negative_stock');
                     const qty = parseFloat($(this).find('input[name$="-quantity"]').val()) || 0;
                     
-                    if (currentStock !== undefined && reorderLevel !== undefined && reorderLevel > 0) {
-                        if ((currentStock - qty) < reorderLevel) {
-                            reorderBreached = true;
+                    if (availableStock !== undefined && qty > 0) {
+                        // Hard Block 1: Minimum Stock breached
+                        if (minimumStock > 0 && (availableStock - qty) < minimumStock) {
+                            minStockBreached = true;
+                        }
+                        // Hard Block 2: Insufficient stock and negative stock not allowed
+                        if (!allowNegative && qty > availableStock) {
+                            minStockBreached = true; // reusing variable to trigger hard block
                         }
                     }
                 });
 
-                if (reorderBreached) {
+                if (minStockBreached) {
                     isBlocked = true;
-                    blockReason = `Creating this invoice drops stock below the minimum Reorder Level. An approval request is required.`;
+                    isHardBlocked = true;
+                    blockReason = `Cannot invoice: Stock drops below the Minimum Stock limit or insufficient available stock.`;
                 }
             }
 
@@ -950,12 +958,18 @@
                 $('#approval-block-msg').removeClass('hidden');
                 
                 $('#save-invoice-btn').addClass('hidden');
-                $('#send-approval-btn').removeClass('hidden');
-                $('#designated_approver').removeClass('hidden').prop('disabled', false);
-                
                 $('#top-save-btn').addClass('hidden');
-                $('#top-request-approval-btn').removeClass('hidden');
                 $('#top-issue-btn').addClass('hidden');
+                
+                if (isHardBlocked) {
+                    $('#send-approval-btn').addClass('hidden');
+                    $('#designated_approver').addClass('hidden').prop('disabled', true);
+                    $('#top-request-approval-btn').addClass('hidden');
+                } else {
+                    $('#send-approval-btn').removeClass('hidden');
+                    $('#designated_approver').removeClass('hidden').prop('disabled', false);
+                    $('#top-request-approval-btn').removeClass('hidden');
+                }
             } else {
                 $('#approval-block-msg').addClass('hidden');
                 
@@ -1131,7 +1145,10 @@
                     row.data('price_tier_250', data.price_tier_250 || data.selling_price);
                     row.data('price_tier_500', data.price_tier_500 || data.selling_price);
                     row.data('current_stock', parseFloat(data.current_stock) || 0);
+                    row.data('available_stock', parseFloat(data.available_stock) || 0);
                     row.data('reorder_level', parseFloat(data.reorder_level) || 0);
+                    row.data('minimum_stock', parseFloat(data.minimum_stock) || 0);
+                    row.data('allow_negative_stock', data.allow_negative_stock === true);
                     row.data('auto_pricing_enabled', true);
 
                     const qtyInput = row.find('input[name$="-quantity"]');

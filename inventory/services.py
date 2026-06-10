@@ -40,6 +40,8 @@ def confirm_stock_adjustment(adjustment, user):
         product = Product.objects.select_for_update().get(id=adjustment.product.id)
         product.current_stock += (qty_in - qty_out)
         product.save(update_fields=['current_stock'])
+        
+        check_and_notify_stock_levels(product)
 
 def cancel_stock_adjustment(adjustment, user):
     """
@@ -77,3 +79,41 @@ def cancel_stock_adjustment(adjustment, user):
         product = Product.objects.select_for_update().get(id=adjustment.product.id)
         product.current_stock += (qty_in - qty_out)
         product.save(update_fields=['current_stock'])
+        
+        check_and_notify_stock_levels(product)
+
+def check_and_notify_stock_levels(product):
+    """
+    Checks if a product's available stock has crossed the reorder level threshold.
+    If it drops below, sends a notification (once).
+    If it goes back above, resets the notification flag.
+    """
+    if product.reorder_level <= 0:
+        return
+        
+    available = product.available_stock
+    
+    if available < product.reorder_level:
+        if not product.reorder_notified:
+            # Send Notification to Administrators
+            from users.models import User, Notification
+            from django.db.models import Q
+            admins = User.objects.filter(
+                Q(is_superuser=True) | Q(role__name='Administrator')
+            ).filter(is_active=True).distinct()
+            
+            for admin in admins:
+                Notification.objects.create(
+                    recipient=admin,
+                    title=f"Low Stock Alert: {product.name}",
+                    message=f"Stock for {product.name} ({product.product_id}) has dropped to {available:.0f} (Below reorder level of {product.reorder_level:.0f}).",
+                    link="/dashboard/targets/"
+                )
+                
+            product.reorder_notified = True
+            product.save(update_fields=['reorder_notified'])
+    else:
+        # Stock is back above reorder level, reset the flag so we can notify next time
+        if product.reorder_notified:
+            product.reorder_notified = False
+            product.save(update_fields=['reorder_notified'])

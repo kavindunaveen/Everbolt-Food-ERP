@@ -736,14 +736,14 @@ class TargetManagementView(LoginRequiredMixin, View):
                 'periods': periods,
             })
 
-        # ── Reorder Level Watchlist ───────────────────────────────────────────
-        reorder_products = Product.objects.filter(reorder_level__gt=0).order_by('name')
+        # ── Stock Limits Watchlist ───────────────────────────────────────────
+        stock_limit_products = Product.objects.filter(Q(reorder_level__gt=0) | Q(minimum_stock__gt=0)).order_by('name')
 
         return render(request, self.template_name, {
             'overall_periods': overall_periods,
             'prod_rows': prod_rows,
             'salesperson_rows': salesperson_rows,
-            'reorder_products': reorder_products,
+            'stock_limit_products': stock_limit_products,
             'all_groups': all_groups,
             'year': year,
             'available_years': available_years,
@@ -844,12 +844,12 @@ class TargetManagementView(LoginRequiredMixin, View):
             except ProductTargetGroup.DoesNotExist:
                 return JsonResponse({'error': 'Not found'}, status=404)
 
-        if action == 'add_reorder_product':
+        if action == 'add_stock_limit_product':
             pid = request.POST.get('product_db_id')
             try:
                 product = Product.objects.get(pk=pid)
                 # Initialize it so it appears in the watchlist
-                if product.reorder_level == 0:
+                if product.reorder_level == 0 and product.minimum_stock == 0:
                     product.reorder_level = 0.001
                     product.save(update_fields=['reorder_level'])
                 return JsonResponse({'status': 'ok', 'name': product.name})
@@ -868,6 +868,18 @@ class TargetManagementView(LoginRequiredMixin, View):
                     if float(product.reorder_level) != val:
                         product.reorder_level = val
                         product.save(update_fields=['reorder_level'])
+                except (ValueError, Product.DoesNotExist):
+                    pass
+            elif k.startswith('minimum_stock_'):
+                try:
+                    pid = int(k.replace('minimum_stock_', ''))
+                    val_str = v.strip()
+                    val = float(val_str) if val_str else 0.000
+                    
+                    product = Product.objects.get(pk=pid)
+                    if float(product.minimum_stock) != val:
+                        product.minimum_stock = val
+                        product.save(update_fields=['minimum_stock'])
                 except (ValueError, Product.DoesNotExist):
                     pass
         for m in range(1, 13):

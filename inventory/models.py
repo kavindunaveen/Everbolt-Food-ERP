@@ -61,6 +61,8 @@ class Product(models.Model):
     track_stock = models.BooleanField(default=True)
     allow_negative_stock = models.BooleanField(default=False)
     reorder_level = models.DecimalField(max_digits=12, decimal_places=3, default=0.000)
+    reorder_notified = models.BooleanField(default=False, help_text="True if a low-stock notification has already been sent")
+    minimum_stock = models.DecimalField(max_digits=12, decimal_places=3, default=0.000)
     
     selling_price = models.DecimalField(max_digits=12, decimal_places=5)
     price_tier_100 = models.DecimalField(max_digits=12, decimal_places=5, null=True, blank=True, help_text="Price for <= 100 pcs")
