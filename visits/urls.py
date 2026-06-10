@@ -8,5 +8,6 @@ urlpatterns = [
     # AJAX Endpoints
     path('api/plans/', views.get_plans, name='api_get_visit_plans'),
     path('api/plans/save/', views.save_plan, name='api_save_visit_plan'),
+    path('api/plans/delete/', views.delete_plan, name='api_delete_visit_plan'),
     path('api/tasks/save/', views.save_task, name='api_save_visit_task'),
 ]

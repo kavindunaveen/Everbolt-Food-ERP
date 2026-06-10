@@ -95,6 +95,20 @@ def save_plan(request):
     return JsonResponse({'status': 'error'}, status=400)
 
 @login_required
+@permission_required('visits.delete_visitplan', raise_exception=True)
+def delete_plan(request):
+    if request.method == 'POST':
+        data = json.loads(request.body)
+        plan_id = data.get('plan_id')
+        try:
+            plan = VisitPlan.objects.get(id=plan_id)
+            plan.delete()
+            return JsonResponse({'status': 'success'})
+        except VisitPlan.DoesNotExist:
+            return JsonResponse({'status': 'error', 'message': 'Plan not found'}, status=404)
+    return JsonResponse({'status': 'error'}, status=400)
+
+@login_required
 def save_task(request):
     if request.method == 'POST':
         data = json.loads(request.body)
