@@ -1639,6 +1639,33 @@ class DeliveryNoteCreateView(LoginRequiredMixin, ERPPermissionRequiredMixin, Cre
 
             return super().form_valid(form)
 
+class DeliveryNoteUpdateView(LoginRequiredMixin, ERPPermissionRequiredMixin, UpdateView):
+    model = DeliveryNote
+    form_class = DeliveryNoteForm
+    template_name = 'sales/delivery_note_form.html'
+    permission_required = 'sales.change_deliverynote'
+
+    def get_success_url(self):
+        return reverse('delivery_note_detail', kwargs={'pk': self.object.pk})
+
+    def form_valid(self, form):
+        with transaction.atomic():
+            old_delivered_by = self.get_object().delivered_by
+            self.object = form.save()
+            
+            if old_delivered_by != self.object.delivered_by:
+                log_sales_event(
+                    obj=self.object,
+                    user=self.request.user,
+                    action="Delivery Person Updated",
+                    old_value=old_delivered_by.get_full_name() if old_delivered_by else "None",
+                    new_value=self.object.delivered_by.get_full_name() if self.object.delivered_by else "None",
+                    notes="Updated Delivery Officer"
+                )
+
+            messages.success(self.request, f"Delivery Note {self.object.dn_number} updated successfully.")
+            return super().form_valid(form)
+
 
 @login_required
 def get_invoice_details(request, pk):
