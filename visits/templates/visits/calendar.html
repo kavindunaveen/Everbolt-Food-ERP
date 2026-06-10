@@ -52,6 +52,9 @@
                             <div class="text-[10px] px-2 py-1 rounded-md font-semibold truncate transition-all"
                                  :class="plan.is_done ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'"
                                  :title="plan.description">
+                                <template x-if="!globalSelectedSO">
+                                    <span class="font-black opacity-75 mr-1" x-text="plan.sales_officer_name.split(' ')[0] + ':'"></span>
+                                </template>
                                 <span x-text="plan.description"></span>
                             </div>
                         </template>
@@ -90,7 +93,7 @@
                                     <div class="font-bold text-gray-900" x-text="plan.sales_officer_name"></div>
                                     <div class="flex gap-2 items-center">
                                         {% if perms.visits.delete_visitplan %}
-                                        <button @click="deletePlan(plan)" class="text-[10px] px-2 py-0.5 rounded font-black uppercase tracking-wider bg-red-100 text-red-700 hover:bg-red-200 transition">Delete</button>
+                                        <button @click="confirmDelete(plan)" class="text-[10px] px-2 py-0.5 rounded font-black uppercase tracking-wider bg-red-100 text-red-700 hover:bg-red-200 transition">Delete</button>
                                         {% endif %}
                                         {% if perms.visits.change_visitplan %}
                                         <button @click="plan._is_editing_plan = true" x-show="!plan._is_editing_plan" class="text-[10px] px-2 py-0.5 rounded font-black uppercase tracking-wider bg-blue-100 text-blue-700 hover:bg-blue-200 transition">Edit</button>
@@ -188,6 +191,24 @@
             </div>
         </div>
     </div>
+
+    <!-- Delete Confirmation Modal -->
+    <div x-show="planToDelete" style="display: none;" class="fixed inset-0 z-[60] flex items-center justify-center p-4">
+        <div x-show="planToDelete" x-transition.opacity @click="cancelDelete()" class="fixed inset-0 bg-gray-900/60 backdrop-blur-sm"></div>
+        <div x-show="planToDelete" x-transition.scale.origin.bottom class="relative bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6 text-center">
+            <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100 mb-4">
+                <svg class="h-6 w-6 text-red-600" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+            </div>
+            <h3 class="text-lg font-bold text-gray-900 mb-2">Delete Assignment?</h3>
+            <p class="text-sm text-gray-500 mb-6">Are you sure you want to completely delete this assignment? This action cannot be undone.</p>
+            <div class="flex gap-3">
+                <button @click="cancelDelete()" class="flex-1 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg font-bold hover:bg-gray-200 transition">Cancel</button>
+                <button @click="executeDelete()" class="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg font-bold hover:bg-red-700 transition">Delete</button>
+            </div>
+        </div>
+    </div>
 </div>
 
 <script>
@@ -203,6 +224,7 @@
             modalDateStr: '',
             selectedDatePlans: [],
             isAddingPlan: false,
+            planToDelete: null,
             
             globalSelectedSO: '',
             
@@ -402,18 +424,27 @@
                 });
             },
             
-            deletePlan(plan) {
-                if(!confirm("Are you sure you want to completely delete this assignment?")) return;
+            confirmDelete(plan) {
+                this.planToDelete = plan;
+            },
+            
+            cancelDelete() {
+                this.planToDelete = null;
+            },
+            
+            executeDelete() {
+                if(!this.planToDelete) return;
                 fetch(`{% url 'api_delete_visit_plan' %}`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
                     body: JSON.stringify({
-                        plan_id: plan.id
+                        plan_id: this.planToDelete.id
                     })
                 }).then(res => res.json())
                 .then(data => {
                     if(data.status === 'success') {
                         window.dispatchEvent(new CustomEvent('toast', { detail: { type: 'success', message: 'Assignment deleted.' }}));
+                        this.planToDelete = null;
                         this.fetchPlans();
                         setTimeout(() => this.openModal({date: this.selectedDate}), 500);
                     } else {
