@@ -1,0 +1,83 @@
+{% extends 'layouts/base.html' %}
+
+{% block title %}Weekly Visit Summary | ERP{% endblock %}
+
+{% block content %}
+<div class="px-4 py-6 sm:px-0 max-w-7xl mx-auto">
+    <div class="mb-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+            <div class="flex items-center gap-2 text-sm text-gray-500 mb-2 font-medium">
+                <a href="{% url 'visit_calendar' %}" class="hover:text-gray-900 transition-colors">Calendar</a>
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                <span class="text-gray-900">Summary</span>
+            </div>
+            <h1 class="text-3xl font-extrabold text-gray-900 tracking-tight">Weekly Summary</h1>
+            <p class="text-sm text-gray-500 font-medium mt-1">Review sales officer tasks from {{ start_date|date:"M j, Y" }} to {{ end_date|date:"M j, Y" }}</p>
+        </div>
+        <div class="flex bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+            <a href="?start_date={{ prev_week }}" class="px-4 py-2 text-gray-600 hover:bg-gray-50 transition-colors border-r border-gray-200">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
+            </a>
+            <div class="px-6 py-2 font-bold text-gray-900 min-w-[200px] text-center">
+                {{ start_date|date:"M j" }} - {{ end_date|date:"M j" }}
+            </div>
+            <a href="?start_date={{ next_week }}" class="px-4 py-2 text-gray-600 hover:bg-gray-50 transition-colors border-l border-gray-200">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+            </a>
+        </div>
+    </div>
+    
+    <div class="space-y-6">
+        {% for officer, plans in summary.items %}
+        <div class="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+            <div class="bg-gray-50 px-6 py-4 border-b border-gray-200">
+                <h3 class="text-lg font-extrabold text-gray-900">{{ officer.get_full_name|default:officer.username }}</h3>
+            </div>
+            <div class="divide-y divide-gray-100">
+                {% for plan in plans %}
+                <div class="p-6 flex flex-col md:flex-row gap-6 hover:bg-gray-50/50 transition-colors">
+                    <div class="w-full md:w-1/4">
+                        <div class="text-xs font-black text-gray-400 uppercase tracking-widest mb-1">{{ plan.date|date:"l" }}</div>
+                        <div class="font-bold text-gray-900">{{ plan.date|date:"M j, Y" }}</div>
+                        {% if plan.task and plan.task.is_done %}
+                            <span class="mt-2 inline-flex items-center px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider bg-emerald-100 text-emerald-700">Completed</span>
+                        {% else %}
+                            <span class="mt-2 inline-flex items-center px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider bg-amber-100 text-amber-700">Pending</span>
+                        {% endif %}
+                    </div>
+                    <div class="w-full md:w-3/4 grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <div class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Assigned Plan</div>
+                            <div class="text-sm text-gray-700 whitespace-pre-wrap">{{ plan.description }}</div>
+                        </div>
+                        <div>
+                            <div class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Tasks Done & Remarks</div>
+                            {% if plan.task %}
+                                {% if plan.task.tasks_done %}
+                                    <div class="text-sm font-medium text-gray-900 mb-2">{{ plan.task.tasks_done }}</div>
+                                {% endif %}
+                                {% if plan.task.remarks %}
+                                    <div class="text-sm text-gray-600 italic bg-gray-50 p-3 rounded-lg">{{ plan.task.remarks }}</div>
+                                {% endif %}
+                                {% if not plan.task.tasks_done and not plan.task.remarks %}
+                                    <div class="text-sm text-gray-400">No details provided.</div>
+                                {% endif %}
+                            {% else %}
+                                <div class="text-sm text-gray-400">No task update submitted yet.</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% empty %}
+        <div class="text-center py-12 bg-white rounded-2xl border border-gray-200 shadow-sm">
+            <svg class="mx-auto h-12 w-12 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+            <h3 class="mt-2 text-sm font-medium text-gray-900">No plans for this week</h3>
+            <p class="mt-1 text-sm text-gray-500">Admins haven't assigned any plans or no tasks were found in this date range.</p>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

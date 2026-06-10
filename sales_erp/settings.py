@@ -54,6 +54,7 @@ INSTALLED_APPS = [
     'suppliers.apps.SuppliersConfig',
     'contacts.apps.ContactsConfig',
     'website.apps.WebsiteConfig',
+    'visits.apps.VisitsConfig',
 ]
 
 MIDDLEWARE = [

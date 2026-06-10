@@ -260,6 +260,23 @@
         </a>
         {% endif %}
 
+        <!-- Visits Map -->
+        {% if perms.visits.view_visitplan %}
+        <a href="{% url 'visit_calendar' %}" class="block group">
+            <div class="card-premium p-6 h-full border-2 border-transparent hover:border-pink-500/20">
+                <div
+                    class="w-12 h-12 bg-pink-50 text-pink-600 rounded-lg flex items-center justify-center mb-4 group-hover:bg-pink-600 group-hover:text-white transition-all duration-500 shadow-sm">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                        xmlns="http://www.w3.org/2000/svg">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                    </svg>
+                </div>
+                <h3 class="text-xl font-bold text-gray-900 mb-1">Visit Calendar</h3>
+                <p class="text-sm text-gray-500">Sales officer daily visit schedules and reporting.</p>
+            </div>
+        </a>
+        {% endif %}
+
     </div>
 </div>
 {% endblock %}

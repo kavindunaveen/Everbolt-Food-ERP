@@ -1,0 +1,340 @@
+{% extends 'layouts/base.html' %}
+
+{% block title %}Sales Officer Daily Visit Calendar | ERP{% endblock %}
+
+{% block content %}
+<div class="px-4 py-6 sm:px-0 max-w-7xl mx-auto" x-data="calendarApp()" x-init="init()">
+    <div class="mb-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+            <h1 class="text-3xl font-extrabold text-gray-900 tracking-tight">Visit Calendar</h1>
+            <p class="text-sm text-gray-500 font-medium mt-1">Manage and track daily visit plans for sales officers.</p>
+        </div>
+        <div class="flex items-center space-x-4">
+            {% if perms.visits.view_weekly_summary %}
+            <a href="{% url 'visit_summary' %}" class="btn-premium btn-secondary">
+                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                Weekly Report
+            </a>
+            {% endif %}
+            <div class="flex bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                <button @click="changeMonth(-1)" class="px-4 py-2 text-gray-600 hover:bg-gray-50 transition-colors border-r border-gray-200">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
+                </button>
+                <div class="px-6 py-2 font-bold text-gray-900 min-w-[150px] text-center" x-text="monthYearString"></div>
+                <button @click="changeMonth(1)" class="px-4 py-2 text-gray-600 hover:bg-gray-50 transition-colors border-l border-gray-200">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Calendar Grid -->
+    <div class="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+        <div class="grid grid-cols-7 border-b border-gray-200 bg-gray-50">
+            <template x-for="day in ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']">
+                <div class="py-3 text-center text-xs font-black text-gray-500 uppercase tracking-widest border-r border-gray-100 last:border-r-0" x-text="day"></div>
+            </template>
+        </div>
+        <div class="grid grid-cols-7 bg-gray-100 gap-[1px]">
+            <template x-for="d in calendarDays" :key="d.date">
+                <div @click="openModal(d)" class="min-h-[120px] bg-white p-2 transition-colors cursor-pointer hover:bg-red-50 relative group" :class="{'opacity-50': !d.isCurrentMonth, 'bg-red-50 ring-inset ring-2 ring-red-200': d.isToday}">
+                    <div class="text-right text-xs font-bold text-gray-400 mb-1" :class="{'text-red-600': d.isToday}" x-text="d.dayNum"></div>
+                    
+                    <!-- Plans for the day -->
+                    <div class="space-y-1 mt-2">
+                        <template x-for="plan in getPlansForDate(d.date)" :key="plan.id">
+                            <div class="text-[10px] px-2 py-1 rounded-md font-semibold truncate transition-all"
+                                 :class="plan.is_done ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'">
+                                <span x-text="plan.sales_officer_name"></span>
+                            </div>
+                        </template>
+                    </div>
+                    
+                    <div class="absolute inset-0 border-2 border-transparent group-hover:border-red-400 pointer-events-none transition-colors"></div>
+                </div>
+            </template>
+        </div>
+    </div>
+
+    <!-- Modal for Date Details -->
+    <div x-show="isModalOpen" style="display: none;" class="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <!-- Backdrop -->
+        <div x-show="isModalOpen" x-transition.opacity @click="closeModal()" class="fixed inset-0 bg-gray-900/40 backdrop-blur-sm"></div>
+        
+        <!-- Panel -->
+        <div x-show="isModalOpen" x-transition.scale.origin.bottom class="relative bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col overflow-hidden">
+            <!-- Header -->
+            <div class="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50">
+                <h2 class="text-lg font-extrabold text-gray-900" x-text="modalDateStr"></h2>
+                <button @click="closeModal()" class="text-gray-400 hover:text-red-500 transition-colors">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+            
+            <!-- Body -->
+            <div class="p-6 overflow-y-auto flex-1 space-y-6">
+                <!-- Existing Plans for the day -->
+                <template x-if="selectedDatePlans.length > 0">
+                    <div class="space-y-4">
+                        <h3 class="text-xs font-bold uppercase tracking-widest text-gray-400">Assigned Plans</h3>
+                        <template x-for="plan in selectedDatePlans" :key="plan.id">
+                            <div class="border border-gray-200 rounded-xl p-4" :class="plan.is_done ? 'bg-emerald-50/50' : 'bg-white'">
+                                <div class="flex justify-between items-start mb-2">
+                                    <div class="font-bold text-gray-900" x-text="plan.sales_officer_name"></div>
+                                    <span class="px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider" :class="plan.is_done ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'" x-text="plan.is_done ? 'Completed' : 'Pending'"></span>
+                                </div>
+                                <div class="text-sm text-gray-700 mb-4 bg-gray-50 p-3 rounded-lg whitespace-pre-wrap" x-text="plan.description"></div>
+                                
+                                <!-- Update Task Form (Only for Assigned SO or Admin) -->
+                                <div x-show="canEditTask(plan)" class="border-t border-gray-100 pt-4 mt-2">
+                                    <h4 class="text-xs font-bold text-gray-500 mb-3 uppercase tracking-wider">Update Progress</h4>
+                                    <div class="space-y-3">
+                                        <div>
+                                            <label class="block text-xs font-bold text-gray-700 mb-1">Tasks Done</label>
+                                            <textarea x-model="plan._temp_tasks_done" class="block w-full px-3 py-2 border border-gray-200 rounded-lg text-sm" rows="2" placeholder="What was completed?"></textarea>
+                                        </div>
+                                        <div>
+                                            <label class="block text-xs font-bold text-gray-700 mb-1">Remarks</label>
+                                            <textarea x-model="plan._temp_remarks" class="block w-full px-3 py-2 border border-gray-200 rounded-lg text-sm" rows="2" placeholder="Any additional notes..."></textarea>
+                                        </div>
+                                        <div class="flex items-center gap-2">
+                                            <input type="checkbox" x-model="plan._temp_is_done" class="w-4 h-4 text-red-600 rounded border-gray-300">
+                                            <label class="text-sm font-semibold text-gray-700">Mark as Completed</label>
+                                        </div>
+                                        <button @click="saveTask(plan)" class="btn-premium btn-primary w-full text-sm py-2">Save Progress</button>
+                                    </div>
+                                </div>
+                                <!-- Readonly Task Data -->
+                                <div x-show="!canEditTask(plan) && (plan.tasks_done || plan.remarks)" class="border-t border-gray-100 pt-4 mt-2">
+                                    <template x-if="plan.tasks_done">
+                                        <div class="mb-2">
+                                            <span class="text-[10px] font-bold text-gray-400 uppercase">Tasks Done:</span>
+                                            <p class="text-sm text-gray-800" x-text="plan.tasks_done"></p>
+                                        </div>
+                                    </template>
+                                    <template x-if="plan.remarks">
+                                        <div>
+                                            <span class="text-[10px] font-bold text-gray-400 uppercase">Remarks:</span>
+                                            <p class="text-sm text-gray-800" x-text="plan.remarks"></p>
+                                        </div>
+                                    </template>
+                                </div>
+                            </div>
+                        </template>
+                    </div>
+                </template>
+                <template x-if="selectedDatePlans.length === 0">
+                    <div class="text-center py-8 text-gray-400 font-medium">No plans assigned for this date.</div>
+                </template>
+
+                <!-- Admin: Add New Plan -->
+                {% if perms.visits.add_visitplan %}
+                <div class="border-t border-gray-200 pt-6 mt-6">
+                    <h3 class="text-sm font-bold text-gray-900 mb-4">Assign New Plan</h3>
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-xs font-bold text-gray-700 mb-1">Sales Officer</label>
+                            <select x-model="newPlanSO" class="block w-full px-3 py-2 border border-gray-200 rounded-lg text-sm">
+                                <option value="">Select an Officer</option>
+                                {% for so in sales_officers %}
+                                <option value="{{ so.id }}">{{ so.get_full_name|default:so.username }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-gray-700 mb-1">Instructions / Visit Details</label>
+                            <textarea x-model="newPlanDesc" class="block w-full px-3 py-2 border border-gray-200 rounded-lg text-sm" rows="3" placeholder="Enter the visit plan..."></textarea>
+                        </div>
+                        <button @click="savePlan()" class="btn-premium btn-primary w-full text-sm py-2">Create Assignment</button>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function calendarApp() {
+        return {
+            currentDate: new Date(),
+            monthYearString: '',
+            calendarDays: [],
+            allPlans: [],
+            
+            isModalOpen: false,
+            selectedDate: null,
+            modalDateStr: '',
+            selectedDatePlans: [],
+            
+            // New Plan form state
+            newPlanSO: '',
+            newPlanDesc: '',
+            
+            // User context injected
+            currentUserIsAdmin: {{ request.user.is_admin|yesno:"true,false" }},
+            currentUserId: {{ request.user.id }},
+            
+            init() {
+                this.generateCalendar();
+                this.fetchPlans();
+            },
+            
+            generateCalendar() {
+                const year = this.currentDate.getFullYear();
+                const month = this.currentDate.getMonth();
+                
+                const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+                this.monthYearString = `${monthNames[month]} ${year}`;
+                
+                const firstDayOfMonth = new Date(year, month, 1).getDay(); // 0 is Sunday
+                const daysInMonth = new Date(year, month + 1, 0).getDate();
+                
+                const days = [];
+                const today = new Date();
+                today.setHours(0,0,0,0);
+                
+                // Previous month padding
+                const prevMonthDays = new Date(year, month, 0).getDate();
+                for (let i = firstDayOfMonth - 1; i >= 0; i--) {
+                    const d = new Date(year, month - 1, prevMonthDays - i);
+                    days.push({
+                        date: this.formatDate(d),
+                        dayNum: d.getDate(),
+                        isCurrentMonth: false,
+                        isToday: false
+                    });
+                }
+                
+                // Current month
+                for (let i = 1; i <= daysInMonth; i++) {
+                    const d = new Date(year, month, i);
+                    days.push({
+                        date: this.formatDate(d),
+                        dayNum: i,
+                        isCurrentMonth: true,
+                        isToday: d.getTime() === today.getTime()
+                    });
+                }
+                
+                // Next month padding (to complete 6 rows = 42 days)
+                const remaining = 42 - days.length;
+                for (let i = 1; i <= remaining; i++) {
+                    const d = new Date(year, month + 1, i);
+                    days.push({
+                        date: this.formatDate(d),
+                        dayNum: i,
+                        isCurrentMonth: false,
+                        isToday: false
+                    });
+                }
+                
+                this.calendarDays = days;
+            },
+            
+            formatDate(d) {
+                const y = d.getFullYear();
+                const m = String(d.getMonth() + 1).padStart(2, '0');
+                const dt = String(d.getDate()).padStart(2, '0');
+                return `${y}-${m}-${dt}`;
+            },
+            
+            changeMonth(delta) {
+                this.currentDate.setMonth(this.currentDate.getMonth() + delta);
+                this.generateCalendar();
+                this.fetchPlans();
+            },
+            
+            fetchPlans() {
+                const y = this.currentDate.getFullYear();
+                const m = this.currentDate.getMonth() + 1;
+                fetch(`{% url 'api_get_visit_plans' %}?year=${y}&month=${m}`)
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data.status === 'success') {
+                            this.allPlans = data.data;
+                        }
+                    });
+            },
+            
+            getPlansForDate(dateStr) {
+                return this.allPlans.filter(p => p.date === dateStr);
+            },
+            
+            openModal(day) {
+                this.selectedDate = day.date;
+                const d = new Date(day.date);
+                this.modalDateStr = d.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+                
+                this.selectedDatePlans = this.getPlansForDate(day.date).map(p => ({
+                    ...p,
+                    _temp_tasks_done: p.tasks_done,
+                    _temp_remarks: p.remarks,
+                    _temp_is_done: p.is_done
+                }));
+                
+                this.newPlanSO = '';
+                this.newPlanDesc = '';
+                this.isModalOpen = true;
+            },
+            
+            closeModal() {
+                this.isModalOpen = false;
+            },
+            
+            canEditTask(plan) {
+                return this.currentUserIsAdmin || this.currentUserId === plan.sales_officer_id;
+            },
+            
+            savePlan() {
+                if(!this.newPlanSO || !this.newPlanDesc) {
+                    window.dispatchEvent(new CustomEvent('toast', { detail: { type: 'error', message: 'Please select an officer and enter instructions.' }}));
+                    return;
+                }
+                
+                fetch(`{% url 'api_save_visit_plan' %}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
+                    body: JSON.stringify({
+                        date: this.selectedDate,
+                        sales_officer_id: this.newPlanSO,
+                        description: this.newPlanDesc
+                    })
+                }).then(res => res.json())
+                .then(data => {
+                    if(data.status === 'success') {
+                        window.dispatchEvent(new CustomEvent('toast', { detail: { type: 'success', message: 'Plan assigned successfully.' }}));
+                        this.fetchPlans();
+                        // wait a bit and re-open modal to refresh plans
+                        setTimeout(() => this.openModal({date: this.selectedDate}), 500);
+                    } else {
+                        window.dispatchEvent(new CustomEvent('toast', { detail: { type: 'error', message: 'Failed to save plan.' }}));
+                    }
+                });
+            },
+            
+            saveTask(plan) {
+                fetch(`{% url 'api_save_visit_task' %}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
+                    body: JSON.stringify({
+                        plan_id: plan.id,
+                        tasks_done: plan._temp_tasks_done,
+                        remarks: plan._temp_remarks,
+                        is_done: plan._temp_is_done
+                    })
+                }).then(res => res.json())
+                .then(data => {
+                    if(data.status === 'success') {
+                        window.dispatchEvent(new CustomEvent('toast', { detail: { type: 'success', message: 'Task updated successfully.' }}));
+                        this.fetchPlans();
+                        setTimeout(() => this.openModal({date: this.selectedDate}), 500);
+                    } else {
+                        window.dispatchEvent(new CustomEvent('toast', { detail: { type: 'error', message: 'Failed to update task.' }}));
+                    }
+                });
+            }
+        };
+    }
+</script>
+{% endblock %}
