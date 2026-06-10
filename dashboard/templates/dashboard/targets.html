@@ -347,6 +347,59 @@
                 </table>
             </div>
 
+            <!-- Reorder Level Table -->
+            <h2 style="margin-top: 30px;">5. Manage Minimum Stock (Reorder Levels)</h2>
+            <div style="margin-bottom: 15px; max-width: 600px;">
+                <label style="display: block; font-weight: bold; font-size: 12px; color: #666; margin-bottom: 5px;">🔍 Add Product to Reorder Watchlist</label>
+                <div style="position: relative;">
+                    <input type="text" id="reorderSearchInput" placeholder="Type product code or name to add..." style="width: 100%; box-sizing: border-box; padding: 8px 12px; border: 1px solid #ccc; border-radius: 4px; font-size: 13px;">
+                    <div id="reorderSearchResults" style="position: absolute; left: 0; right: 0; background: #fff; border: 1px solid #ccc; border-radius: 4px; max-height: 250px; overflow-y: auto; z-index: 1000; box-shadow: 0 4px 6px rgba(0,0,0,0.1); display: none; margin-top: 2px;">
+                        <!-- Populate dynamically -->
+                    </div>
+                </div>
+            </div>
+            <div style="overflow-x: auto; border: 1px solid #ccc; border-radius: 4px; margin-bottom: 20px;">
+                <table class="admin-table" style="margin-bottom: 0;">
+                    <thead>
+                        <tr>
+                            <th style="min-width: 250px;">Product</th>
+                            <th style="text-align: center; width: 150px;">Current Stock</th>
+                            <th style="text-align: center; width: 150px;">Reorder Level</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for product in reorder_products %}
+                        <tr>
+                            <td>
+                                <div style="font-weight: bold; font-size: 14px; color: #000;">
+                                    📦 {{ product.name }} <span style="color:#666; font-size:12px;">({{ product.product_id }})</span>
+                                </div>
+                            </td>
+                            <td style="text-align: center; font-weight: bold;">
+                                {{ product.current_stock|floatformat:"0" }}
+                            </td>
+                            <td style="text-align: center; padding: 6px 4px;">
+                                <input type="number"
+                                       name="reorder_level_{{ product.id }}"
+                                       value="{{ product.reorder_level }}"
+                                       min="0"
+                                       step="0.001"
+                                       placeholder="0.00"
+                                       class="admin-input"
+                                       style="width: 120px; display: inline-block;">
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="3" style="text-align: center; padding: 30px; color: #999; font-style: italic;">
+                                No products are currently configured with a reorder level. Search above to add one.
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
             <!-- Footer Save buttons -->
             <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid #eee; padding-top: 15px; margin-top: 15px;">
                 <span style="font-size: 11px; color: #666; font-style: italic;">* Clear target inputs to set "No Target". All calculations use values exclusive of VAT.</span>
@@ -582,6 +635,90 @@ document.addEventListener('click', (e) => {
     if (searchResults && !searchResults.contains(e.target) && e.target !== searchInput) {
         searchResults.style.display = 'none';
     }
+    const reorderResults = document.getElementById('reorderSearchResults');
+    const reorderInput = document.getElementById('reorderSearchInput');
+    if (reorderResults && !reorderResults.contains(e.target) && e.target !== reorderInput) {
+        reorderResults.style.display = 'none';
+    }
 });
+
+// Reorder Level Search and Add
+const reorderSearchInput = document.getElementById('reorderSearchInput');
+const reorderSearchResults = document.getElementById('reorderSearchResults');
+
+if (reorderSearchInput) {
+    reorderSearchInput.addEventListener('input', async (e) => {
+        const q = e.target.value.trim();
+        if (q.length < 2) {
+            reorderSearchResults.innerHTML = '';
+            reorderSearchResults.style.display = 'none';
+            return;
+        }
+
+        try {
+            const resp = await fetch(`/dashboard/api/product-search/?q=${encodeURIComponent(q)}&all=true`);
+            if (resp.ok) {
+                const data = await resp.json();
+                renderReorderSearchResults(data.results);
+            }
+        } catch (err) {
+            console.error("Reorder search failed", err);
+        }
+    });
+}
+
+function renderReorderSearchResults(results) {
+    if (!results || results.length === 0) {
+        reorderSearchResults.innerHTML = '<div style="padding: 10px; text-align: center; color: #999; font-size: 13px;">No matching products found</div>';
+        reorderSearchResults.style.display = 'block';
+        return;
+    }
+
+    let html = '';
+    results.forEach(p => {
+        html += `
+            <div style="padding: 8px 12px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                    <div style="font-weight: bold; font-size: 13px; color: #333;">${escapeHtml(p.name)}</div>
+                    <div style="font-size: 11px; color: #666;">Code: ${escapeHtml(p.product_id)}</div>
+                </div>
+                <div>
+                    <button type="button" onclick="addReorderProduct(${p.id})" class="btn-admin" style="padding: 4px 8px; font-size: 11px;">+ Add</button>
+                </div>
+            </div>
+        `;
+    });
+    reorderSearchResults.innerHTML = html;
+    reorderSearchResults.style.display = 'block';
+}
+
+async function addReorderProduct(productId) {
+    reorderSearchResults.style.display = 'none';
+    reorderSearchInput.value = '';
+
+    const formData = new FormData();
+    formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
+    formData.append('action', 'add_reorder_product');
+    formData.append('product_db_id', productId);
+    formData.append('year', '{{ year }}');
+
+    try {
+        const resp = await fetch(window.location.pathname, {
+            method: 'POST',
+            body: formData,
+            headers: {'X-Requested-With': 'XMLHttpRequest'}
+        });
+        if (resp.ok) {
+            const res = await resp.json();
+            if (res.status === 'ok') {
+                location.reload();
+            } else {
+                alert(res.error || "Failed to add product");
+            }
+        }
+    } catch (err) {
+        console.error("Failed to add reorder product", err);
+    }
+}
 </script>
 {% endblock %}

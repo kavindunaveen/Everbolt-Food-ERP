@@ -366,7 +366,7 @@
                     </thead>
                     <tbody id="formset-container" class="divide-y divide-gray-50">
                         {% for item_form in items %}
-                        <tr class="formset-row hover:bg-gray-50/30 transition-colors">
+                        <tr class="formset-row hover:bg-gray-50/30 transition-colors" data-current_stock="{{ item_form.instance.product.current_stock|default:0 }}" data-reorder_level="{{ item_form.instance.product.reorder_level|default:0 }}">
                             {{ item_form.id }}
                             <td class="px-2 py-3 w-[35%] align-top">
                                 {{ item_form.product }}
@@ -731,6 +731,8 @@
                 $('#top-save-btn').removeClass('hidden');
                 $('#top-request-approval-btn').addClass('hidden');
                 $('#top-issue-btn').removeClass('hidden');
+                
+                validateApprovalRequirements();
             }
             
             // Special customer logic
@@ -903,7 +905,72 @@
             
             $(row).find('.line-total').val(((qty * price) - discountAmount).toFixed(2));
             updateSummary();
+        
+        // Initial setup on load
+        if ($('#id_customer').length > 0) {
+            $('#id_customer').trigger('change');
+        } else {
+            validateApprovalRequirements();
         }
+
+        function validateApprovalRequirements() {
+            {% if form.instance.status == 'DRAFT' or not form.instance.status %}
+            {% if not form.instance.is_approved %}
+            const customerId = $('#id_customer').val();
+            let isBlocked = false;
+            let blockReason = "";
+
+            if (customerId && (customerStatus[customerId] === 'BLACKLIST' || customerStatus[customerId] === 'ONHOLD')) {
+                isBlocked = true;
+                const statusTxt = customerStatus[customerId] === 'BLACKLIST' ? 'blacklisted' : 'onhold';
+                blockReason = `We can't draft the invoice because this customer is already ${statusTxt}. Please select a manager and send for approval.`;
+            } else {
+                // Check Reorder levels
+                let reorderBreached = false;
+                $('#items-table-body tr:visible').each(function() {
+                    const currentStock = $(this).data('current_stock');
+                    const reorderLevel = $(this).data('reorder_level');
+                    const qty = parseFloat($(this).find('input[name$="-quantity"]').val()) || 0;
+                    
+                    if (currentStock !== undefined && reorderLevel !== undefined && reorderLevel > 0) {
+                        if ((currentStock - qty) < reorderLevel) {
+                            reorderBreached = true;
+                        }
+                    }
+                });
+
+                if (reorderBreached) {
+                    isBlocked = true;
+                    blockReason = `Creating this invoice drops stock below the minimum Reorder Level. An approval request is required.`;
+                }
+            }
+
+            if (isBlocked) {
+                $('#approval-msg-text').text(blockReason);
+                $('#approval-block-msg').removeClass('hidden');
+                
+                $('#save-invoice-btn').addClass('hidden');
+                $('#send-approval-btn').removeClass('hidden');
+                $('#designated_approver').removeClass('hidden').prop('disabled', false);
+                
+                $('#top-save-btn').addClass('hidden');
+                $('#top-request-approval-btn').removeClass('hidden');
+                $('#top-issue-btn').addClass('hidden');
+            } else {
+                $('#approval-block-msg').addClass('hidden');
+                
+                $('#save-invoice-btn').removeClass('hidden');
+                $('#send-approval-btn').addClass('hidden');
+                $('#designated_approver').addClass('hidden').prop('disabled', true);
+                
+                $('#top-save-btn').removeClass('hidden');
+                $('#top-request-approval-btn').addClass('hidden');
+                $('#top-issue-btn').removeClass('hidden');
+            }
+            {% endif %}
+            {% endif %}
+        }
+    });
 
         function updateSummary() {
             let totalDiscount = 0;
@@ -1059,10 +1126,12 @@
                 .then(data => {
                     if (data.error) return;
 
-                    // Store ALL pricing tiers on the row element
+                    // Store ALL pricing tiers and stock info on the row element
                     row.data('selling_price', data.selling_price);
                     row.data('price_tier_250', data.price_tier_250 || data.selling_price);
                     row.data('price_tier_500', data.price_tier_500 || data.selling_price);
+                    row.data('current_stock', parseFloat(data.current_stock) || 0);
+                    row.data('reorder_level', parseFloat(data.reorder_level) || 0);
                     row.data('auto_pricing_enabled', true);
 
                     const qtyInput = row.find('input[name$="-quantity"]');
@@ -1077,6 +1146,7 @@
                         alert('Warning: This product is completely out of stock!');
                     }
                     calculateRowTotal(row[0]);
+                    validateApprovalRequirements();
                 })
                 .catch(err => console.error('Error fetching product data:', err));
         });
@@ -1089,6 +1159,7 @@
             if ($(this).attr('name') && $(this).attr('name').endsWith('-quantity')) {
                 const qty = parseFloat($(this).val()) || 0;
                 applyTierPrice(row, qty);
+                validateApprovalRequirements();
             }
 
             calculateRowTotal(row[0]);
@@ -1098,15 +1169,17 @@
         $(document).on('click', '.remove-row', function() {
             const row = $(this).closest('tr');
             const deleteCheckbox = row.find('input[type="checkbox"][id$="-DELETE"]');
+            
             if (deleteCheckbox.length > 0) {
-                // Existing DB row: mark for deletion and hide
+                // If it has a DELETE checkbox, it's an existing row from DB. Mark it for deletion and hide.
                 deleteCheckbox.prop('checked', true);
-                row.hide().removeClass('formset-row');
+                row.hide();
+                // Also trigger validation since stock constraint might have been relaxed
+                validateApprovalRequirements();
             } else {
-                // New unsaved row: fully remove and fix the TOTAL_FORMS count
+                // Otherwise it's a dynamically added row, just remove it from DOM
                 row.remove();
-                const totalForms = $('#id_' + prefix + '-TOTAL_FORMS');
-                totalForms.val(Math.max(0, parseInt(totalForms.val()) - 1));
+                validateApprovalRequirements();
             }
             updateSummary();
         });

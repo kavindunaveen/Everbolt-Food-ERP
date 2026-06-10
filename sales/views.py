@@ -614,8 +614,21 @@ class InvoiceCreateView(LoginRequiredMixin, ERPPermissionRequiredMixin, CreateVi
                 self.object.snap_delivery_province = c.delivery_province
                 self.object.snap_delivery_zip      = c.delivery_zip_code
             
-            # Block or Mark for approval based on customer status
-            if self.object.customer.customer_status in ['BLACKLIST', 'ONHOLD'] and not getattr(self.object, 'is_approved', False):
+            # ── Block or Mark for approval based on customer status & reorder level ──
+            reorder_warning = False
+            if items.is_valid():
+                for form_item in items:
+                    if form_item.cleaned_data and not form_item.cleaned_data.get('DELETE', False):
+                        product = form_item.cleaned_data.get('product')
+                        quantity = form_item.cleaned_data.get('quantity')
+                        if product and quantity and product.reorder_level > 0:
+                            if (product.current_stock - quantity) < product.reorder_level:
+                                reorder_warning = True
+                                break
+
+            requires_approval = (self.object.customer.customer_status in ['BLACKLIST', 'ONHOLD']) or reorder_warning
+
+            if requires_approval and not getattr(self.object, 'is_approved', False):
                 if self.request.POST.get('is_approval_request') == 'true':
                     self.object.status = 'APPROVAL_PENDING'
                     approver_id = self.request.POST.get('designated_approver')
@@ -627,7 +640,10 @@ class InvoiceCreateView(LoginRequiredMixin, ERPPermissionRequiredMixin, CreateVi
                             pass
                 else:
                     from django.core.exceptions import ValidationError
-                    form.add_error(None, ValidationError(f"Invoice cannot be saved because customer is {self.object.customer.customer_status}."))
+                    if self.object.customer.customer_status in ['BLACKLIST', 'ONHOLD']:
+                        form.add_error(None, ValidationError(f"Invoice cannot be saved because customer is {self.object.customer.customer_status}."))
+                    else:
+                        form.add_error(None, ValidationError("Creating this invoice drops stock below Reorder Level. An approval request is required."))
                     return super().form_invalid(form)
             
             if items.is_valid():
@@ -750,8 +766,21 @@ class InvoiceUpdateView(LoginRequiredMixin, ERPPermissionRequiredMixin, UpdateVi
                 form.add_error(None, ValidationError("Only DRAFT invoices can be edited and saved."))
                 return super().form_invalid(form)
             
-            # Block or Mark for approval based on customer status
-            if self.object.customer.customer_status in ['BLACKLIST', 'ONHOLD'] and self.object.status == 'DRAFT' and not getattr(self.object, 'is_approved', False):
+            # ── Block or Mark for approval based on customer status & reorder level ──
+            reorder_warning = False
+            if self.object.status == 'DRAFT' and items.is_valid():
+                for form_item in items:
+                    if form_item.cleaned_data and not form_item.cleaned_data.get('DELETE', False):
+                        product = form_item.cleaned_data.get('product')
+                        quantity = form_item.cleaned_data.get('quantity')
+                        if product and quantity and product.reorder_level > 0:
+                            if (product.current_stock - quantity) < product.reorder_level:
+                                reorder_warning = True
+                                break
+
+            requires_approval = (self.object.customer.customer_status in ['BLACKLIST', 'ONHOLD']) or reorder_warning
+
+            if requires_approval and self.object.status == 'DRAFT' and not getattr(self.object, 'is_approved', False):
                 if self.request.POST.get('is_approval_request') == 'true':
                     self.object.status = 'APPROVAL_PENDING'
                     approver_id = self.request.POST.get('designated_approver')
@@ -763,7 +792,10 @@ class InvoiceUpdateView(LoginRequiredMixin, ERPPermissionRequiredMixin, UpdateVi
                             pass
                 else:
                     from django.core.exceptions import ValidationError
-                    form.add_error(None, ValidationError(f"Invoice cannot be saved because customer is {self.object.customer.customer_status}."))
+                    if self.object.customer.customer_status in ['BLACKLIST', 'ONHOLD']:
+                        form.add_error(None, ValidationError(f"Invoice cannot be saved because customer is {self.object.customer.customer_status}."))
+                    else:
+                        form.add_error(None, ValidationError("Creating this invoice drops stock below Reorder Level. An approval request is required."))
                     return super().form_invalid(form)
             
             self.object.save()

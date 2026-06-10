@@ -24,7 +24,8 @@ class ProductDetailAPIView(LoginRequiredMixin, View):
                 'price_tier_100': str(product.price_tier_100) if product.price_tier_100 else None,
                 'price_tier_250': str(product.price_tier_250) if product.price_tier_250 else None,
                 'price_tier_500': str(product.price_tier_500) if product.price_tier_500 else None,
-                'current_stock': str(product.current_stock)
+                'current_stock': str(product.current_stock),
+                'reorder_level': str(product.reorder_level)
             })
         except Product.DoesNotExist:
             return JsonResponse({'error': 'Product not found'}, status=404)

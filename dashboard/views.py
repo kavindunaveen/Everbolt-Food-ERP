@@ -736,10 +736,14 @@ class TargetManagementView(LoginRequiredMixin, View):
                 'periods': periods,
             })
 
+        # ── Reorder Level Watchlist ───────────────────────────────────────────
+        reorder_products = Product.objects.filter(reorder_level__gt=0).order_by('name')
+
         return render(request, self.template_name, {
             'overall_periods': overall_periods,
             'prod_rows': prod_rows,
             'salesperson_rows': salesperson_rows,
+            'reorder_products': reorder_products,
             'all_groups': all_groups,
             'year': year,
             'available_years': available_years,
@@ -840,7 +844,32 @@ class TargetManagementView(LoginRequiredMixin, View):
             except ProductTargetGroup.DoesNotExist:
                 return JsonResponse({'error': 'Not found'}, status=404)
 
+        if action == 'add_reorder_product':
+            pid = request.POST.get('product_db_id')
+            try:
+                product = Product.objects.get(pk=pid)
+                # Initialize it so it appears in the watchlist
+                if product.reorder_level == 0:
+                    product.reorder_level = 0.001
+                    product.save(update_fields=['reorder_level'])
+                return JsonResponse({'status': 'ok', 'name': product.name})
+            except Product.DoesNotExist:
+                return JsonResponse({'error': 'Product not found'}, status=404)
+
         # ── action == 'save_targets' ────────────────────────────────────
+        for k, v in request.POST.items():
+            if k.startswith('reorder_level_'):
+                try:
+                    pid = int(k.replace('reorder_level_', ''))
+                    val_str = v.strip()
+                    val = float(val_str) if val_str else 0.000
+                    
+                    product = Product.objects.get(pk=pid)
+                    if float(product.reorder_level) != val:
+                        product.reorder_level = val
+                        product.save(update_fields=['reorder_level'])
+                except (ValueError, Product.DoesNotExist):
+                    pass
         for m in range(1, 13):
             _upsert_category(year, SalesTarget.TargetTypes.OVERALL_SALES, None, m, request.POST.get(f"overall_m{m}"))
 
@@ -874,21 +903,22 @@ class TargetManagementView(LoginRequiredMixin, View):
 class ProductSearchAPI(LoginRequiredMixin, View):
     def get(self, request, *args, **kwargs):
         q = request.GET.get('q', '').strip()
+        is_all = request.GET.get('all') == 'true'
+        
         if len(q) < 2:
             return JsonResponse({'results': []})
 
-        # Exclude products already linked to a target group
-        linked_pids = set(ProductTargetGroup.objects.values_list('products__id', flat=True))
-
-        products = (
-            Product.objects
-            .filter(
-                Q(name__icontains=q) | Q(product_id__icontains=q),
-                status=True,
-            )
-            .exclude(id__in=linked_pids)
-            .order_by('name')[:25]
+        products_query = Product.objects.filter(
+            Q(name__icontains=q) | Q(product_id__icontains=q),
+            status=True,
         )
+
+        if not is_all:
+            # Exclude products already linked to a target group
+            linked_pids = set(ProductTargetGroup.objects.values_list('products__id', flat=True))
+            products_query = products_query.exclude(id__in=linked_pids)
+
+        products = products_query.order_by('name')[:25]
 
         return JsonResponse({
             'results': [
