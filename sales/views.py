@@ -1113,6 +1113,14 @@ def approve_invoice_view(request, pk):
     if request.method == 'POST':
         reviewer_notes = request.POST.get('reviewer_notes', '')
         
+        # Mark associated notifications as read
+        from users.models import Notification
+        Notification.objects.filter(
+            recipient=request.user, 
+            notification_type='approval_required',
+            message__contains=f"Invoice {invoice.invoice_number}"
+        ).update(is_read=True)
+        
         if invoice.status == 'APPROVAL_PENDING':
             old_status = invoice.get_status_display()
             invoice.status = 'DRAFT'
@@ -1241,6 +1249,14 @@ def reject_invoice_view(request, pk):
         
     if request.method == 'POST':
         reviewer_notes = request.POST.get('reviewer_notes', '')
+        
+        # Mark associated notifications as read
+        from users.models import Notification
+        Notification.objects.filter(
+            recipient=request.user, 
+            notification_type='approval_required',
+            message__contains=f"Invoice {invoice.invoice_number}"
+        ).update(is_read=True)
         
         if invoice.status == 'APPROVAL_PENDING':
             old_status = invoice.get_status_display()

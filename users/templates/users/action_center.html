@@ -36,15 +36,16 @@
                             <p class="text-sm text-gray-600 mb-2">Requested by <span class="font-semibold">{{ invoice.salesperson.get_full_name }}</span>. Total: {{ invoice.total_amount }} LKR</p>
                             <p class="text-sm bg-gray-100 p-3 rounded-lg text-gray-700 italic border-l-4 border-gray-300">"{{ invoice.cancellation_reason }}"</p>
                         </div>
-                        <div class="flex gap-2 shrink-0 ml-6">
-                            <form method="post" action="{% url 'invoice_approve' invoice.pk %}">
+                        <div class="shrink-0 ml-6 w-72">
+                            <form method="post" action="{% url 'invoice_approve' invoice.pk %}" class="mb-2">
                                 {% csrf_token %}
-                                <input type="hidden" name="reviewer_notes" value="Approved via Action Center">
-                                <button type="submit" class="px-4 py-2 bg-emerald-600 text-white rounded-lg font-bold text-sm hover:bg-emerald-700 transition shadow-sm">Approve Edit</button>
+                                <input type="text" name="reviewer_notes" placeholder="Optional approval notes..." class="w-full text-xs border-gray-300 rounded-md shadow-sm focus:ring-emerald-500 focus:border-emerald-500 mb-2 py-1.5 px-2">
+                                <button type="submit" class="w-full px-4 py-2 bg-emerald-600 text-white rounded-lg font-bold text-sm hover:bg-emerald-700 transition shadow-sm">Approve Edit</button>
                             </form>
                             <form method="post" action="{% url 'invoice_reject' invoice.pk %}">
                                 {% csrf_token %}
-                                <button type="submit" class="px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-lg font-bold text-sm hover:bg-red-50 hover:text-red-700 hover:border-red-200 transition shadow-sm">Reject</button>
+                                <!-- <input type="hidden" name="reviewer_notes" id="reject-notes-{{ invoice.pk }}"> -->
+                                <button type="submit" class="w-full px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-lg font-bold text-sm hover:bg-red-50 hover:text-red-700 hover:border-red-200 transition shadow-sm" onclick="this.form.insertAdjacentHTML('beforeend', '<input type=\'hidden\' name=\'reviewer_notes\' value=\'' + this.form.previousElementSibling.querySelector('input[name=reviewer_notes]').value + '\'>');">Reject</button>
                             </form>
                         </div>
                     </div>
