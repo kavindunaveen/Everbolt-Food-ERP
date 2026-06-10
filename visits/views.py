@@ -139,8 +139,7 @@ def save_task(request):
             defaults={
                 'tasks_done': tasks_done,
                 'remarks': remarks,
-                'is_done': is_done,
-                'completed_at': datetime.now() if is_done else None
+                'is_done': is_done
             }
         )
         return JsonResponse({'status': 'success', 'task_id': task.id})
