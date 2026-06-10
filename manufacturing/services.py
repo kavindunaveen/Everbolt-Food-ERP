@@ -2,6 +2,7 @@ from django.db import transaction
 from django.shortcuts import get_object_or_404
 from .models import Production, ProductionMaterial, ProductionOutput
 from inventory.models import StockLedger, Product
+from inventory.services import check_and_notify_stock_levels
 
 def confirm_production(production, user):
     """
@@ -42,6 +43,7 @@ def confirm_production(production, user):
                 
                 prod_obj.current_stock -= qty
                 prod_obj.save(update_fields=['current_stock'])
+                check_and_notify_stock_levels(prod_obj)
         
         # 2. Handle Outputs (Production)
         for out in production.outputs.all():
@@ -62,6 +64,7 @@ def confirm_production(production, user):
                 prod_obj = Product.objects.select_for_update().get(id=out.output_product.id)
                 prod_obj.current_stock += qty
                 prod_obj.save(update_fields=['current_stock'])
+                check_and_notify_stock_levels(prod_obj)
                 
         if ledgers:
             StockLedger.objects.bulk_create(ledgers)
@@ -98,6 +101,7 @@ def cancel_production(production, user):
                 prod_obj = Product.objects.select_for_update().get(id=mat.component_product.id)
                 prod_obj.current_stock += qty
                 prod_obj.save(update_fields=['current_stock'])
+                check_and_notify_stock_levels(prod_obj)
         
         # 2. Reverse Outputs (Remove stock)
         for out in production.outputs.all():
@@ -118,6 +122,7 @@ def cancel_production(production, user):
                 prod_obj = Product.objects.select_for_update().get(id=out.output_product.id)
                 prod_obj.current_stock -= qty
                 prod_obj.save(update_fields=['current_stock'])
+                check_and_notify_stock_levels(prod_obj)
                 
         if ledgers:
             StockLedger.objects.bulk_create(ledgers)

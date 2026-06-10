@@ -1,6 +1,7 @@
 from django.db import transaction
 from .models import GRN
 from inventory.models import StockLedger, Product
+from inventory.services import check_and_notify_stock_levels
 
 def confirm_grn(grn, user):
     """
@@ -32,6 +33,7 @@ def confirm_grn(grn, user):
                 product = Product.objects.select_for_update().get(id=item.product.id)
                 product.current_stock += item.qty
                 product.save(update_fields=['current_stock'])
+                check_and_notify_stock_levels(product)
             
         if ledgers:
             StockLedger.objects.bulk_create(ledgers)
@@ -65,6 +67,7 @@ def cancel_grn(grn, user):
                 product = Product.objects.select_for_update().get(id=item.product.id)
                 product.current_stock -= item.qty
                 product.save(update_fields=['current_stock'])
+                check_and_notify_stock_levels(product)
             
         if ledgers:
             StockLedger.objects.bulk_create(ledgers)
