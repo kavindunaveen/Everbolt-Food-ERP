@@ -10,6 +10,12 @@
             <p class="text-sm text-gray-500 font-medium mt-1">Manage and track daily visit plans for sales officers.</p>
         </div>
         <div class="flex items-center space-x-4">
+            <select x-model="globalSelectedSO" class="block w-48 px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm text-gray-700 outline-none">
+                <option value="">All Sales Officers</option>
+                {% for so in sales_officers %}
+                <option value="{{ so.id }}">{{ so.get_full_name|default:so.username }}</option>
+                {% endfor %}
+            </select>
             {% if perms.visits.view_weekly_summary %}
             <a href="{% url 'visit_summary' %}" class="btn-premium btn-secondary">
                 <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
@@ -148,22 +154,26 @@
                 {% if perms.visits.add_visitplan %}
                 <div class="border-t border-gray-200 pt-6 mt-6">
                     <h3 class="text-sm font-bold text-gray-900 mb-4">Assign New Plan</h3>
-                    <div class="space-y-4">
-                        <div>
-                            <label class="block text-xs font-bold text-gray-700 mb-1">Sales Officer</label>
-                            <select x-model="newPlanSO" class="block w-full px-3 py-2 border border-gray-200 rounded-lg text-sm">
-                                <option value="">Select an Officer</option>
-                                {% for so in sales_officers %}
-                                <option value="{{ so.id }}">{{ so.get_full_name|default:so.username }}</option>
-                                {% endfor %}
-                            </select>
+                    
+                    <template x-if="globalSelectedSO">
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-xs font-bold text-gray-700 mb-1">Instructions / Visit Details</label>
+                                <textarea x-model="newPlanDesc" class="block w-full px-3 py-2 border border-gray-200 rounded-lg text-sm" rows="3" placeholder="Enter the visit plan..."></textarea>
+                            </div>
+                            <button @click="savePlan()" class="btn-premium btn-primary w-full text-sm py-2">Create Assignment</button>
                         </div>
-                        <div>
-                            <label class="block text-xs font-bold text-gray-700 mb-1">Instructions / Visit Details</label>
-                            <textarea x-model="newPlanDesc" class="block w-full px-3 py-2 border border-gray-200 rounded-lg text-sm" rows="3" placeholder="Enter the visit plan..."></textarea>
+                    </template>
+                    
+                    <template x-if="!globalSelectedSO">
+                        <div class="p-4 bg-amber-50 rounded-xl border border-amber-100 flex items-start gap-3">
+                            <svg class="w-5 h-5 text-amber-500 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                            <div>
+                                <p class="text-sm font-bold text-amber-800">Select a Sales Officer</p>
+                                <p class="text-xs text-amber-700 mt-1">To assign a new plan, please select a specific Sales Officer from the dropdown menu at the top of the calendar.</p>
+                            </div>
                         </div>
-                        <button @click="savePlan()" class="btn-premium btn-primary w-full text-sm py-2">Create Assignment</button>
-                    </div>
+                    </template>
                 </div>
                 {% endif %}
             </div>
@@ -184,8 +194,9 @@
             modalDateStr: '',
             selectedDatePlans: [],
             
+            globalSelectedSO: '',
+            
             // New Plan form state
-            newPlanSO: '',
             newPlanDesc: '',
             
             // User context injected
@@ -275,7 +286,11 @@
             },
             
             getPlansForDate(dateStr) {
-                return this.allPlans.filter(p => p.date === dateStr);
+                let plans = this.allPlans;
+                if (this.globalSelectedSO) {
+                    plans = plans.filter(p => p.sales_officer_id == this.globalSelectedSO);
+                }
+                return plans.filter(p => p.date === dateStr);
             },
             
             openModal(day) {
@@ -292,7 +307,6 @@
                     _temp_description: p.description
                 }));
                 
-                this.newPlanSO = '';
                 this.newPlanDesc = '';
                 this.isModalOpen = true;
             },
@@ -306,7 +320,7 @@
             },
             
             savePlan() {
-                if(!this.newPlanSO || !this.newPlanDesc) {
+                if(!this.globalSelectedSO || !this.newPlanDesc) {
                     window.dispatchEvent(new CustomEvent('toast', { detail: { type: 'error', message: 'Please select an officer and enter instructions.' }}));
                     return;
                 }
@@ -316,7 +330,7 @@
                     headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
                     body: JSON.stringify({
                         date: this.selectedDate,
-                        sales_officer_id: this.newPlanSO,
+                        sales_officer_id: this.globalSelectedSO,
                         description: this.newPlanDesc
                     })
                 }).then(res => res.json())
