@@ -141,6 +141,10 @@
                             <div x-show="open" @click.away="open = false" style="display: none;" class="origin-top-right absolute right-0 mt-2 w-80 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-50 overflow-hidden divide-y divide-gray-100">
                                 <div class="px-4 py-3 bg-gray-50 flex justify-between items-center">
                                     <h3 class="text-xs font-bold text-gray-900 uppercase tracking-wider">Notifications</h3>
+                                    <form method="post" action="{% url 'mark_all_notifications_read' %}">
+                                        {% csrf_token %}
+                                        <button type="submit" class="text-[10px] font-bold text-red-600 hover:text-red-800 transition-colors uppercase tracking-wider">Mark all read</button>
+                                    </form>
                                 </div>
                                 <div class="max-h-80 overflow-y-auto">
                                 {% for notif in request.user.recent_notifications %}

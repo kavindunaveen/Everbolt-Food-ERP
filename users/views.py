@@ -140,6 +140,19 @@ def notification_read(request, pk):
     return redirect('sales_dashboard')
 
 @login_required
+from django.views.decorators.http import require_POST
+
+@login_required
+@require_POST
+def mark_all_notifications_read(request):
+    from .models import Notification
+    Notification.objects.filter(recipient=request.user, is_read=False).update(is_read=True)
+    referer = request.META.get('HTTP_REFERER')
+    if referer:
+        return redirect(referer)
+    return redirect('sales_dashboard')
+
+@login_required
 def action_center(request):
     from .models import Notification
     from sales.models import Invoice
