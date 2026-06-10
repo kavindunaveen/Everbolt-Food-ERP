@@ -1819,6 +1819,12 @@ def return_create_view(request, invoice_pk):
         messages.error(request, "Returns can only be raised against Issued or Paid invoices.")
         return redirect('invoice_list')
 
+    # Calculate already returned quantities
+    returned_quantities = {}
+    for ret in invoice.returns.filter(stock_updated=True):
+        for ri in ret.items.all():
+            returned_quantities[ri.product_id] = returned_quantities.get(ri.product_id, 0) + ri.quantity
+
     if request.method == 'POST':
         form = ReturnForm(request.POST)
         formset = ReturnItemFormSet(request.POST)
@@ -1834,31 +1840,47 @@ def return_create_view(request, invoice_pk):
             if not has_items:
                 messages.error(request, "You must select at least one product to return.")
             else:
-                try:
-                    ret = form.save(commit=False)
-                    ret.original_invoice = invoice
-                    ret.created_by = request.user
-                    ret.save()
-                    
-                    formset.instance = ret
-                    formset.save()
-
-                    # Immediately process: restore stock + generate credit note
-                    credit_note = process_return(ret, request.user)
-                    messages.success(
-                        request,
-                        f"Return {ret.return_number} processed. Stock restored. "
-                        f"Credit Note {credit_note.credit_note_number} issued (Rs {credit_note.total_credit_amount})."
-                    )
-                    return redirect('credit_note_list')
-                except Exception as e:
-                    messages.error(request, f"Error processing return: {e}")
-                    # If error occurs, we should technically delete the Return we just saved, but atomic tx in process_return will handle partials. If it failed before process_return, we might have an orphaned Return.
-                    # Best to delete it if process_return fails.
+                # Validate that quantities don't exceed remaining invoiced quantity
+                invalid_items = []
+                for inline_form in formset:
+                    if inline_form.cleaned_data and not inline_form.cleaned_data.get('DELETE', False):
+                        product = inline_form.cleaned_data.get('product')
+                        qty = inline_form.cleaned_data.get('quantity', 0)
+                        if product and qty > 0:
+                            already_returned = returned_quantities.get(product.id, 0)
+                            inv_item = invoice.items.filter(product=product).first()
+                            max_qty = inv_item.quantity - already_returned if inv_item else 0
+                            if qty > max_qty:
+                                invalid_items.append(f"{product.name} (Max remaining: {max_qty})")
+                
+                if invalid_items:
+                    messages.error(request, f"Cannot return more than the remaining invoiced amount for: {', '.join(invalid_items)}")
+                else:
                     try:
-                        ret.delete()
-                    except:
-                        pass
+                        ret = form.save(commit=False)
+                        ret.original_invoice = invoice
+                        ret.created_by = request.user
+                        ret.save()
+                        
+                        formset.instance = ret
+                        formset.save()
+
+                        # Immediately process: restore stock + generate credit note
+                        credit_note = process_return(ret, request.user)
+                        messages.success(
+                            request,
+                            f"Return {ret.return_number} processed. Stock restored. "
+                            f"Credit Note {credit_note.credit_note_number} issued (Rs {credit_note.total_credit_amount})."
+                        )
+                        return redirect('credit_note_list')
+                    except Exception as e:
+                        messages.error(request, f"Error processing return: {e}")
+                        # If error occurs, we should technically delete the Return we just saved, but atomic tx in process_return will handle partials. If it failed before process_return, we might have an orphaned Return.
+                        # Best to delete it if process_return fails.
+                        try:
+                            ret.delete()
+                        except:
+                            pass
         else:
             messages.error(request, "Please correct the errors in the form.")
     else:
@@ -1868,13 +1890,17 @@ def return_create_view(request, invoice_pk):
     # Pass invoice items to the template so JS can fetch unit prices easily
     items_data = []
     for item in invoice.items.select_related('product').all():
-        items_data.append({
-            'product_id': item.product.id,
-            'name': item.product.name,
-            'code': item.product.product_id,
-            'unit_price': float(item.unit_price),
-            'max_quantity': item.quantity
-        })
+        already_returned = returned_quantities.get(item.product_id, 0)
+        max_qty = item.quantity - already_returned
+        
+        if max_qty > 0:
+            items_data.append({
+                'product_id': item.product.id,
+                'name': item.product.name,
+                'code': item.product.product_id,
+                'unit_price': float(item.unit_price),
+                'max_quantity': max_qty
+            })
 
     import json
     return render(request, 'sales/return_form.html', {
