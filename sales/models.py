@@ -224,6 +224,24 @@ class Invoice(models.Model):
             
         return dns.first().get_status_display().upper()
 
+    @property
+    def can_be_returned(self):
+        if self.status not in ['ISSUED', 'PAID']:
+            return False
+            
+        returned_quantities = {}
+        # Count only quantities from returns that actually updated stock
+        for ret in self.returns.filter(stock_updated=True):
+            for ri in ret.items.all():
+                returned_quantities[ri.product_id] = returned_quantities.get(ri.product_id, 0) + ri.quantity
+                
+        for item in self.items.all():
+            already_returned = returned_quantities.get(item.product_id, 0)
+            if item.quantity > already_returned:
+                return True
+                
+        return False
+
     class Meta:
         permissions = [
             ("approve_invoice", "Can approve pending invoices"),
