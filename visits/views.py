@@ -79,18 +79,26 @@ def get_plans(request):
 def save_plan(request):
     if request.method == 'POST':
         data = json.loads(request.body)
+        plan_id = data.get('plan_id')
         date_str = data.get('date')
         sales_officer_id = data.get('sales_officer_id')
         description = data.get('description')
         
-        plan, created = VisitPlan.objects.update_or_create(
-            date=date_str,
-            sales_officer_id=sales_officer_id,
-            defaults={
-                'description': description,
-                'created_by': request.user
-            }
-        )
+        if plan_id:
+            try:
+                plan = VisitPlan.objects.get(id=plan_id)
+                plan.description = description
+                plan.save()
+            except VisitPlan.DoesNotExist:
+                return JsonResponse({'status': 'error', 'message': 'Plan not found'}, status=404)
+        else:
+            plan = VisitPlan.objects.create(
+                date=date_str,
+                sales_officer_id=sales_officer_id,
+                description=description,
+                created_by=request.user
+            )
+            
         return JsonResponse({'status': 'success', 'plan_id': plan.id})
     return JsonResponse({'status': 'error'}, status=400)
 

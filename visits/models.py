@@ -11,7 +11,6 @@ class VisitPlan(models.Model):
 
     class Meta:
         ordering = ['-date']
-        unique_together = ['date', 'sales_officer']
         permissions = [
             ("view_weekly_summary", "Can view weekly summary report"),
         ]

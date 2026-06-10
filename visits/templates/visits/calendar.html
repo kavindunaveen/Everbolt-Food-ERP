@@ -50,8 +50,9 @@
                     <div class="space-y-1 mt-2">
                         <template x-for="plan in getPlansForDate(d.date)" :key="plan.id">
                             <div class="text-[10px] px-2 py-1 rounded-md font-semibold truncate transition-all"
-                                 :class="plan.is_done ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'">
-                                <span x-text="plan.sales_officer_name"></span>
+                                 :class="plan.is_done ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'"
+                                 :title="plan.description">
+                                <span x-text="plan.description"></span>
                             </div>
                         </template>
                     </div>
@@ -374,6 +375,7 @@
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
                     body: JSON.stringify({
+                        plan_id: plan.id,
                         date: this.selectedDate,
                         sales_officer_id: plan.sales_officer_id,
                         description: plan._temp_description
