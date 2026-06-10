@@ -411,6 +411,12 @@ class DeliveryNote(models.Model):
                 self.dn_number = f"{prefix}{new_seq:05d}"
         super().save(*args, **kwargs)
 
+    @property
+    def delivery_officer_name(self):
+        if self.delivered_by:
+            return self.delivered_by.get_full_name() or self.delivered_by.username
+        return "N/A"
+
     def __str__(self):
         return self.dn_number
 

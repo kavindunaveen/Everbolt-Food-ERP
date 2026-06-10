@@ -70,7 +70,7 @@
                             {{ dn.customer_name }}
                         </td>
                         <td :class="compactMode ? 'px-6 py-2' : 'px-6 py-4'" class="whitespace-nowrap text-sm text-gray-600 font-medium">
-                            {{ dn.delivered_by.get_full_name|default:dn.delivered_by.username|title|default:"N/A" }}
+                            {{ dn.delivery_officer_name|title }}
                         </td>
                         <td :class="compactMode ? 'px-6 py-2' : 'px-6 py-4'" class="whitespace-nowrap">
                             <span class="px-2.5 py-1 text-[10px] font-extrabold rounded-md uppercase tracking-wider
