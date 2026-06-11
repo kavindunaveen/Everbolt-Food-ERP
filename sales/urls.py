@@ -39,6 +39,7 @@ urlpatterns = [
     path('sales/delivery/notes/new/', views.DeliveryNoteCreateView.as_view(), name='delivery_note_create'),
     path('sales/delivery-notes/<int:pk>/', views.DeliveryNoteDetailView.as_view(), name='delivery_note_detail'),
     path('sales/delivery-notes/<int:pk>/edit/', views.DeliveryNoteUpdateView.as_view(), name='delivery_note_edit'),
+    path('sales/delivery-notes/<int:pk>/delete/', views.DeliveryNoteDeleteView.as_view(), name='delivery_note_delete'),
     path('sales/delivery-notes/<int:pk>/print/', views.DeliveryNotePrintView.as_view(), name='delivery_note_print'),
     path('sales/delivery-notes/<int:pk>/update-status/', views.update_dn_status, name='delivery_note_update_status'),
     path('api/invoices/<int:pk>/details/', views.get_invoice_details, name='get_invoice_details'),

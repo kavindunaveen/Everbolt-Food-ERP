@@ -1,5 +1,5 @@
 from django.shortcuts import render, redirect, get_object_or_404
-from django.views.generic import TemplateView, ListView, CreateView, UpdateView, View, DetailView
+from django.views.generic import TemplateView, ListView, CreateView, UpdateView, View, DetailView, DeleteView
 from django.http import HttpResponse, JsonResponse
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from users.mixins import ERPPermissionRequiredMixin
@@ -1727,7 +1727,29 @@ class DeliveryNoteUpdateView(LoginRequiredMixin, ERPPermissionRequiredMixin, Upd
             messages.success(self.request, f"Delivery Note {self.object.dn_number} updated successfully.")
             return super().form_valid(form)
 
+class DeliveryNoteDeleteView(LoginRequiredMixin, AdminRequiredMixin, DeleteView):
+    model = DeliveryNote
+    template_name = 'sales/delivery_note_confirm_delete.html'
+    success_url = reverse_lazy('delivery_note_list')
+    permission_required = 'sales.delete_deliverynote'
 
+    def form_valid(self, form):
+        from .services import restore_dn_stock
+        with transaction.atomic():
+            # Ensure the invoice stock_deducted flag is reverted and stock is added back
+            restore_dn_stock(self.object, self.request.user, remark_prefix="Delivery Note Deleted")
+            
+            # Log deletion on the invoice
+            log_sales_event(
+                obj=self.object.invoice,
+                user=self.request.user,
+                action="Delivery Note Deleted",
+                new_value="N/A",
+                notes=f"Delivery Note {self.object.dn_number} deleted by Admin."
+            )
+            
+            messages.success(self.request, f"Delivery Note {self.object.dn_number} successfully deleted and stock reversed.")
+            return super().form_valid(form)
 @login_required
 def get_invoice_details(request, pk):
     invoice = get_object_or_404(Invoice, pk=pk)
