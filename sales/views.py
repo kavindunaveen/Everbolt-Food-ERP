@@ -476,7 +476,7 @@ class QuotationCreateView(LoginRequiredMixin, ERPPermissionRequiredMixin, Create
                 self.object.tax_amount = tax
                 self.object.subtotal_amount = subtotal
                 self.object.total_discount = tot_discount
-                self.object.total_amount = total.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP).quantize(Decimal('1.'), rounding=ROUND_UP)
+                self.object.total_amount = total.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
                 self.object.save()
             else:
                 return super().form_invalid(form)
@@ -562,7 +562,7 @@ class QuotationUpdateView(LoginRequiredMixin, ERPPermissionRequiredMixin, Update
                 self.object.tax_amount = tax
                 self.object.subtotal_amount = subtotal
                 self.object.total_discount = tot_discount
-                self.object.total_amount = total.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP).quantize(Decimal('1.'), rounding=ROUND_UP)
+                self.object.total_amount = total.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
                 self.object.save()
             else:
                 return super().form_invalid(form)
@@ -695,7 +695,7 @@ class InvoiceCreateView(LoginRequiredMixin, ERPPermissionRequiredMixin, CreateVi
                 self.object.tax_amount = tax
                 self.object.subtotal_amount = subtotal
                 self.object.total_discount = tot_discount
-                self.object.total_amount = total.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP).quantize(Decimal('1.'), rounding=ROUND_UP)
+                self.object.total_amount = total.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
                 self.object.save()
                 
                 log_sales_event(
@@ -845,7 +845,7 @@ class InvoiceUpdateView(LoginRequiredMixin, ERPPermissionRequiredMixin, UpdateVi
                 self.object.tax_amount = tax
                 self.object.subtotal_amount = subtotal
                 self.object.total_discount = tot_discount
-                self.object.total_amount = total.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP).quantize(Decimal('1.'), rounding=ROUND_UP)
+                self.object.total_amount = total.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
                 self.object.save()
                 
                 update_stock_reserves(self.object)
@@ -970,11 +970,11 @@ class InvoicePrintView(LoginRequiredMixin, ERPPermissionRequiredMixin, DetailVie
         context = super().get_context_data(**kwargs)
         # Total Value of Supply = total_amount - tax_amount 
         subtotal = self.object.total_amount - self.object.tax_amount
-        context['total_value_supply'] = math.ceil(subtotal)
-        context['tax_amount'] = math.ceil(self.object.tax_amount)
-        context['total_amount'] = math.ceil(self.object.total_amount)
+        context['total_value_supply'] = subtotal
+        context['tax_amount'] = self.object.tax_amount
+        context['total_amount'] = self.object.total_amount
         try:
-            context['amount_in_words'] = num2words(context['total_amount'], lang='en').title() + " Rupees Only"
+            context['amount_in_words'] = num2words(int(context['total_amount']), lang='en').title() + " Rupees Only"
         except:
             context['amount_in_words'] = ""
         return context
@@ -989,11 +989,11 @@ class QuotationPrintView(LoginRequiredMixin, ERPPermissionRequiredMixin, DetailV
         context = super().get_context_data(**kwargs)
         # Total Value of Supply = total_amount - tax_amount
         subtotal = self.object.total_amount - self.object.tax_amount
-        context['total_value_supply'] = math.ceil(subtotal)
-        context['tax_amount'] = math.ceil(self.object.tax_amount)
-        context['total_amount'] = math.ceil(self.object.total_amount)
+        context['total_value_supply'] = subtotal
+        context['tax_amount'] = self.object.tax_amount
+        context['total_amount'] = self.object.total_amount
         try:
-            context['amount_in_words'] = num2words(context['total_amount'], lang='en').title() + " Rupees Only"
+            context['amount_in_words'] = num2words(int(context['total_amount']), lang='en').title() + " Rupees Only"
         except:
             context['amount_in_words'] = ""
         return context
