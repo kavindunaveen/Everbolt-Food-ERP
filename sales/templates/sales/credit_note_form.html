@@ -32,29 +32,44 @@
                 <table class="min-w-full divide-y divide-gray-200">
                     <thead class="bg-gray-50">
                         <tr>
-                            <th class="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Product</th>
-                            <th class="px-4 py-3 text-center text-xs font-bold text-gray-500 uppercase tracking-wider">Quantity Returned</th>
-                            <th class="px-4 py-3 text-right text-xs font-bold text-gray-500 uppercase tracking-wider">Unit Price</th>
-                            <th class="px-4 py-3 text-right text-xs font-bold text-gray-500 uppercase tracking-wider">Credit Amount (Editable)</th>
+                            <th class="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider w-1/3">Product</th>
+                            <th class="px-4 py-3 text-center text-xs font-bold text-gray-500 uppercase tracking-wider w-1/6">Quantity</th>
+                            <th class="px-4 py-3 text-right text-xs font-bold text-gray-500 uppercase tracking-wider w-1/6">Unit Price</th>
+                            <th class="px-4 py-3 text-right text-xs font-bold text-gray-500 uppercase tracking-wider w-1/6">Credit Amount</th>
+                            <th class="px-4 py-3 text-center text-xs font-bold text-red-500 uppercase tracking-wider w-1/6">Delete</th>
                         </tr>
                     </thead>
                     <tbody class="bg-white divide-y divide-gray-200">
                         {% for item_form in formset %}
                         <tr>
                             {{ item_form.id }}
-                            <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900 font-bold">
-                                {{ item_form.instance.product.name }}
+                            <td class="px-4 py-3 whitespace-nowrap">
+                                {{ item_form.product }}
+                                {% if item_form.product.errors %}
+                                <p class="text-red-500 text-xs mt-1">{{ item_form.product.errors.0 }}</p>
+                                {% endif %}
                             </td>
-                            <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-500 text-center font-bold">
-                                {{ item_form.instance.quantity }}
+                            <td class="px-4 py-3 whitespace-nowrap">
+                                {{ item_form.quantity }}
+                                {% if item_form.quantity.errors %}
+                                <p class="text-red-500 text-xs mt-1">{{ item_form.quantity.errors.0 }}</p>
+                                {% endif %}
                             </td>
-                            <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-500 text-right">
-                                Rs {{ item_form.instance.unit_price|floatformat:2 }}
+                            <td class="px-4 py-3 whitespace-nowrap">
+                                {{ item_form.unit_price }}
+                                {% if item_form.unit_price.errors %}
+                                <p class="text-red-500 text-xs mt-1">{{ item_form.unit_price.errors.0 }}</p>
+                                {% endif %}
                             </td>
-                            <td class="px-4 py-3 whitespace-nowrap text-right">
+                            <td class="px-4 py-3 whitespace-nowrap">
                                 {{ item_form.credit_amount }}
                                 {% if item_form.credit_amount.errors %}
                                 <p class="text-red-500 text-xs mt-1">{{ item_form.credit_amount.errors.0 }}</p>
+                                {% endif %}
+                            </td>
+                            <td class="px-4 py-3 whitespace-nowrap text-center">
+                                {% if item_form.instance.pk %}
+                                    {{ item_form.DELETE }}
                                 {% endif %}
                             </td>
                         </tr>

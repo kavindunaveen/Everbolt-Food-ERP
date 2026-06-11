@@ -164,13 +164,16 @@ class CreditNoteForm(forms.ModelForm):
 class CreditNoteItemForm(forms.ModelForm):
     class Meta:
         model = CreditNoteItem
-        fields = ['credit_amount']
+        fields = ['product', 'quantity', 'unit_price', 'credit_amount']
         widgets = {
-            'credit_amount': forms.NumberInput(attrs={'class': 'w-full px-3 py-2 border rounded-md', 'step': '0.01'}),
+            'product': forms.Select(attrs={'class': 'w-full px-2 py-2 border rounded-md text-sm'}),
+            'quantity': forms.NumberInput(attrs={'class': 'w-full px-2 py-2 border rounded-md text-sm', 'min': '1'}),
+            'unit_price': forms.NumberInput(attrs={'class': 'w-full px-2 py-2 border rounded-md text-sm', 'step': '0.01'}),
+            'credit_amount': forms.NumberInput(attrs={'class': 'w-full px-2 py-2 border rounded-md text-sm', 'step': '0.01'}),
         }
 
 CreditNoteItemFormSet = inlineformset_factory(
     CreditNote, CreditNoteItem, form=CreditNoteItemForm,
-    extra=0, can_delete=False
+    extra=1, can_delete=True
 )
 
