@@ -35,6 +35,7 @@ urlpatterns = [
     # Delivery & Logistics
     path('sales/delivery/', views.DeliveryDashboardView.as_view(), name='delivery_dashboard'),
     path('sales/delivery/notes/', views.DeliveryNoteListView.as_view(), name='delivery_note_list'),
+    path('sales/delivery/notes/export/', views.DeliveryNoteExportView.as_view(), name='delivery_note_export'),
     path('sales/delivery/notes/new/', views.DeliveryNoteCreateView.as_view(), name='delivery_note_create'),
     path('sales/delivery-notes/<int:pk>/', views.DeliveryNoteDetailView.as_view(), name='delivery_note_detail'),
     path('sales/delivery-notes/<int:pk>/edit/', views.DeliveryNoteUpdateView.as_view(), name='delivery_note_edit'),

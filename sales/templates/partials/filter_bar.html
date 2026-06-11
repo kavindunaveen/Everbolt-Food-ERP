@@ -145,10 +145,17 @@
                         </select>
                     </div>
                     <div>
-                        <label class="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2">Date Range</label>
+                        <label class="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2">Created Date Range</label>
                         <div class="grid grid-cols-2 gap-2">
                             <input type="date" name="date_from" class="text-xs border-gray-200 rounded-lg focus:ring-indigo-500 focus:border-indigo-500 p-2" value="{{ request.GET.date_from }}" placeholder="From">
                             <input type="date" name="date_to" class="text-xs border-gray-200 rounded-lg focus:ring-indigo-500 focus:border-indigo-500 p-2" value="{{ request.GET.date_to }}" placeholder="To">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2">Target Delivery Date Range</label>
+                        <div class="grid grid-cols-2 gap-2">
+                            <input type="date" name="delivery_date_from" class="text-xs border-gray-200 rounded-lg focus:ring-indigo-500 focus:border-indigo-500 p-2" value="{{ request.GET.delivery_date_from }}" placeholder="From">
+                            <input type="date" name="delivery_date_to" class="text-xs border-gray-200 rounded-lg focus:ring-indigo-500 focus:border-indigo-500 p-2" value="{{ request.GET.delivery_date_to }}" placeholder="To">
                         </div>
                     </div>
                     {% elif model_name == 'Return' %}
