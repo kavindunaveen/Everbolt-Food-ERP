@@ -1647,6 +1647,31 @@ class DeliveryNoteCreateView(LoginRequiredMixin, ERPPermissionRequiredMixin, Cre
                 )
                 return self.form_invalid(form)
 
+            # Fallback for missing fields if JS failed or customer lacks them
+            if not self.object.customer_name:
+                self.object.customer_name = invoice.customer.company_name or invoice.customer.customer_name
+            if not self.object.delivery_address:
+                if invoice.snap_delivery_line1 or invoice.snap_delivery_city:
+                    addr_parts = [
+                        invoice.snap_delivery_line1,
+                        invoice.snap_delivery_line2,
+                        invoice.snap_delivery_city,
+                        invoice.snap_delivery_province,
+                        invoice.snap_delivery_zip,
+                    ]
+                else:
+                    addr_parts = [
+                        invoice.customer.delivery_address_line1,
+                        invoice.customer.delivery_address_line2,
+                        invoice.customer.delivery_city,
+                        invoice.customer.delivery_province,
+                        invoice.customer.delivery_zip_code,
+                    ]
+                self.object.delivery_address = ", ".join([p for p in addr_parts if p])
+            if not self.object.delivery_date:
+                from django.utils import timezone
+                self.object.delivery_date = invoice.delivery_date or timezone.now().date()
+
             self.object.save()
 
             # Fix #9: Copy items with invoiced_quantity stored as a cap.

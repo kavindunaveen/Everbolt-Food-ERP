@@ -99,14 +99,32 @@ class DeliveryNoteForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields['invoice'].queryset = Invoice.objects.filter(status='ISSUED')
+        
+        if self.instance and self.instance.pk:
+            from django.db.models import Q
+            self.fields['invoice'].queryset = Invoice.objects.filter(
+                Q(status='ISSUED', delivery_notes__isnull=True) | Q(pk=self.instance.invoice.pk)
+            ).distinct()
+        else:
+            self.fields['invoice'].queryset = Invoice.objects.filter(status='ISSUED', delivery_notes__isnull=True)
+        
+        # Delivery fields might be empty if the customer lacks an address, or JS hasn't filled them.
+        self.fields['customer_name'].required = False
+        self.fields['delivery_address'].required = False
+        self.fields['delivery_date'].required = False
         
         from users.models import User
         if self.instance and self.instance.pk:
             self.fields['invoice'].widget.attrs['disabled'] = True
+            self.fields['invoice'].required = False
         if 'delivered_by' in self.fields:
             self.fields['delivered_by'].queryset = User.objects.filter(is_active=True, is_delivery_officer=True)
             self.fields['delivered_by'].empty_label = "--- Select Delivery Officer ---"
+
+    def clean_invoice(self):
+        if self.instance and self.instance.pk:
+            return self.instance.invoice
+        return self.cleaned_data.get('invoice')
 
 class ReturnForm(forms.ModelForm):
     class Meta:
