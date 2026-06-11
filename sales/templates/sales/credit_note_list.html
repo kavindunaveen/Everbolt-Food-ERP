@@ -30,6 +30,7 @@
                         <th class="px-6 py-4 text-left text-[11px] font-bold text-gray-400 uppercase tracking-widest">Issued By</th>
                         <th class="px-6 py-4 text-left text-[11px] font-bold text-gray-400 uppercase tracking-widest">Date</th>
                         <th class="px-6 py-4 text-center text-[11px] font-bold text-gray-400 uppercase tracking-widest">Print</th>
+                        <th class="px-6 py-4 text-center text-[11px] font-bold text-gray-400 uppercase tracking-widest">Actions</th>
                     </tr>
                 </thead>
                 <tbody class="bg-white divide-y divide-gray-100">
@@ -57,10 +58,16 @@
                             <a href="{% url 'credit_note_print' cn.pk %}" target="_blank"
                                class="text-xs font-bold text-blue-600 hover:underline">Print</a>
                         </td>
+                        <td class="px-6 py-4 text-center space-x-2">
+                            {% if perms.sales.change_creditnote %}
+                            <a href="{% url 'credit_note_edit' cn.pk %}"
+                               class="text-xs font-bold text-indigo-600 hover:underline">Edit</a>
+                            {% endif %}
+                        </td>
                     </tr>
                     {% empty %}
                     <tr>
-                        <td colspan="9" class="px-6 py-20 text-center text-gray-400">
+                        <td colspan="10" class="px-6 py-20 text-center text-gray-400">
                             <div class="text-5xl mb-3">📄</div>
                             <p class="text-sm font-medium">No credit notes issued yet.</p>
                         </td>

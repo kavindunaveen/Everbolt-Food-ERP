@@ -1996,6 +1996,48 @@ class CreditNoteListView(LoginRequiredMixin, ERPPermissionRequiredMixin, ListVie
         return qs
 
 
+from .forms import CreditNoteForm, CreditNoteItemFormSet
+
+class CreditNoteUpdateView(LoginRequiredMixin, ERPPermissionRequiredMixin, UpdateView):
+    model = CreditNote
+    form_class = CreditNoteForm
+    template_name = 'sales/credit_note_form.html'
+    permission_required = 'sales.change_creditnote'
+    
+    def get_success_url(self):
+        return reverse('credit_note_list')
+        
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        if self.request.POST:
+            context['formset'] = CreditNoteItemFormSet(self.request.POST, instance=self.object)
+        else:
+            context['formset'] = CreditNoteItemFormSet(instance=self.object)
+        return context
+        
+    def form_valid(self, form):
+        context = self.get_context_data()
+        formset = context['formset']
+        
+        if form.is_valid() and formset.is_valid():
+            with transaction.atomic():
+                self.object = form.save()
+                formset.instance = self.object
+                formset.save()
+                
+                log_sales_event(
+                    obj=self.object.return_record,
+                    user=self.request.user,
+                    action="Credit Note Updated",
+                    new_value=str(self.object.total_credit_amount),
+                    notes="Updated Credit Note details and amounts."
+                )
+                
+                messages.success(self.request, f"Credit Note {self.object.credit_note_number} updated successfully.")
+                return super().form_valid(form)
+        else:
+            return self.form_invalid(form)
+
 @login_required
 def credit_note_print_view(request, pk):
     """Printable Credit Note view."""

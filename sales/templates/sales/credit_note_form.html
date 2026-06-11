@@ -1,0 +1,78 @@
+{% extends 'layouts/base.html' %}
+{% load widget_tweaks %}
+
+{% block title %}Edit Credit Note | Sales ERP{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto px-4 py-8">
+    <div class="mb-8">
+        <h1 class="text-3xl font-extrabold text-gray-900 tracking-tight">
+            Edit Credit Note <span class="text-indigo-600">#{{ object.credit_note_number }}</span>
+        </h1>
+        <p class="text-sm text-gray-500 mt-1">Update credit amounts or add notes.</p>
+    </div>
+
+    <form method="POST" class="bg-white shadow-xl shadow-gray-100/50 rounded-2xl border border-gray-100 overflow-hidden">
+        {% csrf_token %}
+        <div class="px-6 py-4 bg-gray-50/50 border-b border-gray-100">
+            <h3 class="text-xs font-bold text-gray-400 uppercase tracking-widest">Credit Note Details</h3>
+        </div>
+        
+        <div class="p-6">
+            <div class="mb-6">
+                <label class="block text-xs font-bold text-gray-700 uppercase tracking-widest mb-2">Notes</label>
+                {{ form.notes }}
+                {% if form.notes.errors %}
+                <p class="text-red-500 text-xs mt-1">{{ form.notes.errors.0 }}</p>
+                {% endif %}
+            </div>
+
+            {{ formset.management_form }}
+            <h4 class="text-sm font-bold text-gray-900 mb-4 mt-8">Items</h4>
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Product</th>
+                            <th class="px-4 py-3 text-center text-xs font-bold text-gray-500 uppercase tracking-wider">Quantity Returned</th>
+                            <th class="px-4 py-3 text-right text-xs font-bold text-gray-500 uppercase tracking-wider">Unit Price</th>
+                            <th class="px-4 py-3 text-right text-xs font-bold text-gray-500 uppercase tracking-wider">Credit Amount (Editable)</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        {% for item_form in formset %}
+                        <tr>
+                            {{ item_form.id }}
+                            <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900 font-bold">
+                                {{ item_form.instance.product.name }}
+                            </td>
+                            <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-500 text-center font-bold">
+                                {{ item_form.instance.quantity }}
+                            </td>
+                            <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-500 text-right">
+                                Rs {{ item_form.instance.unit_price|floatformat:2 }}
+                            </td>
+                            <td class="px-4 py-3 whitespace-nowrap text-right">
+                                {{ item_form.credit_amount }}
+                                {% if item_form.credit_amount.errors %}
+                                <p class="text-red-500 text-xs mt-1">{{ item_form.credit_amount.errors.0 }}</p>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="px-6 py-4 bg-gray-50 border-t border-gray-100 flex justify-end space-x-3">
+            <a href="{% url 'credit_note_list' %}" class="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50">
+                Cancel
+            </a>
+            <button type="submit" class="inline-flex items-center px-6 py-2 border border-transparent text-sm font-bold rounded-lg shadow-sm text-white bg-indigo-600 hover:bg-indigo-700">
+                Save Changes
+            </button>
+        </div>
+    </form>
+</div>
+{% endblock %}

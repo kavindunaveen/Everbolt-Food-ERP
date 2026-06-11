@@ -150,3 +150,27 @@ ReturnItemFormSet = inlineformset_factory(
     Return, ReturnItem, form=ReturnItemForm,
     extra=1, can_delete=True
 )
+
+from .models import CreditNote, CreditNoteItem
+
+class CreditNoteForm(forms.ModelForm):
+    class Meta:
+        model = CreditNote
+        fields = ['notes']
+        widgets = {
+            'notes': forms.Textarea(attrs={'class': 'w-full px-3 py-2 border rounded-md', 'rows': 3}),
+        }
+
+class CreditNoteItemForm(forms.ModelForm):
+    class Meta:
+        model = CreditNoteItem
+        fields = ['credit_amount']
+        widgets = {
+            'credit_amount': forms.NumberInput(attrs={'class': 'w-full px-3 py-2 border rounded-md', 'step': '0.01'}),
+        }
+
+CreditNoteItemFormSet = inlineformset_factory(
+    CreditNote, CreditNoteItem, form=CreditNoteItemForm,
+    extra=0, can_delete=False
+)
+
