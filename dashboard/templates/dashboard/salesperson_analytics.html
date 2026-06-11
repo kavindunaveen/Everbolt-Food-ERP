@@ -1,0 +1,362 @@
+{% extends 'layouts/base.html' %}
+
+{% block title %}Salesperson Performance Dashboard | ERP System{% endblock %}
+
+{% block content %}
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<div class="px-4 py-6 sm:px-0">
+    <!-- Header -->
+    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+        <div>
+            <h1 class="text-3xl font-extrabold text-gray-900 tracking-tight">Salesperson Performance</h1>
+            <div class="mt-1 flex items-center gap-2">
+                <p class="text-sm text-gray-600 font-medium">Track individual sales officer metrics, targets, and predictions.</p>
+                <div class="flex items-center gap-1.5 px-2 py-0.5 bg-indigo-50 rounded border border-indigo-100">
+                    <span class="relative flex h-2 w-2">
+                      <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
+                      <span class="relative inline-flex rounded-full h-2 w-2 bg-indigo-500"></span>
+                    </span>
+                    <span id="lastUpdated" class="text-[10px] font-bold text-indigo-700 tracking-wide uppercase">Updating...</span>
+                </div>
+            </div>
+            </div>
+        </div>
+        
+        <div class="flex items-center gap-3">
+            <a href="{% url 'analytics_dashboard' %}"
+               class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gray-900 hover:bg-gray-800 text-white text-xs font-bold uppercase tracking-widest shadow-sm transition-all hover:shadow-md hover:-translate-y-0.5">
+                <svg class="w-4 h-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                          d="M11 15l-3-3m0 0l3-3m-3 3h8M3 12a9 9 0 1118 0 9 9 0 01-18 0z"/>
+                </svg>
+                Main Analytics
+            </a>
+        </div>
+    </div>
+
+    <!-- Filters & Selectors -->
+    <div class="mb-8 space-y-4">
+        <!-- Salesperson Selector & Date Filters -->
+        <div class="flex flex-col md:flex-row gap-4 items-end bg-white p-4 rounded-xl shadow-sm border border-gray-100">
+            {% if can_view_all %}
+            <div class="w-full md:w-1/3">
+                <label for="salespersonSelect" class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Select Salesperson</label>
+                <select id="salespersonSelect" class="block w-full rounded-lg border-gray-300 shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm font-semibold text-gray-900">
+                    {% for sp in salespeople %}
+                    <option value="{{ sp.id }}" {% if request.user.id == sp.id %}selected{% endif %}>{{ sp.get_full_name|default:sp.username }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            {% else %}
+            <input type="hidden" id="salespersonSelect" value="{{ request.user.id }}">
+            <div class="w-full md:w-1/3">
+                <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Your Performance Dashboard</label>
+                <div class="block w-full py-2 px-3 bg-gray-50 border border-gray-200 rounded-lg sm:text-sm font-semibold text-gray-700">
+                    {{ request.user.get_full_name|default:request.user.username }}
+                </div>
+            </div>
+            {% endif %}
+
+            <div class="w-full md:w-2/3 flex items-center justify-end gap-2 overflow-x-auto pb-1 scrollbar-hide">
+                <span class="text-[10px] font-bold text-gray-400 uppercase tracking-widest whitespace-nowrap">Time Range:</span>
+                <a href="javascript:void(0)" onclick="loadData(null, null, true)" class="time-filter px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition-colors bg-white border border-gray-200 text-gray-600 hover:bg-gray-50" data-filter="all">All Time</a>
+                {% for m in quick_months %}
+                <a href="javascript:void(0)" onclick="loadData('{{ m.date_from }}', '{{ m.date_to }}', false, this)" class="time-filter px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition-colors {% if forloop.first %}bg-indigo-600 text-white shadow-sm active-filter{% else %}bg-white border border-gray-200 text-gray-600 hover:bg-gray-50{% endif %}" data-filter="{{ m.label }}">
+                    {{ m.label }}
+                </a>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Overview KPIs -->
+    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 mb-8">
+        <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex flex-col hover:shadow-md transition-shadow">
+            <h3 class="text-sm font-bold text-gray-500 uppercase tracking-wider mb-2">Total Generated Revenue</h3>
+            <p class="text-3xl font-extrabold text-indigo-600 mb-1" id="kpi-sales">0.00</p>
+            <p class="text-xs text-gray-400 font-medium">Ex-VAT · Issued & Paid</p>
+        </div>
+        <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex flex-col hover:shadow-md transition-shadow">
+            <h3 class="text-sm font-bold text-gray-500 uppercase tracking-wider mb-2">Invoices Handled</h3>
+            <p class="text-3xl font-extrabold text-gray-900 mb-1" id="kpi-invoices">0</p>
+            <p class="text-xs text-gray-400 font-medium">Total successful invoices</p>
+        </div>
+        <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex flex-col hover:shadow-md transition-shadow">
+            <h3 class="text-sm font-bold text-gray-500 uppercase tracking-wider mb-2">New Customers Acquired</h3>
+            <p class="text-3xl font-extrabold text-gray-900 mb-1" id="kpi-customers">0</p>
+            <p class="text-xs text-gray-400 font-medium">Assigned in this period</p>
+        </div>
+        <div class="bg-gradient-to-br from-indigo-50 to-blue-50 p-6 rounded-2xl shadow-sm border border-indigo-100 flex flex-col hover:shadow-md transition-shadow">
+            <h3 class="text-sm font-bold text-indigo-800 uppercase tracking-wider mb-2">Predicted EOM Revenue</h3>
+            <p class="text-3xl font-extrabold text-indigo-900 mb-1" id="kpi-prediction">0.00</p>
+            <p class="text-xs text-indigo-600 font-medium">Based on current monthly run-rate</p>
+        </div>
+    </div>
+
+    <!-- Charts Row 1: Target & Trend -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+        <!-- Target Achievement Gauge -->
+        <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex flex-col items-center">
+            <h3 class="text-lg font-bold text-gray-800 mb-4 w-full text-left">Target Achievement</h3>
+            <div class="relative w-full h-48 flex items-center justify-center">
+                <canvas id="targetGaugeChart"></canvas>
+                <div class="absolute flex flex-col items-center top-[60%]">
+                    <span class="text-3xl font-black text-gray-900" id="gauge-val">0%</span>
+                    <span class="text-xs font-bold text-gray-400 uppercase tracking-wider mt-1" id="gauge-sub">Target: 0</span>
+                </div>
+            </div>
+            <div class="w-full mt-6 grid grid-cols-2 gap-4 text-center">
+                <div class="bg-gray-50 rounded-xl p-3">
+                    <p class="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Target</p>
+                    <p class="text-lg font-bold text-gray-900" id="text-target">Rs 0</p>
+                </div>
+                <div class="bg-gray-50 rounded-xl p-3">
+                    <p class="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Achieved</p>
+                    <p class="text-lg font-bold text-emerald-600" id="text-achieved">Rs 0</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sales Trend Line Chart -->
+        <div class="lg:col-span-2 bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex flex-col">
+            <h3 class="text-lg font-bold text-gray-800 mb-4">Performance Trend</h3>
+            <div class="relative flex-grow h-64">
+                <canvas id="trendChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts Row 2: Categories & Quotations -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+        <!-- Category Breakdown Doughnut -->
+        <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+            <h3 class="text-lg font-bold text-gray-800 mb-4">Product Category Breakdown</h3>
+            <p class="text-xs text-gray-400 mb-6">Based on quantity of units sold</p>
+            <div class="relative h-64">
+                <canvas id="categoryChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Quotation Win/Loss -->
+        <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex flex-col">
+            <h3 class="text-lg font-bold text-gray-800 mb-4">Quotation Win Rate</h3>
+            <div class="grid grid-cols-3 gap-4 mb-6">
+                <div class="text-center p-3 rounded-xl bg-gray-50">
+                    <p class="text-2xl font-black text-gray-900" id="quot-total">0</p>
+                    <p class="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Total Sent</p>
+                </div>
+                <div class="text-center p-3 rounded-xl bg-emerald-50">
+                    <p class="text-2xl font-black text-emerald-600" id="quot-won">0</p>
+                    <p class="text-[10px] font-bold text-emerald-700 uppercase tracking-wider">Accepted</p>
+                </div>
+                <div class="text-center p-3 rounded-xl bg-rose-50">
+                    <p class="text-2xl font-black text-rose-600" id="quot-lost">0</p>
+                    <p class="text-[10px] font-bold text-rose-700 uppercase tracking-wider">Rejected</p>
+                </div>
+            </div>
+            <div class="relative flex-grow h-40">
+                <canvas id="quotationChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<script>
+// Formatters
+const fmtCur = (v) => new Intl.NumberFormat('en-LK', { notation:'compact', compactDisplay:'short' }).format(v);
+const fmtFull = (v) => new Intl.NumberFormat('en-LK', { minimumFractionDigits:2, maximumFractionDigits:2 }).format(v);
+const fmtNum = (v) => new Intl.NumberFormat('en-US').format(v);
+
+let targetGaugeChart, trendChart, categoryChart, quotationChart;
+let currentFrom = null;
+let currentTo = null;
+let currentAllTime = false;
+
+// Initialize empty charts
+function initCharts() {
+    Chart.defaults.font.family = "'Inter', sans-serif";
+    Chart.defaults.color = '#64748b';
+
+    // Target Gauge
+    const ctxGauge = document.getElementById('targetGaugeChart').getContext('2d');
+    targetGaugeChart = new Chart(ctxGauge, {
+        type: 'doughnut',
+        data: { labels: ['Achieved', 'Remaining'], datasets: [{ data:[0, 100], backgroundColor:['#4f46e5', '#f1f5f9'], borderWidth:0 }] },
+        options: {
+            responsive: true, maintainAspectRatio: false,
+            rotation: -90, circumference: 180, cutout: '80%',
+            plugins: { legend: { display: false }, tooltip: { enabled: false } },
+            animation: { duration: 1000 }
+        }
+    });
+
+    // Trend Line Chart
+    const ctxTrend = document.getElementById('trendChart').getContext('2d');
+    trendChart = new Chart(ctxTrend, {
+        type: 'line',
+        data: { labels: [], datasets: [] },
+        options: {
+            responsive: true, maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false },
+                tooltip: { callbacks: { label: ctx => ` Sales: Rs ${fmtFull(ctx.parsed.y)}` } }
+            },
+            scales: {
+                y: { beginAtZero: true, grid: { borderDash: [4,4] }, ticks: { callback: v => fmtCur(v) } },
+                x: { grid: { display: false } }
+            },
+            elements: {
+                line: { tension: 0.4, borderWidth: 3 },
+                point: { radius: 4, hoverRadius: 6 }
+            }
+        }
+    });
+
+    // Category Doughnut Chart
+    const ctxCat = document.getElementById('categoryChart').getContext('2d');
+    categoryChart = new Chart(ctxCat, {
+        type: 'doughnut',
+        data: { labels: [], datasets: [] },
+        options: {
+            responsive: true, maintainAspectRatio: false,
+            cutout: '60%',
+            plugins: {
+                legend: { position: 'right', labels: { boxWidth: 12, usePointStyle: true, font: { size: 11, weight: '600' } } }
+            }
+        }
+    });
+
+    // Quotation Chart (Bar)
+    const ctxQuot = document.getElementById('quotationChart').getContext('2d');
+    quotationChart = new Chart(ctxQuot, {
+        type: 'bar',
+        data: { labels: ['Sent', 'Accepted', 'Rejected'], datasets: [{ data: [0,0,0], backgroundColor: ['#6366f1', '#10b981', '#f43f5e'], borderRadius: 4 }] },
+        options: {
+            indexAxis: 'y',
+            responsive: true, maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: {
+                x: { beginAtZero: true, grid: { display: false } },
+                y: { grid: { display: false }, ticks: { font: { weight: 'bold' } } }
+            }
+        }
+    });
+}
+
+async function loadData(dateFrom, dateTo, allTime, btnEl = null) {
+    // Update active button styling
+    if (btnEl) {
+        document.querySelectorAll('.time-filter').forEach(el => {
+            el.classList.remove('bg-indigo-600', 'text-white', 'shadow-sm', 'active-filter');
+            el.classList.add('bg-white', 'text-gray-600');
+        });
+        btnEl.classList.remove('bg-white', 'text-gray-600');
+        btnEl.classList.add('bg-indigo-600', 'text-white', 'shadow-sm', 'active-filter');
+    }
+
+    currentFrom = dateFrom;
+    currentTo = dateTo;
+    currentAllTime = allTime;
+
+    const spId = document.getElementById('salespersonSelect').value;
+    
+    let url = `/dashboard/api/salesperson/?salesperson_id=${spId}&`;
+    if (allTime) url += `all_time=true&`;
+    else {
+        if (dateFrom) url += `date_from=${dateFrom}&`;
+        if (dateTo) url += `date_to=${dateTo}&`;
+    }
+
+    try {
+        const resp = await fetch(url);
+        if (!resp.ok) throw new Error('Network response was not ok');
+        const data = await resp.json();
+
+        // Top KPIs
+        document.getElementById('kpi-sales').innerText = `Rs ${fmtCur(data.overview.sales)}`;
+        document.getElementById('kpi-invoices').innerText = fmtNum(data.overview.invoices);
+        document.getElementById('kpi-customers').innerText = fmtNum(data.overview.new_customers);
+        
+        if (data.overview.prediction > 0 && !allTime) {
+            document.getElementById('kpi-prediction').innerText = `Rs ${fmtCur(data.overview.prediction)}`;
+        } else {
+            document.getElementById('kpi-prediction').innerText = '—';
+        }
+
+        // Target Gauge
+        const target = data.targets.target;
+        const achieved = data.overview.sales;
+        document.getElementById('text-target').innerText = data.targets.has_target ? `Rs ${fmtCur(target)}` : 'N/A';
+        document.getElementById('text-achieved').innerText = `Rs ${fmtCur(achieved)}`;
+
+        if (data.targets.has_target && target > 0) {
+            const pct = Math.min((achieved / target) * 100, 100);
+            const rem = Math.max(target - achieved, 0);
+            targetGaugeChart.data.datasets[0].data = [achieved, rem];
+            targetGaugeChart.data.datasets[0].backgroundColor[0] = '#4f46e5';
+            document.getElementById('gauge-val').innerText = `${pct.toFixed(1)}%`;
+            document.getElementById('gauge-sub').innerText = `Target: Rs ${fmtCur(target)}`;
+        } else {
+            targetGaugeChart.data.datasets[0].data = [0, 100];
+            targetGaugeChart.data.datasets[0].backgroundColor[0] = '#cbd5e1';
+            document.getElementById('gauge-val').innerText = 'N/A';
+            document.getElementById('gauge-sub').innerText = 'No Target Assigned';
+        }
+        targetGaugeChart.update();
+
+        // Trend Chart
+        trendChart.data.labels = data.trends.labels;
+        trendChart.data.datasets = [{
+            label: 'Sales Revenue',
+            data: data.trends.sales,
+            borderColor: '#4f46e5',
+            backgroundColor: 'rgba(79, 70, 229, 0.1)',
+            fill: true
+        }];
+        trendChart.update();
+
+        // Category Chart
+        const catLabels = data.category_breakdown.map(c => c.category);
+        const catData = data.category_breakdown.map(c => c.qty);
+        // Palette
+        const palette = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#06b6d4', '#f97316'];
+        categoryChart.data.labels = catLabels;
+        categoryChart.data.datasets = [{
+            data: catData,
+            backgroundColor: palette.slice(0, catLabels.length)
+        }];
+        categoryChart.update();
+
+        // Quotations
+        document.getElementById('quot-total').innerText = data.quotations.total;
+        document.getElementById('quot-won').innerText = data.quotations.won;
+        document.getElementById('quot-lost').innerText = data.quotations.lost;
+
+        quotationChart.data.datasets[0].data = [data.quotations.total, data.quotations.won, data.quotations.lost];
+        quotationChart.update();
+
+    } catch (err) {
+        console.error("Error loading dashboard data:", err);
+    }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    initCharts();
+    // Default load first month (which is the active button from django template)
+    const defaultBtn = document.querySelector('.active-filter');
+    if (defaultBtn) {
+        defaultBtn.click();
+    } else {
+        loadData(null, null, true);
+    }
+
+    // Handle salesperson change
+    document.getElementById('salespersonSelect')?.addEventListener('change', () => {
+        loadData(currentFrom, currentTo, currentAllTime);
+    });
+});
+</script>
+{% endblock %}

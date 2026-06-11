@@ -19,6 +19,7 @@ class User(AbstractUser):
     is_delivery_officer = models.BooleanField(default=False, verbose_name="Is a Delivery Officer?", help_text="User can be assigned to deliver orders.")
     monthly_target = models.DecimalField(max_digits=12, decimal_places=2, default=0.00, help_text="Monthly sales target (Ex-VAT) for this officer.")
     can_set_targets = models.BooleanField(default=False, verbose_name="Can Set Sales Targets?", help_text="Allow this user to access the Analytics Target Management page.")
+    can_view_all_sales_performance = models.BooleanField(default=False, verbose_name="Can View All Sales Performance?", help_text="Allow this user to view other sales officers' performance in the analytics dashboard.")
     receive_email_alerts = models.BooleanField(default=True, verbose_name="Receive Email Alerts", help_text="Receive email notifications for approvals and alerts.")
     
     def is_admin(self):

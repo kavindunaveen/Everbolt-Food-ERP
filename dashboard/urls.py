@@ -11,4 +11,6 @@ urlpatterns = [
     path('forecasting/', views.ForecastingView.as_view(), name='forecasting'),
     path('forecasting/settings/', views.ForecastingSettingsView.as_view(), name='forecasting_settings'),
     path('company-settings/', views.CompanySettingsView.as_view(), name='company_settings'),
+    path('salesperson/', views.SalespersonDashboardView.as_view(), name='salesperson_dashboard'),
+    path('api/salesperson/', views.SalespersonDataAPI.as_view(), name='salesperson_data_api'),
 ]

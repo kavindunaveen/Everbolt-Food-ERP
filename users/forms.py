@@ -84,7 +84,7 @@ class CustomUserCreationForm(UserCreationForm, MatrixPermissionMixin):
 
     class Meta:
         model = User
-        fields = ('username', 'email', 'first_name', 'last_name', 'role', 'contact_number', 'assigned_area', 'is_delivery_officer', 'can_set_targets', 'user_permissions')
+        fields = ('username', 'email', 'first_name', 'last_name', 'role', 'contact_number', 'assigned_area', 'is_delivery_officer', 'can_set_targets', 'can_view_all_sales_performance', 'user_permissions')
 
 
 class CustomUserChangeForm(UserChangeForm, MatrixPermissionMixin):
@@ -104,7 +104,7 @@ class CustomUserChangeForm(UserChangeForm, MatrixPermissionMixin):
 
     class Meta:
         model = User
-        fields = ('username', 'email', 'first_name', 'last_name', 'role', 'contact_number', 'assigned_area', 'is_delivery_officer', 'can_set_targets', 'is_active', 'user_permissions')
+        fields = ('username', 'email', 'first_name', 'last_name', 'role', 'contact_number', 'assigned_area', 'is_delivery_officer', 'can_set_targets', 'can_view_all_sales_performance', 'is_active', 'user_permissions')
 
     def clean_role(self):
         role = self.cleaned_data.get('role')

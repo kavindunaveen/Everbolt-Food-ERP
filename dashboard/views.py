@@ -1476,3 +1476,195 @@ class CompanySettingsView(LoginRequiredMixin, View):
             return redirect('company_settings')
         
         return render(request, 'dashboard/settings.html', {'form': form, 'settings': settings_obj})
+
+from sales.models import Quotation
+
+class SalespersonDashboardView(LoginRequiredMixin, TemplateView):
+    template_name = 'dashboard/salesperson_analytics.html'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['model_name'] = 'SalesDashboard'
+        
+        # Determine if user can select other salespeople
+        can_view_all = self.request.user.is_admin() or getattr(self.request.user, 'can_view_all_sales_performance', False)
+        context['can_view_all'] = can_view_all
+        
+        if can_view_all:
+            context['salespeople'] = User.objects.filter(is_active=True, role__name='Sales Officer').order_by('first_name', 'username')
+        else:
+            context['salespeople'] = [self.request.user]
+            
+        today = timezone.now().date()
+        months = []
+        for i in range(12):
+            month = today.month - i
+            year = today.year
+            while month <= 0:
+                month += 12
+                year -= 1
+            import calendar
+            start = timezone.datetime(year, month, 1).date()
+            end = timezone.datetime(year, month, calendar.monthrange(year, month)[1]).date()
+            months.append({
+                'label': start.strftime('%b %Y'),
+                'date_from': start.strftime('%Y-%m-%d'),
+                'date_to': end.strftime('%Y-%m-%d'),
+            })
+        context['quick_months'] = months
+        return context
+
+class SalespersonDataAPI(LoginRequiredMixin, View):
+    def get(self, request, *args, **kwargs):
+        import calendar
+        date_from_raw = request.GET.get('date_from')
+        date_to_raw = request.GET.get('date_to')
+        sp_id_raw = request.GET.get('salesperson_id')
+        
+        # Permission check
+        can_view_all = request.user.is_admin() or getattr(request.user, 'can_view_all_sales_performance', False)
+        if not can_view_all:
+            sp_id = request.user.id
+        else:
+            try:
+                sp_id = int(sp_id_raw) if sp_id_raw else request.user.id
+            except ValueError:
+                sp_id = request.user.id
+                
+        salesperson = User.objects.filter(id=sp_id).first()
+        if not salesperson:
+            return JsonResponse({'error': 'Salesperson not found'}, status=404)
+
+        target_year = timezone.now().year
+        target_month = timezone.now().month
+        using_custom_dates = False
+        is_current_month = False
+
+        inv_qs = Invoice.objects.filter(status__in=[Invoice.Status.ISSUED, Invoice.Status.PAID], salesperson=salesperson)
+        quot_qs = Quotation.objects.filter(salesperson=salesperson)
+        cust_qs = Customer.objects.filter(assigned_sales_officer=salesperson)
+
+        if request.GET.get('all_time') == 'true':
+            using_custom_dates = True
+        elif date_from_raw and date_to_raw:
+            try:
+                date_from = timezone.datetime.strptime(date_from_raw, '%Y-%m-%d').date()
+                date_to = timezone.datetime.strptime(date_to_raw, '%Y-%m-%d').date()
+                inv_qs = inv_qs.filter(creation_date__date__gte=date_from, creation_date__date__lte=date_to)
+                quot_qs = quot_qs.filter(created_at__date__gte=date_from, created_at__date__lte=date_to)
+                cust_qs = cust_qs.filter(created_at__date__gte=date_from, created_at__date__lte=date_to)
+                
+                last_day = calendar.monthrange(date_from.year, date_from.month)[1]
+                if date_from.day == 1 and date_to.month == date_from.month and date_to.year == date_from.year and date_to.day == last_day:
+                    target_year = date_from.year
+                    target_month = date_from.month
+                    if target_year == timezone.now().year and target_month == timezone.now().month:
+                        is_current_month = True
+                else:
+                    using_custom_dates = True
+                    target_year = date_from.year
+                    target_month = date_from.month
+            except ValueError:
+                pass
+        else:
+            inv_qs = inv_qs.filter(creation_date__year=target_year, creation_date__month=target_month)
+            quot_qs = quot_qs.filter(created_at__year=target_year, created_at__month=target_month)
+            cust_qs = cust_qs.filter(created_at__year=target_year, created_at__month=target_month)
+            if target_year == timezone.now().year and target_month == timezone.now().month:
+                is_current_month = True
+
+        # Invoices metrics
+        total_invoices = inv_qs.count()
+        revenue_ex_vat = inv_qs.annotate(inv_ex_vat=F('total_amount') - F('tax_amount')).aggregate(Sum('inv_ex_vat'))['inv_ex_vat__sum'] or Decimal('0.00')
+        from sales.models import CreditNoteItem
+        cn_items = CreditNoteItem.objects.filter(credit_note__original_invoice__in=inv_qs)
+        credit_subtotal = cn_items.aggregate(Sum('credit_amount'))['credit_amount__sum'] or Decimal('0.00')
+        total_sales_val = float(revenue_ex_vat - Decimal(str(credit_subtotal)))
+
+        # Target metrics
+        target_val = 0.0
+        has_target = False
+        if not using_custom_dates:
+            sp_target = SalespersonTarget.objects.filter(salesperson=salesperson, year=target_year, month=target_month).first()
+            if sp_target:
+                target_val = float(sp_target.target_value)
+                has_target = True
+
+        # Quotation metrics
+        total_quotations = quot_qs.count()
+        won_quotations = quot_qs.filter(status=Quotation.Status.ACCEPTED).count()
+        lost_quotations = quot_qs.filter(status=Quotation.Status.REJECTED).count()
+
+        # Predictions (Run-rate for current month)
+        prediction_val = 0.0
+        if is_current_month and total_sales_val > 0:
+            today = timezone.now().date()
+            days_passed = today.day
+            total_days = calendar.monthrange(today.year, today.month)[1]
+            if days_passed > 0:
+                daily_avg = total_sales_val / days_passed
+                prediction_val = daily_avg * total_days
+
+        # Category Breakdown
+        cat_breakdown = []
+        items = InvoiceItem.objects.filter(invoice__in=inv_qs).values('product__category').annotate(
+            qty_sum=Sum('quantity')
+        ).order_by('-qty_sum')
+        for item in items:
+            cat = item['product__category']
+            cat_display = dict(Product.CategoryChoices.choices).get(cat, cat)
+            cat_breakdown.append({
+                'category': cat_display,
+                'qty': int(item['qty_sum'])
+            })
+
+        # Sales Trend (Daily for specific month, or monthly for all time)
+        trend_labels = []
+        trend_sales = []
+        
+        if using_custom_dates and request.GET.get('all_time') == 'true':
+            # Group by month
+            from django.db.models.functions import TruncMonth
+            monthly_sales = inv_qs.annotate(month=TruncMonth('creation_date')).values('month').annotate(
+                total=Sum(F('total_amount') - F('tax_amount'))
+            ).order_by('month')
+            
+            for ms in monthly_sales:
+                if ms['month']:
+                    trend_labels.append(ms['month'].strftime('%b %Y'))
+                    trend_sales.append(float(ms['total']))
+        else:
+            # Group by day
+            from django.db.models.functions import TruncDay
+            daily_sales = inv_qs.annotate(day=TruncDay('creation_date')).values('day').annotate(
+                total=Sum(F('total_amount') - F('tax_amount'))
+            ).order_by('day')
+            
+            for ds in daily_sales:
+                if ds['day']:
+                    trend_labels.append(ds['day'].strftime('%d %b'))
+                    trend_sales.append(float(ds['total']))
+
+        return JsonResponse({
+            'overview': {
+                'sales': total_sales_val,
+                'invoices': total_invoices,
+                'new_customers': cust_qs.count(),
+                'prediction': prediction_val,
+            },
+            'targets': {
+                'has_target': has_target,
+                'target': target_val,
+            },
+            'quotations': {
+                'total': total_quotations,
+                'won': won_quotations,
+                'lost': lost_quotations,
+            },
+            'category_breakdown': cat_breakdown,
+            'trends': {
+                'labels': trend_labels,
+                'sales': trend_sales,
+            }
+        })
+
