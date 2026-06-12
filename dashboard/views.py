@@ -1551,8 +1551,8 @@ class SalespersonDataAPI(LoginRequiredMixin, View):
                 date_from = timezone.datetime.strptime(date_from_raw, '%Y-%m-%d').date()
                 date_to = timezone.datetime.strptime(date_to_raw, '%Y-%m-%d').date()
                 inv_qs = inv_qs.filter(creation_date__date__gte=date_from, creation_date__date__lte=date_to)
-                quot_qs = quot_qs.filter(created_at__date__gte=date_from, created_at__date__lte=date_to)
-                cust_qs = cust_qs.filter(created_at__date__gte=date_from, created_at__date__lte=date_to)
+                quot_qs = quot_qs.filter(creation_date__date__gte=date_from, creation_date__date__lte=date_to)
+                cust_qs = cust_qs.filter(registration_date__date__gte=date_from, registration_date__date__lte=date_to)
                 
                 last_day = calendar.monthrange(date_from.year, date_from.month)[1]
                 if date_from.day == 1 and date_to.month == date_from.month and date_to.year == date_from.year and date_to.day == last_day:
@@ -1568,8 +1568,8 @@ class SalespersonDataAPI(LoginRequiredMixin, View):
                 pass
         else:
             inv_qs = inv_qs.filter(creation_date__year=target_year, creation_date__month=target_month)
-            quot_qs = quot_qs.filter(created_at__year=target_year, created_at__month=target_month)
-            cust_qs = cust_qs.filter(created_at__year=target_year, created_at__month=target_month)
+            quot_qs = quot_qs.filter(creation_date__year=target_year, creation_date__month=target_month)
+            cust_qs = cust_qs.filter(registration_date__year=target_year, registration_date__month=target_month)
             if target_year == timezone.now().year and target_month == timezone.now().month:
                 is_current_month = True
 
