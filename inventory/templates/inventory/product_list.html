@@ -128,9 +128,15 @@
                             {% endif %}
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm">
-                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full {% if product.status and product.current_stock > 0 %}bg-green-100 text-green-800{% else %}bg-red-100 text-red-800{% endif %}">
+                            {% if not product.status %}
+                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800">
+                                Inactive
+                            </span>
+                            {% else %}
+                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full {% if product.current_stock > 0 %}bg-green-100 text-green-800{% else %}bg-red-100 text-red-800{% endif %}">
                                 {% if product.current_stock > 0 %}In Stock{% else %}Out of Stock{% endif %}
                             </span>
+                            {% endif %}
                             <div class="mt-1 text-xs text-gray-500 font-mono">{{ product.current_stock }} available</div>
                         </td>
                     </tr>
