@@ -1592,8 +1592,8 @@ class SalespersonDataAPI(LoginRequiredMixin, View):
 
         # Quotation metrics
         total_quotations = quot_qs.count()
-        won_quotations = quot_qs.filter(status=Quotation.Status.ACCEPTED).count()
-        lost_quotations = quot_qs.filter(status=Quotation.Status.REJECTED).count()
+        won_quotations = quot_qs.filter(status=Quotation.Status.CONVERTED).count()
+        lost_quotations = quot_qs.filter(status=Quotation.Status.CANCELLED).count()
 
         # Predictions (Run-rate for current month)
         prediction_val = 0.0
