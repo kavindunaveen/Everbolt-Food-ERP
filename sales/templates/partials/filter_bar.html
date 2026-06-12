@@ -49,7 +49,7 @@
                             <option value="Wholesale" {% if request.GET.customer_type == 'Wholesale' %}selected{% endif %}>Wholesale</option>
                         </select>
                     </div>
-                    {% elif model_name == 'Invoice' or model_name == 'Quotation' or model_name == 'SalesDashboard' %}
+                    {% elif model_name == 'Invoice' or model_name == 'Quotation' or model_name == 'SalesDashboard' or model_name == 'SalespersonDashboard' %}
                     <div>
                         <label class="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2">Record Status</label>
                         <select name="status" class="w-full border-gray-200 rounded-lg text-sm font-medium focus:ring-indigo-500 focus:border-indigo-500">
@@ -57,7 +57,7 @@
                             <option value="DRAFT" {% if request.GET.status == 'DRAFT' %}selected{% endif %}>Draft</option>
                             <option value="ISSUED" {% if request.GET.status == 'ISSUED' %}selected{% endif %}>Issued</option>
                             <option value="CANCELLED" {% if request.GET.status == 'CANCELLED' %}selected{% endif %}>Cancelled</option>
-                            {% if model_name == 'Invoice' or model_name == 'SalesDashboard' %}
+                            {% if model_name == 'Invoice' or model_name == 'SalesDashboard' or model_name == 'SalespersonDashboard' %}
                             <option value="PAID" {% if request.GET.status == 'PAID' %}selected{% endif %}>Paid</option>
                             {% endif %}
                         </select>
@@ -86,6 +86,7 @@
                             <input type="date" name="date_to" class="text-xs border-gray-200 rounded-lg focus:ring-indigo-500 focus:border-indigo-500 p-2" value="{% if active_date_to %}{{ active_date_to }}{% else %}{{ request.GET.date_to }}{% endif %}" placeholder="To">
                         </div>
                     </div>
+                    {% if model_name != 'SalespersonDashboard' %}
                     <div>
                         <label class="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2">Sales Officer</label>
                         <select name="salesperson" class="w-full border-gray-200 rounded-lg text-sm font-medium focus:ring-indigo-500 focus:border-indigo-500">
@@ -95,6 +96,7 @@
                             {% endfor %}
                         </select>
                     </div>
+                    {% endif %}
                     {% elif model_name == 'Product' %}
                     <div>
                         <label class="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2">Category Selection</label>

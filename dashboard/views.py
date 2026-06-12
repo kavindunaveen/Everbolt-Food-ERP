@@ -1484,7 +1484,7 @@ class SalespersonDashboardView(LoginRequiredMixin, TemplateView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['model_name'] = 'SalesDashboard'
+        context['model_name'] = 'SalespersonDashboard'
         
         # Determine if user can select other salespeople
         can_view_all = self.request.user.is_admin() or getattr(self.request.user, 'can_view_all_sales_performance', False)
@@ -1512,6 +1512,10 @@ class SalespersonDashboardView(LoginRequiredMixin, TemplateView):
                 'date_to': end.strftime('%Y-%m-%d'),
             })
         context['quick_months'] = months
+        
+        from users.models import SavedFilter
+        context['saved_filters'] = SavedFilter.objects.filter(user=self.request.user, model_name='SalespersonDashboard').order_by('-created_at')
+        
         return context
 
 class SalespersonDataAPI(LoginRequiredMixin, View):
