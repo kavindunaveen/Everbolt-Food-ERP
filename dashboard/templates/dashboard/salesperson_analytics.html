@@ -270,10 +270,13 @@ async function loadData(dateFrom, dateTo, allTime, btnEl = null) {
         if (dateTo) url += `date_to=${dateTo}&`;
     }
 
+    document.getElementById('lastUpdated').innerText = 'Fetching...';
     try {
         const resp = await fetch(url);
         if (!resp.ok) throw new Error('Network response was not ok');
         const data = await resp.json();
+        
+        document.getElementById('lastUpdated').innerText = `Live at ${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
 
         // Top KPIs
         document.getElementById('kpi-sales').innerText = `Rs ${fmtCur(data.overview.sales)}`;
@@ -340,6 +343,7 @@ async function loadData(dateFrom, dateTo, allTime, btnEl = null) {
 
     } catch (err) {
         console.error("Error loading dashboard data:", err);
+        document.getElementById('lastUpdated').innerText = 'Error loading data';
     }
 }
 
