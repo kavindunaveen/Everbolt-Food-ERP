@@ -1,0 +1,214 @@
+{% extends 'base.html' %}
+{% load humanize %}
+
+{% block title %}New Journal Entry | Finance{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8" x-data="journalEntryForm()">
+    <div class="mb-8">
+        <h2 class="text-2xl font-bold leading-7 text-gray-900 sm:text-3xl sm:truncate">New Journal Entry</h2>
+        <p class="mt-1 text-sm text-gray-500">Create a manual double-entry journal.</p>
+    </div>
+
+    <div class="bg-white shadow overflow-hidden sm:rounded-lg">
+        <div class="px-4 py-5 sm:p-6">
+            
+            <div x-show="errorMsg" class="mb-4 bg-red-50 border-l-4 border-red-400 p-4" style="display: none;">
+                <div class="flex">
+                    <div class="flex-shrink-0">
+                        <svg class="h-5 w-5 text-red-400" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" /></svg>
+                    </div>
+                    <div class="ml-3">
+                        <p class="text-sm text-red-700" x-text="errorMsg"></p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Header Info -->
+            <div class="grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-6 mb-8">
+                <div class="sm:col-span-2">
+                    <label class="block text-sm font-medium text-gray-700">Date</label>
+                    <input type="date" x-model="date" class="mt-1 focus:ring-indigo-500 focus:border-indigo-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md">
+                </div>
+                <div class="sm:col-span-4">
+                    <label class="block text-sm font-medium text-gray-700">Reference</label>
+                    <input type="text" x-model="reference" placeholder="e.g. Accrual, Adjustment" class="mt-1 focus:ring-indigo-500 focus:border-indigo-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md">
+                </div>
+            </div>
+
+            <!-- Lines -->
+            <h3 class="text-lg leading-6 font-medium text-gray-900 mb-4">Journal Items</h3>
+            
+            <table class="min-w-full divide-y divide-gray-200 border border-gray-200 rounded-lg">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/3">Account</th>
+                        <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Description</th>
+                        <th class="px-3 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider w-32">Debit</th>
+                        <th class="px-3 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider w-32">Credit</th>
+                        <th class="px-3 py-3 w-10"></th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    <template x-for="(line, index) in lines" :key="index">
+                        <tr>
+                            <td class="px-3 py-2">
+                                <select x-model="line.account_id" class="block w-full focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm border-gray-300 rounded-md">
+                                    <option value="">Select Account</option>
+                                    {% for account in accounts %}
+                                    <option value="{{ account.id }}">{{ account.code }} - {{ account.name }}</option>
+                                    {% endfor %}
+                                </select>
+                            </td>
+                            <td class="px-3 py-2">
+                                <input type="text" x-model="line.description" class="block w-full focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm border-gray-300 rounded-md">
+                            </td>
+                            <td class="px-3 py-2">
+                                <input type="number" step="0.01" min="0" x-model="line.debit" @input="if(line.debit > 0) line.credit = ''" class="block w-full text-right focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm border-gray-300 rounded-md">
+                            </td>
+                            <td class="px-3 py-2">
+                                <input type="number" step="0.01" min="0" x-model="line.credit" @input="if(line.credit > 0) line.debit = ''" class="block w-full text-right focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm border-gray-300 rounded-md">
+                            </td>
+                            <td class="px-3 py-2 text-center">
+                                <button type="button" @click="removeLine(index)" class="text-red-600 hover:text-red-900">
+                                    <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                                </button>
+                            </td>
+                        </tr>
+                    </template>
+                </tbody>
+                <tfoot class="bg-gray-50 font-bold">
+                    <tr>
+                        <td colspan="2" class="px-3 py-3 text-right">Totals</td>
+                        <td class="px-3 py-3 text-right" x-text="totalDebit.toFixed(2)"></td>
+                        <td class="px-3 py-3 text-right" x-text="totalCredit.toFixed(2)"></td>
+                        <td></td>
+                    </tr>
+                </tfoot>
+            </table>
+
+            <div class="mt-4">
+                <button type="button" @click="addLine()" class="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none">
+                    + Add Line
+                </button>
+            </div>
+
+            <div class="mt-8 border-t border-gray-200 pt-5">
+                <div class="flex justify-between items-center">
+                    <div class="text-sm">
+                        <span x-show="totalDebit > 0 && Math.abs(totalDebit - totalCredit) < 0.01" class="text-green-600 font-medium flex items-center">
+                            <svg class="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                            Balanced
+                        </span>
+                        <span x-show="Math.abs(totalDebit - totalCredit) >= 0.01" class="text-red-600 font-medium flex items-center">
+                            <svg class="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                            Out of balance by Math.abs(totalDebit - totalCredit).toFixed(2)
+                        </span>
+                    </div>
+                    <div class="flex space-x-3">
+                        <a href="{% url 'finance_journal_entries' %}" class="bg-white py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none">
+                            Cancel
+                        </a>
+                        <button type="button" @click="saveEntry('DRAFT')" class="inline-flex justify-center py-2 px-4 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none">
+                            Save as Draft
+                        </button>
+                        {% if perms.finance.post_journal_entry %}
+                        <button type="button" @click="saveEntry('POST')" :disabled="Math.abs(totalDebit - totalCredit) >= 0.01 || totalDebit == 0" class="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none disabled:opacity-50">
+                            Post Journal Entry
+                        </button>
+                        {% else %}
+                        <button type="button" disabled class="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-400 cursor-not-allowed">
+                            Post Journal Entry (No Access)
+                        </button>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<script>
+    function journalEntryForm() {
+        return {
+            date: new Date().toISOString().split('T')[0],
+            reference: '',
+            errorMsg: '',
+            lines: [
+                { account_id: '', description: '', debit: '', credit: '' },
+                { account_id: '', description: '', debit: '', credit: '' }
+            ],
+            
+            get totalDebit() {
+                return this.lines.reduce((sum, line) => sum + (parseFloat(line.debit) || 0), 0);
+            },
+            
+            get totalCredit() {
+                return this.lines.reduce((sum, line) => sum + (parseFloat(line.credit) || 0), 0);
+            },
+            
+            addLine() {
+                this.lines.push({ account_id: '', description: '', debit: '', credit: '' });
+            },
+            
+            removeLine(index) {
+                if (this.lines.length > 2) {
+                    this.lines.splice(index, 1);
+                }
+            },
+            
+            async saveEntry(action) {
+                this.errorMsg = '';
+                
+                // Validate
+                if (!this.date) {
+                    this.errorMsg = 'Date is required.';
+                    return;
+                }
+                
+                let validLines = this.lines.filter(l => l.account_id && (parseFloat(l.debit) > 0 || parseFloat(l.credit) > 0));
+                
+                if (validLines.length < 2) {
+                    this.errorMsg = 'At least two valid lines with an account and amount are required.';
+                    return;
+                }
+                
+                let tD = validLines.reduce((sum, line) => sum + (parseFloat(line.debit) || 0), 0);
+                let tC = validLines.reduce((sum, line) => sum + (parseFloat(line.credit) || 0), 0);
+                
+                if (Math.abs(tD - tC) > 0.01) {
+                    this.errorMsg = 'Journal entry must be balanced before saving.';
+                    return;
+                }
+                
+                try {
+                    const response = await fetch('{% url "finance_journal_entry_create" %}', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRFToken': '{{ csrf_token }}'
+                        },
+                        body: JSON.stringify({
+                            date: this.date,
+                            reference: this.reference,
+                            lines: validLines,
+                            action: action
+                        })
+                    });
+                    
+                    const data = await response.json();
+                    
+                    if (data.status === 'ok') {
+                        window.location.href = '{% url "finance_journal_entries" %}';
+                    } else {
+                        this.errorMsg = data.message;
+                    }
+                } catch (err) {
+                    this.errorMsg = 'An error occurred while saving the entry.';
+                }
+            }
+        }
+    }
+</script>
+{% endblock %}

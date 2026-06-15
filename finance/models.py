@@ -39,4 +39,58 @@ class Payment(models.Model):
     class Meta:
         permissions = [
             ("manage_finance", "Can access the finance module"),
+            ("post_journal_entry", "Can post journal entries"),
         ]
+
+class AccountType(models.TextChoices):
+    ASSET = 'ASSET', 'Asset'
+    LIABILITY = 'LIABILITY', 'Liability'
+    EQUITY = 'EQUITY', 'Equity'
+    REVENUE = 'REVENUE', 'Revenue'
+    EXPENSE = 'EXPENSE', 'Expense'
+
+class Account(models.Model):
+    code = models.CharField(max_length=20, unique=True)
+    name = models.CharField(max_length=255)
+    account_type = models.CharField(max_length=20, choices=AccountType.choices)
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    def __str__(self):
+        return f"{self.code} - {self.name}"
+
+    class Meta:
+        ordering = ['code']
+
+class JournalEntry(models.Model):
+    class Status(models.TextChoices):
+        DRAFT = 'DRAFT', 'Draft'
+        POSTED = 'POSTED', 'Posted'
+
+    date = models.DateField()
+    reference = models.CharField(max_length=255, blank=True, null=True)
+    status = models.CharField(max_length=20, choices=Status.choices, default=Status.DRAFT)
+    created_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def is_balanced(self):
+        debits = sum(line.debit for line in self.lines.all() if line.debit)
+        credits = sum(line.credit for line in self.lines.all() if line.credit)
+        return abs(debits - credits) < 0.01
+
+    def __str__(self):
+        return f"JE-{self.id} ({self.date})"
+        
+    class Meta:
+        verbose_name_plural = "Journal Entries"
+        ordering = ['-date', '-id']
+
+class JournalEntryLine(models.Model):
+    journal_entry = models.ForeignKey(JournalEntry, on_delete=models.CASCADE, related_name='lines')
+    account = models.ForeignKey(Account, on_delete=models.PROTECT)
+    description = models.CharField(max_length=255, blank=True, null=True)
+    debit = models.DecimalField(max_digits=14, decimal_places=2, default=0.00)
+    credit = models.DecimalField(max_digits=14, decimal_places=2, default=0.00)
+
+    def __str__(self):
+        return f"Line for {self.account.code} - {self.debit or self.credit}"

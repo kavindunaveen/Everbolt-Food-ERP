@@ -347,3 +347,142 @@ class AgedReceivablesView(LoginRequiredMixin, PermissionRequiredMixin, View):
         }
         
         return render(request, self.template_name, context)
+
+from django.urls import reverse_lazy
+from django.views.generic import ListView, CreateView, DetailView
+from .models import Account, AccountType, JournalEntry, JournalEntryLine
+from .forms import AccountForm, JournalEntryForm
+
+class ChartOfAccountsView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
+    permission_required = 'finance.manage_finance'
+    template_name = 'finance/chart_of_accounts.html'
+    model = Account
+    context_object_name = 'accounts'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        # Group accounts by type for the view
+        grouped = {}
+        for account_type in AccountType.choices:
+            grouped[account_type[1]] = Account.objects.filter(account_type=account_type[0])
+        context['grouped_accounts'] = grouped
+        return context
+
+class AccountCreateView(LoginRequiredMixin, PermissionRequiredMixin, CreateView):
+    permission_required = 'finance.manage_finance'
+    template_name = 'finance/account_form.html'
+    form_class = AccountForm
+    success_url = reverse_lazy('finance_chart_of_accounts')
+
+class JournalEntryListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
+    permission_required = 'finance.manage_finance'
+    template_name = 'finance/journal_entries.html'
+    model = JournalEntry
+    context_object_name = 'entries'
+    paginate_by = 50
+
+class JournalEntryCreateView(LoginRequiredMixin, PermissionRequiredMixin, View):
+    permission_required = 'finance.manage_finance'
+    template_name = 'finance/journal_entry_form.html'
+
+    def get(self, request):
+        accounts = Account.objects.filter(is_active=True)
+        return render(request, self.template_name, {'accounts': accounts})
+
+    def post(self, request):
+        try:
+            data = json.loads(request.body)
+            date_str = data.get('date')
+            reference = data.get('reference', '')
+            lines = data.get('lines', [])
+            
+            # Validation
+            if not lines or len(lines) < 2:
+                return JsonResponse({'status': 'error', 'message': 'At least two lines are required.'}, status=400)
+                
+            total_debit = sum(float(l.get('debit') or 0) for l in lines)
+            total_credit = sum(float(l.get('credit') or 0) for l in lines)
+            
+            if abs(total_debit - total_credit) > 0.01:
+                return JsonResponse({'status': 'error', 'message': f'Debits ({total_debit}) and Credits ({total_credit}) must balance.'}, status=400)
+
+            with transaction.atomic():
+                je = JournalEntry.objects.create(
+                    date=datetime.strptime(date_str, '%Y-%m-%d').date(),
+                    reference=reference,
+                    created_by=request.user,
+                    status=JournalEntry.Status.DRAFT
+                )
+                
+                # Check permissions if trying to post
+                if data.get('action') == 'POST':
+                    if request.user.has_perm('finance.post_journal_entry'):
+                        je.status = JournalEntry.Status.POSTED
+                        je.save()
+                    else:
+                        return JsonResponse({'status': 'error', 'message': 'You do not have permission to post journal entries. Save as Draft instead.'}, status=403)
+                
+                for line in lines:
+                    JournalEntryLine.objects.create(
+                        journal_entry=je,
+                        account_id=line['account_id'],
+                        description=line.get('description', ''),
+                        debit=float(line.get('debit') or 0),
+                        credit=float(line.get('credit') or 0)
+                    )
+            
+            return JsonResponse({'status': 'ok', 'message': 'Journal Entry created successfully.'})
+            
+        except Exception as e:
+            return JsonResponse({'status': 'error', 'message': str(e)}, status=400)
+
+class GeneralLedgerView(LoginRequiredMixin, PermissionRequiredMixin, View):
+    permission_required = 'finance.manage_finance'
+    template_name = 'finance/general_ledger.html'
+
+    def get(self, request):
+        accounts = Account.objects.filter(is_active=True)
+        
+        account_id = request.GET.get('account')
+        date_from = request.GET.get('date_from')
+        date_to = request.GET.get('date_to')
+        
+        lines = []
+        selected_account = None
+        running_balance = 0
+        
+        if account_id:
+            selected_account = get_object_or_404(Account, id=account_id)
+            qs = JournalEntryLine.objects.filter(
+                account=selected_account,
+                journal_entry__status=JournalEntry.Status.POSTED
+            ).select_related('journal_entry')
+            
+            if date_from:
+                qs = qs.filter(journal_entry__date__gte=date_from)
+            if date_to:
+                qs = qs.filter(journal_entry__date__lte=date_to)
+                
+            qs = qs.order_by('journal_entry__date', 'journal_entry__id')
+            
+            for line in qs:
+                # Calculate balance depending on account type
+                # Asset/Expense increase with Debit. Liability/Equity/Revenue increase with Credit.
+                amount = line.debit - line.credit if selected_account.account_type in [AccountType.ASSET, AccountType.EXPENSE] else line.credit - line.debit
+                running_balance += amount
+                
+                lines.append({
+                    'date': line.journal_entry.date,
+                    'reference': line.journal_entry.reference,
+                    'description': line.description,
+                    'debit': line.debit,
+                    'credit': line.credit,
+                    'balance': running_balance
+                })
+                
+        context = {
+            'accounts': accounts,
+            'selected_account': selected_account,
+            'lines': lines
+        }
+        return render(request, self.template_name, context)

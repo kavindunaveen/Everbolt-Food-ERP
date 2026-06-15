@@ -1,0 +1,103 @@
+{% extends 'base.html' %}
+{% load humanize %}
+
+{% block title %}General Ledger | Finance{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div class="md:flex md:items-center md:justify-between mb-8">
+        <div class="flex-1 min-w-0">
+            <h2 class="text-2xl font-bold leading-7 text-gray-900 sm:text-3xl sm:truncate">General Ledger</h2>
+            <p class="mt-1 text-sm text-gray-500">View posted transactions and running balances for a specific account.</p>
+        </div>
+        <div class="mt-4 flex md:mt-0 md:ml-4 space-x-3">
+            <a href="{% url 'finance_dashboard' %}" class="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                Dashboard
+            </a>
+            <button onclick="window.print()" class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700">
+                <svg class="-ml-1 mr-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
+                Print Report
+            </button>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="bg-white shadow rounded-lg mb-8 p-4 no-print">
+        <form method="get" class="flex flex-col md:flex-row md:items-end gap-4">
+            <div class="w-full md:w-1/3">
+                <label for="account" class="block text-sm font-medium text-gray-700 mb-1">Account</label>
+                <select name="account" id="account" required class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md">
+                    <option value="">Select an Account...</option>
+                    {% for acc in accounts %}
+                    <option value="{{ acc.id }}" {% if selected_account and selected_account.id == acc.id %}selected{% endif %}>{{ acc.code }} - {{ acc.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="w-full md:w-1/4">
+                <label for="date_from" class="block text-sm font-medium text-gray-700 mb-1">Date From</label>
+                <input type="date" name="date_from" id="date_from" value="{{ request.GET.date_from }}" class="mt-1 focus:ring-indigo-500 focus:border-indigo-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md">
+            </div>
+            <div class="w-full md:w-1/4">
+                <label for="date_to" class="block text-sm font-medium text-gray-700 mb-1">Date To</label>
+                <input type="date" name="date_to" id="date_to" value="{{ request.GET.date_to }}" class="mt-1 focus:ring-indigo-500 focus:border-indigo-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md">
+            </div>
+            <div class="w-full md:w-auto">
+                <button type="submit" class="w-full inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                    Generate
+                </button>
+            </div>
+        </form>
+    </div>
+
+    {% if selected_account %}
+    <div class="bg-white shadow overflow-hidden sm:rounded-lg">
+        <div class="px-4 py-5 sm:px-6 bg-gray-50 border-b border-gray-200">
+            <h3 class="text-lg leading-6 font-bold text-gray-900">
+                Ledger: {{ selected_account.code }} - {{ selected_account.name }}
+            </h3>
+            <p class="mt-1 max-w-2xl text-sm text-gray-500">
+                Type: {{ selected_account.get_account_type_display }}
+            </p>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Reference</th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Description</th>
+                        <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Debit</th>
+                        <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Credit</th>
+                        <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Balance</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    {% for line in lines %}
+                    <tr class="hover:bg-gray-50">
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ line.date|date:"Y-m-d" }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{{ line.reference|default:"-" }}</td>
+                        <td class="px-6 py-4 text-sm text-gray-500">{{ line.description|default:"-" }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-right text-gray-500">{% if line.debit > 0 %}{{ line.debit|floatformat:2|intcomma }}{% endif %}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-right text-gray-500">{% if line.credit > 0 %}{{ line.credit|floatformat:2|intcomma }}{% endif %}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-right font-bold text-gray-900">{{ line.balance|floatformat:2|intcomma }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="6" class="px-6 py-12 text-center text-gray-500 text-sm">
+                            No posted transactions found for this account in the given date range.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% else %}
+    <div class="text-center py-12">
+        <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+        <h3 class="mt-2 text-sm font-medium text-gray-900">No account selected</h3>
+        <p class="mt-1 text-sm text-gray-500">Select an account from the dropdown above to view its ledger.</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
