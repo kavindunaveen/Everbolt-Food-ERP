@@ -18,4 +18,10 @@ urlpatterns = [
     
     # AJAX
     path('api/bom/<int:bom_id>/', views.get_bom_details, name='api_bom_details'),
+    
+    # Production Planning
+    path('planning/', views.ProductionPlanListView.as_view(), name='production_plan_list'),
+    path('planning/new/', views.ProductionPlanCreateView.as_view(), name='production_plan_create'),
+    path('planning/<int:pk>/', views.ProductionPlanDetailView.as_view(), name='production_plan_detail'),
+    path('api/planning/save/', views.save_production_plan, name='api_production_plan_save'),
 ]

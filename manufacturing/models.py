@@ -86,3 +86,49 @@ class ProductionOutput(models.Model):
 
     def __str__(self):
         return f"{self.production.production_number} - Output: {self.output_product.name}"
+
+class ProductionPlanningModule(models.Model):
+    class Meta:
+        managed = False
+        default_permissions = ()
+        permissions = [
+            ("manage_production_plans", "Can manage production plans"),
+            ("submit_production_plans", "Can submit production plans"),
+            ("receive_production_notifications", "Receives production plan email notifications"),
+        ]
+
+class DailyProductionPlan(models.Model):
+    class StatusChoices(models.TextChoices):
+        DRAFT = 'DRAFT', 'Draft'
+        SUBMITTED = 'SUBMITTED', 'Submitted'
+
+    date = models.DateField(unique=True)
+    status = models.CharField(max_length=20, choices=StatusChoices.choices, default=StatusChoices.DRAFT)
+    created_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, related_name='created_production_plans')
+    submitted_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name='submitted_production_plans')
+    submitted_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"Plan for {self.date}"
+
+class ProductionPlanLine(models.Model):
+    plan = models.ForeignKey(DailyProductionPlan, on_delete=models.CASCADE, related_name='lines')
+    target_product = models.ForeignKey(Product, on_delete=models.PROTECT, related_name='planned_productions')
+    unit_weight = models.DecimalField(max_digits=12, decimal_places=3, default=0.000)
+    target_qty = models.IntegerField(default=0)
+    
+    raw_material = models.ForeignKey(Product, on_delete=models.PROTECT, related_name='planned_usages')
+    raw_material_qty = models.DecimalField(max_digits=12, decimal_places=3, default=0.000)
+    actual_used_qty = models.DecimalField(max_digits=12, decimal_places=3, default=0.000)
+    wastage_qty = models.DecimalField(max_digits=12, decimal_places=3, default=0.000)
+    
+    actual_completed_qty = models.IntegerField(default=0)
+    
+    @property
+    def variance(self):
+        return self.actual_completed_qty - self.target_qty
+
+    def __str__(self):
+        return f"{self.plan.date} - {self.target_product.name}"

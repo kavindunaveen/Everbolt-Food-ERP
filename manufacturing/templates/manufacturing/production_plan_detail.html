@@ -1,0 +1,79 @@
+{% extends 'layouts/base.html' %}
+{% block title %}Production Plan Details | ERP System{% endblock %}
+
+{% block content %}
+<div class="px-4 py-6 sm:px-0 max-w-7xl mx-auto">
+    <!-- Header -->
+    <div class="mb-8 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div>
+            <div class="flex items-center gap-3 mb-1">
+                <a href="{% url 'production_plan_list' %}" class="text-gray-400 hover:text-indigo-600 transition-colors">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
+                </a>
+                <h1 class="text-3xl font-extrabold text-gray-900 tracking-tight">Plan for {{ plan.date }}</h1>
+                {% if plan.status == 'SUBMITTED' %}
+                    <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">Submitted</span>
+                {% else %}
+                    <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-bold bg-gray-100 text-gray-800 border border-gray-200">Draft</span>
+                {% endif %}
+            </div>
+            <p class="text-sm text-gray-500 font-medium ml-9">Created by {{ plan.created_by.get_full_name|default:plan.created_by.username }} on {{ plan.created_at|date:"M d, Y" }}</p>
+        </div>
+    </div>
+
+    <!-- Data Table Card -->
+    <div class="card-premium p-0 overflow-hidden shadow-xl border border-gray-200">
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-800 text-white">
+                    <tr>
+                        <th class="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider">Production Plan (Target)</th>
+                        <th class="px-4 py-3 text-right text-xs font-bold uppercase tracking-wider">Unit Wt</th>
+                        <th class="px-4 py-3 text-right text-xs font-bold uppercase tracking-wider">Target Qty</th>
+                        <th class="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider">Raw Material</th>
+                        <th class="px-4 py-3 text-right text-xs font-bold uppercase tracking-wider">RM Planned</th>
+                        <th class="px-4 py-3 text-right text-xs font-bold uppercase tracking-wider text-indigo-200">Actual RM Used</th>
+                        <th class="px-4 py-3 text-right text-xs font-bold uppercase tracking-wider text-red-200">Wastage</th>
+                        <th class="px-4 py-3 text-right text-xs font-bold uppercase tracking-wider text-emerald-300 bg-gray-900">Actual Qty</th>
+                        <th class="px-4 py-3 text-right text-xs font-bold uppercase tracking-wider">Variance</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    {% for line in plan.lines.all %}
+                    <tr class="hover:bg-gray-50 transition-colors">
+                        <td class="px-4 py-3 whitespace-nowrap text-sm font-bold text-gray-900">{{ line.target_product.name }}</td>
+                        <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-600 text-right">{{ line.unit_weight|floatformat:2 }}</td>
+                        <td class="px-4 py-3 whitespace-nowrap text-sm font-bold text-gray-700 bg-gray-50/50 text-right">{{ line.target_qty }}</td>
+                        <td class="px-4 py-3 whitespace-nowrap text-sm font-bold text-gray-900">{{ line.raw_material.name }}</td>
+                        <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-600 text-right">{{ line.raw_material_qty|floatformat:2 }}</td>
+                        <td class="px-4 py-3 whitespace-nowrap text-sm font-bold text-indigo-700 bg-indigo-50/30 text-right">{{ line.actual_used_qty|floatformat:2 }}</td>
+                        <td class="px-4 py-3 whitespace-nowrap text-sm font-bold text-red-600 bg-red-50/30 text-right">{{ line.wastage_qty|floatformat:2 }}</td>
+                        <td class="px-4 py-3 whitespace-nowrap text-sm font-extrabold text-emerald-800 bg-emerald-50/50 border-x border-emerald-100 text-right">{{ line.actual_completed_qty }}</td>
+                        <td class="px-4 py-3 whitespace-nowrap text-sm font-extrabold text-right
+                            {% if line.variance < 0 %}text-red-500{% elif line.variance > 0 %}text-emerald-500{% else %}text-gray-400{% endif %}">
+                            {% if line.variance > 0 %}+{% endif %}{{ line.variance }}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="9" class="px-6 py-8 text-center text-gray-500 text-sm">No items in this production plan.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        
+        {% if plan.status == 'SUBMITTED' %}
+        <div class="px-6 py-4 bg-emerald-50 border-t border-emerald-100 flex items-center justify-between">
+            <div class="flex items-center gap-2 text-emerald-800">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                <span class="text-sm font-bold">Successfully submitted to Administrators</span>
+            </div>
+            <div class="text-xs font-semibold text-emerald-600">
+                Submitted by {{ plan.submitted_by.get_full_name|default:plan.submitted_by.username }} on {{ plan.submitted_at|date:"M d, Y H:i" }}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

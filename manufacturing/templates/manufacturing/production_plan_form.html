@@ -1,0 +1,205 @@
+{% extends 'layouts/base.html' %}
+{% block title %}Daily Production Plan{% endblock %}
+{% block content %}
+<style>
+    /* Remove arrows from number inputs to make it look like a spreadsheet */
+    input[type=number]::-webkit-inner-spin-button, 
+    input[type=number]::-webkit-outer-spin-button { 
+        -webkit-appearance: none; 
+        margin: 0; 
+    }
+    input[type=number] {
+        -moz-appearance: textfield;
+    }
+</style>
+<div class="px-4 py-6 sm:px-0 max-w-full mx-auto" x-data="productionPlanForm()">
+    <!-- Header -->
+    <div class="mb-8 flex justify-between items-end">
+        <div>
+            <h1 class="text-3xl font-extrabold text-gray-900 tracking-tight">Daily Production Plan</h1>
+            <p class="mt-2 text-sm text-gray-500 font-medium">Enter daily production targets, raw material usage, and output.</p>
+        </div>
+        <div>
+            <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Plan Date</label>
+            <input type="date" x-model="planDate" class="text-sm border-gray-300 rounded-lg shadow-sm font-semibold">
+        </div>
+    </div>
+
+    <!-- Spreadsheet Card -->
+    <div class="card-premium p-0 overflow-hidden shadow-xl border border-gray-200">
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-800 text-white">
+                    <tr>
+                        <th class="px-3 py-4 text-left text-xs font-bold uppercase tracking-wider">Production Plan (Target)</th>
+                        <th class="px-3 py-4 text-left text-xs font-bold uppercase tracking-wider">Unit Wt (g/kg)</th>
+                        <th class="px-3 py-4 text-left text-xs font-bold uppercase tracking-wider">Target Qty</th>
+                        <th class="px-3 py-4 text-left text-xs font-bold uppercase tracking-wider">Raw Material</th>
+                        <th class="px-3 py-4 text-left text-xs font-bold uppercase tracking-wider">RM Qty Planned</th>
+                        <th class="px-3 py-4 text-left text-xs font-bold uppercase tracking-wider text-indigo-200">Actual Used RM</th>
+                        <th class="px-3 py-4 text-left text-xs font-bold uppercase tracking-wider text-red-200">Wastage</th>
+                        <th class="px-3 py-4 text-left text-xs font-bold uppercase tracking-wider text-emerald-300 bg-gray-900">Actual Completed Qty</th>
+                        <th class="px-3 py-4 text-left text-xs font-bold uppercase tracking-wider">Variance</th>
+                        <th class="px-3 py-4"></th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    <template x-for="(row, index) in lines" :key="index">
+                        <tr class="hover:bg-gray-50 transition-colors group">
+                            <td class="px-2 py-2 whitespace-nowrap w-64">
+                                <select x-model="row.target_product_id" class="text-sm w-full border-gray-200 rounded-md font-medium text-gray-700 focus:ring-indigo-500 focus:border-indigo-500">
+                                    <option value="">Select Product...</option>
+                                    <template x-for="p in products" :key="p.id">
+                                        <option :value="p.id" x-text="p.name"></option>
+                                    </template>
+                                </select>
+                            </td>
+                            <td class="px-2 py-2 whitespace-nowrap">
+                                <input type="number" step="0.01" x-model="row.unit_weight" class="text-sm w-full border-gray-200 rounded-md text-right focus:ring-indigo-500 focus:border-indigo-500">
+                            </td>
+                            <td class="px-2 py-2 whitespace-nowrap bg-gray-50/50">
+                                <input type="number" x-model="row.target_qty" class="text-sm w-full border-gray-200 rounded-md text-right font-bold focus:ring-indigo-500 focus:border-indigo-500">
+                            </td>
+                            <td class="px-2 py-2 whitespace-nowrap w-64">
+                                <select x-model="row.raw_material_id" class="text-sm w-full border-gray-200 rounded-md font-medium text-gray-700 focus:ring-indigo-500 focus:border-indigo-500">
+                                    <option value="">Select Material...</option>
+                                    <template x-for="p in products" :key="p.id">
+                                        <option :value="p.id" x-text="p.name"></option>
+                                    </template>
+                                </select>
+                            </td>
+                            <td class="px-2 py-2 whitespace-nowrap">
+                                <input type="number" step="0.01" x-model="row.raw_material_qty" class="text-sm w-full border-gray-200 rounded-md text-right focus:ring-indigo-500 focus:border-indigo-500">
+                            </td>
+                            <td class="px-2 py-2 whitespace-nowrap bg-indigo-50/30">
+                                <input type="number" step="0.01" x-model="row.actual_used_qty" class="text-sm w-full border-indigo-200 rounded-md text-right font-semibold text-indigo-700 focus:ring-indigo-500 focus:border-indigo-500">
+                            </td>
+                            <td class="px-2 py-2 whitespace-nowrap bg-red-50/30">
+                                <input type="number" step="0.01" x-model="row.wastage_qty" class="text-sm w-full border-red-200 rounded-md text-right font-bold text-red-600 focus:ring-red-500 focus:border-red-500">
+                            </td>
+                            <td class="px-2 py-2 whitespace-nowrap bg-emerald-50/50 border-x border-emerald-100">
+                                <input type="number" x-model="row.actual_completed_qty" class="text-sm w-full border-emerald-300 rounded-md text-right font-extrabold text-emerald-800 shadow-inner focus:ring-emerald-500 focus:border-emerald-500">
+                            </td>
+                            <td class="px-3 py-2 whitespace-nowrap text-right font-extrabold" 
+                                :class="{'text-red-500': (row.actual_completed_qty - row.target_qty) < 0, 'text-emerald-500': (row.actual_completed_qty - row.target_qty) > 0, 'text-gray-400': (row.actual_completed_qty - row.target_qty) === 0}"
+                                x-text="(row.actual_completed_qty - row.target_qty) > 0 ? '+' + (row.actual_completed_qty - row.target_qty) : (row.actual_completed_qty - row.target_qty)">
+                            </td>
+                            <td class="px-2 py-2 whitespace-nowrap text-right opacity-0 group-hover:opacity-100 transition-opacity">
+                                <button type="button" @click="removeRow(index)" class="text-gray-400 hover:text-red-500 hover:bg-red-50 p-1.5 rounded-full transition-colors">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                                </button>
+                            </td>
+                        </tr>
+                    </template>
+                </tbody>
+            </table>
+        </div>
+        <div class="p-5 bg-gray-50 border-t border-gray-200 flex justify-between items-center">
+            <button type="button" @click="addRow()" class="bg-white border border-gray-300 text-gray-700 font-semibold px-4 py-2 rounded-lg text-sm hover:bg-gray-50 hover:shadow-sm transition-all flex items-center gap-2">
+                <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                Add Row
+            </button>
+            <div class="flex gap-4">
+                <button type="button" @click="savePlan('save_draft')" class="text-gray-600 font-semibold px-5 py-2 hover:bg-gray-100 rounded-lg transition-colors">Save as Draft</button>
+                <button type="button" @click="savePlan('submit')" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-6 py-2 rounded-lg shadow-lg shadow-indigo-200 transition-all transform active:scale-95 flex items-center gap-2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    Submit Plan & Notify Admins
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function productionPlanForm() {
+    return {
+        products: JSON.parse('{{ products_json|escapejs }}'),
+        planDate: new Date().toISOString().split('T')[0],
+        lines: [
+            {
+                target_product_id: '',
+                unit_weight: 0,
+                target_qty: 0,
+                raw_material_id: '',
+                raw_material_qty: 0,
+                actual_used_qty: 0,
+                wastage_qty: 0,
+                actual_completed_qty: 0
+            }
+        ],
+        
+        addRow() {
+            this.lines.push({
+                target_product_id: '',
+                unit_weight: 0,
+                target_qty: 0,
+                raw_material_id: '',
+                raw_material_qty: 0,
+                actual_used_qty: 0,
+                wastage_qty: 0,
+                actual_completed_qty: 0
+            });
+            // Focus on new row
+            setTimeout(() => {
+                const inputs = document.querySelectorAll('select');
+                if (inputs.length > 0) inputs[inputs.length - 2].focus();
+            }, 100);
+        },
+        
+        removeRow(index) {
+            if (this.lines.length > 1) {
+                this.lines.splice(index, 1);
+            }
+        },
+        
+        savePlan(action) {
+            const data = {
+                date: this.planDate,
+                action: action,
+                lines: this.lines.map(line => ({
+                    target_product_id: parseInt(line.target_product_id) || 0,
+                    unit_weight: parseFloat(line.unit_weight) || 0,
+                    target_qty: parseInt(line.target_qty) || 0,
+                    raw_material_id: parseInt(line.raw_material_id) || 0,
+                    raw_material_qty: parseFloat(line.raw_material_qty) || 0,
+                    actual_used_qty: parseFloat(line.actual_used_qty) || 0,
+                    wastage_qty: parseFloat(line.wastage_qty) || 0,
+                    actual_completed_qty: parseInt(line.actual_completed_qty) || 0
+                })).filter(l => l.target_product_id && l.raw_material_id)
+            };
+            
+            if(data.lines.length === 0) {
+                if(window.dispatchEvent) window.dispatchEvent(new CustomEvent('toast', { detail: { type: 'error', message: 'Please complete at least one row (select target product and raw material).' }}));
+                return;
+            }
+            
+            fetch("{% url 'api_production_plan_save' %}", {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token }}'
+                },
+                body: JSON.stringify(data)
+            })
+            .then(res => res.json())
+            .then(res => {
+                if(res.status === 'ok') {
+                    if(window.dispatchEvent) window.dispatchEvent(new CustomEvent('toast', { detail: { type: 'success', message: res.message }}));
+                    setTimeout(() => {
+                        window.location.href = "{% url 'production_plan_list' %}";
+                    }, 1500);
+                } else {
+                    if(window.dispatchEvent) window.dispatchEvent(new CustomEvent('toast', { detail: { type: 'error', message: res.message }}));
+                }
+            })
+            .catch(err => {
+                console.error(err);
+                if(window.dispatchEvent) window.dispatchEvent(new CustomEvent('toast', { detail: { type: 'error', message: 'Network error occurred.' }}));
+            });
+        }
+    }
+}
+</script>
+{% endblock %}

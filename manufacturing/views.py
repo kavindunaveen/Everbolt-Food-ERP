@@ -205,3 +205,120 @@ def get_bom_details(request, bom_id):
         'finished_product_name': bom.finished_product.name,
         'items': items
     })
+
+import json
+from django.utils import timezone
+from django.core.mail import send_mail
+from django.contrib.auth import get_user_model
+from django.views.generic import TemplateView
+from .models import DailyProductionPlan, ProductionPlanLine
+
+class ProductionPlanListView(LoginRequiredMixin, ERPPermissionRequiredMixin, ListView):
+    permission_required = 'manufacturing.manage_production_plans'
+    model = DailyProductionPlan
+    template_name = 'manufacturing/production_plan_list.html'
+    context_object_name = 'plans'
+    ordering = ['-date']
+
+class ProductionPlanDetailView(LoginRequiredMixin, ERPPermissionRequiredMixin, DetailView):
+    permission_required = 'manufacturing.manage_production_plans'
+    model = DailyProductionPlan
+    template_name = 'manufacturing/production_plan_detail.html'
+    context_object_name = 'plan'
+
+class ProductionPlanCreateView(LoginRequiredMixin, ERPPermissionRequiredMixin, TemplateView):
+    permission_required = 'manufacturing.manage_production_plans'
+    template_name = 'manufacturing/production_plan_form.html'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        # Pass all products to populate dropdowns
+        products = Product.objects.filter(status=True).values('id', 'name', 'product_id', 'category')
+        context['products_json'] = json.dumps(list(products))
+        return context
+
+@login_required
+def save_production_plan(request):
+    if not request.user.has_perm('manufacturing.manage_production_plans'):
+        return JsonResponse({'status': 'error', 'message': 'Permission denied.'}, status=403)
+        
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            date_str = data.get('date')
+            action = data.get('action') # 'save_draft' or 'submit'
+            lines = data.get('lines', [])
+            
+            if not date_str:
+                return JsonResponse({'status': 'error', 'message': 'Date is required.'}, status=400)
+                
+            from datetime import datetime
+            plan_date = datetime.strptime(date_str, '%Y-%m-%d').date()
+            
+            with transaction.atomic():
+                plan, created = DailyProductionPlan.objects.get_or_create(
+                    date=plan_date,
+                    defaults={'created_by': request.user}
+                )
+                
+                if plan.status == 'SUBMITTED':
+                    return JsonResponse({'status': 'error', 'message': 'This plan is already submitted.'}, status=400)
+                
+                # Clear existing lines
+                plan.lines.all().delete()
+                
+                for line in lines:
+                    target_prod = Product.objects.get(id=line['target_product_id'])
+                    raw_mat = Product.objects.get(id=line['raw_material_id'])
+                    ProductionPlanLine.objects.create(
+                        plan=plan,
+                        target_product=target_prod,
+                        unit_weight=line.get('unit_weight') or 0,
+                        target_qty=line.get('target_qty') or 0,
+                        raw_material=raw_mat,
+                        raw_material_qty=line.get('raw_material_qty') or 0,
+                        actual_used_qty=line.get('actual_used_qty') or 0,
+                        wastage_qty=line.get('wastage_qty') or 0,
+                        actual_completed_qty=line.get('actual_completed_qty') or 0
+                    )
+                    
+                if action == 'submit':
+                    if not request.user.has_perm('manufacturing.submit_production_plans'):
+                        return JsonResponse({'status': 'error', 'message': 'You do not have permission to submit.'}, status=403)
+                    plan.status = 'SUBMITTED'
+                    plan.submitted_by = request.user
+                    plan.submitted_at = timezone.now()
+                    plan.save()
+                    
+                    # Send Email Notification
+                    User = get_user_model()
+                    notify_users = User.objects.filter(
+                        user_permissions__codename='receive_production_notifications'
+                    ).distinct()
+                    
+                    notify_roles_users = User.objects.filter(
+                        role__permissions__codename='receive_production_notifications'
+                    ).distinct()
+                    
+                    all_emails = list(set(list(notify_users.values_list('email', flat=True)) + list(notify_roles_users.values_list('email', flat=True))))
+                    all_emails = [e for e in all_emails if e] # remove empty
+                    
+                    if all_emails:
+                        subject = f"Production Plan Submitted: {plan.date}"
+                        body = f"The production plan for {plan.date} has been submitted by {request.user.get_full_name() or request.user.username}.\n\n"
+                        body += f"Total Items Produced: {sum(l.actual_completed_qty for l in plan.lines.all())}\n"
+                        body += f"Please log in to the ERP to view the full details.\nhttps://erp.organicfoodslanka.com/manufacturing/planning/{plan.id}/"
+                        
+                        send_mail(
+                            subject,
+                            body,
+                            settings.DEFAULT_FROM_EMAIL,
+                            all_emails,
+                            fail_silently=True,
+                        )
+
+            return JsonResponse({'status': 'ok', 'message': f"Plan {'submitted' if action == 'submit' else 'saved as draft'} successfully.", 'id': plan.id})
+            
+        except Exception as e:
+            return JsonResponse({'status': 'error', 'message': str(e)}, status=400)
+    return JsonResponse({'status': 'error', 'message': 'Invalid request method.'}, status=405)
