@@ -54,12 +54,24 @@ class OverdueInvoicesView(LoginRequiredMixin, PermissionRequiredMixin, View):
         if date_to:
             overdue_qs = overdue_qs.filter(due_date__lte=date_to)
             
+        month = request.GET.get('month')
+        if month:
+            try:
+                year_str, month_str = month.split('-')
+                overdue_qs = overdue_qs.filter(due_date__year=int(year_str), due_date__month=int(month_str))
+            except ValueError:
+                pass
+            
         q = request.GET.get('q')
         if q:
             overdue_qs = overdue_qs.filter(
                 Q(invoice_number__icontains=q) |
                 Q(customer__customer_name__icontains=q)
             )
+
+        salesperson_id = request.GET.get('salesperson')
+        if salesperson_id:
+            overdue_qs = overdue_qs.filter(salesperson_id=salesperson_id)
 
         # Calculate remaining balances
         invoices = []
@@ -80,10 +92,14 @@ class OverdueInvoicesView(LoginRequiredMixin, PermissionRequiredMixin, View):
                 })
                 
         # Optional: Pagination could be added here if needed, but standard python lists might be small enough for overdue invoices.
+        
+        from users.models import User
+        sales_officers = User.objects.filter(role__name='Sales Officer', is_active=True).distinct()
                 
         context = {
             'invoices': invoices,
-            'payment_methods': Payment.PaymentMethod.choices
+            'payment_methods': Payment.PaymentMethod.choices,
+            'sales_officers': sales_officers
         }
         
         # Provide Saved Filters
