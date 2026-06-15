@@ -75,6 +75,7 @@
                                         x-init="$nextTick(() => { 
                                             let ts = new TomSelect($el, {
                                                 create: false,
+                                                dropdownParent: 'body',
                                                 sortField: {field: 'text', direction: 'asc'},
                                                 onChange: function(val) { row.target_product_id = val; }
                                             });
@@ -98,6 +99,7 @@
                                         x-init="$nextTick(() => { 
                                             let ts = new TomSelect($el, {
                                                 create: false,
+                                                dropdownParent: 'body',
                                                 sortField: {field: 'text', direction: 'asc'},
                                                 onChange: function(val) { row.raw_material_id = val; }
                                             });
