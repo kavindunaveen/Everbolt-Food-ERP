@@ -132,11 +132,21 @@
     // Categories and Products mapped dynamically from system database (Ex-VAT prices)
     const categoryOrder = JSON.parse('{{ category_order_json|escapejs }}');
     const productData = JSON.parse('{{ product_data_json|escapejs }}');
+    const customerData = JSON.parse('{{ customer_data_json|escapejs }}');
 
     let rowCount = 0;
 
     window.onload = function() {
         addOrderRow();
+        
+        // Auto-fill customer details when a customer is selected from datalist
+        document.getElementById('customer').addEventListener('input', function() {
+            const customerName = this.value;
+            if (customerData[customerName]) {
+                document.getElementById('address').value = customerData[customerName].address || '';
+                document.getElementById('contact').value = customerData[customerName].phone || '';
+            }
+        });
     };
 
     function addOrderRow() {

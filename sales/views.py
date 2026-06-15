@@ -2100,7 +2100,15 @@ class OrderGeneratorView(LoginRequiredMixin, ERPPermissionRequiredMixin, Templat
             else:
                 product_data[cat][p.name] = float(p.selling_price)
                 
+        customer_details = {}
+        for c in customers:
+            customer_details[c.customer_name] = {
+                'address': c.billing_address.replace('\n', ', '),
+                'phone': c.phone
+            }
+                
         context['customers'] = customers
+        context['customer_data_json'] = json.dumps(customer_details)
         context['category_order_json'] = json.dumps(categories)
         context['product_data_json'] = json.dumps(product_data)
         return context
