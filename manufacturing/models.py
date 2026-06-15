@@ -100,7 +100,8 @@ class ProductionPlanningModule(models.Model):
 class DailyProductionPlan(models.Model):
     class StatusChoices(models.TextChoices):
         DRAFT = 'DRAFT', 'Draft'
-        SUBMITTED = 'SUBMITTED', 'Submitted'
+        MORNING_SUBMITTED = 'MORNING_SUBMITTED', 'Morning Submitted'
+        COMPLETED = 'COMPLETED', 'Completed'
 
     date = models.DateField(unique=True)
     status = models.CharField(max_length=20, choices=StatusChoices.choices, default=StatusChoices.DRAFT)

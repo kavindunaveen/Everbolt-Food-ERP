@@ -232,9 +232,61 @@ class ProductionPlanCreateView(LoginRequiredMixin, ERPPermissionRequiredMixin, T
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        # Pass all products to populate dropdowns
-        products = Product.objects.filter(status=True).values('id', 'name', 'product_id', 'category')
-        context['products_json'] = json.dumps(list(products))
+        all_products = Product.objects.filter(status=True).values('id', 'name', 'product_id')
+        raw_materials = Product.objects.filter(status=True, inventory_class='RAW').values('id', 'name', 'product_id')
+        
+        context['all_products_json'] = json.dumps(list(all_products))
+        context['raw_materials_json'] = json.dumps(list(raw_materials))
+        
+        context['plan_data_json'] = json.dumps({
+            'date': timezone.now().date().strftime('%Y-%m-%d'),
+            'status': 'DRAFT',
+            'lines': [{
+                'target_product_id': '',
+                'unit_weight': 0,
+                'target_qty': 0,
+                'raw_material_id': '',
+                'raw_material_qty': 0,
+                'actual_used_qty': 0,
+                'wastage_qty': 0,
+                'actual_completed_qty': 0
+            }]
+        })
+        return context
+
+class ProductionPlanUpdateView(LoginRequiredMixin, ERPPermissionRequiredMixin, DetailView):
+    permission_required = 'manufacturing.manage_production_plans'
+    model = DailyProductionPlan
+    template_name = 'manufacturing/production_plan_form.html'
+    context_object_name = 'plan'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        all_products = Product.objects.filter(status=True).values('id', 'name', 'product_id')
+        raw_materials = Product.objects.filter(status=True, inventory_class='RAW').values('id', 'name', 'product_id')
+        
+        context['all_products_json'] = json.dumps(list(all_products))
+        context['raw_materials_json'] = json.dumps(list(raw_materials))
+        
+        plan = self.object
+        lines = []
+        for l in plan.lines.all():
+            lines.append({
+                'target_product_id': l.target_product_id,
+                'unit_weight': float(l.unit_weight),
+                'target_qty': l.target_qty,
+                'raw_material_id': l.raw_material_id,
+                'raw_material_qty': float(l.raw_material_qty),
+                'actual_used_qty': float(l.actual_used_qty),
+                'wastage_qty': float(l.wastage_qty),
+                'actual_completed_qty': l.actual_completed_qty
+            })
+            
+        context['plan_data_json'] = json.dumps({
+            'date': plan.date.strftime('%Y-%m-%d'),
+            'status': plan.status,
+            'lines': lines
+        })
         return context
 
 @login_required
@@ -246,7 +298,7 @@ def save_production_plan(request):
         try:
             data = json.loads(request.body)
             date_str = data.get('date')
-            action = data.get('action') # 'save_draft' or 'submit'
+            action = data.get('action') # 'save_draft', 'submit_morning', 'submit_evening'
             lines = data.get('lines', [])
             
             if not date_str:
@@ -261,63 +313,78 @@ def save_production_plan(request):
                     defaults={'created_by': request.user}
                 )
                 
-                if plan.status == 'SUBMITTED':
-                    return JsonResponse({'status': 'error', 'message': 'This plan is already submitted.'}, status=400)
+                if plan.status == 'COMPLETED':
+                    return JsonResponse({'status': 'error', 'message': 'This plan is already completed.'}, status=400)
                 
-                # Clear existing lines
-                plan.lines.all().delete()
-                
-                for line in lines:
-                    target_prod = Product.objects.get(id=line['target_product_id'])
-                    raw_mat = Product.objects.get(id=line['raw_material_id'])
-                    ProductionPlanLine.objects.create(
-                        plan=plan,
-                        target_product=target_prod,
-                        unit_weight=line.get('unit_weight') or 0,
-                        target_qty=line.get('target_qty') or 0,
-                        raw_material=raw_mat,
-                        raw_material_qty=line.get('raw_material_qty') or 0,
-                        actual_used_qty=line.get('actual_used_qty') or 0,
-                        wastage_qty=line.get('wastage_qty') or 0,
-                        actual_completed_qty=line.get('actual_completed_qty') or 0
-                    )
+                if plan.status == 'MORNING_SUBMITTED':
+                    existing_lines = list(plan.lines.all())
+                    for i, line in enumerate(existing_lines):
+                        if i < len(lines):
+                            fe_line = lines[i]
+                            line.actual_used_qty = fe_line.get('actual_used_qty') or 0
+                            line.wastage_qty = fe_line.get('wastage_qty') or 0
+                            line.actual_completed_qty = fe_line.get('actual_completed_qty') or 0
+                            line.save()
+                else:
+                    plan.lines.all().delete()
+                    for line in lines:
+                        target_prod = Product.objects.get(id=line['target_product_id'])
+                        raw_mat = Product.objects.get(id=line['raw_material_id'])
+                        ProductionPlanLine.objects.create(
+                            plan=plan,
+                            target_product=target_prod,
+                            unit_weight=line.get('unit_weight') or 0,
+                            target_qty=line.get('target_qty') or 0,
+                            raw_material=raw_mat,
+                            raw_material_qty=line.get('raw_material_qty') or 0,
+                            actual_used_qty=line.get('actual_used_qty') or 0,
+                            wastage_qty=line.get('wastage_qty') or 0,
+                            actual_completed_qty=line.get('actual_completed_qty') or 0
+                        )
                     
-                if action == 'submit':
+                email_subject = None
+                email_body = None
+
+                if action == 'submit_morning':
                     if not request.user.has_perm('manufacturing.submit_production_plans'):
                         return JsonResponse({'status': 'error', 'message': 'You do not have permission to submit.'}, status=403)
-                    plan.status = 'SUBMITTED'
+                    plan.status = 'MORNING_SUBMITTED'
+                    plan.save()
+                    email_subject = f"Morning Production Plan Submitted: {plan.date}"
+                    email_body = f"The morning production targets for {plan.date} have been set by {request.user.get_full_name() or request.user.username}.\n\nPlease log in to the ERP to view the details.\nhttps://erp.organicfoodslanka.com/manufacturing/planning/{plan.id}/edit/"
+
+                elif action == 'submit_evening':
+                    if not request.user.has_perm('manufacturing.submit_production_plans'):
+                        return JsonResponse({'status': 'error', 'message': 'You do not have permission to submit.'}, status=403)
+                    plan.status = 'COMPLETED'
                     plan.submitted_by = request.user
                     plan.submitted_at = timezone.now()
                     plan.save()
-                    
-                    # Send Email Notification
+                    email_subject = f"End-of-Day Production Plan Completed: {plan.date}"
+                    email_body = f"The end-of-day production actuals for {plan.date} have been submitted by {request.user.get_full_name() or request.user.username}.\n\nTotal Items Produced: {sum(l.actual_completed_qty for l in plan.lines.all())}\n\nPlease log in to the ERP to view the variance details.\nhttps://erp.organicfoodslanka.com/manufacturing/planning/{plan.id}/"
+
+                if email_subject:
                     User = get_user_model()
                     notify_users = User.objects.filter(
                         user_permissions__codename='receive_production_notifications'
                     ).distinct()
-                    
                     notify_roles_users = User.objects.filter(
                         role__permissions__codename='receive_production_notifications'
                     ).distinct()
                     
                     all_emails = list(set(list(notify_users.values_list('email', flat=True)) + list(notify_roles_users.values_list('email', flat=True))))
-                    all_emails = [e for e in all_emails if e] # remove empty
+                    all_emails = [e for e in all_emails if e]
                     
                     if all_emails:
-                        subject = f"Production Plan Submitted: {plan.date}"
-                        body = f"The production plan for {plan.date} has been submitted by {request.user.get_full_name() or request.user.username}.\n\n"
-                        body += f"Total Items Produced: {sum(l.actual_completed_qty for l in plan.lines.all())}\n"
-                        body += f"Please log in to the ERP to view the full details.\nhttps://erp.organicfoodslanka.com/manufacturing/planning/{plan.id}/"
-                        
                         send_mail(
-                            subject,
-                            body,
+                            email_subject,
+                            email_body,
                             settings.DEFAULT_FROM_EMAIL,
                             all_emails,
                             fail_silently=True,
                         )
 
-            return JsonResponse({'status': 'ok', 'message': f"Plan {'submitted' if action == 'submit' else 'saved as draft'} successfully.", 'id': plan.id})
+            return JsonResponse({'status': 'ok', 'message': "Plan saved successfully.", 'id': plan.id})
             
         except Exception as e:
             return JsonResponse({'status': 'error', 'message': str(e)}, status=400)

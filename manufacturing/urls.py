@@ -23,5 +23,6 @@ urlpatterns = [
     path('planning/', views.ProductionPlanListView.as_view(), name='production_plan_list'),
     path('planning/new/', views.ProductionPlanCreateView.as_view(), name='production_plan_create'),
     path('planning/<int:pk>/', views.ProductionPlanDetailView.as_view(), name='production_plan_detail'),
+    path('planning/<int:pk>/edit/', views.ProductionPlanUpdateView.as_view(), name='production_plan_edit'),
     path('api/planning/save/', views.save_production_plan, name='api_production_plan_save'),
 ]
