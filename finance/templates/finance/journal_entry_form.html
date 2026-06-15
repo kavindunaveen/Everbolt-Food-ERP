@@ -4,13 +4,64 @@
 {% block title %}New Journal Entry | Finance{% endblock %}
 
 {% block content %}
+<style>
+    /* Remove up/down arrows from number inputs */
+    input[type=number]::-webkit-inner-spin-button, 
+    input[type=number]::-webkit-outer-spin-button { 
+        -webkit-appearance: none; 
+        margin: 0; 
+    }
+    input[type=number] {
+        -moz-appearance: textfield;
+    }
+    /* Clean spreadsheet-like inputs */
+    .table-input {
+        width: 100%;
+        border: 1px solid transparent;
+        background-color: transparent;
+        border-radius: 4px;
+        padding: 8px 12px;
+        font-size: 14px;
+        transition: all 0.2s;
+    }
+    .table-input:hover {
+        border-color: #e5e7eb;
+        background-color: #f9fafb;
+    }
+    .table-input:focus {
+        border-color: #6366f1;
+        background-color: #fff;
+        outline: none;
+        box-shadow: 0 0 0 1px #6366f1;
+    }
+    .table-select {
+        width: 100%;
+        border: 1px solid transparent;
+        background-color: transparent;
+        border-radius: 4px;
+        padding: 8px 30px 8px 12px;
+        font-size: 14px;
+        transition: all 0.2s;
+    }
+    .table-select:hover {
+        border-color: #e5e7eb;
+        background-color: #f9fafb;
+    }
+    .table-select:focus {
+        border-color: #6366f1;
+        background-color: #fff;
+        outline: none;
+        box-shadow: 0 0 0 1px #6366f1;
+    }
+</style>
+
 <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8" x-data="journalEntryForm()">
     <div class="mb-8">
         <h2 class="text-2xl font-bold leading-7 text-gray-900 sm:text-3xl sm:truncate">New Journal Entry</h2>
         <p class="mt-1 text-sm text-gray-500">Create a manual double-entry journal.</p>
     </div>
 
-    <div class="bg-white shadow overflow-hidden sm:rounded-lg">
+    <div class="bg-white shadow overflow-hidden sm:rounded-lg border border-gray-100">
         <div class="px-4 py-5 sm:p-6">
             
             <div x-show="errorMsg" class="mb-4 bg-red-50 border-l-4 border-red-400 p-4" style="display: none;">
@@ -39,53 +90,55 @@
             <!-- Lines -->
             <h3 class="text-lg leading-6 font-medium text-gray-900 mb-4">Journal Items</h3>
             
-            <table class="min-w-full divide-y divide-gray-200 border border-gray-200 rounded-lg">
-                <thead class="bg-gray-50">
-                    <tr>
-                        <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/3">Account</th>
-                        <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Description</th>
-                        <th class="px-3 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider w-32">Debit</th>
-                        <th class="px-3 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider w-32">Credit</th>
-                        <th class="px-3 py-3 w-10"></th>
-                    </tr>
-                </thead>
-                <tbody class="bg-white divide-y divide-gray-200">
-                    <template x-for="(line, index) in lines" :key="index">
+            <div class="border border-gray-200 rounded-lg overflow-hidden">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
                         <tr>
-                            <td class="px-3 py-2">
-                                <select x-model="line.account_id" class="block w-full focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm border-gray-300 rounded-md">
-                                    <option value="">Select Account</option>
-                                    {% for account in accounts %}
-                                    <option value="{{ account.id }}">{{ account.code }} - {{ account.name }}</option>
-                                    {% endfor %}
-                                </select>
-                            </td>
-                            <td class="px-3 py-2">
-                                <input type="text" x-model="line.description" class="block w-full focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm border-gray-300 rounded-md">
-                            </td>
-                            <td class="px-3 py-2">
-                                <input type="number" step="0.01" min="0" x-model="line.debit" @input="if(line.debit > 0) line.credit = ''" class="block w-full text-right focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm border-gray-300 rounded-md">
-                            </td>
-                            <td class="px-3 py-2">
-                                <input type="number" step="0.01" min="0" x-model="line.credit" @input="if(line.credit > 0) line.debit = ''" class="block w-full text-right focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm border-gray-300 rounded-md">
-                            </td>
-                            <td class="px-3 py-2 text-center">
-                                <button type="button" @click="removeLine(index)" class="text-red-600 hover:text-red-900">
-                                    <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
-                                </button>
-                            </td>
+                            <th class="px-4 py-3 text-left text-[11px] font-bold text-gray-500 uppercase tracking-wider w-1/3 border-r border-gray-200">Account</th>
+                            <th class="px-4 py-3 text-left text-[11px] font-bold text-gray-500 uppercase tracking-wider border-r border-gray-200">Description</th>
+                            <th class="px-4 py-3 text-right text-[11px] font-bold text-gray-500 uppercase tracking-wider w-36 border-r border-gray-200">Debit</th>
+                            <th class="px-4 py-3 text-right text-[11px] font-bold text-gray-500 uppercase tracking-wider w-36 border-r border-gray-200">Credit</th>
+                            <th class="px-3 py-3 w-10"></th>
                         </tr>
-                    </template>
-                </tbody>
-                <tfoot class="bg-gray-50 font-bold">
-                    <tr>
-                        <td colspan="2" class="px-3 py-3 text-right">Totals</td>
-                        <td class="px-3 py-3 text-right" x-text="totalDebit.toFixed(2)"></td>
-                        <td class="px-3 py-3 text-right" x-text="totalCredit.toFixed(2)"></td>
-                        <td></td>
-                    </tr>
-                </tfoot>
-            </table>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        <template x-for="(line, index) in lines" :key="index">
+                            <tr class="hover:bg-blue-50/30 transition-colors">
+                                <td class="p-1 border-r border-gray-200">
+                                    <select x-model="line.account_id" class="table-select text-gray-900 font-medium">
+                                        <option value="">Select Account</option>
+                                        {% for account in accounts %}
+                                        <option value="{{ account.id }}">{{ account.code }} - {{ account.name }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </td>
+                                <td class="p-1 border-r border-gray-200">
+                                    <input type="text" x-model="line.description" placeholder="Optional description..." class="table-input text-gray-700">
+                                </td>
+                                <td class="p-1 border-r border-gray-200">
+                                    <input type="number" step="0.01" min="0" x-model="line.debit" @input="if(line.debit > 0) line.credit = ''" placeholder="0.00" class="table-input text-right font-medium text-gray-900">
+                                </td>
+                                <td class="p-1 border-r border-gray-200">
+                                    <input type="number" step="0.01" min="0" x-model="line.credit" @input="if(line.credit > 0) line.debit = ''" placeholder="0.00" class="table-input text-right font-medium text-gray-900">
+                                </td>
+                                <td class="px-3 py-2 text-center">
+                                    <button type="button" @click="removeLine(index)" class="text-gray-400 hover:text-red-600 transition-colors">
+                                        <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                                    </button>
+                                </td>
+                            </tr>
+                        </template>
+                    </tbody>
+                    <tfoot class="bg-gray-50 border-t border-gray-200">
+                        <tr>
+                            <td colspan="2" class="px-4 py-4 text-right text-sm font-bold text-gray-700 border-r border-gray-200">Total</td>
+                            <td class="px-4 py-4 text-right text-sm font-bold text-gray-900 border-r border-gray-200" x-text="totalDebit.toFixed(2)"></td>
+                            <td class="px-4 py-4 text-right text-sm font-bold text-gray-900 border-r border-gray-200" x-text="totalCredit.toFixed(2)"></td>
+                            <td></td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
 
             <div class="mt-4">
                 <button type="button" @click="addLine()" class="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none">
