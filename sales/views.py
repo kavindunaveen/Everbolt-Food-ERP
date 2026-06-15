@@ -2068,8 +2068,10 @@ class OrderGeneratorView(LoginRequiredMixin, ERPPermissionRequiredMixin, Templat
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         from inventory.models import Product
+        from crm.models import Customer
         
         products = Product.objects.filter(status=True).order_by('category', 'tea_type', 'name')
+        customers = Customer.objects.filter(customer_status='ACTIVE').order_by('customer_name')
         
         categories = []
         product_data = {}
@@ -2098,6 +2100,7 @@ class OrderGeneratorView(LoginRequiredMixin, ERPPermissionRequiredMixin, Templat
             else:
                 product_data[cat][p.name] = float(p.selling_price)
                 
+        context['customers'] = customers
         context['category_order_json'] = json.dumps(categories)
         context['product_data_json'] = json.dumps(product_data)
         return context
