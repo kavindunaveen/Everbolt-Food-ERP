@@ -272,10 +272,10 @@ class ProductionPlanUpdateView(LoginRequiredMixin, ERPPermissionRequiredMixin, D
         lines = []
         for l in plan.lines.all():
             lines.append({
-                'target_product_id': l.target_product_id,
+                'target_product_id': str(l.target_product_id) if l.target_product_id else '',
                 'unit_weight': float(l.unit_weight),
                 'target_qty': l.target_qty,
-                'raw_material_id': l.raw_material_id,
+                'raw_material_id': str(l.raw_material_id) if l.raw_material_id else '',
                 'raw_material_qty': float(l.raw_material_qty),
                 'actual_used_qty': float(l.actual_used_qty),
                 'wastage_qty': float(l.wastage_qty),
