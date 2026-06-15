@@ -45,6 +45,22 @@ class OverdueInvoicesView(LoginRequiredMixin, PermissionRequiredMixin, View):
             due_date__lt=today
         ).exclude(invoice_type__in=['CASH', 'COD']).order_by('due_date', '-total_amount')
         
+        # Filtering logic
+        date_from = request.GET.get('date_from')
+        if date_from:
+            overdue_qs = overdue_qs.filter(due_date__gte=date_from)
+            
+        date_to = request.GET.get('date_to')
+        if date_to:
+            overdue_qs = overdue_qs.filter(due_date__lte=date_to)
+            
+        q = request.GET.get('q')
+        if q:
+            overdue_qs = overdue_qs.filter(
+                Q(invoice_number__icontains=q) |
+                Q(customer__customer_name__icontains=q)
+            )
+
         # Calculate remaining balances
         invoices = []
         for inv in overdue_qs:
@@ -63,10 +79,20 @@ class OverdueInvoicesView(LoginRequiredMixin, PermissionRequiredMixin, View):
                     'days_overdue': (today - inv.due_date).days
                 })
                 
+        # Optional: Pagination could be added here if needed, but standard python lists might be small enough for overdue invoices.
+                
         context = {
             'invoices': invoices,
             'payment_methods': Payment.PaymentMethod.choices
         }
+        
+        # Provide Saved Filters
+        try:
+            from users.models import SavedFilter
+            context['saved_filters'] = SavedFilter.objects.filter(user=request.user, model_name='OverdueInvoices')
+        except ImportError:
+            context['saved_filters'] = []
+            
         return render(request, self.template_name, context)
 
 class RecordPaymentView(LoginRequiredMixin, PermissionRequiredMixin, View):
