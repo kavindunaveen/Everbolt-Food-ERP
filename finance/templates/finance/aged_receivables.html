@@ -1,0 +1,115 @@
+{% extends 'layouts/base.html' %}
+{% load humanize %}
+
+{% block title %}Aged Receivables | Finance{% endblock %}
+
+{% block breadcrumbs %}
+<li class="flex items-center space-x-2 border-l border-gray-100 pl-4 ml-2">
+    <a href="{% url 'finance_dashboard' %}" class="text-gray-500 hover:text-emerald-600 font-medium transition-colors">Finance</a>
+</li>
+<li class="flex items-center space-x-2 border-l border-gray-100 pl-4 ml-2">
+    <span class="text-gray-900 font-semibold">Aged Receivables</span>
+</li>
+{% endblock %}
+
+{% block content %}
+<div class="px-4 py-6 sm:px-0">
+    <div class="mb-8 flex flex-col md:flex-row md:items-end md:justify-between gap-4">
+        <div>
+            <h1 class="text-3xl font-extrabold text-gray-900 tracking-tight">Aged Receivables</h1>
+            <p class="mt-2 text-sm text-gray-600 font-medium">Overview of outstanding customer balances categorized by age.</p>
+        </div>
+        <div class="flex items-center space-x-3 w-full md:w-auto">
+            <a href="{% url 'finance_dashboard' %}" class="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50 transition-colors">
+                <svg class="w-4 h-4 mr-2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
+                Back to Dashboard
+            </a>
+        </div>
+    </div>
+
+    <!-- Aged Receivables Table -->
+    <div class="bg-white shadow-md rounded-2xl border border-gray-100 overflow-hidden transition-all duration-300" x-data="{ expanded: null }">
+        <div class="overflow-x-auto w-full">
+            <table class="min-w-full divide-y divide-gray-100 text-sm">
+                <thead class="bg-gray-50/50">
+                    <tr>
+                        <th scope="col" class="px-6 py-4 text-left font-bold text-gray-400 uppercase tracking-widest w-1/4">Customer / Invoice</th>
+                        <th scope="col" class="px-4 py-4 text-center font-bold text-gray-400 uppercase tracking-widest">Expected Date</th>
+                        <th scope="col" class="px-4 py-4 text-right font-bold text-gray-400 uppercase tracking-widest">Not Due</th>
+                        <th scope="col" class="px-4 py-4 text-right font-bold text-gray-400 uppercase tracking-widest">1-30</th>
+                        <th scope="col" class="px-4 py-4 text-right font-bold text-gray-400 uppercase tracking-widest">31-45</th>
+                        <th scope="col" class="px-4 py-4 text-right font-bold text-gray-400 uppercase tracking-widest">46-60</th>
+                        <th scope="col" class="px-4 py-4 text-right font-bold text-gray-400 uppercase tracking-widest">61-90</th>
+                        <th scope="col" class="px-4 py-4 text-right font-bold text-gray-400 uppercase tracking-widest">91-120</th>
+                        <th scope="col" class="px-4 py-4 text-right font-bold text-gray-400 uppercase tracking-widest">Older</th>
+                        <th scope="col" class="px-6 py-4 text-right font-bold text-gray-900 uppercase tracking-widest bg-gray-100/50">Total</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-100">
+                    <!-- Grand Totals Row -->
+                    <tr class="bg-indigo-50/50 font-bold text-indigo-900">
+                        <td class="px-6 py-4 text-left uppercase tracking-wider">Grand Total</td>
+                        <td class="px-4 py-4 text-center">-</td>
+                        <td class="px-4 py-4 text-right text-indigo-600">{% if grand_totals.not_due %}Rs {{ grand_totals.not_due|floatformat:2|intcomma }}{% endif %}</td>
+                        <td class="px-4 py-4 text-right text-indigo-600">{% if grand_totals.1_30 %}Rs {{ grand_totals.1_30|floatformat:2|intcomma }}{% endif %}</td>
+                        <td class="px-4 py-4 text-right text-indigo-600">{% if grand_totals.31_45 %}Rs {{ grand_totals.31_45|floatformat:2|intcomma }}{% endif %}</td>
+                        <td class="px-4 py-4 text-right text-indigo-600">{% if grand_totals.46_60 %}Rs {{ grand_totals.46_60|floatformat:2|intcomma }}{% endif %}</td>
+                        <td class="px-4 py-4 text-right text-indigo-600">{% if grand_totals.61_90 %}Rs {{ grand_totals.61_90|floatformat:2|intcomma }}{% endif %}</td>
+                        <td class="px-4 py-4 text-right text-indigo-600">{% if grand_totals.91_120 %}Rs {{ grand_totals.91_120|floatformat:2|intcomma }}{% endif %}</td>
+                        <td class="px-4 py-4 text-right text-indigo-600">{% if grand_totals.older %}Rs {{ grand_totals.older|floatformat:2|intcomma }}{% endif %}</td>
+                        <td class="px-6 py-4 text-right text-indigo-800 bg-indigo-100/50">Rs {{ grand_totals.total|floatformat:2|intcomma }}</td>
+                    </tr>
+                    
+                    {% for c in customers_data %}
+                    <!-- Customer Row -->
+                    <tr class="hover:bg-gray-50 transition-colors cursor-pointer group" @click="expanded = expanded === {{ c.customer.id }} ? null : {{ c.customer.id }}">
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="flex items-center space-x-2">
+                                <svg class="w-4 h-4 text-gray-400 transition-transform duration-200" :class="expanded === {{ c.customer.id }} ? 'rotate-90' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                                <span class="font-bold text-gray-900 uppercase">{{ c.customer.customer_name }}</span>
+                            </div>
+                        </td>
+                        <td class="px-4 py-4 text-center text-gray-400">-</td>
+                        <td class="px-4 py-4 text-right font-medium text-gray-600">{% if c.not_due %}Rs {{ c.not_due|floatformat:2|intcomma }}{% endif %}</td>
+                        <td class="px-4 py-4 text-right font-medium text-gray-600">{% if c.1_30 %}Rs {{ c.1_30|floatformat:2|intcomma }}{% endif %}</td>
+                        <td class="px-4 py-4 text-right font-medium text-gray-600">{% if c.31_45 %}Rs {{ c.31_45|floatformat:2|intcomma }}{% endif %}</td>
+                        <td class="px-4 py-4 text-right font-medium text-gray-600">{% if c.46_60 %}Rs {{ c.46_60|floatformat:2|intcomma }}{% endif %}</td>
+                        <td class="px-4 py-4 text-right font-medium text-gray-600">{% if c.61_90 %}Rs {{ c.61_90|floatformat:2|intcomma }}{% endif %}</td>
+                        <td class="px-4 py-4 text-right font-medium text-gray-600">{% if c.91_120 %}Rs {{ c.91_120|floatformat:2|intcomma }}{% endif %}</td>
+                        <td class="px-4 py-4 text-right font-medium text-red-500">{% if c.older %}Rs {{ c.older|floatformat:2|intcomma }}{% endif %}</td>
+                        <td class="px-6 py-4 text-right font-bold text-gray-900 bg-gray-50/50">Rs {{ c.total|floatformat:2|intcomma }}</td>
+                    </tr>
+                    
+                    <!-- Invoices Rows -->
+                    {% for inv in c.invoices %}
+                    <tr x-show="expanded === {{ c.customer.id }}" x-transition.opacity class="bg-gray-50/30 text-[13px] border-l-4 border-l-indigo-500" style="display: none;">
+                        <td class="px-6 py-3 whitespace-nowrap pl-12">
+                            <a href="{% url 'invoice_edit' inv.id %}" class="text-blue-600 hover:underline font-semibold">{{ inv.invoice_number }}</a>
+                            <div class="text-[10px] text-gray-400 mt-0.5">{{ inv.salesperson.get_full_name|default:inv.salesperson.username }}</div>
+                        </td>
+                        <td class="px-4 py-3 text-center text-gray-600">{{ inv.due_date|date:"d/m/Y" }}</td>
+                        <td class="px-4 py-3 text-right text-gray-500">{% if inv.bucket == 'not_due' %}Rs {{ inv.balance|floatformat:2|intcomma }}{% endif %}</td>
+                        <td class="px-4 py-3 text-right text-gray-500">{% if inv.bucket == '1_30' %}Rs {{ inv.balance|floatformat:2|intcomma }}{% endif %}</td>
+                        <td class="px-4 py-3 text-right text-gray-500">{% if inv.bucket == '31_45' %}Rs {{ inv.balance|floatformat:2|intcomma }}{% endif %}</td>
+                        <td class="px-4 py-3 text-right text-gray-500">{% if inv.bucket == '46_60' %}Rs {{ inv.balance|floatformat:2|intcomma }}{% endif %}</td>
+                        <td class="px-4 py-3 text-right text-gray-500">{% if inv.bucket == '61_90' %}Rs {{ inv.balance|floatformat:2|intcomma }}{% endif %}</td>
+                        <td class="px-4 py-3 text-right text-gray-500">{% if inv.bucket == '91_120' %}Rs {{ inv.balance|floatformat:2|intcomma }}{% endif %}</td>
+                        <td class="px-4 py-3 text-right text-red-400">{% if inv.bucket == 'older' %}Rs {{ inv.balance|floatformat:2|intcomma }}{% endif %}</td>
+                        <td class="px-6 py-3 text-right text-gray-700 font-semibold bg-gray-100/30">Rs {{ inv.balance|floatformat:2|intcomma }}</td>
+                    </tr>
+                    {% endfor %}
+                    {% empty %}
+                    <tr>
+                        <td colspan="10" class="px-6 py-12 text-center text-gray-500">
+                            <svg class="w-12 h-12 text-gray-300 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                            <p class="font-medium text-gray-900">No Outstanding Receivables</p>
+                            <p class="text-sm mt-1">All customers are up to date on their payments.</p>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
