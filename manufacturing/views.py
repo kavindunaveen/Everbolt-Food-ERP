@@ -353,6 +353,7 @@ def save_production_plan(request):
                     plan.save()
                     email_subject = f"Morning Production Plan Submitted: {plan.date}"
                     email_body = f"The morning production targets for {plan.date} have been set by {request.user.get_full_name() or request.user.username}.\n\nPlease log in to the ERP to view the details.\nhttps://erp.organicfoodslanka.com/manufacturing/planning/{plan.id}/edit/"
+                    notif_link = reverse('production_plan_edit', args=[plan.id])
 
                 elif action == 'submit_evening':
                     if not request.user.has_perm('manufacturing.submit_production_plans'):
@@ -363,6 +364,7 @@ def save_production_plan(request):
                     plan.save()
                     email_subject = f"End-of-Day Production Plan Completed: {plan.date}"
                     email_body = f"The end-of-day production actuals for {plan.date} have been submitted by {request.user.get_full_name() or request.user.username}.\n\nTotal Items Produced: {sum(l.actual_completed_qty for l in plan.lines.all())}\n\nPlease log in to the ERP to view the variance details.\nhttps://erp.organicfoodslanka.com/manufacturing/planning/{plan.id}/"
+                    notif_link = reverse('production_plan_detail', args=[plan.id])
 
                 if email_subject:
                     User = get_user_model()
@@ -373,17 +375,24 @@ def save_production_plan(request):
                         role__permissions__codename='receive_production_notifications'
                     ).distinct()
                     
-                    all_emails = list(set(list(notify_users.values_list('email', flat=True)) + list(notify_roles_users.values_list('email', flat=True))))
-                    all_emails = [e for e in all_emails if e]
+                    all_users = (notify_users | notify_roles_users).distinct()
+                    from users.models import Notification
                     
-                    if all_emails:
-                        send_mail(
-                            email_subject,
-                            email_body,
-                            settings.DEFAULT_FROM_EMAIL,
-                            all_emails,
-                            fail_silently=True,
+                    for u in all_users:
+                        Notification.objects.create(
+                            recipient=u,
+                            title=email_subject,
+                            message=email_body.split('\n')[0],
+                            link=notif_link
                         )
+                        if u.email:
+                            send_mail(
+                                email_subject,
+                                email_body,
+                                settings.DEFAULT_FROM_EMAIL,
+                                [u.email],
+                                fail_silently=True,
+                            )
 
             return JsonResponse({'status': 'ok', 'message': "Plan saved successfully.", 'id': plan.id})
             
