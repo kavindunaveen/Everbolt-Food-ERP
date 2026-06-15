@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Aged Receivables As Of {{ as_of_date|date:"d/m/Y" }}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @media print {
+            body { font-size: 10pt; }
+            .no-print { display: none; }
+            table { page-break-inside: auto; }
+            tr { page-break-inside: avoid; page-break-after: auto; }
+            th { background-color: #f3f4f6 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            .bg-indigo-50 { background-color: #eef2ff !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            .text-indigo-900 { color: #312e81 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            .bg-gray-100 { background-color: #f3f4f6 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            .bg-gray-50 { background-color: #f9fafb !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+        }
+    </style>
+</head>
+<body class="bg-white text-gray-900 p-8 font-sans" onload="window.print()">
+    {% load humanize %}
+    <div class="mb-6 flex justify-between items-end border-b border-gray-200 pb-4">
+        <div>
+            <h1 class="text-2xl font-bold uppercase tracking-wide">Aged Receivables Report</h1>
+            <p class="text-gray-600 mt-1">Everbolt Engineering (PVT) LTD</p>
+        </div>
+        <div class="text-right text-sm">
+            <p><strong>As Of Date:</strong> {{ as_of_date|date:"d/m/Y" }}</p>
+            <p><strong>Printed On:</strong> {% now "d/m/Y H:i" %}</p>
+        </div>
+    </div>
+
+    <table class="w-full text-left text-sm border-collapse border border-gray-200">
+        <thead class="bg-gray-50 border-b border-gray-200">
+            <tr>
+                <th class="p-2 border-r border-gray-200">Customer / Invoice</th>
+                <th class="p-2 border-r border-gray-200 text-center">Expected Date</th>
+                <th class="p-2 border-r border-gray-200 text-right">Not Due</th>
+                <th class="p-2 border-r border-gray-200 text-right">1-30</th>
+                <th class="p-2 border-r border-gray-200 text-right">31-45</th>
+                <th class="p-2 border-r border-gray-200 text-right">46-60</th>
+                <th class="p-2 border-r border-gray-200 text-right">61-90</th>
+                <th class="p-2 border-r border-gray-200 text-right">91-120</th>
+                <th class="p-2 border-r border-gray-200 text-right">Older</th>
+                <th class="p-2 text-right">Total</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr class="bg-indigo-50 font-bold text-indigo-900 border-b border-gray-300">
+                <td class="p-2 border-r border-gray-200">GRAND TOTAL</td>
+                <td class="p-2 border-r border-gray-200 text-center">-</td>
+                <td class="p-2 border-r border-gray-200 text-right">{% if grand_totals.not_due %}{{ grand_totals.not_due|floatformat:2|intcomma }}{% endif %}</td>
+                <td class="p-2 border-r border-gray-200 text-right">{% if grand_totals.1_30 %}{{ grand_totals.1_30|floatformat:2|intcomma }}{% endif %}</td>
+                <td class="p-2 border-r border-gray-200 text-right">{% if grand_totals.31_45 %}{{ grand_totals.31_45|floatformat:2|intcomma }}{% endif %}</td>
+                <td class="p-2 border-r border-gray-200 text-right">{% if grand_totals.46_60 %}{{ grand_totals.46_60|floatformat:2|intcomma }}{% endif %}</td>
+                <td class="p-2 border-r border-gray-200 text-right">{% if grand_totals.61_90 %}{{ grand_totals.61_90|floatformat:2|intcomma }}{% endif %}</td>
+                <td class="p-2 border-r border-gray-200 text-right">{% if grand_totals.91_120 %}{{ grand_totals.91_120|floatformat:2|intcomma }}{% endif %}</td>
+                <td class="p-2 border-r border-gray-200 text-right">{% if grand_totals.older %}{{ grand_totals.older|floatformat:2|intcomma }}{% endif %}</td>
+                <td class="p-2 text-right">{{ grand_totals.total|floatformat:2|intcomma }}</td>
+            </tr>
+            
+            {% for c in customers_data %}
+            <tr class="border-b border-gray-200 font-bold bg-gray-50">
+                <td class="p-2 border-r border-gray-200">{{ c.customer.customer_name }}</td>
+                <td class="p-2 border-r border-gray-200 text-center">-</td>
+                <td class="p-2 border-r border-gray-200 text-right">{% if c.not_due %}{{ c.not_due|floatformat:2|intcomma }}{% endif %}</td>
+                <td class="p-2 border-r border-gray-200 text-right">{% if c.1_30 %}{{ c.1_30|floatformat:2|intcomma }}{% endif %}</td>
+                <td class="p-2 border-r border-gray-200 text-right">{% if c.31_45 %}{{ c.31_45|floatformat:2|intcomma }}{% endif %}</td>
+                <td class="p-2 border-r border-gray-200 text-right">{% if c.46_60 %}{{ c.46_60|floatformat:2|intcomma }}{% endif %}</td>
+                <td class="p-2 border-r border-gray-200 text-right">{% if c.61_90 %}{{ c.61_90|floatformat:2|intcomma }}{% endif %}</td>
+                <td class="p-2 border-r border-gray-200 text-right">{% if c.91_120 %}{{ c.91_120|floatformat:2|intcomma }}{% endif %}</td>
+                <td class="p-2 border-r border-gray-200 text-right">{% if c.older %}{{ c.older|floatformat:2|intcomma }}{% endif %}</td>
+                <td class="p-2 text-right">{{ c.total|floatformat:2|intcomma }}</td>
+            </tr>
+            {% for inv in c.invoices %}
+            <tr class="border-b border-gray-100 text-xs text-gray-600">
+                <td class="p-2 pl-6 border-r border-gray-200">
+                    {{ inv.invoice_number }} 
+                    <span class="text-gray-400">({{ inv.salesperson.get_full_name|default:inv.salesperson.username }})</span>
+                </td>
+                <td class="p-2 border-r border-gray-200 text-center">{{ inv.due_date|date:"d/m/Y" }}</td>
+                <td class="p-2 border-r border-gray-200 text-right">{% if inv.bucket == 'not_due' %}{{ inv.balance|floatformat:2|intcomma }}{% endif %}</td>
+                <td class="p-2 border-r border-gray-200 text-right">{% if inv.bucket == '1_30' %}{{ inv.balance|floatformat:2|intcomma }}{% endif %}</td>
+                <td class="p-2 border-r border-gray-200 text-right">{% if inv.bucket == '31_45' %}{{ inv.balance|floatformat:2|intcomma }}{% endif %}</td>
+                <td class="p-2 border-r border-gray-200 text-right">{% if inv.bucket == '46_60' %}{{ inv.balance|floatformat:2|intcomma }}{% endif %}</td>
+                <td class="p-2 border-r border-gray-200 text-right">{% if inv.bucket == '61_90' %}{{ inv.balance|floatformat:2|intcomma }}{% endif %}</td>
+                <td class="p-2 border-r border-gray-200 text-right">{% if inv.bucket == '91_120' %}{{ inv.balance|floatformat:2|intcomma }}{% endif %}</td>
+                <td class="p-2 border-r border-gray-200 text-right text-red-600">{% if inv.bucket == 'older' %}{{ inv.balance|floatformat:2|intcomma }}{% endif %}</td>
+                <td class="p-2 text-right font-medium text-gray-800">{{ inv.balance|floatformat:2|intcomma }}</td>
+            </tr>
+            {% endfor %}
+            {% endfor %}
+        </tbody>
+    </table>
+    
+    <div class="mt-8 text-center text-xs text-gray-400 no-print">
+        <button onclick="window.print()" class="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700 font-bold">Print / Save as PDF</button>
+        <button onclick="window.close()" class="px-4 py-2 bg-gray-200 text-gray-800 rounded hover:bg-gray-300 ml-2 font-bold">Close</button>
+    </div>
+</body>
+</html>

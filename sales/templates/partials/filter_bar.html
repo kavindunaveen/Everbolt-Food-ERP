@@ -88,6 +88,11 @@
                             <input type="date" name="date_to" class="text-xs border-gray-200 rounded-lg focus:ring-indigo-500 focus:border-indigo-500 p-2" value="{% if active_date_to %}{{ active_date_to }}{% else %}{{ request.GET.date_to }}{% endif %}" placeholder="To">
                         </div>
                     </div>
+                    {% elif model_name == 'AgedReceivables' %}
+                    <div>
+                        <label class="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2">As Of Date</label>
+                        <input type="date" name="as_of_date" class="w-full text-xs border-gray-200 rounded-lg focus:ring-indigo-500 focus:border-indigo-500 p-2" value="{{ request.GET.as_of_date|default:'' }}">
+                    </div>
                     {% if model_name == 'OverdueInvoices' %}
                     <div>
                         <label class="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2">Month Wise</label>

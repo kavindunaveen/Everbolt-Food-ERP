@@ -20,9 +20,16 @@
             <p class="mt-2 text-sm text-gray-600 font-medium">Overview of outstanding customer balances categorized by age.</p>
         </div>
         <div class="flex items-center space-x-3 w-full md:w-auto">
+            <a href="?export=pdf&{{ request.GET.urlencode }}" class="inline-flex items-center px-4 py-2 border border-red-200 shadow-sm text-sm font-bold rounded-lg text-red-700 bg-red-50 hover:bg-red-100 transition-colors" target="_blank">
+                PDF
+            </a>
+            <a href="?export=xlsx&{{ request.GET.urlencode }}" class="inline-flex items-center px-4 py-2 border border-green-200 shadow-sm text-sm font-bold rounded-lg text-green-700 bg-green-50 hover:bg-green-100 transition-colors">
+                XLSX
+            </a>
+            {% include 'partials/filter_bar.html' with model_name='AgedReceivables' search_placeholder='Search Customer...' %}
             <a href="{% url 'finance_dashboard' %}" class="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50 transition-colors">
                 <svg class="w-4 h-4 mr-2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
-                Back to Dashboard
+                Back
             </a>
         </div>
     </div>
@@ -33,31 +40,31 @@
             <table class="min-w-full divide-y divide-gray-100 text-sm">
                 <thead class="bg-gray-50/50">
                     <tr>
-                        <th scope="col" class="px-6 py-4 text-left font-bold text-gray-400 uppercase tracking-widest w-1/4">Customer / Invoice</th>
-                        <th scope="col" class="px-4 py-4 text-center font-bold text-gray-400 uppercase tracking-widest">Expected Date</th>
-                        <th scope="col" class="px-4 py-4 text-right font-bold text-gray-400 uppercase tracking-widest">Not Due</th>
-                        <th scope="col" class="px-4 py-4 text-right font-bold text-gray-400 uppercase tracking-widest">1-30</th>
-                        <th scope="col" class="px-4 py-4 text-right font-bold text-gray-400 uppercase tracking-widest">31-45</th>
-                        <th scope="col" class="px-4 py-4 text-right font-bold text-gray-400 uppercase tracking-widest">46-60</th>
-                        <th scope="col" class="px-4 py-4 text-right font-bold text-gray-400 uppercase tracking-widest">61-90</th>
-                        <th scope="col" class="px-4 py-4 text-right font-bold text-gray-400 uppercase tracking-widest">91-120</th>
-                        <th scope="col" class="px-4 py-4 text-right font-bold text-gray-400 uppercase tracking-widest">Older</th>
-                        <th scope="col" class="px-6 py-4 text-right font-bold text-gray-900 uppercase tracking-widest bg-gray-100/50">Total</th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-gray-400 uppercase tracking-widest w-1/4">Customer / Invoice</th>
+                        <th scope="col" class="px-2 py-3 text-center text-xs font-bold text-gray-400 uppercase tracking-widest">Expected Date</th>
+                        <th scope="col" class="px-2 py-3 text-right text-xs font-bold text-gray-400 uppercase tracking-widest">Not Due</th>
+                        <th scope="col" class="px-2 py-3 text-right text-xs font-bold text-gray-400 uppercase tracking-widest">1-30</th>
+                        <th scope="col" class="px-2 py-3 text-right text-xs font-bold text-gray-400 uppercase tracking-widest">31-45</th>
+                        <th scope="col" class="px-2 py-3 text-right text-xs font-bold text-gray-400 uppercase tracking-widest">46-60</th>
+                        <th scope="col" class="px-2 py-3 text-right text-xs font-bold text-gray-400 uppercase tracking-widest">61-90</th>
+                        <th scope="col" class="px-2 py-3 text-right text-xs font-bold text-gray-400 uppercase tracking-widest">91-120</th>
+                        <th scope="col" class="px-2 py-3 text-right text-xs font-bold text-gray-400 uppercase tracking-widest">Older</th>
+                        <th scope="col" class="px-4 py-3 text-right text-xs font-bold text-gray-900 uppercase tracking-widest bg-gray-100/50">Total</th>
                     </tr>
                 </thead>
                 <tbody class="bg-white divide-y divide-gray-100">
                     <!-- Grand Totals Row -->
                     <tr class="bg-indigo-50/50 font-bold text-indigo-900">
-                        <td class="px-6 py-4 text-left uppercase tracking-wider">Grand Total</td>
-                        <td class="px-4 py-4 text-center">-</td>
-                        <td class="px-4 py-4 text-right text-indigo-600">{% if grand_totals.not_due %}Rs {{ grand_totals.not_due|floatformat:2|intcomma }}{% endif %}</td>
-                        <td class="px-4 py-4 text-right text-indigo-600">{% if grand_totals.1_30 %}Rs {{ grand_totals.1_30|floatformat:2|intcomma }}{% endif %}</td>
-                        <td class="px-4 py-4 text-right text-indigo-600">{% if grand_totals.31_45 %}Rs {{ grand_totals.31_45|floatformat:2|intcomma }}{% endif %}</td>
-                        <td class="px-4 py-4 text-right text-indigo-600">{% if grand_totals.46_60 %}Rs {{ grand_totals.46_60|floatformat:2|intcomma }}{% endif %}</td>
-                        <td class="px-4 py-4 text-right text-indigo-600">{% if grand_totals.61_90 %}Rs {{ grand_totals.61_90|floatformat:2|intcomma }}{% endif %}</td>
-                        <td class="px-4 py-4 text-right text-indigo-600">{% if grand_totals.91_120 %}Rs {{ grand_totals.91_120|floatformat:2|intcomma }}{% endif %}</td>
-                        <td class="px-4 py-4 text-right text-indigo-600">{% if grand_totals.older %}Rs {{ grand_totals.older|floatformat:2|intcomma }}{% endif %}</td>
-                        <td class="px-6 py-4 text-right text-indigo-800 bg-indigo-100/50">Rs {{ grand_totals.total|floatformat:2|intcomma }}</td>
+                        <td class="px-6 py-4 text-left uppercase tracking-wider">Grand Total (Rs)</td>
+                        <td class="px-2 py-4 text-center">-</td>
+                        <td class="px-2 py-4 text-right text-indigo-600">{% if grand_totals.not_due %}{{ grand_totals.not_due|floatformat:2|intcomma }}{% endif %}</td>
+                        <td class="px-2 py-4 text-right text-indigo-600">{% if grand_totals.1_30 %}{{ grand_totals.1_30|floatformat:2|intcomma }}{% endif %}</td>
+                        <td class="px-2 py-4 text-right text-indigo-600">{% if grand_totals.31_45 %}{{ grand_totals.31_45|floatformat:2|intcomma }}{% endif %}</td>
+                        <td class="px-2 py-4 text-right text-indigo-600">{% if grand_totals.46_60 %}{{ grand_totals.46_60|floatformat:2|intcomma }}{% endif %}</td>
+                        <td class="px-2 py-4 text-right text-indigo-600">{% if grand_totals.61_90 %}{{ grand_totals.61_90|floatformat:2|intcomma }}{% endif %}</td>
+                        <td class="px-2 py-4 text-right text-indigo-600">{% if grand_totals.91_120 %}{{ grand_totals.91_120|floatformat:2|intcomma }}{% endif %}</td>
+                        <td class="px-2 py-4 text-right text-indigo-600">{% if grand_totals.older %}{{ grand_totals.older|floatformat:2|intcomma }}{% endif %}</td>
+                        <td class="px-4 py-4 text-right text-indigo-800 bg-indigo-100/50">{{ grand_totals.total|floatformat:2|intcomma }}</td>
                     </tr>
                     
                     {% for c in customers_data %}
@@ -69,33 +76,33 @@
                                 <span class="font-bold text-gray-900 uppercase">{{ c.customer.customer_name }}</span>
                             </div>
                         </td>
-                        <td class="px-4 py-4 text-center text-gray-400">-</td>
-                        <td class="px-4 py-4 text-right font-medium text-gray-600">{% if c.not_due %}Rs {{ c.not_due|floatformat:2|intcomma }}{% endif %}</td>
-                        <td class="px-4 py-4 text-right font-medium text-gray-600">{% if c.1_30 %}Rs {{ c.1_30|floatformat:2|intcomma }}{% endif %}</td>
-                        <td class="px-4 py-4 text-right font-medium text-gray-600">{% if c.31_45 %}Rs {{ c.31_45|floatformat:2|intcomma }}{% endif %}</td>
-                        <td class="px-4 py-4 text-right font-medium text-gray-600">{% if c.46_60 %}Rs {{ c.46_60|floatformat:2|intcomma }}{% endif %}</td>
-                        <td class="px-4 py-4 text-right font-medium text-gray-600">{% if c.61_90 %}Rs {{ c.61_90|floatformat:2|intcomma }}{% endif %}</td>
-                        <td class="px-4 py-4 text-right font-medium text-gray-600">{% if c.91_120 %}Rs {{ c.91_120|floatformat:2|intcomma }}{% endif %}</td>
-                        <td class="px-4 py-4 text-right font-medium text-red-500">{% if c.older %}Rs {{ c.older|floatformat:2|intcomma }}{% endif %}</td>
-                        <td class="px-6 py-4 text-right font-bold text-gray-900 bg-gray-50/50">Rs {{ c.total|floatformat:2|intcomma }}</td>
+                        <td class="px-2 py-4 text-center text-gray-400">-</td>
+                        <td class="px-2 py-4 text-right font-medium text-gray-600">{% if c.not_due %}{{ c.not_due|floatformat:2|intcomma }}{% endif %}</td>
+                        <td class="px-2 py-4 text-right font-medium text-gray-600">{% if c.1_30 %}{{ c.1_30|floatformat:2|intcomma }}{% endif %}</td>
+                        <td class="px-2 py-4 text-right font-medium text-gray-600">{% if c.31_45 %}{{ c.31_45|floatformat:2|intcomma }}{% endif %}</td>
+                        <td class="px-2 py-4 text-right font-medium text-gray-600">{% if c.46_60 %}{{ c.46_60|floatformat:2|intcomma }}{% endif %}</td>
+                        <td class="px-2 py-4 text-right font-medium text-gray-600">{% if c.61_90 %}{{ c.61_90|floatformat:2|intcomma }}{% endif %}</td>
+                        <td class="px-2 py-4 text-right font-medium text-gray-600">{% if c.91_120 %}{{ c.91_120|floatformat:2|intcomma }}{% endif %}</td>
+                        <td class="px-2 py-4 text-right font-medium text-red-500">{% if c.older %}{{ c.older|floatformat:2|intcomma }}{% endif %}</td>
+                        <td class="px-4 py-4 text-right font-bold text-gray-900 bg-gray-50/50">{{ c.total|floatformat:2|intcomma }}</td>
                     </tr>
                     
                     <!-- Invoices Rows -->
                     {% for inv in c.invoices %}
-                    <tr x-show="expanded === {{ c.customer.id }}" x-transition.opacity class="bg-gray-50/30 text-[13px] border-l-4 border-l-indigo-500" style="display: none;">
-                        <td class="px-6 py-3 whitespace-nowrap pl-12">
+                    <tr x-show="expanded === {{ c.customer.id }}" x-transition.opacity class="bg-gray-50/30 text-xs border-l-4 border-l-indigo-500" style="display: none;">
+                        <td class="px-6 py-2.5 whitespace-nowrap pl-12">
                             <a href="{% url 'invoice_edit' inv.id %}" class="text-blue-600 hover:underline font-semibold">{{ inv.invoice_number }}</a>
                             <div class="text-[10px] text-gray-400 mt-0.5">{{ inv.salesperson.get_full_name|default:inv.salesperson.username }}</div>
                         </td>
-                        <td class="px-4 py-3 text-center text-gray-600">{{ inv.due_date|date:"d/m/Y" }}</td>
-                        <td class="px-4 py-3 text-right text-gray-500">{% if inv.bucket == 'not_due' %}Rs {{ inv.balance|floatformat:2|intcomma }}{% endif %}</td>
-                        <td class="px-4 py-3 text-right text-gray-500">{% if inv.bucket == '1_30' %}Rs {{ inv.balance|floatformat:2|intcomma }}{% endif %}</td>
-                        <td class="px-4 py-3 text-right text-gray-500">{% if inv.bucket == '31_45' %}Rs {{ inv.balance|floatformat:2|intcomma }}{% endif %}</td>
-                        <td class="px-4 py-3 text-right text-gray-500">{% if inv.bucket == '46_60' %}Rs {{ inv.balance|floatformat:2|intcomma }}{% endif %}</td>
-                        <td class="px-4 py-3 text-right text-gray-500">{% if inv.bucket == '61_90' %}Rs {{ inv.balance|floatformat:2|intcomma }}{% endif %}</td>
-                        <td class="px-4 py-3 text-right text-gray-500">{% if inv.bucket == '91_120' %}Rs {{ inv.balance|floatformat:2|intcomma }}{% endif %}</td>
-                        <td class="px-4 py-3 text-right text-red-400">{% if inv.bucket == 'older' %}Rs {{ inv.balance|floatformat:2|intcomma }}{% endif %}</td>
-                        <td class="px-6 py-3 text-right text-gray-700 font-semibold bg-gray-100/30">Rs {{ inv.balance|floatformat:2|intcomma }}</td>
+                        <td class="px-2 py-2.5 text-center text-gray-600">{{ inv.due_date|date:"d/m/Y" }}</td>
+                        <td class="px-2 py-2.5 text-right text-gray-500">{% if inv.bucket == 'not_due' %}{{ inv.balance|floatformat:2|intcomma }}{% endif %}</td>
+                        <td class="px-2 py-2.5 text-right text-gray-500">{% if inv.bucket == '1_30' %}{{ inv.balance|floatformat:2|intcomma }}{% endif %}</td>
+                        <td class="px-2 py-2.5 text-right text-gray-500">{% if inv.bucket == '31_45' %}{{ inv.balance|floatformat:2|intcomma }}{% endif %}</td>
+                        <td class="px-2 py-2.5 text-right text-gray-500">{% if inv.bucket == '46_60' %}{{ inv.balance|floatformat:2|intcomma }}{% endif %}</td>
+                        <td class="px-2 py-2.5 text-right text-gray-500">{% if inv.bucket == '61_90' %}{{ inv.balance|floatformat:2|intcomma }}{% endif %}</td>
+                        <td class="px-2 py-2.5 text-right text-gray-500">{% if inv.bucket == '91_120' %}{{ inv.balance|floatformat:2|intcomma }}{% endif %}</td>
+                        <td class="px-2 py-2.5 text-right text-red-400">{% if inv.bucket == 'older' %}{{ inv.balance|floatformat:2|intcomma }}{% endif %}</td>
+                        <td class="px-4 py-2.5 text-right text-gray-700 font-semibold bg-gray-100/30">{{ inv.balance|floatformat:2|intcomma }}</td>
                     </tr>
                     {% endfor %}
                     {% empty %}
