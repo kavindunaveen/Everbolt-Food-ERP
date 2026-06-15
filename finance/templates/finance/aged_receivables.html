@@ -36,21 +36,21 @@
 
     <!-- Aged Receivables Table -->
     <div class="bg-white shadow-md rounded-2xl border border-gray-100 overflow-hidden transition-all duration-300" x-data="{ expanded: null }">
-        <div class="overflow-x-auto w-full">
-            <table class="min-w-full divide-y divide-gray-100 text-sm">
-                <thead class="bg-white border-b border-gray-200">
+        <div class="overflow-x-auto overflow-y-auto w-full" style="max-height: calc(100vh - 220px);">
+            <table class="min-w-full divide-y divide-gray-100 text-sm relative">
+                <thead class="bg-white border-b border-gray-200 sticky top-0 z-20 shadow-sm">
                     <tr>
-                        <th scope="col" class="px-6 py-4 text-left text-[12px] font-medium text-gray-500 whitespace-nowrap min-w-[250px] border-r border-gray-100">Aged Receivable</th>
-                        <th scope="col" class="px-4 py-4 text-left text-[12px] font-medium text-gray-500 whitespace-nowrap min-w-[150px] border-r border-gray-100">Salesperson</th>
-                        <th scope="col" class="px-4 py-4 text-center text-[12px] font-medium text-gray-500 whitespace-nowrap min-w-[120px] border-r border-gray-100">Expected Date</th>
-                        <th scope="col" class="px-4 py-4 text-right text-[12px] font-medium text-gray-500 whitespace-nowrap min-w-[100px] border-r border-gray-100">Not Due</th>
-                        <th scope="col" class="px-4 py-4 text-right text-[12px] font-medium text-gray-500 whitespace-nowrap min-w-[100px] border-r border-gray-100">1-30</th>
-                        <th scope="col" class="px-4 py-4 text-right text-[12px] font-medium text-gray-500 whitespace-nowrap min-w-[100px] border-r border-gray-100">31-45</th>
-                        <th scope="col" class="px-4 py-4 text-right text-[12px] font-medium text-gray-500 whitespace-nowrap min-w-[100px] border-r border-gray-100">46-60</th>
-                        <th scope="col" class="px-4 py-4 text-right text-[12px] font-medium text-gray-500 whitespace-nowrap min-w-[100px] border-r border-gray-100">61-90</th>
-                        <th scope="col" class="px-4 py-4 text-right text-[12px] font-medium text-gray-500 whitespace-nowrap min-w-[100px] border-r border-gray-100">91-120</th>
-                        <th scope="col" class="px-4 py-4 text-right text-[12px] font-medium text-gray-500 whitespace-nowrap min-w-[100px] border-r border-gray-100">Older</th>
-                        <th scope="col" class="px-6 py-4 text-right text-[12px] font-semibold text-gray-900 whitespace-nowrap min-w-[120px]">Total</th>
+                        <th scope="col" class="px-6 py-4 text-left text-[12px] font-medium text-gray-500 whitespace-nowrap min-w-[250px] border-r border-gray-100 bg-white">Aged Receivable</th>
+                        <th scope="col" class="px-4 py-4 text-left text-[12px] font-medium text-gray-500 whitespace-nowrap min-w-[150px] border-r border-gray-100 bg-white">Salesperson</th>
+                        <th scope="col" class="px-4 py-4 text-center text-[12px] font-medium text-gray-500 whitespace-nowrap min-w-[120px] border-r border-gray-100 bg-white">Expected Date</th>
+                        <th scope="col" class="px-4 py-4 text-right text-[12px] font-medium text-gray-500 whitespace-nowrap min-w-[100px] border-r border-gray-100 bg-white">Not Due</th>
+                        <th scope="col" class="px-4 py-4 text-right text-[12px] font-medium text-gray-500 whitespace-nowrap min-w-[100px] border-r border-gray-100 bg-white">1-30</th>
+                        <th scope="col" class="px-4 py-4 text-right text-[12px] font-medium text-gray-500 whitespace-nowrap min-w-[100px] border-r border-gray-100 bg-white">31-45</th>
+                        <th scope="col" class="px-4 py-4 text-right text-[12px] font-medium text-gray-500 whitespace-nowrap min-w-[100px] border-r border-gray-100 bg-white">46-60</th>
+                        <th scope="col" class="px-4 py-4 text-right text-[12px] font-medium text-gray-500 whitespace-nowrap min-w-[100px] border-r border-gray-100 bg-white">61-90</th>
+                        <th scope="col" class="px-4 py-4 text-right text-[12px] font-medium text-gray-500 whitespace-nowrap min-w-[100px] border-r border-gray-100 bg-white">91-120</th>
+                        <th scope="col" class="px-4 py-4 text-right text-[12px] font-medium text-gray-500 whitespace-nowrap min-w-[100px] border-r border-gray-100 bg-white">Older</th>
+                        <th scope="col" class="px-6 py-4 text-right text-[12px] font-semibold text-gray-900 whitespace-nowrap min-w-[120px] bg-white">Total</th>
                     </tr>
                 </thead>
                 <tbody class="bg-white divide-y divide-gray-100">
