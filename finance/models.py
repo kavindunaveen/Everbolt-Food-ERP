@@ -36,7 +36,10 @@ class Payment(models.Model):
     def __str__(self):
         return f"Payment {self.id} for {self.invoice.invoice_number}"
 
+class FinanceModule(models.Model):
     class Meta:
+        managed = False
+        default_permissions = ()
         permissions = [
             ("manage_finance", "Can access the finance module"),
             ("post_journal_entry", "Can post journal entries"),
