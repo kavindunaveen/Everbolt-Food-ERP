@@ -74,6 +74,11 @@
                                 <select x-model="row.target_product_id" :disabled="status !== 'DRAFT'"
                                         x-init="$nextTick(() => { 
                                             let ts = new TomSelect($el, {
+                                                options: allProducts.map(p => ({value: String(p.id), text: p.name})),
+                                                items: row.target_product_id ? [String(row.target_product_id)] : [],
+                                                valueField: 'value',
+                                                labelField: 'text',
+                                                searchField: 'text',
                                                 create: false,
                                                 dropdownParent: 'body',
                                                 sortField: {field: 'text', direction: 'asc'},
@@ -83,9 +88,6 @@
                                         })"
                                         class="text-sm w-full border-gray-200 rounded-md font-medium text-gray-700 focus:ring-indigo-500 focus:border-indigo-500 disabled:bg-gray-50 disabled:text-gray-500">
                                     <option value="">Select Product...</option>
-                                    <template x-for="p in allProducts" :key="p.id">
-                                        <option :value="p.id" x-text="p.name"></option>
-                                    </template>
                                 </select>
                             </td>
                             <td class="px-2 py-2 whitespace-nowrap">
@@ -98,6 +100,11 @@
                                 <select x-model="row.raw_material_id" :disabled="status !== 'DRAFT'"
                                         x-init="$nextTick(() => { 
                                             let ts = new TomSelect($el, {
+                                                options: rawMaterials.map(p => ({value: String(p.id), text: p.name})),
+                                                items: row.raw_material_id ? [String(row.raw_material_id)] : [],
+                                                valueField: 'value',
+                                                labelField: 'text',
+                                                searchField: 'text',
                                                 create: false,
                                                 dropdownParent: 'body',
                                                 sortField: {field: 'text', direction: 'asc'},
@@ -107,9 +114,6 @@
                                         })"
                                         class="text-sm w-full border-gray-200 rounded-md font-medium text-gray-700 focus:ring-indigo-500 focus:border-indigo-500 disabled:bg-gray-50 disabled:text-gray-500">
                                     <option value="">Select Material...</option>
-                                    <template x-for="p in rawMaterials" :key="p.id">
-                                        <option :value="p.id" x-text="p.name"></option>
-                                    </template>
                                 </select>
                             </td>
                             <td class="px-2 py-2 whitespace-nowrap">
