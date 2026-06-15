@@ -11,7 +11,25 @@
     input[type=number] {
         -moz-appearance: textfield;
     }
+    .ts-control {
+        border-color: #e5e7eb !important;
+        border-radius: 0.375rem !important;
+        padding: 0.5rem !important;
+        font-size: 0.875rem !important;
+        box-shadow: none !important;
+    }
+    .ts-wrapper.focus .ts-control {
+        border-color: #6366f1 !important;
+        box-shadow: 0 0 0 1px #6366f1 !important;
+    }
+    .ts-wrapper.disabled .ts-control {
+        background-color: #f9fafb !important;
+        color: #6b7280 !important;
+        opacity: 1 !important;
+    }
 </style>
+<link href="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/css/tom-select.css" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/js/tom-select.complete.min.js"></script>
 <div class="px-4 py-6 sm:px-0 max-w-full mx-auto" x-data="productionPlanForm()">
     <!-- Header -->
     <div class="mb-8 flex justify-between items-end">
@@ -53,7 +71,16 @@
                         <tr class="hover:bg-gray-50 transition-colors group">
                             <!-- Morning Fields -->
                             <td class="px-2 py-2 whitespace-nowrap w-64">
-                                <select x-model="row.target_product_id" :disabled="status !== 'DRAFT'" class="text-sm w-full border-gray-200 rounded-md font-medium text-gray-700 focus:ring-indigo-500 focus:border-indigo-500 disabled:bg-gray-50 disabled:text-gray-500">
+                                <select x-model="row.target_product_id" :disabled="status !== 'DRAFT'"
+                                        x-init="$nextTick(() => { 
+                                            let ts = new TomSelect($el, {
+                                                create: false,
+                                                sortField: {field: 'text', direction: 'asc'},
+                                                onChange: function(val) { row.target_product_id = val; }
+                                            });
+                                            if(status !== 'DRAFT') ts.disable();
+                                        })"
+                                        class="text-sm w-full border-gray-200 rounded-md font-medium text-gray-700 focus:ring-indigo-500 focus:border-indigo-500 disabled:bg-gray-50 disabled:text-gray-500">
                                     <option value="">Select Product...</option>
                                     <template x-for="p in allProducts" :key="p.id">
                                         <option :value="p.id" x-text="p.name"></option>
@@ -67,7 +94,16 @@
                                 <input type="number" x-model="row.target_qty" :disabled="status !== 'DRAFT'" class="text-sm w-full border-gray-200 rounded-md text-right font-bold focus:ring-indigo-500 focus:border-indigo-500 disabled:bg-gray-100 disabled:text-gray-500">
                             </td>
                             <td class="px-2 py-2 whitespace-nowrap w-64">
-                                <select x-model="row.raw_material_id" :disabled="status !== 'DRAFT'" class="text-sm w-full border-gray-200 rounded-md font-medium text-gray-700 focus:ring-indigo-500 focus:border-indigo-500 disabled:bg-gray-50 disabled:text-gray-500">
+                                <select x-model="row.raw_material_id" :disabled="status !== 'DRAFT'"
+                                        x-init="$nextTick(() => { 
+                                            let ts = new TomSelect($el, {
+                                                create: false,
+                                                sortField: {field: 'text', direction: 'asc'},
+                                                onChange: function(val) { row.raw_material_id = val; }
+                                            });
+                                            if(status !== 'DRAFT') ts.disable();
+                                        })"
+                                        class="text-sm w-full border-gray-200 rounded-md font-medium text-gray-700 focus:ring-indigo-500 focus:border-indigo-500 disabled:bg-gray-50 disabled:text-gray-500">
                                     <option value="">Select Material...</option>
                                     <template x-for="p in rawMaterials" :key="p.id">
                                         <option :value="p.id" x-text="p.name"></option>
