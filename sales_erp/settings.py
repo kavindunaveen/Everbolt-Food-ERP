@@ -55,6 +55,7 @@ INSTALLED_APPS = [
     'contacts.apps.ContactsConfig',
     'website.apps.WebsiteConfig',
     'visits.apps.VisitsConfig',
+    'finance',
 ]
 
 MIDDLEWARE = [

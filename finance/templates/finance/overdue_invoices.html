@@ -1,0 +1,211 @@
+{% extends 'layouts/base.html' %}
+{% load humanize %}
+
+{% block title %}Overdue Invoices | Finance{% endblock %}
+
+{% block breadcrumbs %}
+<li class="flex items-center space-x-2 border-l border-gray-100 pl-4 ml-2">
+    <a href="{% url 'finance_dashboard' %}" class="hover:text-blue-600 transition-colors">Finance</a>
+</li>
+<li class="flex items-center space-x-2 border-l border-gray-100 pl-4 ml-2">
+    <span class="text-gray-900 font-semibold">Overdue Invoices</span>
+</li>
+{% endblock %}
+
+{% block content %}
+<div class="px-4 py-6 sm:px-0">
+    <div class="mb-8 flex flex-col md:flex-row md:items-end md:justify-between gap-4">
+        <div>
+            <h1 class="text-3xl font-extrabold text-gray-900 tracking-tight">Overdue Invoices</h1>
+            <p class="mt-2 text-sm text-gray-600 font-medium">Record payments against overdue invoices to clear them from the ledger.</p>
+        </div>
+    </div>
+
+    <!-- Invoices Table -->
+    <div class="bg-white shadow-sm border border-gray-200 rounded-2xl overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Invoice #</th>
+                        <th class="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Customer</th>
+                        <th class="px-6 py-4 text-center text-xs font-bold text-gray-500 uppercase tracking-wider">Due Date</th>
+                        <th class="px-6 py-4 text-right text-xs font-bold text-gray-500 uppercase tracking-wider">Total (Rs)</th>
+                        <th class="px-6 py-4 text-right text-xs font-bold text-gray-500 uppercase tracking-wider">Balance (Rs)</th>
+                        <th class="px-6 py-4 text-center text-xs font-bold text-gray-500 uppercase tracking-wider">Action</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    {% for inv in invoices %}
+                    <tr class="hover:bg-gray-50 transition-colors">
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <span class="font-bold text-gray-900">{{ inv.invoice_number }}</span>
+                            <div class="text-[10px] text-gray-500 uppercase mt-0.5">{{ inv.salesperson.get_full_name|default:inv.salesperson.username }}</div>
+                        </td>
+                        <td class="px-6 py-4">
+                            <div class="text-sm font-semibold text-gray-900">{{ inv.customer.name }}</div>
+                            <div class="text-xs text-gray-500 truncate max-w-[200px]">{{ inv.customer.address_line1 }}</div>
+                        </td>
+                        <td class="px-6 py-4 text-center whitespace-nowrap">
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-red-100 text-red-800">
+                                {{ inv.due_date|date:"Y-m-d" }}
+                            </span>
+                            <div class="text-[10px] text-red-600 font-bold mt-1 uppercase">{{ inv.days_overdue }} days late</div>
+                        </td>
+                        <td class="px-6 py-4 text-right whitespace-nowrap text-sm font-medium text-gray-900">
+                            {{ inv.total_amount|floatformat:"2"|intcomma }}
+                        </td>
+                        <td class="px-6 py-4 text-right whitespace-nowrap">
+                            <span class="text-sm font-bold text-red-600">{{ inv.balance|floatformat:"2"|intcomma }}</span>
+                        </td>
+                        <td class="px-6 py-4 text-center whitespace-nowrap">
+                            <button onclick="openPaymentModal({{ inv.id }}, '{{ inv.invoice_number }}', {{ inv.balance }})" class="btn-premium bg-blue-600 text-white hover:bg-blue-700 text-xs px-3 py-1.5 rounded">
+                                Record Payment
+                            </button>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="6" class="px-6 py-12 text-center text-gray-500">
+                            <div class="flex flex-col items-center">
+                                <svg class="w-12 h-12 text-gray-300 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                                <span class="text-base font-semibold">No overdue invoices found!</span>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Payment Modal (AlpineJS state wrapper just for simplicity if needed, but standard JS works too) -->
+<div id="paymentModal" class="fixed inset-0 bg-gray-900/50 backdrop-blur-sm z-[100] flex items-center justify-center hidden opacity-0 transition-opacity duration-300">
+    <div class="bg-white rounded-2xl shadow-xl border border-gray-100 w-full max-w-md transform scale-95 transition-transform duration-300" id="paymentModalContent">
+        <div class="px-6 py-5 border-b border-gray-100 flex justify-between items-center bg-gray-50 rounded-t-2xl">
+            <h3 class="text-lg font-bold text-gray-900 font-display">Record Payment</h3>
+            <button type="button" onclick="closePaymentModal()" class="text-gray-400 hover:text-red-500 transition-colors p-1 rounded-lg hover:bg-red-50">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+            </button>
+        </div>
+        
+        <form id="paymentForm" onsubmit="submitPayment(event)" class="p-6">
+            <input type="hidden" id="invoice_id" required>
+            
+            <div class="mb-5">
+                <label>Invoice Number</label>
+                <div id="invoice_number_display" class="font-bold text-gray-900 text-base"></div>
+            </div>
+            
+            <div class="mb-5">
+                <label>Payment Amount (Rs)</label>
+                <input type="number" id="payment_amount" step="0.01" min="0.01" required>
+                <div class="text-[10px] text-gray-500 mt-1">Balance: <span id="balance_display" class="font-bold text-red-600"></span></div>
+            </div>
+            
+            <div class="mb-5">
+                <label>Payment Date</label>
+                <input type="date" id="payment_date" required value="{% now 'Y-m-d' %}">
+            </div>
+            
+            <div class="mb-5">
+                <label>Payment Method</label>
+                <select id="payment_method" required>
+                    {% for val, label in payment_methods %}
+                    <option value="{{ val }}">{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <div class="mb-5">
+                <label>Reference Number</label>
+                <input type="text" id="reference" placeholder="Cheque No. / Transfer ID (Optional)">
+            </div>
+            
+            <div class="mb-6">
+                <label>Notes</label>
+                <textarea id="notes" rows="2" placeholder="Any additional notes..."></textarea>
+            </div>
+            
+            <div class="flex justify-end gap-3 pt-2 border-t border-gray-100">
+                <button type="button" onclick="closePaymentModal()" class="btn-secondary px-4 py-2">Cancel</button>
+                <button type="submit" class="btn-primary bg-blue-600 hover:bg-blue-700 px-6 py-2" id="submitBtn">Save Payment</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    const modal = document.getElementById('paymentModal');
+    const modalContent = document.getElementById('paymentModalContent');
+
+    function openPaymentModal(invId, invNum, balance) {
+        document.getElementById('invoice_id').value = invId;
+        document.getElementById('invoice_number_display').innerText = invNum;
+        document.getElementById('payment_amount').value = balance;
+        document.getElementById('payment_amount').max = balance;
+        document.getElementById('balance_display').innerText = parseFloat(balance).toFixed(2);
+        
+        modal.classList.remove('hidden');
+        // Small delay to allow display block to apply before animating opacity
+        setTimeout(() => {
+            modal.classList.remove('opacity-0');
+            modalContent.classList.remove('scale-95');
+        }, 10);
+    }
+
+    function closePaymentModal() {
+        modal.classList.add('opacity-0');
+        modalContent.classList.add('scale-95');
+        setTimeout(() => {
+            modal.classList.add('hidden');
+            document.getElementById('paymentForm').reset();
+            document.getElementById('payment_date').value = new Date().toISOString().split('T')[0];
+        }, 300);
+    }
+
+    async function submitPayment(e) {
+        e.preventDefault();
+        const btn = document.getElementById('submitBtn');
+        btn.disabled = true;
+        btn.innerHTML = 'Saving...';
+        
+        const data = {
+            invoice_id: document.getElementById('invoice_id').value,
+            amount: document.getElementById('payment_amount').value,
+            payment_date: document.getElementById('payment_date').value,
+            payment_method: document.getElementById('payment_method').value,
+            reference: document.getElementById('reference').value,
+            notes: document.getElementById('notes').value,
+        };
+
+        try {
+            const resp = await fetch('{% url "finance_record_payment" %}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token }}'
+                },
+                body: JSON.stringify(data)
+            });
+            const res = await resp.json();
+            
+            if (res.status === 'ok') {
+                window.dispatchEvent(new CustomEvent('toast', { detail: { type: 'success', message: 'Payment recorded successfully.' } }));
+                closePaymentModal();
+                setTimeout(() => location.reload(), 1000);
+            } else {
+                alert(res.message || "Failed to record payment.");
+                btn.disabled = false;
+                btn.innerHTML = 'Save Payment';
+            }
+        } catch (err) {
+            console.error(err);
+            alert("Network error.");
+            btn.disabled = false;
+            btn.innerHTML = 'Save Payment';
+        }
+    }
+</script>
+{% endblock %}
