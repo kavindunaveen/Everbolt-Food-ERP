@@ -142,12 +142,28 @@
 <script>
     const modal = document.getElementById('paymentModal');
     const modalContent = document.getElementById('paymentModalContent');
+    const methodSelect = document.getElementById('payment_method');
+    const refInput = document.getElementById('reference');
+    
+    function updateRefValidation() {
+        if (['CHEQUE', 'BANK_TRANSFER'].includes(methodSelect.value)) {
+            refInput.required = true;
+            refInput.placeholder = "Cheque No. / Transfer ID (Required)";
+        } else {
+            refInput.required = false;
+            refInput.placeholder = "Cheque No. / Transfer ID (Optional)";
+        }
+    }
+    
+    methodSelect.addEventListener('change', updateRefValidation);
+    updateRefValidation(); // Call on load
 
     function openPaymentModal(invId, invNum, balance) {
         document.getElementById('invoice_id').value = invId;
         document.getElementById('invoice_number_display').innerText = invNum;
-        document.getElementById('payment_amount').value = balance;
+        document.getElementById('payment_amount').value = '';
         document.getElementById('payment_amount').max = balance;
+        document.getElementById('payment_amount').placeholder = 'Max: ' + parseFloat(balance).toFixed(2);
         document.getElementById('balance_display').innerText = parseFloat(balance).toFixed(2);
         
         modal.classList.remove('hidden');

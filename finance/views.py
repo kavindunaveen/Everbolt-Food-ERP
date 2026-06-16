@@ -121,11 +121,28 @@ class RecordPaymentView(LoginRequiredMixin, PermissionRequiredMixin, View):
             amount_str = data.get('amount')
             payment_date_str = data.get('payment_date')
             payment_method = data.get('payment_method')
-            reference = data.get('reference', '')
-            notes = data.get('notes', '')
+            reference = data.get('reference', '').strip()
+            notes = data.get('notes', '').strip()
+
+            if not amount_str:
+                raise ValueError("Payment amount is required.")
 
             invoice = get_object_or_404(Invoice, id=invoice_id)
             amount = float(amount_str)
+            
+            if amount <= 0:
+                raise ValueError("Payment amount must be greater than 0.")
+                
+            total_paid = sum(p.amount for p in invoice.payments.all())
+            balance = invoice.total_amount - total_paid
+            
+            # Allow tiny floating point differences
+            if amount > balance + 0.01:
+                raise ValueError(f"Payment amount cannot exceed the current balance (Rs {balance:.2f}).")
+                
+            if payment_method in ['CHEQUE', 'BANK_TRANSFER'] and not reference:
+                raise ValueError("Reference number is required for Cheque and Bank Transfer payments.")
+
             payment_date = datetime.strptime(payment_date_str, '%Y-%m-%d').date()
 
             with transaction.atomic():
