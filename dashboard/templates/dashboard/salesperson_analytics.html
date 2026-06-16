@@ -385,7 +385,7 @@ document.addEventListener('DOMContentLoaded', () => {
         loadData(null, null, true);
     } else {
         // Default load first month
-        const defaultBtn = document.querySelector('.time-filter[data-filter!="all"]');
+        const defaultBtn = document.querySelector('.time-filter:not([data-filter="all"])');
         if (defaultBtn) {
             defaultBtn.click();
         } else {
