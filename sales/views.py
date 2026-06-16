@@ -4,6 +4,7 @@ from django.http import HttpResponse, JsonResponse
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from users.mixins import ERPPermissionRequiredMixin
 from django.contrib.auth.decorators import login_required, permission_required
+from django.core.exceptions import ValidationError
 from django.contrib import messages
 from django.urls import reverse_lazy, reverse
 from django.db import transaction
@@ -760,7 +761,6 @@ class InvoiceUpdateView(LoginRequiredMixin, ERPPermissionRequiredMixin, UpdateVi
                     self.object.snap_delivery_zip      = self.request.POST.get('snap_delivery_zip', '').strip() or None
             
             if self.object.pk and self.object.status != 'DRAFT':
-                from django.core.exceptions import ValidationError
                 form.add_error(None, ValidationError("Only DRAFT invoices can be edited and saved."))
                 return super().form_invalid(form)
             
