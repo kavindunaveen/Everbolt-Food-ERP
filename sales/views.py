@@ -896,22 +896,40 @@ class QuotationExportView(LoginRequiredMixin, ERPPermissionRequiredMixin, View):
 
 class InvoiceExportView(LoginRequiredMixin, ERPPermissionRequiredMixin, View):
     permission_required = 'sales.view_invoice'
-    
+
+    COL_LABELS = {
+        'invoice_number': 'Invoice Number',
+        'invoice_date':   'Invoice Date',
+        'invoice_type':   'Type',
+        'customer':       'Customer',
+        'salesperson':    'Salesperson',
+        'status':         'Status',
+        'delivery_date':  'Delivery Date',
+        'gross_amount':   'Gross Amount',
+        'credit_note':    'Credit Note Value',
+        'net_amount':     'Net Amount',
+    }
+    ALL_COLS = list(COL_LABELS.keys())
+
     def get(self, request, *args, **kwargs):
         response = HttpResponse(content_type='text/csv')
         response['Content-Disposition'] = 'attachment; filename="invoices.csv"'
-        
+
+        # Which columns to include (default: all)
+        requested_cols = request.GET.getlist('cols')
+        cols = [c for c in self.ALL_COLS if c in requested_cols] if requested_cols else self.ALL_COLS
+
         writer = csv.writer(response)
-        writer.writerow(['Invoice Number', 'Type', 'Customer', 'Salesperson', 'Status', 'Delivery Date', 'Gross Amount', 'Credit Note Value', 'Net Amount'])
-        
+        writer.writerow([self.COL_LABELS[c] for c in cols])
+
         invoices = Invoice.objects.all().order_by('-creation_date')
-        q = request.GET.get('q')
-        date_from = request.GET.get('date_from')
-        date_to = request.GET.get('date_to')
+        q             = request.GET.get('q')
+        date_from     = request.GET.get('date_from')
+        date_to       = request.GET.get('date_to')
         salesperson_id = request.GET.get('salesperson')
-        status = request.GET.get('status')
-        is_returned = request.GET.get('is_returned')
-        
+        status        = request.GET.get('status')
+        is_returned   = request.GET.get('is_returned')
+
         from django.db.models import Q, Sum
         if q:
             invoices = invoices.filter(
@@ -928,27 +946,26 @@ class InvoiceExportView(LoginRequiredMixin, ERPPermissionRequiredMixin, View):
             invoices = invoices.filter(status=status)
         if is_returned == 'true':
             invoices = invoices.filter(status__in=['CANCELLED', 'CANCEL_PENDING'], cancellation_reason__icontains='Customer Return')
-            
-        # Annotate total credit note value per invoice
-        invoices = invoices.annotate(
-            total_cn_value=Sum('credit_notes__items__credit_amount')
-        )
-            
-        for inv in invoices.order_by('-creation_date'):
-            cn_value = inv.total_cn_value or 0
+
+        invoices = invoices.annotate(total_cn_value=Sum('credit_notes__items__credit_amount'))
+
+        for inv in invoices:
+            cn_value   = inv.total_cn_value or 0
             net_amount = inv.total_amount - cn_value
-            writer.writerow([
-                inv.invoice_number, 
-                inv.get_invoice_type_display(), 
-                inv.customer.customer_name, 
-                inv.salesperson.username.title() if inv.salesperson else 'N/A', 
-                inv.get_status_display(), 
-                inv.delivery_date, 
-                inv.total_amount,
-                cn_value,
-                net_amount
-            ])
-            
+            row_map = {
+                'invoice_number': inv.invoice_number,
+                'invoice_date':   inv.creation_date.strftime('%Y-%m-%d') if inv.creation_date else '',
+                'invoice_type':   inv.get_invoice_type_display(),
+                'customer':       inv.customer.customer_name,
+                'salesperson':    inv.salesperson.get_full_name() or inv.salesperson.username if inv.salesperson else 'N/A',
+                'status':         inv.get_status_display(),
+                'delivery_date':  inv.delivery_date or '',
+                'gross_amount':   inv.total_amount,
+                'credit_note':    cn_value,
+                'net_amount':     net_amount,
+            }
+            writer.writerow([row_map[c] for c in cols])
+
         return response
 
 import math

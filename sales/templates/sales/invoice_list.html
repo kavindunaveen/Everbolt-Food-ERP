@@ -8,6 +8,21 @@
     showApprovalModal: false,
     showConfirmModal: false,
     showCancelModal: false,
+    showExportModal: false,
+    exportDateFrom: '{{ request.GET.date_from|default:"" }}',
+    exportDateTo: '{{ request.GET.date_to|default:"" }}',
+    exportCols: {
+        invoice_number: true,
+        invoice_date: true,
+        invoice_type: true,
+        customer: true,
+        salesperson: true,
+        status: true,
+        delivery_date: true,
+        gross_amount: true,
+        credit_note: true,
+        net_amount: true
+    },
     approvalAction: '',
     approvalUrl: '',
     invoiceNumber: '',
@@ -27,6 +42,15 @@
         this.cancellationReasonDisplay = reason;
         this.reviewerNotes = '';
         this.showApprovalModal = true;
+    },
+    buildExportUrl() {
+        let params = new URLSearchParams();
+        if (this.exportDateFrom) params.set('date_from', this.exportDateFrom);
+        if (this.exportDateTo) params.set('date_to', this.exportDateTo);
+        let cols = Object.keys(this.exportCols).filter(k => this.exportCols[k]);
+        cols.forEach(c => params.append('cols', c));
+        window.location.href = '{% url "invoice_export" %}?' + params.toString();
+        this.showExportModal = false;
     }
 }">
     <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
@@ -41,10 +65,10 @@
             </button>
 
             {% include 'partials/filter_bar.html' with search_placeholder="Search invoices..." %}
-            <a href="{% url 'invoice_export' %}?{{ request.GET.urlencode }}" class="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50 transition-colors">
-                <svg class="w-4 h-4 mr-2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a2 2 0 002 2h12a2 2 0 002 2h12a2 2 0 002-2v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+            <button @click="showExportModal = true" class="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50 transition-colors">
+                <svg class="w-4 h-4 mr-2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a2 2 0 002 2h12a2 2 0 002-2v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
                 Export
-            </a>
+            </button>
             {% if perms.sales.add_invoice %}
             <a href="{% url 'invoice_create' %}" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-lg text-white bg-emerald-600 hover:bg-emerald-700 transition-all shadow-md">
                 <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
@@ -217,6 +241,102 @@
                         <button type="button" @click="showApprovalModal = false" class="px-6 py-2.5 text-gray-600 font-bold bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition-all">Cancel</button>
                     </div>
                 </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== EXPORT MODAL ===== -->
+    <div x-show="showExportModal" class="fixed inset-0 z-50 overflow-y-auto" x-cloak x-transition.opacity>
+        <div class="flex items-center justify-center min-h-screen px-4 pt-4 pb-20">
+            <div class="fixed inset-0 bg-gray-900/60 backdrop-blur-sm" @click="showExportModal = false"></div>
+            <div class="relative bg-white rounded-2xl shadow-2xl w-full max-w-lg z-10">
+                <div class="px-7 pt-7 pb-5">
+                    <div class="flex items-center justify-between mb-6">
+                        <div>
+                            <h3 class="text-xl font-bold text-gray-900">Export Invoices</h3>
+                            <p class="text-xs text-gray-400 mt-1">Choose the date range and columns to include.</p>
+                        </div>
+                        <button @click="showExportModal = false" class="p-1.5 rounded-lg text-gray-400 hover:bg-gray-100">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                        </button>
+                    </div>
+
+                    <!-- Date Range -->
+                    <div class="mb-6">
+                        <label class="block text-xs font-black text-gray-500 uppercase tracking-widest mb-3">Date Range (Invoice Date)</label>
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-xs text-gray-500 mb-1">From</label>
+                                <input type="date" x-model="exportDateFrom" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500">
+                            </div>
+                            <div>
+                                <label class="block text-xs text-gray-500 mb-1">To</label>
+                                <input type="date" x-model="exportDateTo" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500">
+                            </div>
+                        </div>
+                        <p class="text-xs text-gray-400 mt-2">Leave blank to export all records.</p>
+                    </div>
+
+                    <!-- Column Selection -->
+                    <div>
+                        <div class="flex items-center justify-between mb-3">
+                            <label class="block text-xs font-black text-gray-500 uppercase tracking-widest">Columns to Export</label>
+                            <div class="flex gap-3">
+                                <button type="button" @click="Object.keys(exportCols).forEach(k => exportCols[k] = true)" class="text-xs font-bold text-emerald-600 hover:underline">All</button>
+                                <button type="button" @click="Object.keys(exportCols).forEach(k => exportCols[k] = false)" class="text-xs font-bold text-red-500 hover:underline">None</button>
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-2 gap-2">
+                            <label class="flex items-center gap-2 p-2.5 rounded-lg border border-gray-100 hover:bg-gray-50 cursor-pointer">
+                                <input type="checkbox" x-model="exportCols.invoice_number" class="w-4 h-4 text-emerald-600 rounded">
+                                <span class="text-sm font-medium text-gray-700">Invoice No.</span>
+                            </label>
+                            <label class="flex items-center gap-2 p-2.5 rounded-lg border border-gray-100 hover:bg-gray-50 cursor-pointer">
+                                <input type="checkbox" x-model="exportCols.invoice_date" class="w-4 h-4 text-emerald-600 rounded">
+                                <span class="text-sm font-medium text-gray-700">Invoice Date</span>
+                            </label>
+                            <label class="flex items-center gap-2 p-2.5 rounded-lg border border-gray-100 hover:bg-gray-50 cursor-pointer">
+                                <input type="checkbox" x-model="exportCols.invoice_type" class="w-4 h-4 text-emerald-600 rounded">
+                                <span class="text-sm font-medium text-gray-700">Type</span>
+</label>
+                            <label class="flex items-center gap-2 p-2.5 rounded-lg border border-gray-100 hover:bg-gray-50 cursor-pointer">
+                                <input type="checkbox" x-model="exportCols.customer" class="w-4 h-4 text-emerald-600 rounded">
+                                <span class="text-sm font-medium text-gray-700">Customer</span>
+                            </label>
+                            <label class="flex items-center gap-2 p-2.5 rounded-lg border border-gray-100 hover:bg-gray-50 cursor-pointer">
+                                <input type="checkbox" x-model="exportCols.salesperson" class="w-4 h-4 text-emerald-600 rounded">
+                                <span class="text-sm font-medium text-gray-700">Salesperson</span>
+                            </label>
+                            <label class="flex items-center gap-2 p-2.5 rounded-lg border border-gray-100 hover:bg-gray-50 cursor-pointer">
+                                <input type="checkbox" x-model="exportCols.status" class="w-4 h-4 text-emerald-600 rounded">
+                                <span class="text-sm font-medium text-gray-700">Status</span>
+                            </label>
+                            <label class="flex items-center gap-2 p-2.5 rounded-lg border border-gray-100 hover:bg-gray-50 cursor-pointer">
+                                <input type="checkbox" x-model="exportCols.delivery_date" class="w-4 h-4 text-emerald-600 rounded">
+                                <span class="text-sm font-medium text-gray-700">Delivery Date</span>
+                            </label>
+                            <label class="flex items-center gap-2 p-2.5 rounded-lg border border-gray-100 hover:bg-gray-50 cursor-pointer">
+                                <input type="checkbox" x-model="exportCols.gross_amount" class="w-4 h-4 text-emerald-600 rounded">
+                                <span class="text-sm font-medium text-gray-700">Gross Amount</span>
+                            </label>
+                            <label class="flex items-center gap-2 p-2.5 rounded-lg border border-gray-100 hover:bg-gray-50 cursor-pointer">
+                                <input type="checkbox" x-model="exportCols.credit_note" class="w-4 h-4 text-emerald-600 rounded">
+                                <span class="text-sm font-medium text-gray-700">Credit Note</span>
+                            </label>
+                            <label class="flex items-center gap-2 p-2.5 rounded-lg border border-gray-100 hover:bg-gray-50 cursor-pointer">
+                                <input type="checkbox" x-model="exportCols.net_amount" class="w-4 h-4 text-emerald-600 rounded">
+                                <span class="text-sm font-medium text-gray-700">Net Amount</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                <div class="px-7 py-5 bg-gray-50 rounded-b-2xl flex justify-end gap-3">
+                    <button type="button" @click="showExportModal = false" class="px-5 py-2.5 text-gray-600 font-bold bg-white border border-gray-200 rounded-xl hover:bg-gray-50">Cancel</button>
+                    <button type="button" @click="buildExportUrl()" class="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl shadow-md flex items-center gap-2">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a2 2 0 002 2h12a2 2 0 002-2v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                        Download CSV
+                    </button>
+                </div>
             </div>
         </div>
     </div>
