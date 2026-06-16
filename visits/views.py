@@ -78,69 +78,78 @@ def get_plans(request):
 @permission_required('visits.add_visitplan', raise_exception=True)
 def save_plan(request):
     if request.method == 'POST':
-        data = json.loads(request.body)
-        plan_id = data.get('plan_id')
-        date_str = data.get('date')
-        sales_officer_id = data.get('sales_officer_id')
-        description = data.get('description')
-        
-        if plan_id:
-            try:
-                plan = VisitPlan.objects.get(id=plan_id)
-                plan.description = description
-                plan.save()
-            except VisitPlan.DoesNotExist:
-                return JsonResponse({'status': 'error', 'message': 'Plan not found'}, status=404)
-        else:
-            plan = VisitPlan.objects.create(
-                date=date_str,
-                sales_officer_id=sales_officer_id,
-                description=description,
-                created_by=request.user
-            )
+        try:
+            data = json.loads(request.body)
+            plan_id = data.get('plan_id')
+            date_str = data.get('date')
+            sales_officer_id = data.get('sales_officer_id')
+            description = data.get('description')
             
-        return JsonResponse({'status': 'success', 'plan_id': plan.id})
+            if plan_id:
+                try:
+                    plan = VisitPlan.objects.get(id=plan_id)
+                    plan.description = description
+                    plan.save()
+                except VisitPlan.DoesNotExist:
+                    return JsonResponse({'status': 'error', 'message': 'Plan not found'}, status=404)
+            else:
+                plan = VisitPlan.objects.create(
+                    date=date_str,
+                    sales_officer_id=sales_officer_id,
+                    description=description,
+                    created_by=request.user
+                )
+                
+            return JsonResponse({'status': 'success', 'plan_id': plan.id})
+        except Exception as e:
+            return JsonResponse({'status': 'error', 'message': str(e)}, status=400)
     return JsonResponse({'status': 'error'}, status=400)
 
 @login_required
 @permission_required('visits.delete_visitplan', raise_exception=True)
 def delete_plan(request):
     if request.method == 'POST':
-        data = json.loads(request.body)
-        plan_id = data.get('plan_id')
         try:
-            plan = VisitPlan.objects.get(id=plan_id)
-            plan.delete()
-            return JsonResponse({'status': 'success'})
-        except VisitPlan.DoesNotExist:
-            return JsonResponse({'status': 'error', 'message': 'Plan not found'}, status=404)
+            data = json.loads(request.body)
+            plan_id = data.get('plan_id')
+            try:
+                plan = VisitPlan.objects.get(id=plan_id)
+                plan.delete()
+                return JsonResponse({'status': 'success'})
+            except VisitPlan.DoesNotExist:
+                return JsonResponse({'status': 'error', 'message': 'Plan not found'}, status=404)
+        except Exception as e:
+            return JsonResponse({'status': 'error', 'message': str(e)}, status=400)
     return JsonResponse({'status': 'error'}, status=400)
 
 @login_required
 def save_task(request):
     if request.method == 'POST':
-        data = json.loads(request.body)
-        plan_id = data.get('plan_id')
-        tasks_done = data.get('tasks_done')
-        remarks = data.get('remarks')
-        is_done = data.get('is_done', False)
-        
         try:
-            plan = VisitPlan.objects.get(id=plan_id)
-        except VisitPlan.DoesNotExist:
-            return JsonResponse({'status': 'error', 'message': 'Plan not found'}, status=404)
-        
-        # Security: only the assigned sales officer or an admin can update the task
-        if not request.user.is_admin() and plan.sales_officer != request.user:
-            return JsonResponse({'status': 'error', 'message': 'Permission denied'}, status=403)
+            data = json.loads(request.body)
+            plan_id = data.get('plan_id')
+            tasks_done = data.get('tasks_done')
+            remarks = data.get('remarks')
+            is_done = data.get('is_done', False)
             
-        task, created = VisitTask.objects.update_or_create(
-            plan=plan,
-            defaults={
-                'tasks_done': tasks_done,
-                'remarks': remarks,
-                'is_done': is_done
-            }
-        )
-        return JsonResponse({'status': 'success', 'task_id': task.id})
+            try:
+                plan = VisitPlan.objects.get(id=plan_id)
+            except VisitPlan.DoesNotExist:
+                return JsonResponse({'status': 'error', 'message': 'Plan not found'}, status=404)
+            
+            # Security: only the assigned sales officer or an admin can update the task
+            if not request.user.is_admin() and plan.sales_officer != request.user:
+                return JsonResponse({'status': 'error', 'message': 'Permission denied'}, status=403)
+                
+            task, created = VisitTask.objects.update_or_create(
+                plan=plan,
+                defaults={
+                    'tasks_done': tasks_done,
+                    'remarks': remarks,
+                    'is_done': is_done
+                }
+            )
+            return JsonResponse({'status': 'success', 'task_id': task.id})
+        except Exception as e:
+            return JsonResponse({'status': 'error', 'message': str(e)}, status=400)
     return JsonResponse({'status': 'error'}, status=400)

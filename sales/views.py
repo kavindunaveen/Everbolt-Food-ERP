@@ -302,7 +302,7 @@ class QuotationListView(LoginRequiredMixin, ERPPermissionRequiredMixin, ListView
     
     def get_queryset(self):
         from django.db.models import Q
-        qs = super().get_queryset().order_by('-creation_date')
+        qs = super().get_queryset().select_related('customer', 'salesperson').order_by('-creation_date')
 
         status = self.request.GET.get('status')
         if status:
@@ -351,7 +351,7 @@ class InvoiceListView(LoginRequiredMixin, ERPPermissionRequiredMixin, ListView):
     
     def get_queryset(self):
         from django.db.models import Q
-        qs = super().get_queryset().prefetch_related('delivery_notes').order_by('-creation_date')
+        qs = super().get_queryset().select_related('customer', 'salesperson').prefetch_related('delivery_notes').order_by('-creation_date')
 
         status = self.request.GET.get('status')
         if status:
@@ -1470,8 +1470,10 @@ def convert_quotation_view(request, pk):
         messages.warning(request, "This quotation has already been converted to an invoice.")
         return redirect('quotation_list')
         
-    if quotation.items.filter(product__isnull=True).exists():
-        messages.error(request, "This quotation contains custom items. You must edit the quotation and link official products from the inventory before converting it to an invoice.")
+    custom_items = quotation.items.filter(product__isnull=True)
+    if custom_items.exists():
+        item_names = ", ".join([item.description for item in custom_items])
+        messages.error(request, f"This quotation contains custom items ({item_names}). You must edit the quotation and link official products from the inventory before converting it to an invoice.")
         return redirect('quotation_list')
         
     with transaction.atomic():
@@ -1571,7 +1573,7 @@ class DeliveryNoteListView(LoginRequiredMixin, ERPPermissionRequiredMixin, ListV
     permission_required = 'sales.view_deliverynote'
     
     def get_queryset(self):
-        qs = super().get_queryset().order_by('-created_at')
+        qs = super().get_queryset().select_related('invoice__customer', 'delivered_by').order_by('-created_at')
         
         # Status Filter
         status = self.request.GET.get('status')

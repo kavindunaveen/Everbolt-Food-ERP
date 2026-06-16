@@ -64,6 +64,16 @@ def issue_invoice(invoice, user):
         raise ValueError("Only DRAFT invoices can be issued.")
         
     with transaction.atomic():
+        # Check minimum stock requirements
+        from django.db import models
+        from django.utils import timezone
+        for item in invoice.items.all():
+            if item.product.track_stock and not item.product.allow_negative_stock:
+                active_reserves = item.product.reserves.filter(expiry_time__gt=timezone.now()).exclude(reference_type='INV', reference_id=invoice.id).aggregate(models.Sum('quantity'))['quantity__sum'] or 0
+                effective_available = item.product.current_stock - active_reserves
+                if effective_available - item.quantity < item.product.minimum_stock:
+                    raise ValueError(f"Cannot issue invoice. {item.product.name} would fall below its minimum stock level. Effective Available: {effective_available}, Required: {item.quantity}, Minimum: {item.product.minimum_stock}.")
+
         old_status = invoice.get_status_display()
         invoice.status = 'ISSUED'
         invoice.save(update_fields=['status'])
