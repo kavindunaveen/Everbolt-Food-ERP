@@ -3,24 +3,7 @@
    cart.css  |  Desktop + Mobile responsive
    ============================================================ */
 
-:root {
-    --ev-teal: #0F6E56;
-    --ev-teal-dark: #085041;
-    --ev-teal-tint: #E1F5EE;
-    --ev-teal-tint-border: #9FE1CB;
-    --ev-ink: #2C2C2A;
-    --ev-muted: #5F5E5A;
-    --ev-faint: #888780;
-    --ev-border: #e0e0d8;
-    --ev-border-strong: #c8c7be;
-    --ev-bg: #f5f5f3;
-    --ev-error: #A32D2D;
-    --ev-error-bg: #FCEBEB;
-    --ev-error-border: #F7C1C1;
-    --ev-radius-lg: 12px;
-    --ev-radius-md: 8px;
-    --ev-radius-sm: 6px;
-}
+/* Inherit global variables from base.html */
 
 
 /* ----------------------------------------------------------

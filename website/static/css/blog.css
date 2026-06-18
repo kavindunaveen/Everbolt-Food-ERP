@@ -3,22 +3,7 @@
    Blog listing + blog detail pages matched with home.css theme
    ============================================= */
 
-:root {
-    /* Same naming/style as home.css. These act as fallback values
-       when blog.css is loaded without home.css. */
-    --primary-red: #e60012;
-    --dark-red: #b8000d;
-    --dark: #111111;
-    --text: #333333;
-    --white: #ffffff;
-    --light-gray: #f5f5f5;
-    --light-green-bg: #e8fff3;
-    --border: #e5e5e5;
-    --shadow: 0 6px 24px rgba(0,0,0,0.09);
-    --shadow-sm: 0 3px 12px rgba(0,0,0,0.07);
-    --font-main: 'Montserrat', Arial, sans-serif;
-    --font-body: 'Lato', Arial, sans-serif;
-}
+/* Inherit global variables from base.html */
 
 /* =============================================
    BLOG LISTING PAGE

@@ -2,18 +2,7 @@
    EVERBOLT FOODS - ABOUT PAGE CSS
    ============================================= */
 
-:root {
-    --primary-red: #e60012;
-    --dark-red: #b8000d;
-    --dark: #111111;
-    --text: #182044;
-    --muted-text: #333b5f;
-    --white: #ffffff;
-    --light-bg: #f7fbfd;
-    --border: #e5e5e5;
-    --font-main: 'Montserrat', Arial, sans-serif;
-    --font-body: 'Lato', Arial, sans-serif;
-}
+/* Inherit global variables from base.html */
 
 .about-page {
     width: 100%;

@@ -378,7 +378,7 @@
             <a href="{% url 'home' %}" class="{% if request.path == '/' %}active{% endif %}">Home</a>
             <a href="{% url 'about' %}" class="{% if 'about' in request.path %}active{% endif %}">About Us</a>
             <a href="{% url 'products' %}" class="{% if 'products' in request.path %}active{% endif %}">Shop Products</a>
-            <a href="#" class="{% if 'blog' in request.path %}active{% endif %}">Blog</a>
+            <a href="{% url 'blog_list' %}" class="{% if 'blog' in request.path %}active{% endif %}">Blog</a>
             <a href="{% url 'contact' %}" class="{% if 'contact' in request.path %}active{% endif %}">Contact</a>
         </nav>
         <div class="organic-actions">
@@ -386,9 +386,6 @@
                 <input type="text" name="q" placeholder="Search..." class="search-input" required>
                 <button type="submit" class="icon-btn" aria-label="Search"><i class="fa-solid fa-search"></i></button>
             </form>
-            <a href="#" class="icon-btn" aria-label="Account">
-                <i class="fa-regular fa-user"></i>
-            </a>
             <a href="{% url 'cart' %}" class="icon-btn" aria-label="Cart">
                 <i class="fa-solid fa-shopping-cart"></i>
                 <span class="cart-badge">0</span>
@@ -423,6 +420,7 @@
                 <ul class="footer-links">
                     <li><a href="{% url 'custom_page_detail' 'privacy-policy' %}">Privacy Policy</a></li>
                     <li><a href="{% url 'custom_page_detail' 'terms-conditions' %}">Terms of Service</a></li>
+                    <li><a href="{% url 'delivery_charges' %}">Delivery Information</a></li>
                 </ul>
             </div>
             <div>

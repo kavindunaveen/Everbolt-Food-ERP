@@ -2,15 +2,7 @@
    EVERBOLT FOODS - CONTACT PAGE CSS
    ============================================= */
 
-:root {
-    --primary-red: #ff2a2f;
-    --dark: #111111;
-    --text: #000000;
-    --white: #ffffff;
-    --light-bg: #f7faf6;
-    --font-main: 'Montserrat', Arial, sans-serif;
-    --font-body: 'Lato', Arial, sans-serif;
-}
+/* Inherit global variables from base.html */
 
 .contact-page {
     width: 100%;
