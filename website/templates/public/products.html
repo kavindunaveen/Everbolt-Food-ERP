@@ -2,159 +2,142 @@
 {% load static %}
 
 {% block title %}
-    {% if selected_category_name %}
-        {{ selected_category_name }} Products – Everbolt Foods
-    {% elif selected_category %}
-        {{ selected_category }} Products – Everbolt Foods
-    {% elif q %}
-        Search Results for "{{ q }}" – Everbolt Foods
-    {% else %}
-        Products – Everbolt Foods
+    {% if selected_category_name %}{{ selected_category_name }} Products – Everbolt Foods
+    {% elif selected_category %}{{ selected_category }} Products – Everbolt Foods
+    {% elif q %}Search: "{{ q }}" – Everbolt Foods
+    {% else %}Shop Products – Everbolt Foods
     {% endif %}
 {% endblock %}
 
 {% block meta_description %}
-    Explore Everbolt Foods products including flavoured tea, herbal tea, spices, dried fruits, kithul products and hotel supplies in Sri Lanka.
+Explore Everbolt Foods premium products — flavoured teas, herbal teas, spices, dried fruits, kithul products and hotel supplies from Sri Lanka.
 {% endblock %}
 
 {% block extra_css %}
-<link rel="stylesheet" href="{% static 'css/product.css' %}?v=2.1">
+<link rel="stylesheet" href="{% static 'css/product.css' %}?v=3.0">
 {% endblock %}
 
 {% block content %}
 
-<section class="page-hero">
-    <div class="container">
-        {% if selected_category_name %}
-            <h1>{{ selected_category_name }}</h1>
-            <p>Explore our {{ selected_category_name }} product range.</p>
-        {% elif selected_category %}
-            <h1>{{ selected_category }}</h1>
-            <p>Explore our {{ selected_category }} product range.</p>
-        {% elif q %}
-            <h1>Search Results</h1>
-            <p>Showing products for "{{ q }}".</p>
-        {% else %}
-            <h1>Our Products</h1>
-            <p>Explore premium quality food products from Everbolt Foods.</p>
-        {% endif %}
-    </div>
+<!-- ═══════════════════════════════════════════
+     HERO
+═══════════════════════════════════════════ -->
+<section class="pr-hero">
+    <span class="pr-hero-eyebrow">Premium Sri Lankan Produce</span>
+
+    {% if selected_category_name %}
+        <h1>{{ selected_category_name }}</h1>
+        <p>Explore our premium {{ selected_category_name }} collection.</p>
+    {% elif selected_category %}
+        <h1>{{ selected_category }}</h1>
+        <p>Explore our premium {{ selected_category }} collection.</p>
+    {% elif q %}
+        <h1>Search Results</h1>
+        <p>Showing products matching "<strong>{{ q }}</strong>"</p>
+    {% else %}
+        <h1>Shop Our Products</h1>
+        <p>Discover 100% natural, premium-quality food products made with the finest Sri Lankan ingredients.</p>
+    {% endif %}
 </section>
 
-<section class="products-page-section">
-    <div class="container">
+<!-- ═══════════════════════════════════════════
+     PRODUCTS SECTION
+═══════════════════════════════════════════ -->
+<section class="pr-section">
+    <div class="pr-inner">
 
-        <div class="products-top-bar">
-
-            <form method="get" action="{% url 'products' %}" class="product-search-form">
+        <!-- Toolbar: Search + Clear -->
+        <div class="pr-toolbar">
+            <form method="get" action="{% url 'products' %}" class="pr-search-form">
                 {% if selected_category %}
                     <input type="hidden" name="category" value="{{ selected_category }}">
                 {% endif %}
-
-                <input 
-                    type="text" 
-                    name="q" 
-                    value="{{ q }}" 
-                    placeholder="Search products..."
-                >
-
-                <button type="submit">Search</button>
+                <input type="text" name="q" value="{{ q }}" placeholder="Search products…">
+                <button type="submit" class="pr-search-btn">
+                    <i class="fa-solid fa-search"></i> Search
+                </button>
             </form>
 
             {% if selected_category or q %}
-                <a href="{% url 'products' %}" class="clear-filter-btn">Clear Filters</a>
+                <a href="{% url 'products' %}" class="pr-clear-btn">
+                    <i class="fa-solid fa-xmark"></i> Clear Filters
+                </a>
             {% endif %}
-
         </div>
 
+        <!-- Category Filter Pills -->
         {% if categories %}
-            <div class="category-filter-row">
-                <a href="{% url 'products' %}" 
-                   class="category-filter-btn {% if not selected_category %}active{% endif %}">
-                    All
+            <div class="pr-cat-filters">
+                <a href="{% url 'products' %}"
+                   class="pr-cat-btn {% if not selected_category %}active{% endif %}">
+                    All Products
                 </a>
-
                 {% for cat in categories %}
                     <a href="{% url 'products' %}?category={{ cat.id }}"
-                       class="category-filter-btn {% if selected_category == cat.id|stringformat:'s' %}active{% endif %}">
+                       class="pr-cat-btn {% if selected_category == cat.id|stringformat:'s' %}active{% endif %}">
                         {{ cat.name }}
                     </a>
                 {% endfor %}
             </div>
         {% endif %}
 
+        <!-- Products Grid -->
         {% if products %}
-            <div class="products-grid">
-
+            <div class="pr-grid">
                 {% for product in products %}
-                    <article class="product-card">
+                    <article class="pr-card">
 
-                        <a href="{% url 'product_detail' product.id %}" class="product-card-image-link">
+                        <a href="{% url 'product_detail' product.id %}" class="pr-card-img-wrap">
                             {% if product.main_image %}
-                                <img src="{{ product.main_image.url }}" alt="Product Image" class="product-card-img" loading="lazy">
+                                <img src="{{ product.main_image.url }}" alt="{{ product.get_display_name }}" loading="lazy">
                             {% else %}
-                                <div class="product-card-placeholder">
-                                    <span>No Image</span>
+                                <div class="pr-card-no-img">
+                                    <i class="fa-solid fa-image"></i>
                                 </div>
                             {% endif %}
                         </a>
 
-                        <div class="product-card-body">
+                        <div class="pr-card-body">
 
                             {% if product.website_category %}
-                                <p class="product-card-category">
-                                    {{ product.website_category.name }}
-                                </p>
+                                <span class="pr-card-cat">{{ product.website_category.name }}</span>
                             {% endif %}
 
-                            <h3 class="product-card-title">
-                                <a href="{% url 'product_detail' product.id %}">
-                                    {{ product.get_display_name }}
-                                </a>
-                            </h3>
+                            <a href="{% url 'product_detail' product.id %}" class="pr-card-title">
+                                {{ product.get_display_name }}
+                            </a>
 
                             {% if product.short_description %}
-                                <p class="product-card-desc">
-                                    {{ product.short_description|truncatewords:18 }}
-                                </p>
+                                <p class="pr-card-desc">{{ product.short_description|truncatewords:20 }}</p>
                             {% elif product.description %}
-                                <p class="product-card-desc">
-                                    {{ product.description|truncatewords:18 }}
-                                </p>
+                                <p class="pr-card-desc">{{ product.description|truncatewords:20 }}</p>
                             {% endif %}
 
-                            <div class="product-card-footer">
-
-                                <div class="product-card-price">
-                                    රු{{ product.get_price|floatformat:2 }}
-                                </div>
-
-                                <a href="{% url 'product_detail' product.id %}" class="product-view-btn">
-                                    View Product
-                                </a>
-
+                            <div class="pr-card-footer">
+                                <span class="pr-card-price">රු{{ product.get_price|floatformat:2 }}</span>
+                                <a href="{% url 'product_detail' product.id %}" class="pr-card-btn">View Product</a>
                             </div>
 
                         </div>
-
                     </article>
                 {% endfor %}
-
             </div>
+
         {% else %}
-            <div class="no-products">
+            <div class="pr-empty">
+                <div class="pr-empty-icon"><i class="fa-solid fa-box-open"></i></div>
                 {% if selected_category_name %}
-                    <h3>No products found in {{ selected_category_name }}.</h3>
-                    <p>Please check another category or contact us for more information.</p>
+                    <h3>No products in {{ selected_category_name }}</h3>
+                    <p>Try another category or contact us for more information.</p>
                 {% elif selected_category %}
-                    <h3>No products found in {{ selected_category }}.</h3>
-                    <p>Please check another category or contact us for more information.</p>
+                    <h3>No products found</h3>
+                    <p>Try another category or contact us for more information.</p>
                 {% elif q %}
-                    <h3>No products found for "{{ q }}".</h3>
-                    <p>Try searching with another keyword.</p>
+                    <h3>No results for "{{ q }}"</h3>
+                    <p>Try a different keyword or browse all products.</p>
                 {% else %}
-                    <h3>No products available yet.</h3>
-                    <p>Please check again later.</p>
+                    <h3>No products available yet</h3>
+                    <p>Please check back soon.</p>
                 {% endif %}
             </div>
         {% endif %}
