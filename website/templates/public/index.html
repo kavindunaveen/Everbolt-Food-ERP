@@ -158,43 +158,41 @@ img { max-width: 100%; display: block; }
 }
 .hero-btns { display: flex; gap: 15px; flex-wrap: wrap; }
 
-/* ─── OVERLAPPING FEATURE BOXES ─── */
+/* ─── VALUE PROPOSITION BOXES ─── */
 .feature-boxes {
-    margin-top: -80px; /* Pulls boxes up to overlap hero */
-    position: relative;
-    z-index: 10;
-}
-.feature-grid {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 0;
-    background: var(--white);
-    box-shadow: 0 10px 40px rgba(0,0,0,0.1);
-    border-radius: 6px;
-    overflow: hidden;
+    padding: 80px 0;
+    background-color: #fdfdf9;
+    border-top: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
 }
 .feature-box {
+    background: var(--white);
     padding: 40px 30px;
-    border-right: 1px solid var(--border);
-    transition: var(--transition);
+    border-radius: var(--radius-lg);
     text-align: center;
-    border-bottom: 4px solid transparent;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+    transition: var(--transition);
+    border: 1px solid rgba(0,0,0,0.02);
 }
-.feature-box:last-child { border-right: none; }
 .feature-box:hover {
-    background-color: var(--light-bg);
-    border-bottom-color: var(--primary);
     transform: translateY(-5px);
+    box-shadow: 0 15px 35px rgba(0,0,0,0.1);
 }
-.feature-icon {
+.feature-box .icon {
     font-size: 40px;
-    color: var(--primary);
     margin-bottom: 20px;
 }
-.feature-box h3 {
-    font-size: 1.3rem;
+.feature-box h4 {
+    font-size: 1.2rem;
+    color: var(--secondary);
+    margin-bottom: 15px;
     text-transform: uppercase;
-    margin-bottom: 10px;
+    font-weight: 800;
+}
+.feature-box p {
+    color: var(--text-body);
+    font-size: 0.95rem;
+    margin-bottom: 0;
 }
 
 /* ─── ABOUT US SPLIT ─── */
@@ -592,29 +590,6 @@ img { max-width: 100%; display: block; }
     </div>
 </div>
 
-<!-- ══════════ OVERLAPPING FEATURE BOXES ══════════ -->
-<div class="feature-boxes">
-    <div class="container">
-        <div class="feature-grid" data-aos="fade-up" data-aos-delay="200" data-aos-duration="1000">
-            <div class="feature-box">
-                <div class="feature-icon">🌿</div>
-                <h3>100% Natural</h3>
-                <p>Authentic, pure ingredients with zero artificial additives.</p>
-            </div>
-            <div class="feature-box">
-                <div class="feature-icon">✈️</div>
-                <h3>Global Export</h3>
-                <p>Reliable shipping for hotels and businesses worldwide.</p>
-            </div>
-            <div class="feature-box">
-                <div class="feature-icon">🏅</div>
-                <h3>Premium Quality</h3>
-                <p>Manufactured under strict ISO & GMP guidelines.</p>
-            </div>
-        </div>
-    </div>
-</div>
-
 <!-- ══════════ ABOUT US ══════════ -->
 <section class="section-padding">
     <div class="container">
@@ -644,7 +619,30 @@ img { max-width: 100%; display: block; }
     </div>
 </section>
 
-<!-- ══════════ SHOP BY CATEGORY (STANDARD) ══════════ -->
+<!-- ══════════ OVERLAPPING FEATURE BOXES MOVED HERE ══════════ -->
+<div class="feature-boxes">
+    <div class="container">
+        <div class="grid" style="grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 30px;">
+            <div class="feature-box" data-aos="fade-up" data-aos-delay="100">
+                <div class="icon">🌿</div>
+                <h4>100% Natural</h4>
+                <p>Authentic, pure ingredients with zero artificial additives.</p>
+            </div>
+            <div class="feature-box" data-aos="fade-up" data-aos-delay="200">
+                <div class="icon">✈️</div>
+                <h4>Global Export</h4>
+                <p>Reliable shipping for hotels and businesses worldwide.</p>
+            </div>
+            <div class="feature-box" data-aos="fade-up" data-aos-delay="300">
+                <div class="icon">🏅</div>
+                <h4>Premium Quality</h4>
+                <p>Manufactured under strict ISO & GMP guidelines.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ══════════ CATEGORIES GRID ══════════ -->
 <section class="section-padding bg-light">
     <div class="container">
         <div class="section-title" data-aos="fade-up">
