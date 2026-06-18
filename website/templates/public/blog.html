@@ -16,97 +16,68 @@
 {% endblock %}
 
 {% block extra_css %}
-<link rel="stylesheet" href="{% static 'css/blog.css' %}?v=2.1">
+<link rel="stylesheet" href="{% static 'css/blog.css' %}?v=3.0">
 {% endblock %}
 
 {% block content %}
 
-<!-- HERO -->
-<section class="blog-hero">
-    <div class="blog-hero-bg" aria-hidden="true">
-        <svg viewBox="0 0 1400 320" fill="none" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid slice">
-            <circle cx="120" cy="160" r="100" stroke="#ffffff" stroke-width="1.5" opacity="0.28"/>
-            <circle cx="120" cy="160" r="60" stroke="#f4c430" stroke-width="1.5" opacity="0.28"/>
-            <circle cx="1310" cy="160" r="120" stroke="#ffffff" stroke-width="1.5" opacity="0.22"/>
-            <circle cx="1310" cy="160" r="70" stroke="#111111" stroke-width="1.5" opacity="0.12"/>
-        </svg>
-    </div>
-
-    <div class="blog-hero-inner">
-        <span class="blog-hero-badge">✦ News & Insights</span>
-        <h1 class="blog-hero-title">Everbolt <em>Blog</em></h1>
-        <p class="blog-hero-sub">
-            Product updates, HoReCa supply tips, customer service stories and useful food business insights from Sri Lanka.
-        </p>
-    </div>
+<!-- ═══════════════════════════════════════════
+     HERO SECTION
+═══════════════════════════════════════════ -->
+<section class="bl-hero">
+    <span class="bl-hero-eyebrow">News & Insights</span>
+    <h1>Everbolt <em>Blog</em></h1>
+    <p>Product updates, HoReCa supply tips, customer service stories, and useful food business insights from Sri Lanka.</p>
 </section>
 
-<!-- POSTS GRID -->
-<section class="blog-listing">
-    <div class="blog-container">
+<!-- ═══════════════════════════════════════════
+     BLOG LISTING GRID
+═══════════════════════════════════════════ -->
+<section class="bl-section">
+    <div class="bl-container">
 
         {% if posts %}
-        <div class="blog-grid">
-
-            {% for post in posts %}
-            <article class="blog-card">
-                <a href="{% url 'blog_detail' post.slug %}" class="blog-card-link">
-
-                    <!-- Cover image -->
-                    <div class="blog-card-img-wrap">
-                        {% if post.cover_image_url %}
-                            <img src="{{ post.cover_image_url }}" alt="{{ post.title }}" class="blog-card-img">
-                        {% else %}
-                            <div class="blog-card-img-placeholder">
-                                <svg viewBox="0 0 80 60" fill="none" xmlns="http://www.w3.org/2000/svg" width="60" aria-hidden="true">
-                                    <rect x="10" y="10" width="60" height="40" rx="4" stroke="#e60012" stroke-width="1.5"/>
-                                    <circle cx="28" cy="26" r="7" stroke="#e60012" stroke-width="1.5" opacity="0.7"/>
-                                    <path d="M10 42 l18-14 12 10 10-8 20 12" stroke="#e60012" stroke-width="1.5" fill="none" opacity="0.75"/>
-                                </svg>
-                            </div>
-                        {% endif %}
-                    </div>
-
-                    <!-- Text -->
-                    <div class="blog-card-body">
-                        <div class="blog-card-meta">
-                            {% if post.focus_keyword %}
-                                <span class="blog-card-tag">{{ post.focus_keyword }}</span>
-                            {% endif %}
-
-                            {% if post.published_at %}
-                                <span class="blog-card-date">
-                                    {{ post.published_at|slice:":10" }}
-                                </span>
+            <div class="bl-grid">
+                {% for post in posts %}
+                    <a href="{% url 'blog_detail' post.slug %}" class="bl-card">
+                        
+                        <div class="bl-card-img-wrap">
+                            {% if post.cover_image_url %}
+                                <img src="{{ post.cover_image_url }}" alt="{{ post.title }}" loading="lazy">
+                            {% else %}
+                                <div class="bl-card-no-img"><i class="fa-solid fa-image"></i></div>
                             {% endif %}
                         </div>
 
-                        <h2 class="blog-card-title">{{ post.title }}</h2>
+                        <div class="bl-card-body">
+                            <div class="bl-card-meta">
+                                {% if post.focus_keyword %}
+                                    <span class="bl-tag">{{ post.focus_keyword }}</span>
+                                {% endif %}
+                                {% if post.published_at %}
+                                    <span class="bl-date">{{ post.published_at|slice:":10" }}</span>
+                                {% endif %}
+                            </div>
 
-                        {% if post.excerpt %}
-                            <p class="blog-card-excerpt">{{ post.excerpt|truncatechars:140 }}</p>
-                        {% endif %}
+                            <h2 class="bl-card-title">{{ post.title }}</h2>
 
-                        <span class="blog-card-cta">Read more →</span>
-                    </div>
+                            {% if post.excerpt %}
+                                <p class="bl-card-excerpt">{{ post.excerpt|truncatechars:140 }}</p>
+                            {% endif %}
 
-                </a>
-            </article>
-            {% endfor %}
-
-        </div>
+                            <span class="bl-card-read">Read Article <i class="fa-solid fa-arrow-right-long"></i></span>
+                        </div>
+                    </a>
+                {% endfor %}
+            </div>
 
         {% else %}
-        <div class="blog-empty">
-            <svg viewBox="0 0 80 80" fill="none" width="60" height="60" aria-hidden="true">
-                <circle cx="40" cy="40" r="34" stroke="#e60012" stroke-width="1.5" opacity="0.65"/>
-                <circle cx="40" cy="40" r="20" stroke="#e60012" stroke-width="1.5" opacity="0.45"/>
-                <circle cx="40" cy="40" r="8" fill="#e60012" opacity="0.18"/>
-            </svg>
-
-            <p class="blog-empty-title">No posts yet</p>
-            <p class="blog-empty-sub">Check back soon — new updates are being prepared.</p>
-        </div>
+            <!-- EMPTY STATE -->
+            <div class="bl-empty">
+                <i class="fa-solid fa-newspaper"></i>
+                <h3>No posts yet</h3>
+                <p>Check back soon — new updates and insights are being prepared.</p>
+            </div>
         {% endif %}
 
     </div>
