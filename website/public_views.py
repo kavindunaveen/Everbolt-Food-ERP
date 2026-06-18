@@ -3,6 +3,7 @@ from decimal import Decimal
 from django.conf import settings
 from django.contrib import messages
 from django.shortcuts import render, redirect, get_object_or_404
+from django.urls import reverse
 from django.utils import timezone
 from django.http import JsonResponse
 from django.db.models import Q
@@ -354,9 +355,11 @@ def checkout(request):
 
     if request.method == "POST":
         # Process order
-        first_name = request.POST.get("first_name", "")
-        last_name = request.POST.get("last_name", "")
-        customer_name = f"{first_name} {last_name}".strip()
+        customer_name = request.POST.get("customer_name", "").strip()
+        if not customer_name:
+            first_name = request.POST.get("first_name", "")
+            last_name = request.POST.get("last_name", "")
+            customer_name = f"{first_name} {last_name}".strip()
         email = request.POST.get("email", "")
         phone = request.POST.get("phone", "")
         address = request.POST.get("address", "")
@@ -408,6 +411,13 @@ def checkout(request):
         request.session.modified = True
 
         messages.success(request, "Order placed successfully! We will contact you soon.")
+
+        if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+            return JsonResponse({
+                "success": True,
+                "redirect_url": reverse("order_success", kwargs={"order_number": order.website_order_number})
+            })
+
         return redirect("order_success", order_number=order.website_order_number)
 
     return render(request, "public/checkout.html", {
