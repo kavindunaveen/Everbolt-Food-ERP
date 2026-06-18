@@ -298,6 +298,7 @@ img { max-width: 100%; display: block; }
     color: var(--white);
     padding: 60px 0;
     text-align: center;
+    overflow: hidden;
 }
 .cert-section h3 {
     color: var(--white);
@@ -305,12 +306,28 @@ img { max-width: 100%; display: block; }
     margin-bottom: 30px;
     text-transform: uppercase;
 }
+.cert-marquee-wrap {
+    width: 100%;
+    overflow: hidden;
+    white-space: nowrap;
+    position: relative;
+}
+.cert-marquee {
+    display: inline-block;
+    white-space: nowrap;
+    animation: scroll-cert 20s linear infinite;
+}
+.cert-marquee:hover { animation-play-state: paused; }
+@keyframes scroll-cert {
+    0% { transform: translateX(0); }
+    100% { transform: translateX(-50%); }
+}
 .cert-grid {
-    display: flex;
+    display: inline-flex;
     justify-content: center;
     align-items: center;
-    gap: 60px;
-    flex-wrap: wrap;
+    gap: 80px;
+    padding-right: 80px;
 }
 .cert-item {
     background: var(--white);
@@ -524,7 +541,7 @@ img { max-width: 100%; display: block; }
 
         <div class="cat-grid">
             <a href="{% url 'products' %}?q=flavoured+tea" class="cat-card" data-aos="fade-up" data-aos-delay="100">
-                <div class="cat-img-wrap"><img src="{% static 'images/flavoured-tea.gif' %}" alt="Flavoured Tea"></div>
+                <div class="cat-img-wrap"><img src="{% static 'images/cat-tea.png' %}" alt="Flavoured Tea"></div>
                 <div class="cat-content">
                     <h3>Flavoured Tea</h3>
                     <span class="cat-link">Shop Collection →</span>
@@ -532,7 +549,7 @@ img { max-width: 100%; display: block; }
             </a>
             
             <a href="{% url 'products' %}?q=herbal+tea" class="cat-card" data-aos="fade-up" data-aos-delay="200">
-                <div class="cat-img-wrap"><img src="{% static 'images/herbal-tea.gif' %}" alt="Herbal Tea"></div>
+                <div class="cat-img-wrap"><img src="{% static 'images/cat-tea.png' %}" alt="Herbal Tea"></div>
                 <div class="cat-content">
                     <h3>Herbal Tea</h3>
                     <span class="cat-link">Shop Collection →</span>
@@ -540,7 +557,7 @@ img { max-width: 100%; display: block; }
             </a>
 
             <a href="{% url 'products' %}?q=spices" class="cat-card" data-aos="fade-up" data-aos-delay="300">
-                <div class="cat-img-wrap"><img src="{% static 'images/spices-powder.gif' %}" alt="Premium Spices"></div>
+                <div class="cat-img-wrap"><img src="{% static 'images/cat-spices.png' %}" alt="Premium Spices"></div>
                 <div class="cat-content">
                     <h3>Premium Spices</h3>
                     <span class="cat-link">Shop Collection →</span>
@@ -548,7 +565,7 @@ img { max-width: 100%; display: block; }
             </a>
 
             <a href="{% url 'products' %}?q=kithul" class="cat-card" data-aos="fade-up" data-aos-delay="100">
-                <div class="cat-img-wrap"><img src="{% static 'images/kithul-products-foods.gif' %}" alt="Kithul Products"></div>
+                <div class="cat-img-wrap"><img src="{% static 'images/cat-kithul.png' %}" alt="Kithul Products"></div>
                 <div class="cat-content">
                     <h3>Kithul Products</h3>
                     <span class="cat-link">Shop Collection →</span>
@@ -556,7 +573,7 @@ img { max-width: 100%; display: block; }
             </a>
 
             <a href="{% url 'products' %}?q=hotel+supplies" class="cat-card" data-aos="fade-up" data-aos-delay="200">
-                <div class="cat-img-wrap"><img src="{% static 'images/hotel-supplies-foods.gif' %}" alt="Hotel Supplies"></div>
+                <div class="cat-img-wrap"><img src="{% static 'images/cat-hotel.png' %}" alt="Hotel Supplies"></div>
                 <div class="cat-content">
                     <h3>Hotel Supplies</h3>
                     <span class="cat-link">Shop Collection →</span>
@@ -564,7 +581,7 @@ img { max-width: 100%; display: block; }
             </a>
 
             <a href="{% url 'products' %}?q=everleaf" class="cat-card" data-aos="fade-up" data-aos-delay="300">
-                <div class="cat-img-wrap"><img src="{% static 'images/everleaf-tea.gif' %}" alt="Everleaf Tea"></div>
+                <div class="cat-img-wrap"><img src="{% static 'images/cat-tea.png' %}" alt="Everleaf Tea"></div>
                 <div class="cat-content">
                     <h3>Everleaf Range</h3>
                     <span class="cat-link">Shop Collection →</span>
@@ -578,10 +595,20 @@ img { max-width: 100%; display: block; }
 <section class="cert-section">
     <div class="container" data-aos="zoom-in" data-aos-duration="1000">
         <h3>Certified Quality You Can Trust</h3>
-        <div class="cert-grid">
-            <div class="cert-item"><img src="{% static 'images/iso-logo.webp' %}" alt="ISO Certified"></div>
-            <div class="cert-item"><img src="{% static 'images/gmp-logo.webp' %}" alt="GMP Certified"></div>
-            <div class="cert-item"><img src="{% static 'images/sgs-logo.webp' %}" alt="SGS Tested"></div>
+    </div>
+    <div class="cert-marquee-wrap">
+        <div class="cert-marquee">
+            <div class="cert-grid">
+                <div class="cert-item"><img src="{% static 'images/iso-logo.webp' %}" alt="ISO Certified"></div>
+                <div class="cert-item"><img src="{% static 'images/gmp-logo.webp' %}" alt="GMP Certified"></div>
+                <div class="cert-item"><img src="{% static 'images/sgs-logo.webp' %}" alt="SGS Tested"></div>
+            </div>
+            <!-- Duplicate for seamless loop -->
+            <div class="cert-grid">
+                <div class="cert-item"><img src="{% static 'images/iso-logo.webp' %}" alt="ISO Certified"></div>
+                <div class="cert-item"><img src="{% static 'images/gmp-logo.webp' %}" alt="GMP Certified"></div>
+                <div class="cert-item"><img src="{% static 'images/sgs-logo.webp' %}" alt="SGS Tested"></div>
+            </div>
         </div>
     </div>
 </section>
