@@ -1,0 +1,274 @@
+{% extends "public/base.html" %}
+{% load static %}
+
+{% block title %}
+About Us | Everbolt Foods
+{% endblock %}
+
+{% block meta_description %}
+Learn about Everbolt Food Products, our natural wellness products, quality standards, hygiene practices, and commitment to customer satisfaction.
+{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/about.css' %}">
+{% endblock %}
+
+{% block content %}
+
+<!-- About Page Wrapper -->
+<section class="about-page">
+
+    <!-- About Us Top Section -->
+    <section class="about-hero-section">
+        <div class="about-container about-hero-grid">
+
+            <div class="about-image-box">
+                <img src="{% static 'images/about-us-1.webp' %}" alt="Everbolt Food Products">
+            </div>
+
+            <div class="about-text-box">
+                <div class="about-title-row">
+                    <h1>About Us</h1>
+                    <span></span>
+                </div>
+
+                <h2>Health Is Wealth</h2>
+
+                <p>
+                    Welcome to Everbolt Foods (Pvt) Ltd, where quality and customer
+                    satisfaction are at the heart of everything we do. We specialize in
+                    producing a wide range of dehydrated products, herbal teas, and
+                    essential hotel supplies, including sachet and stick packets.
+                </p>
+
+                <p>
+                    Our products are crafted with the utmost care and attention to detail,
+                    ensuring that each item meets the highest standards of quality and taste.
+                    We pride ourselves on our commitment to customer satisfaction, delivering
+                    products that not only meet but exceed expectations.
+                </p>
+
+                <p>
+                    Whether you are looking for healthy herbal teas, convenient hotel
+                    supplies, or high-quality dehydrated foods, Everbolt Foods is your
+                    trusted partner for all your needs. Let us provide you with the best,
+                    every time.
+                </p>
+            </div>
+
+        </div>
+    </section>
+
+    <!-- Standards Section -->
+    <section class="standards-section">
+        <div class="about-container">
+
+            <div class="standards-title-row">
+                <h2>Our Standards</h2>
+                <span></span>
+            </div>
+
+            <p class="standards-intro">
+                At Everbolt Food Products, we take pride in our strict hygiene protocols to ensure every
+                dehydrated product is made with the utmost care and cleanliness.
+            </p>
+
+            <p class="standards-intro second">
+                From sourcing to packaging, our team follows the highest safety standards, so you can
+                enjoy our products with confidence. Quality and hygiene, guaranteed in every pack.
+            </p>
+
+            <div class="standards-gallery">
+                <div class="standard-image-card">
+                    <img src="{% static 'images/about-us-standard.webp' %}" alt="Food processing standard">
+                </div>
+
+                <div class="standard-image-card">
+                    <img src="{% static 'images/about-us-standard-1.webp' %}" alt="Dehydrated product standard">
+                </div>
+
+                <div class="standard-image-card">
+                    <img src="{% static 'images/about-us-standard-2.webp' %}" alt="Final packed product">
+                </div>
+            </div>
+
+        </div>
+    </section>
+
+    <section class="faq-section">
+        <div class="container">
+
+            {% if faq.title %}
+                <h2 class="faq-title">{{ faq.title }}</h2>
+            {% else %}
+                <h2 class="faq-title">You Might Want to Know:</h2>
+            {% endif %}
+
+            <div class="faq-divider"></div>
+
+            {% if faq.content_json %}
+                {% for item in faq.content_json %}
+                <div class="faq-item">
+                    <button class="faq-btn" onclick="toggleFaq(this)" type="button">
+                        <span>{{ item.question|default:item.title }}</span>
+                        <span class="faq-icon">+</span>
+                    </button>
+                    <div class="faq-content">
+                        <p>{{ item.answer|default:item.description }}</p>
+                    </div>
+                </div>
+                {% endfor %}
+
+            {% else %}
+                <div class="faq-item">
+                    <button class="faq-btn" onclick="toggleFaq(this)" type="button">
+                        <span>FAQs</span><span class="faq-icon">+</span>
+                    </button>
+                    <div class="faq-content">
+                        <p>Find answers to frequently asked questions about our products, ordering, and delivery.</p>
+                    </div>
+                </div>
+                <div class="faq-item">
+                    <button class="faq-btn" onclick="toggleFaq(this)" type="button">
+                        <span>Packaging Policy</span><span class="faq-icon">+</span>
+                    </button>
+                    <div class="faq-content">
+                        <p>All products are carefully packaged to maintain freshness and quality during transit.</p>
+                    </div>
+                </div>
+                <div class="faq-item">
+                    <button class="faq-btn" onclick="toggleFaq(this)" type="button">
+                        <span>Our Values</span><span class="faq-icon">+</span>
+                    </button>
+                    <div class="faq-content">
+                        <p>We are committed to natural wellness, quality ingredients, and sustainable practices.</p>
+                    </div>
+                </div>
+                <div class="faq-item">
+                    <button class="faq-btn" onclick="toggleFaq(this)" type="button">
+                        <span>How to Order</span><span class="faq-icon">+</span>
+                    </button>
+                    <div class="faq-content">
+                        <p>Browse our products and contact us for samples, pricing, hotel supply orders, and bulk orders.</p>
+                    </div>
+                </div>
+            {% endif %}
+
+        </div>
+    </section>
+
+    <!-- Testimonial Section -->
+    <section class="testimonial-section">
+        <div class="testimonial-overlay"></div>
+
+        <div class="testimonial-content">
+            <h2>Testimonial</h2>
+
+            <!-- Slideshow wrapper -->
+            <div class="testimonial-slider">
+
+                <div class="testimonial-slide active">
+                    <p class="testimonial-text">
+                        Our team at Everbolt Group of Companies (Pvt) Ltd decided to enter the food
+                        industry with the idea of providing good healthy, premium products that can be
+                        consumed in your day-to-day life.
+                    </p>
+                    <div class="testimonial-person">
+                        <div class="person-avatar">
+                            <img src="{% static 'images/prabath-guruge.webp' %}" alt="Prabath Guruge">
+                        </div>
+                        <div class="person-info">
+                            <h4>Prabath Guruge</h4>
+                            <p>Chairman</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Add more slides here following the same pattern -->
+                <div class="testimonial-slide">
+                    <p class="testimonial-text">
+                        Everbolt Foods has been committed to delivering the finest quality products
+                        to our customers, ensuring every bite reflects our dedication to health,
+                        taste, and excellence.
+                    </p>
+                    <div class="testimonial-person">
+                        <div class="person-avatar">
+                            <img src="{% static 'images/hashan.webp' %}" alt="Prabath Guruge">
+                        </div>
+                        <div class="person-info">
+                            <h4>Hashan Fonseka</h4>
+                            <p>Brand Manager</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="testimonial-slide">
+                    <p class="testimonial-text">
+                        These recipes were created considering all the health and natural benefits 
+                        that can be obtained through Ayurvedic medicine throughout Sri Lanka
+                    </p>
+                    <div class="testimonial-person">
+                        <div class="person-avatar">
+                            <img src="{% static 'images/prof.webp' %}" alt="Prabath Guruge">
+                        </div>
+                        <div class="person-info">
+                            <h4>Prof. Sajeewa Herapathdeniya</h4>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+            <!-- End Slideshow wrapper -->
+
+            <!-- Dots Navigation -->
+            <div class="testimonial-dots" id="testimonialDots">
+                <span class="active" data-index="0"></span>
+                <span data-index="1"></span>
+                <span data-index="2"></span>
+            </div>
+
+        </div>
+    </section>
+
+</section>
+
+<script>
+    (function () {
+        const slides = document.querySelectorAll('.testimonial-slide');
+        const dots = document.querySelectorAll('.testimonial-dots span');
+        let current = 0;
+        let timer;
+
+        function goTo(index) {
+            slides[current].classList.remove('active');
+            dots[current].classList.remove('active');
+            current = (index + slides.length) % slides.length;
+            slides[current].classList.add('active');
+            dots[current].classList.add('active');
+        }
+
+        function next() {
+            goTo(current + 1);
+        }
+
+        function startTimer() {
+            timer = setInterval(next, 4000);
+        }
+
+        function resetTimer() {
+            clearInterval(timer);
+            startTimer();
+        }
+
+        dots.forEach(function (dot) {
+            dot.addEventListener('click', function () {
+                goTo(parseInt(this.dataset.index));
+                resetTimer();
+            });
+        });
+
+        startTimer();
+    })();
+</script>
+
+{% endblock %}

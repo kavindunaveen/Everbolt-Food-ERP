@@ -1,0 +1,1035 @@
+/* ============================================================
+   Everbolt Foods — Cart & Checkout Styles
+   cart.css  |  Desktop + Mobile responsive
+   ============================================================ */
+
+:root {
+    --ev-teal: #0F6E56;
+    --ev-teal-dark: #085041;
+    --ev-teal-tint: #E1F5EE;
+    --ev-teal-tint-border: #9FE1CB;
+    --ev-ink: #2C2C2A;
+    --ev-muted: #5F5E5A;
+    --ev-faint: #888780;
+    --ev-border: #e0e0d8;
+    --ev-border-strong: #c8c7be;
+    --ev-bg: #f5f5f3;
+    --ev-error: #A32D2D;
+    --ev-error-bg: #FCEBEB;
+    --ev-error-border: #F7C1C1;
+    --ev-radius-lg: 12px;
+    --ev-radius-md: 8px;
+    --ev-radius-sm: 6px;
+}
+
+
+/* ----------------------------------------------------------
+   Page hero banner
+   ---------------------------------------------------------- */
+.page-hero {
+    background: linear-gradient(135deg, var(--ev-teal) 0%, var(--ev-teal-dark) 100%);
+    padding: 3rem 1.5rem;
+    text-align: center;
+    color: #fff;
+}
+
+.page-hero-eyebrow {
+    display: inline-block;
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: rgba(255, 255, 255, 0.7);
+    margin-bottom: 0.6rem;
+}
+
+.page-hero h1 {
+    font-size: 2rem;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    letter-spacing: -0.02em;
+}
+
+.page-hero p {
+    font-size: 1rem;
+    opacity: 0.85;
+}
+
+
+/* ----------------------------------------------------------
+   Shared section spacing
+   ---------------------------------------------------------- */
+.cart-section,
+.checkout-section {
+    padding: 2.5rem 0 4rem;
+    background: var(--ev-bg);
+    min-height: 60vh;
+}
+
+
+/* ----------------------------------------------------------
+   Cart table
+   ---------------------------------------------------------- */
+.cart-table-wrap {
+    overflow-x: auto;
+    border-radius: var(--ev-radius-lg);
+    border: 0.5px solid var(--ev-border);
+    background: #fff;
+    margin-bottom: 2rem;
+}
+
+.cart-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.9rem;
+}
+
+.cart-table thead th {
+    text-align: left;
+    padding: 0.85rem 1rem;
+    font-weight: 500;
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--ev-muted);
+    background: var(--ev-bg);
+    border-bottom: 0.5px solid var(--ev-border);
+}
+
+.cart-table thead th:last-child {
+    text-align: right;
+}
+
+.cart-table tbody tr {
+    transition: background 0.15s ease;
+}
+
+.cart-table tbody tr:hover {
+    background: #fafaf8;
+}
+
+.cart-table tbody td {
+    padding: 1rem;
+    border-bottom: 0.5px solid var(--ev-border);
+    vertical-align: middle;
+    color: var(--ev-ink);
+}
+
+.cart-table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+
+/* ----------------------------------------------------------
+   Cart product cell
+   ---------------------------------------------------------- */
+.cart-product {
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+}
+
+.cart-product img {
+    width: 56px;
+    height: 56px;
+    object-fit: cover;
+    border-radius: var(--ev-radius-md);
+    border: 0.5px solid var(--ev-border);
+    flex-shrink: 0;
+    background: var(--ev-bg);
+}
+
+.cart-product strong {
+    font-size: 0.9rem;
+    font-weight: 500;
+    display: block;
+    margin-bottom: 2px;
+}
+
+.cart-product span {
+    font-size: 0.8rem;
+    color: var(--ev-faint);
+}
+
+
+/* ----------------------------------------------------------
+   Qty input
+   ---------------------------------------------------------- */
+.cart-qty-input {
+    width: 68px;
+    padding: 0.45rem 0.6rem;
+    border: 0.5px solid var(--ev-border-strong);
+    border-radius: var(--ev-radius-sm);
+    font-size: 0.9rem;
+    text-align: center;
+    background: #fff;
+    color: var(--ev-ink);
+    transition: border-color 0.15s ease;
+    -moz-appearance: textfield;
+}
+
+.cart-qty-input:focus-visible {
+    outline: none;
+    border-color: var(--ev-teal);
+    box-shadow: 0 0 0 3px rgba(15, 110, 86, 0.12);
+}
+
+.cart-qty-input::-webkit-outer-spin-button,
+.cart-qty-input::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+}
+
+
+/* ----------------------------------------------------------
+   Remove button
+   ---------------------------------------------------------- */
+.cart-remove-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    color: var(--ev-error);
+    font-size: 0.82rem;
+    text-decoration: none;
+    padding: 5px 10px;
+    border-radius: var(--ev-radius-sm);
+    border: 0.5px solid transparent;
+    transition: background 0.15s ease, border-color 0.15s ease;
+    white-space: nowrap;
+}
+
+.cart-remove-btn:hover {
+    background: var(--ev-error-bg);
+    border-color: var(--ev-error-border);
+}
+
+
+/* ----------------------------------------------------------
+   Cart bottom row — actions + summary
+   ---------------------------------------------------------- */
+.cart-bottom {
+    display: grid;
+    grid-template-columns: 1fr 340px;
+    gap: 2rem;
+    align-items: start;
+}
+
+.cart-actions {
+    display: flex;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+}
+
+
+/* ----------------------------------------------------------
+   Cart summary card
+   ---------------------------------------------------------- */
+.cart-summary {
+    background: #fff;
+    border: 0.5px solid var(--ev-border);
+    border-radius: var(--ev-radius-lg);
+    padding: 1.5rem;
+}
+
+.cart-summary h3 {
+    font-size: 1rem;
+    font-weight: 600;
+    margin-bottom: 1.1rem;
+    color: var(--ev-ink);
+}
+
+.cart-summary-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.65rem 0;
+    font-size: 0.9rem;
+    color: var(--ev-ink);
+    border-bottom: 0.5px solid var(--ev-border);
+}
+
+.cart-summary-row:last-of-type {
+    border-bottom: none;
+    font-weight: 600;
+    font-size: 1rem;
+    padding-top: 0.85rem;
+    color: var(--ev-teal);
+}
+
+.cod-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    background: var(--ev-teal-tint);
+    color: var(--ev-teal-dark);
+    font-size: 0.72rem;
+    font-weight: 500;
+    padding: 3px 9px;
+    border-radius: 20px;
+    border: 0.5px solid var(--ev-teal-tint-border);
+}
+
+.cart-summary .cart-actions {
+    margin-top: 1.1rem;
+    flex-direction: column;
+}
+
+.cart-summary .cart-actions .btn-primary,
+.cart-summary .cart-actions .btn-secondary {
+    width: 100%;
+    justify-content: center;
+}
+
+
+/* ----------------------------------------------------------
+   Shared buttons
+   ---------------------------------------------------------- */
+.btn-primary,
+.btn-secondary {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 0.65rem 1.4rem;
+    font-size: 0.9rem;
+    font-weight: 500;
+    border-radius: var(--ev-radius-md);
+    cursor: pointer;
+    text-decoration: none;
+    border: none;
+    transition: background 0.15s ease, opacity 0.15s ease, transform 0.1s ease, box-shadow 0.15s ease;
+    white-space: nowrap;
+}
+
+.btn-primary {
+    background: var(--ev-teal);
+    color: #fff;
+}
+
+.btn-primary:hover {
+    background: var(--ev-teal-dark);
+}
+
+.btn-primary:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(15, 110, 86, 0.25);
+}
+
+.btn-primary:active {
+    transform: scale(0.98);
+}
+
+.btn-primary:disabled {
+    opacity: 0.75;
+    cursor: not-allowed;
+}
+
+.btn-secondary {
+    background: #fff;
+    color: var(--ev-ink);
+    border: 0.5px solid var(--ev-border-strong);
+}
+
+.btn-secondary:hover {
+    background: var(--ev-bg);
+}
+
+.btn-secondary:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(15, 110, 86, 0.15);
+}
+
+.btn-secondary:active {
+    transform: scale(0.98);
+}
+
+
+/* ----------------------------------------------------------
+   Empty cart state
+   ---------------------------------------------------------- */
+.no-products {
+    text-align: center;
+    padding: 4rem 1.5rem;
+    background: #fff;
+    border-radius: var(--ev-radius-lg);
+    border: 0.5px solid var(--ev-border);
+}
+
+.no-products h3 {
+    font-size: 1.2rem;
+    font-weight: 500;
+    margin-bottom: 0.5rem;
+    color: var(--ev-ink);
+}
+
+.no-products p {
+    font-size: 0.9rem;
+    color: var(--ev-faint);
+    margin-bottom: 1.5rem;
+}
+
+.product-view-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 0.65rem 1.5rem;
+    background: var(--ev-teal);
+    color: #fff;
+    border-radius: var(--ev-radius-md);
+    font-size: 0.9rem;
+    font-weight: 500;
+    text-decoration: none;
+    transition: background 0.15s ease;
+}
+
+.product-view-btn:hover {
+    background: var(--ev-teal-dark);
+}
+
+
+/* ----------------------------------------------------------
+   Checkout layout
+   ---------------------------------------------------------- */
+.checkout-layout {
+    display: grid;
+    grid-template-columns: 1fr 340px;
+    gap: 2rem;
+    align-items: start;
+}
+
+
+/* ----------------------------------------------------------
+   Checkout form card
+   ---------------------------------------------------------- */
+.checkout-form {
+    background: #fff;
+    border: 0.5px solid var(--ev-border);
+    border-radius: var(--ev-radius-lg);
+    padding: 2rem;
+}
+
+.checkout-form-header {
+    margin-bottom: 1.5rem;
+    padding-bottom: 0.9rem;
+    border-bottom: 0.5px solid var(--ev-border);
+}
+
+.checkout-form h2 {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--ev-ink);
+    margin-bottom: 0.3rem;
+}
+
+.checkout-form-subtitle {
+    font-size: 0.85rem;
+    color: var(--ev-faint);
+}
+
+.form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.form-group.full {
+    grid-column: 1 / -1;
+}
+
+.form-group label {
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: var(--ev-muted);
+    letter-spacing: 0.01em;
+}
+
+.form-group label .required {
+    color: var(--ev-error);
+}
+
+.form-group label .optional {
+    color: var(--ev-faint);
+    font-weight: 400;
+    text-transform: none;
+    letter-spacing: 0;
+}
+
+.form-group input[type="text"],
+.form-group input[type="email"],
+.form-group input[type="tel"],
+.form-group select,
+.form-group textarea {
+    padding: 0.6rem 0.85rem;
+    border: 0.5px solid var(--ev-border-strong);
+    border-radius: var(--ev-radius-md);
+    font-size: 0.9rem;
+    background: #fff;
+    color: var(--ev-ink);
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    font-family: inherit;
+    line-height: 1.5;
+}
+
+.form-group select {
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%235F5E5A' d='M1 1l5 5 5-5'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 0.85rem center;
+    padding-right: 2.25rem;
+}
+
+.form-group input:focus-visible,
+.form-group select:focus-visible,
+.form-group textarea:focus-visible {
+    outline: none;
+    border-color: var(--ev-teal);
+    box-shadow: 0 0 0 3px rgba(15, 110, 86, 0.1);
+}
+
+.form-group textarea {
+    resize: vertical;
+    min-height: 90px;
+}
+
+.field-error {
+    display: none;
+    font-size: 0.78rem;
+    color: var(--ev-error);
+}
+
+.form-group.has-error input,
+.form-group.has-error select,
+.form-group.has-error textarea {
+    border-color: var(--ev-error-border);
+    background: var(--ev-error-bg);
+}
+
+.form-group.has-error .field-error {
+    display: block;
+}
+
+
+/* ----------------------------------------------------------
+   Payment method box
+   ---------------------------------------------------------- */
+.payment-box {
+    background: var(--ev-bg);
+    border: 0.5px solid var(--ev-border);
+    border-radius: var(--ev-radius-md);
+    padding: 1.1rem 1.25rem;
+    margin-bottom: 1.5rem;
+}
+
+.payment-box h3 {
+    font-size: 0.9rem;
+    font-weight: 600;
+    margin-bottom: 0.75rem;
+    color: var(--ev-ink);
+}
+
+.cod-option {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: var(--ev-ink);
+    cursor: pointer;
+    margin-bottom: 0.5rem;
+}
+
+.cod-option-text {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.cod-option input[type="radio"] {
+    accent-color: var(--ev-teal);
+    width: 16px;
+    height: 16px;
+    cursor: pointer;
+}
+
+.payment-box p {
+    font-size: 0.82rem;
+    color: var(--ev-faint);
+    margin-left: 26px;
+}
+
+
+/* ----------------------------------------------------------
+   Checkout submit button
+   ---------------------------------------------------------- */
+.checkout-submit-btn {
+    width: 100%;
+    padding: 0.85rem;
+    font-size: 1rem;
+    justify-content: center;
+    position: relative;
+}
+
+.checkout-submit-btn.is-loading {
+    color: transparent;
+}
+
+.checkout-submit-btn.is-loading::after {
+    content: '';
+    position: absolute;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    border: 2px solid rgba(255, 255, 255, 0.35);
+    border-top-color: #fff;
+    animation: spin 0.7s linear infinite;
+}
+
+.checkout-form-footnote {
+    margin-top: 0.9rem;
+    font-size: 0.78rem;
+    color: var(--ev-faint);
+    text-align: center;
+    line-height: 1.5;
+}
+
+
+/* ----------------------------------------------------------
+   Order summary aside
+   ---------------------------------------------------------- */
+.order-summary-box {
+    background: #fff;
+    border: 0.5px solid var(--ev-border);
+    border-radius: var(--ev-radius-lg);
+    padding: 1.5rem;
+    position: sticky;
+    top: 1.5rem;
+}
+
+.order-summary-box h2 {
+    font-size: 1rem;
+    font-weight: 600;
+    margin-bottom: 1rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 0.5px solid var(--ev-border);
+    color: var(--ev-ink);
+}
+
+.order-summary-items {
+    display: flex;
+    flex-direction: column;
+}
+
+.order-summary-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 1rem;
+    padding: 0.65rem 0;
+    font-size: 0.88rem;
+    border-bottom: 0.5px solid var(--ev-border);
+    color: var(--ev-ink);
+}
+
+.order-summary-item:last-child {
+    border-bottom: none;
+}
+
+.order-summary-item span {
+    color: var(--ev-muted);
+    flex: 1;
+}
+
+.order-summary-qty {
+    color: var(--ev-faint);
+}
+
+.order-summary-empty {
+    font-size: 0.88rem;
+    color: var(--ev-faint);
+    padding: 0.5rem 0;
+}
+
+.order-summary-divider {
+    height: 1px;
+    background: var(--ev-border);
+    margin: 0.5rem 0 0.25rem;
+}
+
+.order-summary-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.55rem 0;
+    font-size: 0.88rem;
+    color: var(--ev-ink);
+}
+
+.order-summary-row--muted strong {
+    color: var(--ev-faint);
+    font-weight: 500;
+}
+
+.order-summary-total {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.85rem 0 0;
+    margin-top: 0.4rem;
+    border-top: 0.5px solid var(--ev-border);
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--ev-teal);
+}
+
+.order-summary-secure {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 0.5px solid var(--ev-border);
+    font-size: 0.78rem;
+    color: var(--ev-teal-dark);
+}
+
+
+/* ----------------------------------------------------------
+   Responsive — Tablet (≤ 900px)
+   ---------------------------------------------------------- */
+@media (max-width: 900px) {
+    .cart-bottom,
+    .checkout-layout {
+        grid-template-columns: 1fr;
+    }
+
+    .order-summary-box {
+        position: static;
+    }
+
+    .checkout-layout > .order-summary-box {
+        order: -1;
+    }
+}
+
+
+/* ----------------------------------------------------------
+   Responsive — Mobile (≤ 600px)
+   ---------------------------------------------------------- */
+@media (max-width: 600px) {
+    .page-hero {
+        padding: 2rem 1rem;
+    }
+
+    .page-hero h1 {
+        font-size: 1.5rem;
+    }
+
+    .cart-section,
+    .checkout-section {
+        padding: 1.5rem 0 3rem;
+    }
+
+    .cart-table thead th,
+    .cart-table tbody td {
+        padding: 0.75rem 0.6rem;
+        font-size: 0.82rem;
+    }
+
+    .cart-product img {
+        width: 42px;
+        height: 42px;
+    }
+
+    .form-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .cart-actions {
+        flex-direction: column;
+    }
+
+    .btn-primary,
+    .btn-secondary {
+        width: 100%;
+        justify-content: center;
+    }
+
+    .checkout-form {
+        padding: 1.25rem;
+    }
+
+    .payment-box p {
+        margin-left: 0;
+    }
+}
+
+
+/* ----------------------------------------------------------
+   Order loading overlay
+   ---------------------------------------------------------- */
+.order-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    background: rgba(15, 110, 86, 0.96);
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2rem;
+    padding: 2rem;
+}
+
+.order-overlay.active {
+    display: flex;
+}
+
+/* Spinner ring */
+.order-spinner {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    border: 3px solid rgba(255, 255, 255, 0.2);
+    border-top-color: #fff;
+    animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+/* Success checkmark (hidden until done) */
+.order-check {
+    display: none;
+    width: 64px;
+    height: 64px;
+}
+
+.order-check svg {
+    width: 64px;
+    height: 64px;
+}
+
+.order-check .check-circle {
+    stroke: #fff;
+    stroke-width: 2.5;
+    fill: none;
+    stroke-dasharray: 166;
+    stroke-dashoffset: 166;
+    animation: drawCircle 0.5s ease forwards;
+}
+
+.order-check .check-tick {
+    stroke: #fff;
+    stroke-width: 2.5;
+    fill: none;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-dasharray: 48;
+    stroke-dashoffset: 48;
+    animation: drawTick 0.3s ease 0.45s forwards;
+}
+
+@keyframes drawCircle {
+    to { stroke-dashoffset: 0; }
+}
+
+@keyframes drawTick {
+    to { stroke-dashoffset: 0; }
+}
+
+/* Status text */
+.order-overlay-text {
+    text-align: center;
+    color: #fff;
+}
+
+.order-overlay-text h2 {
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin-bottom: 0.4rem;
+    letter-spacing: -0.01em;
+}
+
+.order-overlay-text p {
+    font-size: 0.9rem;
+    opacity: 0.8;
+}
+
+/* Step dots progress */
+.order-steps {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.order-step-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.3);
+    transition: background 0.3s ease, transform 0.3s ease;
+}
+
+.order-step-dot.done {
+    background: #fff;
+}
+
+.order-step-dot.active {
+    background: #fff;
+    transform: scale(1.4);
+}
+
+
+/* ----------------------------------------------------------
+   Order success page
+   ---------------------------------------------------------- */
+.success-section {
+    padding: 4rem 0;
+    background: var(--ev-bg);
+    min-height: 70vh;
+    display: flex;
+    align-items: center;
+}
+
+.success-card {
+    background: #fff;
+    border: 0.5px solid var(--ev-border);
+    border-radius: 16px;
+    padding: 3rem 2.5rem;
+    max-width: 560px;
+    margin: 0 auto;
+    text-align: center;
+}
+
+.success-icon {
+    width: 72px;
+    height: 72px;
+    background: var(--ev-teal-tint);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 1.5rem;
+}
+
+.success-icon svg {
+    width: 36px;
+    height: 36px;
+}
+
+.success-icon .success-circle {
+    stroke: var(--ev-teal);
+    stroke-width: 2.5;
+    fill: none;
+    stroke-dasharray: 166;
+    stroke-dashoffset: 166;
+    animation: drawCircle 0.5s ease 0.2s forwards;
+}
+
+.success-icon .success-tick {
+    stroke: var(--ev-teal);
+    stroke-width: 2.5;
+    fill: none;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-dasharray: 48;
+    stroke-dashoffset: 48;
+    animation: drawTick 0.3s ease 0.65s forwards;
+}
+
+.success-card h1 {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: var(--ev-ink);
+    margin-bottom: 0.6rem;
+    letter-spacing: -0.02em;
+}
+
+.success-card .success-sub {
+    font-size: 0.9rem;
+    color: var(--ev-faint);
+    margin-bottom: 2rem;
+    line-height: 1.6;
+}
+
+.success-detail-box {
+    background: var(--ev-bg);
+    border-radius: 10px;
+    padding: 1.25rem 1.5rem;
+    margin-bottom: 2rem;
+    text-align: left;
+}
+
+.success-detail-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.5rem 0;
+    font-size: 0.88rem;
+    color: var(--ev-ink);
+    border-bottom: 0.5px solid var(--ev-border);
+}
+
+.success-detail-row:last-child {
+    border-bottom: none;
+}
+
+.success-detail-row span:first-child {
+    color: var(--ev-faint);
+}
+
+.success-detail-row strong {
+    font-weight: 600;
+    color: var(--ev-teal);
+}
+
+.success-actions {
+    display: flex;
+    gap: 0.75rem;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+@media (max-width: 600px) {
+    .success-card {
+        padding: 2rem 1.25rem;
+        border-radius: 12px;
+    }
+
+    .success-actions {
+        flex-direction: column;
+    }
+
+    .success-actions .btn-primary,
+    .success-actions .btn-secondary {
+        width: 100%;
+        justify-content: center;
+    }
+}
+
+
+/* ----------------------------------------------------------
+   Reduced motion
+   ---------------------------------------------------------- */
+@media (prefers-reduced-motion: reduce) {
+    .order-spinner,
+    .checkout-submit-btn.is-loading::after {
+        animation-duration: 1.4s;
+    }
+
+    .order-check .check-circle,
+    .order-check .check-tick,
+    .success-icon .success-circle,
+    .success-icon .success-tick {
+        animation-duration: 0.01ms;
+        animation-fill-mode: forwards;
+    }
+}

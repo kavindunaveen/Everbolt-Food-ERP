@@ -1,0 +1,741 @@
+{% extends "public/base.html" %}
+{% load static %}
+
+{% block title %}Checkout – Everbolt Foods{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/cart.css' %}">
+{% endblock %}
+
+{% block content %}
+
+<div class="order-overlay" id="orderOverlay" role="status" aria-live="polite" aria-label="Placing your order">
+
+    <div class="order-spinner" id="overlaySpinner"></div>
+
+    <div class="order-check" id="overlayCheck" style="display: none;">
+        <svg viewBox="0 0 52 52" xmlns="http://www.w3.org/2000/svg">
+            <circle class="check-circle" cx="26" cy="26" r="24"/>
+            <polyline class="check-tick" points="14,27 21,34 38,17"/>
+        </svg>
+    </div>
+
+    <div class="order-overlay-text">
+        <h2 id="overlayTitle">Placing your order…</h2>
+        <p id="overlaySubtitle">Please don't close this window.</p>
+    </div>
+
+    <div class="order-steps" aria-hidden="true">
+        <div class="order-step-dot active" id="step1"></div>
+        <div class="order-step-dot" id="step2"></div>
+        <div class="order-step-dot" id="step3"></div>
+    </div>
+
+</div>
+
+
+<section class="page-hero">
+    <div class="container">
+        <span class="page-hero-eyebrow">Step 2 of 2</span>
+        <h1>Checkout</h1>
+        <p>Complete your order with Cash on Delivery.</p>
+    </div>
+</section>
+
+
+<section class="checkout-section">
+    <div class="container checkout-layout">
+
+        <form method="post" class="checkout-form" id="checkoutForm" action="{% url 'checkout' %}" novalidate>
+            {% csrf_token %}
+
+            <!-- Hidden values for delivery charge API -->
+            <input type="hidden" id="checkoutSubtotal" value="{{ subtotal }}">
+            <input type="hidden" id="checkoutWeight" value="{{ cart_weight_kg }}">
+            <input type="hidden" id="deliveryChargeApiUrl" value="{% url 'website_delivery_charge_api' %}">
+            <input type="hidden" id="delivery_charge" name="delivery_charge" value="0.00">
+
+            <div class="checkout-form-header">
+                <h2>Customer Details</h2>
+                <p class="checkout-form-subtitle">We'll use these details to confirm and deliver your order.</p>
+            </div>
+
+            <div class="form-grid">
+
+                <div class="form-group">
+                    <label for="customer_name">Full Name <span class="required">*</span></label>
+                    <input
+                        type="text"
+                        id="customer_name"
+                        name="customer_name"
+                        placeholder="Your full name"
+                        required
+                        autocomplete="name"
+                    >
+                    <span class="field-error" data-error-for="customer_name">Please enter your full name.</span>
+                </div>
+
+                <div class="form-group">
+                    <label for="phone">Phone Number <span class="required">*</span></label>
+                    <input
+                        type="tel"
+                        id="phone"
+                        name="phone"
+                        placeholder="+94 77 000 0000"
+                        required
+                        autocomplete="tel"
+                        inputmode="tel"
+                        pattern="^(\+94|0)[0-9]{9}$"
+                    >
+                    <span class="field-error" data-error-for="phone">Enter a valid Sri Lankan phone number.</span>
+                </div>
+
+                <div class="form-group">
+                    <label for="email">Email <span class="optional">(optional)</span></label>
+                    <input
+                        type="email"
+                        id="email"
+                        name="email"
+                        placeholder="you@example.com"
+                        autocomplete="email"
+                    >
+                    <span class="field-error" data-error-for="email">Enter a valid email address.</span>
+                </div>
+
+                <div class="form-group">
+                    <label for="province">Province <span class="optional">(optional)</span></label>
+                    <input
+                        type="text"
+                        id="province"
+                        name="province"
+                        placeholder="Western Province"
+                        autocomplete="address-level1"
+                    >
+                </div>
+
+                <div class="form-group">
+                    <label for="district">District <span class="required">*</span></label>
+                    <select
+                        id="district"
+                        name="district"
+                        required
+                        autocomplete="address-level2"
+                    >
+                        <option value="">Select District</option>
+                        <option value="Colombo">Colombo</option>
+                        <option value="Gampaha">Gampaha</option>
+                        <option value="Kalutara">Kalutara</option>
+                        <option value="Kandy">Kandy</option>
+                        <option value="Matale">Matale</option>
+                        <option value="Nuwara Eliya">Nuwara Eliya</option>
+                        <option value="Galle">Galle</option>
+                        <option value="Matara">Matara</option>
+                        <option value="Hambantota">Hambantota</option>
+                        <option value="Jaffna">Jaffna</option>
+                        <option value="Kilinochchi">Kilinochchi</option>
+                        <option value="Mannar">Mannar</option>
+                        <option value="Mullaitivu">Mullaitivu</option>
+                        <option value="Vavuniya">Vavuniya</option>
+                        <option value="Trincomalee">Trincomalee</option>
+                        <option value="Batticaloa">Batticaloa</option>
+                        <option value="Ampara">Ampara</option>
+                        <option value="Kurunegala">Kurunegala</option>
+                        <option value="Puttalam">Puttalam</option>
+                        <option value="Anuradhapura">Anuradhapura</option>
+                        <option value="Polonnaruwa">Polonnaruwa</option>
+                        <option value="Badulla">Badulla</option>
+                        <option value="Monaragala">Monaragala</option>
+                        <option value="Ratnapura">Ratnapura</option>
+                        <option value="Kegalle">Kegalle</option>
+                    </select>
+                    <span class="field-error" data-error-for="district">Please select your district.</span>
+                </div>
+
+                <div class="form-group">
+                    <label for="city">City / Area <span class="required">*</span></label>
+                    <input
+                        type="text"
+                        id="city"
+                        name="city"
+                        placeholder="Example: Nugegoda, Colombo 01, Kandy"
+                        required
+                        autocomplete="address-level3"
+                    >
+                    <span class="field-error" data-error-for="city">Please enter your city or area.</span>
+                </div>
+
+                <div class="form-group full">
+                    <label for="address">Delivery Address <span class="required">*</span></label>
+                    <textarea
+                        id="address"
+                        name="address"
+                        rows="4"
+                        placeholder="Street, city, district, postal code"
+                        required
+                        autocomplete="street-address"
+                    ></textarea>
+                    <span class="field-error" data-error-for="address">Please enter your delivery address.</span>
+                </div>
+
+                <div class="form-group full">
+                    <label for="note">Order Note <span class="optional">(optional)</span></label>
+                    <textarea
+                        id="note"
+                        name="note"
+                        rows="3"
+                        placeholder="Any special requests or instructions…"
+                    ></textarea>
+                </div>
+
+            </div>
+
+            <div class="payment-box">
+                <h3>Payment Method</h3>
+
+                <label class="cod-option">
+                    <input type="radio" name="payment_method" value="COD" checked>
+                    <span class="cod-option-text">
+                        Cash on Delivery
+                        <span class="cod-badge">Only option available</span>
+                    </span>
+                </label>
+
+                <p id="deliveryHelperText">
+                    Select your district to calculate the delivery charge.
+                </p>
+            </div>
+
+            <button type="submit" class="btn-primary checkout-submit-btn" id="placeOrderBtn">
+                <span class="btn-label">Place Order</span>
+            </button>
+
+            <p class="checkout-form-footnote">
+                By placing this order you agree to our delivery terms. You will not be charged online — payment is collected on delivery.
+            </p>
+
+        </form>
+
+
+        <aside class="order-summary-box">
+            <h2>Your Order</h2>
+
+            <div class="order-summary-items">
+                {% for item in cart_items %}
+                    <div class="order-summary-item">
+                        <span>{{ item.name }} <span class="order-summary-qty">× {{ item.quantity }}</span></span>
+                        <strong>රු{{ item.line_total }}</strong>
+                    </div>
+                {% empty %}
+                    <p class="order-summary-empty">Your cart is empty.</p>
+                {% endfor %}
+            </div>
+
+            <div class="order-summary-divider"></div>
+
+            <div class="order-summary-row">
+                <span>Subtotal</span>
+                <strong>රු{{ subtotal }}</strong>
+            </div>
+
+            <div class="order-summary-row">
+                <span>Estimated Weight</span>
+                <strong>{{ cart_weight_kg }} kg</strong>
+            </div>
+
+            <div class="order-summary-row order-summary-row--muted" id="deliveryChargeRow">
+                <span>Delivery Charge</span>
+                <strong id="deliveryChargeText">Select district</strong>
+            </div>
+
+            <div class="order-summary-total">
+                <span>Final Total</span>
+                <strong id="finalTotalText">රු{{ subtotal }}</strong>
+            </div>
+
+            <div class="order-summary-secure">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="3" y="11" width="18" height="11" rx="2"/>
+                    <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                </svg>
+                Secured by Cash on Delivery
+            </div>
+        </aside>
+
+    </div>
+</section>
+
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+
+    const form       = document.getElementById('checkoutForm');
+    const overlay    = document.getElementById('orderOverlay');
+    const spinner    = document.getElementById('overlaySpinner');
+    const checkEl    = document.getElementById('overlayCheck');
+    const titleEl    = document.getElementById('overlayTitle');
+    const subtitleEl = document.getElementById('overlaySubtitle');
+    const dot1       = document.getElementById('step1');
+    const dot2       = document.getElementById('step2');
+    const dot3       = document.getElementById('step3');
+    const submitBtn  = document.getElementById('placeOrderBtn');
+    const btnLabel   = submitBtn ? submitBtn.querySelector('.btn-label') : null;
+
+    /*
+    |--------------------------------------------------------------------------
+    | Delivery charge live calculation elements
+    |--------------------------------------------------------------------------
+    */
+
+    const provinceField = document.getElementById('province');
+    const districtField = document.getElementById('district');
+    const cityField     = document.getElementById('city');
+
+    const subtotalField = document.getElementById('checkoutSubtotal');
+    const weightField   = document.getElementById('checkoutWeight');
+    const apiUrlField   = document.getElementById('deliveryChargeApiUrl');
+
+    const deliveryChargeInput = document.getElementById('delivery_charge');
+    const deliveryChargeText  = document.getElementById('deliveryChargeText');
+    const finalTotalText      = document.getElementById('finalTotalText');
+    const deliveryHelperText  = document.getElementById('deliveryHelperText');
+
+    let deliveryChargeTimer = null;
+
+    /*
+    |--------------------------------------------------------------------------
+    | Order submit overlay variables
+    |--------------------------------------------------------------------------
+    */
+
+    let isSubmitting = false;
+    let stepTimers = [];
+
+    if (!form) {
+        return;
+    }
+
+    const steps = [
+        {
+            dot: dot1,
+            title: 'Calculating delivery charge…',
+            sub: 'Please wait while we check your delivery area.'
+        },
+        {
+            dot: dot2,
+            title: 'Placing your order…',
+            sub: 'Your order is being saved securely.'
+        },
+        {
+            dot: dot3,
+            title: 'Sending order to ERP…',
+            sub: 'Please wait until the order is completed.'
+        }
+    ];
+
+    /*
+    |--------------------------------------------------------------------------
+    | General helper functions
+    |--------------------------------------------------------------------------
+    */
+
+    function getCookie(name) {
+        let cookieValue = null;
+
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+
+        return cookieValue;
+    }
+
+    function toNumber(value) {
+        if (value === null || value === undefined) {
+            return 0;
+        }
+
+        const cleaned = String(value).replace(/,/g, '').trim();
+        const numberValue = Number(cleaned);
+
+        return isNaN(numberValue) ? 0 : numberValue;
+    }
+
+    function formatLKR(value) {
+        const numberValue = toNumber(value);
+
+        return 'රු' + numberValue.toLocaleString('en-LK', {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+        });
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Delivery charge calculation
+    |--------------------------------------------------------------------------
+    */
+
+    function setDeliveryLoading() {
+        if (deliveryChargeText) {
+            deliveryChargeText.textContent = 'Calculating...';
+        }
+
+        if (finalTotalText) {
+            finalTotalText.textContent = 'Calculating...';
+        }
+
+        if (deliveryHelperText) {
+            deliveryHelperText.textContent = 'Checking delivery charge from ERP...';
+        }
+    }
+
+    function resetDeliveryCharge(message) {
+        const subtotal = subtotalField ? subtotalField.value : '0.00';
+
+        if (deliveryChargeInput) {
+            deliveryChargeInput.value = '0.00';
+        }
+
+        if (deliveryChargeText) {
+            deliveryChargeText.textContent = message || 'Select district';
+        }
+
+        if (finalTotalText) {
+            finalTotalText.textContent = formatLKR(subtotal);
+        }
+
+        if (deliveryHelperText) {
+            deliveryHelperText.textContent = message || 'Select your district to calculate the delivery charge.';
+        }
+    }
+
+    async function calculateDeliveryCharge() {
+        if (!districtField || !apiUrlField) {
+            return;
+        }
+
+        const province = provinceField ? provinceField.value.trim() : '';
+        const district = districtField.value.trim();
+        const city     = cityField ? cityField.value.trim() : '';
+
+        const subtotal = subtotalField ? subtotalField.value : '0.00';
+        const weight   = weightField ? weightField.value : '0.00';
+        const apiUrl   = apiUrlField.value;
+
+        if (!district) {
+            resetDeliveryCharge('Select district');
+            return;
+        }
+
+        setDeliveryLoading();
+
+        const formData = new FormData();
+        formData.append('province', province);
+        formData.append('district', district);
+        formData.append('city', city);
+        formData.append('weight_kg', weight);
+        formData.append('order_total', subtotal);
+        formData.append('payment_method', 'COD');
+
+        try {
+            const response = await fetch(apiUrl, {
+                method: 'POST',
+                body: formData,
+                credentials: 'same-origin',
+                headers: {
+                    'X-CSRFToken': getCookie('csrftoken'),
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Accept': 'application/json'
+                }
+            });
+
+            const data = await response.json();
+
+            if (data.success === true) {
+                const deliveryCharge = data.delivery_charge || '0.00';
+                const finalTotal = data.final_total || String(toNumber(subtotal) + toNumber(deliveryCharge));
+
+                if (deliveryChargeInput) {
+                    deliveryChargeInput.value = deliveryCharge;
+                }
+
+                if (deliveryChargeText) {
+                    deliveryChargeText.textContent = formatLKR(deliveryCharge);
+                }
+
+                if (finalTotalText) {
+                    finalTotalText.textContent = formatLKR(finalTotal);
+                }
+
+                if (deliveryHelperText) {
+                    deliveryHelperText.textContent = 'Delivery charge calculated according to your district, city and parcel weight.';
+                }
+
+                return;
+            }
+
+            resetDeliveryCharge(data.message || 'Delivery not available');
+
+        } catch (error) {
+            resetDeliveryCharge('Unable to calculate');
+        }
+    }
+
+    function scheduleDeliveryCalculation() {
+        clearTimeout(deliveryChargeTimer);
+
+        deliveryChargeTimer = setTimeout(function () {
+            calculateDeliveryCharge();
+        }, 500);
+    }
+
+    if (districtField) {
+        districtField.addEventListener('change', scheduleDeliveryCalculation);
+    }
+
+    if (cityField) {
+        cityField.addEventListener('input', scheduleDeliveryCalculation);
+        cityField.addEventListener('change', scheduleDeliveryCalculation);
+    }
+
+    if (provinceField) {
+        provinceField.addEventListener('input', scheduleDeliveryCalculation);
+        provinceField.addEventListener('change', scheduleDeliveryCalculation);
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Overlay handling
+    |--------------------------------------------------------------------------
+    */
+
+    function showOverlay() {
+        if (!overlay) return;
+        overlay.classList.add('active');
+        document.body.style.overflow = 'hidden';
+    }
+
+    function hideOverlay() {
+        if (!overlay) return;
+        overlay.classList.remove('active');
+        document.body.style.overflow = '';
+    }
+
+    function setStep(index) {
+        steps.forEach(function (step, i) {
+            if (!step.dot) return;
+
+            step.dot.classList.remove('active', 'done');
+
+            if (i < index) {
+                step.dot.classList.add('done');
+            }
+
+            if (i === index) {
+                step.dot.classList.add('active');
+            }
+        });
+
+        if (titleEl) {
+            titleEl.textContent = steps[index].title;
+        }
+
+        if (subtitleEl) {
+            subtitleEl.textContent = steps[index].sub;
+        }
+    }
+
+    function clearStepTimers() {
+        stepTimers.forEach(function (timer) {
+            clearTimeout(timer);
+        });
+
+        stepTimers = [];
+    }
+
+    function showSuccessBeforeRedirect() {
+        clearStepTimers();
+
+        if (spinner) {
+            spinner.style.display = 'none';
+        }
+
+        if (checkEl) {
+            checkEl.style.display = 'block';
+        }
+
+        if (titleEl) {
+            titleEl.textContent = 'Order completed!';
+        }
+
+        if (subtitleEl) {
+            subtitleEl.textContent = 'Redirecting to your confirmation page…';
+        }
+
+        steps.forEach(function (step) {
+            if (!step.dot) return;
+            step.dot.classList.remove('active');
+            step.dot.classList.add('done');
+        });
+    }
+
+    function setSubmitting(state) {
+        isSubmitting = state;
+
+        if (!submitBtn) return;
+
+        submitBtn.disabled = state;
+        submitBtn.classList.toggle('is-loading', state);
+
+        if (btnLabel) {
+            btnLabel.textContent = state ? 'Processing Order…' : 'Place Order';
+        }
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Form validation
+    |--------------------------------------------------------------------------
+    */
+
+    function clearFieldErrors() {
+        form.querySelectorAll('.form-group').forEach(function (group) {
+            group.classList.remove('has-error');
+        });
+    }
+
+    function showFieldErrors(invalidFields) {
+        clearFieldErrors();
+
+        invalidFields.forEach(function (field) {
+            const group = field.closest('.form-group');
+
+            if (group) {
+                group.classList.add('has-error');
+            }
+        });
+
+        if (invalidFields.length) {
+            invalidFields[0].focus();
+        }
+    }
+
+    function showError(message) {
+        clearStepTimers();
+        hideOverlay();
+        setSubmitting(false);
+        alert(message || 'Order could not be placed. Please try again.');
+    }
+
+    form.addEventListener('input', function (event) {
+        const group = event.target.closest('.form-group');
+
+        if (group) {
+            group.classList.remove('has-error');
+        }
+    });
+
+    /*
+    |--------------------------------------------------------------------------
+    | Form submit
+    |--------------------------------------------------------------------------
+    */
+
+    form.addEventListener('submit', async function (event) {
+        event.preventDefault();
+
+        if (isSubmitting) {
+            return;
+        }
+
+        const invalidFields = Array.prototype.filter.call(
+            form.querySelectorAll('input, select, textarea'),
+            function (field) {
+                return !field.checkValidity();
+            }
+        );
+
+        if (invalidFields.length) {
+            showFieldErrors(invalidFields);
+            return;
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | Calculate delivery charge once more before final order submission
+        |--------------------------------------------------------------------------
+        */
+
+        await calculateDeliveryCharge();
+
+        clearFieldErrors();
+        setSubmitting(true);
+
+        showOverlay();
+        setStep(0);
+
+        if (spinner) {
+            spinner.style.display = 'block';
+        }
+
+        if (checkEl) {
+            checkEl.style.display = 'none';
+        }
+
+        stepTimers.push(setTimeout(function () {
+            if (isSubmitting) setStep(1);
+        }, 700));
+
+        stepTimers.push(setTimeout(function () {
+            if (isSubmitting) setStep(2);
+        }, 1600));
+
+        try {
+            const formData = new FormData(form);
+
+            const response = await fetch(form.action, {
+                method: 'POST',
+                body: formData,
+                credentials: 'same-origin',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Accept': 'application/json'
+                }
+            });
+
+            const data = await response.json();
+
+            if (data.success === true) {
+                showSuccessBeforeRedirect();
+
+                setTimeout(function () {
+                    window.location.href = data.redirect_url;
+                }, 600);
+
+                return;
+            }
+
+            if (data.redirect_url) {
+                window.location.href = data.redirect_url;
+                return;
+            }
+
+            showError(data.message || 'Order could not be placed.');
+
+        } catch (error) {
+            showError('Connection error. Please check your internet connection and try again.');
+        }
+    });
+
+});
+</script>
+
+{% endblock %}

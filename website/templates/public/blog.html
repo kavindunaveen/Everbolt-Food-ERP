@@ -1,0 +1,115 @@
+{% extends "public/base.html" %}
+{% load static %}
+
+{% block title %}Blog – Everbolt Foods | Product News, Food Service Tips & Stories{% endblock %}
+
+{% block seo %}
+<meta name="description" content="Read Everbolt Foods product updates, HoReCa supply tips, customer service stories and food business insights from Sri Lanka.">
+<meta name="robots" content="index, follow">
+{% endblock %}
+
+{% block og %}
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Everbolt Foods">
+<meta property="og:title" content="Blog – Everbolt Foods">
+<meta property="og:description" content="Product updates, HoReCa supply tips and food business insights from Everbolt Foods Sri Lanka.">
+{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/blog.css' %}">
+{% endblock %}
+
+{% block content %}
+
+<!-- HERO -->
+<section class="blog-hero">
+    <div class="blog-hero-bg" aria-hidden="true">
+        <svg viewBox="0 0 1400 320" fill="none" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid slice">
+            <circle cx="120" cy="160" r="100" stroke="#ffffff" stroke-width="1.5" opacity="0.28"/>
+            <circle cx="120" cy="160" r="60" stroke="#f4c430" stroke-width="1.5" opacity="0.28"/>
+            <circle cx="1310" cy="160" r="120" stroke="#ffffff" stroke-width="1.5" opacity="0.22"/>
+            <circle cx="1310" cy="160" r="70" stroke="#111111" stroke-width="1.5" opacity="0.12"/>
+        </svg>
+    </div>
+
+    <div class="blog-hero-inner">
+        <span class="blog-hero-badge">✦ News & Insights</span>
+        <h1 class="blog-hero-title">Everbolt <em>Blog</em></h1>
+        <p class="blog-hero-sub">
+            Product updates, HoReCa supply tips, customer service stories and useful food business insights from Sri Lanka.
+        </p>
+    </div>
+</section>
+
+<!-- POSTS GRID -->
+<section class="blog-listing">
+    <div class="blog-container">
+
+        {% if posts %}
+        <div class="blog-grid">
+
+            {% for post in posts %}
+            <article class="blog-card">
+                <a href="{% url 'blog_detail' post.slug %}" class="blog-card-link">
+
+                    <!-- Cover image -->
+                    <div class="blog-card-img-wrap">
+                        {% if post.cover_image_url %}
+                            <img src="{{ post.cover_image_url }}" alt="{{ post.title }}" class="blog-card-img">
+                        {% else %}
+                            <div class="blog-card-img-placeholder">
+                                <svg viewBox="0 0 80 60" fill="none" xmlns="http://www.w3.org/2000/svg" width="60" aria-hidden="true">
+                                    <rect x="10" y="10" width="60" height="40" rx="4" stroke="#e60012" stroke-width="1.5"/>
+                                    <circle cx="28" cy="26" r="7" stroke="#e60012" stroke-width="1.5" opacity="0.7"/>
+                                    <path d="M10 42 l18-14 12 10 10-8 20 12" stroke="#e60012" stroke-width="1.5" fill="none" opacity="0.75"/>
+                                </svg>
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Text -->
+                    <div class="blog-card-body">
+                        <div class="blog-card-meta">
+                            {% if post.focus_keyword %}
+                                <span class="blog-card-tag">{{ post.focus_keyword }}</span>
+                            {% endif %}
+
+                            {% if post.published_at %}
+                                <span class="blog-card-date">
+                                    {{ post.published_at|slice:":10" }}
+                                </span>
+                            {% endif %}
+                        </div>
+
+                        <h2 class="blog-card-title">{{ post.title }}</h2>
+
+                        {% if post.excerpt %}
+                            <p class="blog-card-excerpt">{{ post.excerpt|truncatechars:140 }}</p>
+                        {% endif %}
+
+                        <span class="blog-card-cta">Read more →</span>
+                    </div>
+
+                </a>
+            </article>
+            {% endfor %}
+
+        </div>
+
+        {% else %}
+        <div class="blog-empty">
+            <svg viewBox="0 0 80 80" fill="none" width="60" height="60" aria-hidden="true">
+                <circle cx="40" cy="40" r="34" stroke="#e60012" stroke-width="1.5" opacity="0.65"/>
+                <circle cx="40" cy="40" r="20" stroke="#e60012" stroke-width="1.5" opacity="0.45"/>
+                <circle cx="40" cy="40" r="8" fill="#e60012" opacity="0.18"/>
+            </svg>
+
+            <p class="blog-empty-title">No posts yet</p>
+            <p class="blog-empty-sub">Check back soon — new updates are being prepared.</p>
+        </div>
+        {% endif %}
+
+    </div>
+</section>
+
+{% endblock %}

@@ -1,0 +1,116 @@
+{% extends "public/base.html" %}
+{% load static %}
+
+{% block title %}Shopping Cart – Everbolt Foods{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/cart.css' %}">
+{% endblock %}
+
+{% block content %}
+
+<section class="page-hero">
+    <div class="container">
+        <h1>Shopping Cart</h1>
+        <p>Review your selected products before checkout.</p>
+    </div>
+</section>
+
+<section class="cart-section">
+    <div class="container">
+
+        {% if cart_items %}
+            <form method="post" action="{% url 'update_cart' %}">
+                {% csrf_token %}
+
+                <div class="cart-table-wrap">
+                    <table class="cart-table">
+                        <thead>
+                            <tr>
+                                <th>Product</th>
+                                <th>Price</th>
+                                <th>Qty</th>
+                                <th>Total</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in cart_items %}
+                                <tr>
+                                    <td>
+                                        <div class="cart-product">
+                                            {% if item.image %}
+                                                {% if item.image|slice:":4" == "http" %}
+                                                    <img src="{{ item.image }}" alt="{{ item.name }}">
+                                                {% else %}
+                                                    <img src="{{ erp_media_base_url }}{{ item.image }}" alt="{{ item.name }}">
+                                                {% endif %}
+                                            {% endif %}
+                                            <div>
+                                                <strong>{{ item.name }}</strong>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>රු{{ item.price }}</td>
+                                    <td>
+                                        <input type="number"
+                                               name="qty_{{ item.id }}"
+                                               value="{{ item.quantity }}"
+                                               min="1"
+                                               class="cart-qty-input">
+                                    </td>
+                                    <td>රු{{ item.line_total }}</td>
+                                    <td>
+                                        <a href="{% url 'remove_from_cart' item.id %}" class="cart-remove-btn">
+                                            Remove
+                                        </a>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="cart-bottom">
+                    <div class="cart-actions">
+                        <button type="submit" class="btn-secondary">Update Cart</button>
+                    </div>
+
+                    <div class="cart-summary">
+                        <h3>Cart Summary</h3>
+
+                        <div class="cart-summary-row">
+                            <span>Subtotal</span>
+                            <strong>රු{{ subtotal }}</strong>
+                        </div>
+
+                        <div class="cart-summary-row">
+                            <span>Payment Method</span>
+                            <span class="cod-badge">Cash on Delivery</span>
+                        </div>
+
+                        <div class="cart-summary-row">
+                            <span>Total</span>
+                            <strong>රු{{ subtotal }}</strong>
+                        </div>
+
+                        <div class="cart-actions">
+                            <a href="{% url 'checkout' %}" class="btn-primary">Proceed to Checkout</a>
+                        </div>
+                    </div>
+                </div>
+
+            </form>
+
+        {% else %}
+            <div class="no-products">
+                <h3>Your cart is empty.</h3>
+                <p>Please add products to continue shopping.</p>
+                <a href="{% url 'products' %}" class="product-view-btn">Shop Products</a>
+            </div>
+        {% endif %}
+
+    </div>
+</section>
+
+{% endblock %}

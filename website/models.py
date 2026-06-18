@@ -17,6 +17,13 @@ class WebsiteSettings(models.Model):
     whatsapp_number = models.CharField(max_length=20, blank=True)
     is_maintenance_mode = models.BooleanField(default=False)
     maintenance_message = models.TextField(blank=True, default='We are currently performing maintenance. We\'ll be back soon!')
+    
+    # Homepage Sections (JSON for flexible content like slides, features, etc)
+    hero_section = models.JSONField(default=dict, blank=True, help_text="JSON containing title, description, and slides array")
+    about_section = models.JSONField(default=dict, blank=True, help_text="JSON containing title, subtitle, description, button_text, button_url, image")
+    why_choose_us_section = models.JSONField(default=dict, blank=True, help_text="JSON containing title, description, and features array")
+    cta_section = models.JSONField(default=dict, blank=True, help_text="JSON containing title, description, button_text, button_url")
+
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
@@ -171,3 +178,59 @@ class WebsiteEnquiry(models.Model):
 
     def __str__(self):
         return f'{self.name} — {self.subject or self.email} ({self.submitted_at.strftime("%d %b %Y")})'
+
+class WebsiteOrder(models.Model):
+    SYNC_STATUS_CHOICES = [
+        ("pending", "Pending"),
+        ("converted", "Converted to Sales Order/Invoice"),
+        ("cancelled", "Cancelled"),
+    ]
+
+    website_order_number = models.CharField(max_length=50, unique=True)
+    customer_name = models.CharField(max_length=255)
+    phone = models.CharField(max_length=50)
+    email = models.EmailField(blank=True, null=True)
+
+    billing_address = models.TextField()
+    shipping_address = models.TextField()
+    city = models.CharField(max_length=100)
+    district = models.CharField(max_length=100, blank=True, null=True)
+    province = models.CharField(max_length=100, blank=True, null=True)
+
+    subtotal = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    shipping_charge = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    discount_total = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    tax = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    total_amount = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+
+    payment_method = models.CharField(max_length=50, default="COD")
+    internal_notes = models.TextField(blank=True, null=True)
+
+    sync_status = models.CharField(
+        max_length=20,
+        choices=SYNC_STATUS_CHOICES,
+        default="pending"
+    )
+
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return self.website_order_number
+
+class WebsiteOrderItem(models.Model):
+    order = models.ForeignKey(WebsiteOrder, related_name="items", on_delete=models.CASCADE)
+    website_product = models.ForeignKey('WebsiteProduct', on_delete=models.SET_NULL, null=True, blank=True)
+    inventory_product = models.ForeignKey(Product, on_delete=models.SET_NULL, null=True, blank=True)
+
+    product_name = models.CharField(max_length=255)
+    sku = models.CharField(max_length=100, blank=True, null=True)
+
+    quantity = models.DecimalField(max_digits=12, decimal_places=2, default=1)
+    unit_price = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    line_total = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+
+    def __str__(self):
+        return f"{self.product_name} - {self.quantity}"

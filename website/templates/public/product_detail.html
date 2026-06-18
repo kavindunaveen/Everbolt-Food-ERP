@@ -1,0 +1,511 @@
+{% extends "public/base.html" %}
+{% load static %}
+
+{% block title %}
+    {% if product.display_name_final %}
+        {{ product.display_name_final }} – Everbolt Foods
+    {% elif product.display_name %}
+        {{ product.display_name }} – Everbolt Foods
+    {% else %}
+        Product – Everbolt Foods
+    {% endif %}
+{% endblock %}
+
+{% block meta_description %}
+    {% if product.meta_description %}
+        {{ product.meta_description|truncatechars:155 }}
+    {% elif product.description %}
+        {{ product.description|truncatechars:155 }}
+    {% elif product.short_description %}
+        {{ product.short_description|truncatechars:155 }}
+    {% else %}
+        Premium food product from Everbolt Foods, Sri Lanka.
+    {% endif %}
+{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/product.css' %}">
+{% endblock %}
+
+{% block content %}
+
+{% if product %}
+
+<!-- ===== BREADCRUMB ===== -->
+<div class="breadcrumb-bar">
+    <div class="container">
+        <nav class="breadcrumb" aria-label="Breadcrumb">
+            <a href="{% url 'home' %}">Home</a>
+            <span class="breadcrumb-sep">›</span>
+
+            <a href="{% url 'products' %}">Products</a>
+            <span class="breadcrumb-sep">›</span>
+
+            {% if product.website_category %}
+                <a href="{% url 'products' %}?category={{ product.website_category }}">
+                    Category {{ product.website_category }}
+                </a>
+                <span class="breadcrumb-sep">›</span>
+            {% endif %}
+
+            <span class="breadcrumb-current">
+                {% if product.display_name_final %}
+                    {{ product.display_name_final }}
+                {% else %}
+                    {{ product.display_name }}
+                {% endif %}
+            </span>
+        </nav>
+    </div>
+</div>
+
+<!-- ===== PRODUCT DETAIL ===== -->
+<main class="product-detail-page">
+    <div class="container">
+        <div class="product-layout">
+
+            <!-- GALLERY -->
+            <div class="product-gallery">
+                <div class="gallery-main">
+                    <div class="gallery-main-inner">
+
+                        {% if product.discount_percentage and product.discount_percentage != "0.00" %}
+                            <div class="sale-badge">Sale!</div>
+                        {% endif %}
+
+                        {% if product.main_image %}
+                            {% if product.main_image|slice:":4" == "http" %}
+                                <img id="mainImage"
+                                     src="{{ product.main_image }}"
+                                     alt="{% if product.display_name_final %}{{ product.display_name_final }}{% else %}{{ product.display_name }}{% endif %}"
+                                     class="gallery-main-img">
+                            {% else %}
+                                <img id="mainImage"
+                                     src="{{ erp_media_base_url }}{{ product.main_image }}"
+                                     alt="{% if product.display_name_final %}{{ product.display_name_final }}{% else %}{{ product.display_name }}{% endif %}"
+                                     class="gallery-main-img">
+                            {% endif %}
+                        {% else %}
+                            <div class="gallery-placeholder">
+                                <svg viewBox="0 0 80 80" fill="none" width="80" height="80">
+                                    <rect x="10" y="20" width="60" height="45" rx="4" stroke="#C1272D" stroke-width="2"/>
+                                    <circle cx="28" cy="35" r="7" stroke="#C1272D" stroke-width="1.5"/>
+                                    <path d="M10 52 l18-14 14 10 10-8 18 12" stroke="#C1272D" stroke-width="1.5" fill="none"/>
+                                </svg>
+                                <p>No image available</p>
+                            </div>
+                        {% endif %}
+
+                    </div>
+                </div>
+
+                <!-- Thumbnails -->
+                {% if product.main_image or product.image_2 or product.image_3 %}
+                    <div class="gallery-thumbs">
+
+                        {% if product.main_image %}
+                            <button class="thumb-btn thumb-active"
+                                    onclick="switchImage(this, '{% if product.main_image|slice:':4' == 'http' %}{{ product.main_image }}{% else %}{{ erp_media_base_url }}{{ product.main_image }}{% endif %}')"
+                                    type="button">
+                                {% if product.main_image|slice:":4" == "http" %}
+                                    <img src="{{ product.main_image }}" alt="Main image">
+                                {% else %}
+                                    <img src="{{ erp_media_base_url }}{{ product.main_image }}" alt="Main image">
+                                {% endif %}
+                            </button>
+                        {% endif %}
+
+                        {% if product.image_2 %}
+                            <button class="thumb-btn"
+                                    onclick="switchImage(this, '{% if product.image_2|slice:':4' == 'http' %}{{ product.image_2 }}{% else %}{{ erp_media_base_url }}{{ product.image_2 }}{% endif %}')"
+                                    type="button">
+                                {% if product.image_2|slice:":4" == "http" %}
+                                    <img src="{{ product.image_2 }}" alt="Product image 2">
+                                {% else %}
+                                    <img src="{{ erp_media_base_url }}{{ product.image_2 }}" alt="Product image 2">
+                                {% endif %}
+                            </button>
+                        {% endif %}
+
+                        {% if product.image_3 %}
+                            <button class="thumb-btn"
+                                    onclick="switchImage(this, '{% if product.image_3|slice:':4' == 'http' %}{{ product.image_3 }}{% else %}{{ erp_media_base_url }}{{ product.image_3 }}{% endif %}')"
+                                    type="button">
+                                {% if product.image_3|slice:":4" == "http" %}
+                                    <img src="{{ product.image_3 }}" alt="Product image 3">
+                                {% else %}
+                                    <img src="{{ erp_media_base_url }}{{ product.image_3 }}" alt="Product image 3">
+                                {% endif %}
+                            </button>
+                        {% endif %}
+
+                    </div>
+                {% endif %}
+            </div>
+
+            <!-- PRODUCT INFO -->
+            <div class="product-info">
+
+                <p class="product-brand">EVERBOLT FOODS · PREMIUM QUALITY</p>
+
+                <h1 class="product-title">
+                    {% if product.display_name_final %}
+                        {{ product.display_name_final }}
+                    {% else %}
+                        {{ product.display_name }}
+                    {% endif %}
+                </h1>
+
+                <!-- Price -->
+                <div class="product-price-wrap">
+                    {% if product.website_price and product.website_price != product.final_price %}
+                        <span class="price-original">රු{{ product.website_price }}</span>
+                    {% endif %}
+
+                    {% if product.final_price %}
+                        <span class="price-current">රු{{ product.final_price }}</span>
+                    {% elif product.base_price %}
+                        <span class="price-current">රු{{ product.base_price }}</span>
+                    {% else %}
+                        <span class="price-current">Price on Request</span>
+                    {% endif %}
+
+                    {% if product.discount_percentage and product.discount_percentage != "0.00" %}
+                        <span class="price-save-tag">Save {{ product.discount_percentage }}%</span>
+                    {% endif %}
+                </div>
+
+                <div class="product-divider"></div>
+
+                <!-- Description -->
+                <div class="product-description">
+                    {% if product.short_description %}
+                        <p>{{ product.short_description }}</p>
+                    {% elif product.description %}
+                        <p>{{ product.description }}</p>
+                    {% else %}
+                        <p>Premium quality food product supplied by Everbolt Foods.</p>
+                    {% endif %}
+                </div>
+
+                <!-- Product Meta -->
+                <div class="product-meta">
+
+                    {% if product.slug %}
+                        <span><strong>Slug:</strong> {{ product.slug }}</span>
+                    {% endif %}
+
+                    {% if product.website_category %}
+                        <span>
+                            <strong>Category:</strong>
+                            <a href="{% url 'products' %}?category={{ product.website_category }}">
+                                Category {{ product.website_category }}
+                            </a>
+                        </span>
+                    {% endif %}
+
+                    {% if product.stock %}
+                        {% if product.show_stock %}
+                            <span><strong>Available Stock:</strong> {{ product.stock }}</span>
+                        {% endif %}
+                    {% endif %}
+
+                    {% if product.min_order_qty %}
+                        <span><strong>Minimum Order Qty:</strong> {{ product.min_order_qty }}</span>
+                    {% endif %}
+
+                    {% if product.status == "PUBLISHED" %}
+                        <span class="stock-status in-stock">✓ Available</span>
+                    {% else %}
+                        <span class="stock-status out-of-stock">✗ Not Available</span>
+                    {% endif %}
+
+                </div>
+
+                <!-- Quantity + Add to Cart -->
+                <form method="post" action="{% url 'add_to_cart' product.id %}" class="product-cart-row">
+                    {% csrf_token %}
+
+                    <div class="qty-control">
+                        <button class="qty-btn" onclick="adjustProductQty(this, -1)" type="button" aria-label="Decrease quantity">−</button>
+                        <input name="quantity" class="qty-input" type="number" value="1" min="1" max="99" readonly aria-label="Quantity">
+                        <button class="qty-btn" onclick="adjustProductQty(this, 1)" type="button" aria-label="Increase quantity">+</button>
+                    </div>
+
+                    <button class="btn-add-to-cart" type="submit">
+                        Add to Cart
+                    </button>
+                </form>
+
+                <!-- Contact Actions -->
+                <div class="product-actions">
+                    <a href="mailto:info@organicfoodslanka.com?subject=Inquiry about {% if product.display_name_final %}{{ product.display_name_final|urlencode }}{% else %}{{ product.display_name|urlencode }}{% endif %}"
+                       class="btn-email">
+                        Email Us
+                    </a>
+
+                    <a href="https://wa.me/94765400084?text=Hello%20Everbolt%20Foods,%20I%20am%20interested%20in%20{% if product.display_name_final %}{{ product.display_name_final|urlencode }}{% else %}{{ product.display_name|urlencode }}{% endif %}."
+                       class="btn-whatsapp"
+                       target="_blank"
+                       rel="noopener noreferrer">
+                        WhatsApp
+                    </a>
+                </div>
+
+                <!-- Trust Badges -->
+                <div class="product-badges">
+                    <div class="badge-item">
+                        <div class="badge-icon">🌱</div>
+                        <span>100% Natural</span>
+                    </div>
+
+                    <div class="badge-item">
+                        <div class="badge-icon">✔</div>
+                        <span>Premium Quality</span>
+                    </div>
+
+                    <div class="badge-item">
+                        <div class="badge-icon">🚚</div>
+                        <span>Ships Islandwide</span>
+                    </div>
+
+                    <div class="badge-item">
+                        <div class="badge-icon">🇱🇰</div>
+                        <span>Sri Lanka Made</span>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- ===== TABS ===== -->
+        <div class="product-tabs-section">
+            <div class="tabs-nav" role="tablist">
+                <button class="tab-btn tab-active" role="tab" aria-selected="true" onclick="switchTab(this, 'tab-description')" type="button">
+                    Description
+                </button>
+
+                <button class="tab-btn" role="tab" aria-selected="false" onclick="switchTab(this, 'tab-additional')" type="button">
+                    Additional Information
+                </button>
+
+                <button class="tab-btn" role="tab" aria-selected="false" onclick="switchTab(this, 'tab-policies')" type="button">
+                    Store Policies
+                </button>
+
+                <button class="tab-btn" role="tab" aria-selected="false" onclick="switchTab(this, 'tab-inquiries')" type="button">
+                    Inquiries
+                </button>
+            </div>
+
+            <div class="tab-panel tab-panel-active" id="tab-description">
+                <h2>
+                    {% if product.display_name_final %}
+                        {{ product.display_name_final }}
+                    {% else %}
+                        {{ product.display_name }}
+                    {% endif %}
+                </h2>
+
+                <div class="tab-content-body">
+                    {% if product.description %}
+                        {{ product.description|linebreaks }}
+                    {% elif product.short_description %}
+                        {{ product.short_description|linebreaks }}
+                    {% else %}
+                        <p>Premium quality product from Everbolt Foods.</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="tab-panel" id="tab-additional">
+                <table class="info-table">
+
+                    {% if product.website_category %}
+                        <tr>
+                            <th>Category ID</th>
+                            <td>{{ product.website_category }}</td>
+                        </tr>
+                    {% endif %}
+
+                    {% if product.estimated_weight_kg %}
+                        <tr>
+                            <th>Estimated Weight</th>
+                            <td>{{ product.estimated_weight_kg }} kg</td>
+                        </tr>
+                    {% endif %}
+
+                    {% if product.min_order_qty %}
+                        <tr>
+                            <th>Minimum Order Qty</th>
+                            <td>{{ product.min_order_qty }}</td>
+                        </tr>
+                    {% endif %}
+
+                    {% if product.stock %}
+                        <tr>
+                            <th>Stock</th>
+                            <td>{{ product.stock }}</td>
+                        </tr>
+                    {% endif %}
+
+                    {% if product.free_delivery %}
+                        <tr>
+                            <th>Delivery</th>
+                            <td>Free Delivery Available</td>
+                        </tr>
+                    {% endif %}
+
+                </table>
+            </div>
+
+            <div class="tab-panel" id="tab-policies">
+                <div class="tab-content-body">
+                    <h3>Shipping Policy</h3>
+                    <p>We deliver islandwide across Sri Lanka. Delivery time may vary depending on location.</p>
+
+                    <h3>Return Policy</h3>
+                    <p>Due to the nature of food products, returns are only accepted for damaged or incorrectly delivered items. Please contact us within 24 hours of receiving your order.</p>
+
+                    <h3>Freshness Guarantee</h3>
+                    <p>All Everbolt Foods products are handled carefully to maintain quality and freshness.</p>
+                </div>
+            </div>
+
+            <div class="tab-panel" id="tab-inquiries">
+                <div class="tab-content-body">
+                    <p>Have a question about this product? Reach out to us directly:</p>
+                    <ul>
+                        <li>📧 <a href="mailto:info@organicfoodslanka.com">info@organicfoodslanka.com</a></li>
+                        <li>📱 <a href="https://wa.me/94765400084" target="_blank" rel="noopener">WhatsApp: +94 76 540 0084</a></li>
+                    </ul>
+                    <p>We respond within 24 hours on business days.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- ===== RELATED PRODUCTS ===== -->
+        {% if related_products %}
+            <section class="related-products-section">
+                <h2 class="section-heading">Related Products</h2>
+
+                <div class="related-products-grid">
+                    {% for rp in related_products %}
+                        <a href="{% url 'product_detail' rp.id %}" class="related-card">
+
+                            <div class="related-card-img-wrap">
+                                {% if rp.main_image %}
+                                    {% if rp.main_image|slice:":4" == "http" %}
+                                        <img src="{{ rp.main_image }}"
+                                             alt="{% if rp.display_name_final %}{{ rp.display_name_final }}{% else %}{{ rp.display_name }}{% endif %}"
+                                             loading="lazy">
+                                    {% else %}
+                                        <img src="{{ erp_media_base_url }}{{ rp.main_image }}"
+                                             alt="{% if rp.display_name_final %}{{ rp.display_name_final }}{% else %}{{ rp.display_name }}{% endif %}"
+                                             loading="lazy">
+                                    {% endif %}
+                                {% else %}
+                                    <div class="related-img-placeholder">
+                                        <span>No Image</span>
+                                    </div>
+                                {% endif %}
+                            </div>
+
+                            <div class="related-card-body">
+                                <p class="related-name">
+                                    {% if rp.display_name_final %}
+                                        {{ rp.display_name_final }}
+                                    {% else %}
+                                        {{ rp.display_name }}
+                                    {% endif %}
+                                </p>
+
+                                <div class="related-price-row">
+                                    {% if rp.final_price %}
+                                        <span class="related-price">රු{{ rp.final_price }}</span>
+                                    {% elif rp.base_price %}
+                                        <span class="related-price">රු{{ rp.base_price }}</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+
+                        </a>
+                    {% endfor %}
+                </div>
+            </section>
+        {% endif %}
+
+    </div>
+</main>
+
+{% else %}
+
+<section class="page-hero">
+    <div class="container">
+        <h1>Product Not Found</h1>
+        <p>The product you are looking for is not available.</p>
+        <a href="{% url 'products' %}" class="product-view-btn">Back to Products</a>
+    </div>
+</section>
+
+{% endif %}
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    function switchImage(btn, src) {
+        const mainImage = document.getElementById('mainImage');
+
+        if (mainImage) {
+            mainImage.style.opacity = '0';
+
+            setTimeout(() => {
+                mainImage.src = src;
+                mainImage.style.opacity = '1';
+            }, 150);
+        }
+
+        document.querySelectorAll('.thumb-btn').forEach(b => {
+            b.classList.remove('thumb-active');
+        });
+
+        btn.classList.add('thumb-active');
+    }
+
+    function adjustProductQty(btn, delta) {
+        const control = btn.closest('.qty-control');
+        const input = control ? control.querySelector('.qty-input') : null;
+
+        if (!input) {
+            return;
+        }
+
+        const val = parseInt(input.value, 10) + delta;
+
+        if (val >= 1 && val <= 99) {
+            input.value = val;
+        }
+    }
+
+    function switchTab(btn, panelId) {
+        document.querySelectorAll('.tab-btn').forEach(b => {
+            b.classList.remove('tab-active');
+            b.setAttribute('aria-selected', 'false');
+        });
+
+        document.querySelectorAll('.tab-panel').forEach(p => {
+            p.classList.remove('tab-panel-active');
+        });
+
+        btn.classList.add('tab-active');
+        btn.setAttribute('aria-selected', 'true');
+
+        const panel = document.getElementById(panelId);
+
+        if (panel) {
+            panel.classList.add('tab-panel-active');
+        }
+    }
+</script>
+{% endblock %}

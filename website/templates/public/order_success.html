@@ -1,0 +1,75 @@
+{% extends "public/base.html" %}
+{% load static %}
+
+{% block title %}Order Confirmed – Everbolt Foods{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/cart.css' %}">
+{% endblock %}
+
+{% block content %}
+
+<section class="success-section">
+    <div class="container">
+        <div class="success-card">
+
+            <!-- Animated checkmark -->
+            <div class="success-icon">
+                <svg viewBox="0 0 52 52" xmlns="http://www.w3.org/2000/svg">
+                    <circle class="success-circle" cx="26" cy="26" r="24"/>
+                    <polyline class="success-tick" points="14,27 21,34 38,17"/>
+                </svg>
+            </div>
+
+            <h1>Order Confirmed!</h1>
+            <p class="success-sub">
+                Thank you for your order. We've received it successfully.
+                Our team will review the order and call you to confirm before dispatch.
+            </p>
+
+            <!-- Order details — populated by Django context -->
+            <div class="success-detail-box">
+                {% if order_id %}
+                <div class="success-detail-row">
+                    <span>Order reference</span>
+                    <strong>#{{ order_id }}</strong>
+                </div>
+                {% endif %}
+
+                {% if customer_name %}
+                <div class="success-detail-row">
+                    <span>Name</span>
+                    <span>{{ customer_name }}</span>
+                </div>
+                {% endif %}
+
+                {% if phone %}
+                <div class="success-detail-row">
+                    <span>Phone</span>
+                    <span>{{ phone }}</span>
+                </div>
+                {% endif %}
+
+                {% if subtotal %}
+                <div class="success-detail-row">
+                    <span>Order total</span>
+                    <strong>රු{{ subtotal }}</strong>
+                </div>
+                {% endif %}
+
+                <div class="success-detail-row">
+                    <span>Payment method</span>
+                    <span>Cash on Delivery</span>
+                </div>
+            </div>
+
+            <div class="success-actions">
+                <a href="{% url 'products' %}" class="btn-primary">Continue Shopping</a>
+                <a href="{% url 'home' %}" class="btn-secondary">Back to Home</a>
+            </div>
+
+        </div>
+    </div>
+</section>
+
+{% endblock %}

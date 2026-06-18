@@ -1,0 +1,177 @@
+{% extends "public/base.html" %}
+{% load static %}
+
+{% block title %}
+{{ post.seo_title_display|default:post.title }} – Everbolt Foods
+{% endblock %}
+
+{% block seo %}
+<meta name="description" content="{{ post.meta_description_display|default:post.excerpt }}">
+
+{% if post.focus_keyword %}
+<meta name="keywords" content="{{ post.focus_keyword }}">
+{% endif %}
+
+{% if post.canonical_url %}
+<link rel="canonical" href="{{ post.canonical_url }}">
+{% else %}
+<link rel="canonical" href="{{ request.build_absolute_uri }}">
+{% endif %}
+
+<meta name="robots" content="index, follow">
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Article",
+  "headline": "{{ post.seo_title_display|default:post.title|escapejs }}",
+  "description": "{{ post.meta_description_display|default:post.excerpt|escapejs }}",
+  "author": {
+    "@type": "Person",
+    "name": "{{ post.author|escapejs }}"
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "Everbolt Foods",
+    "url": "{{ request.scheme }}://{{ request.get_host }}"
+  },
+  "datePublished": "{{ post.published_at }}",
+  "dateModified": "{{ post.updated_at }}"
+  {% if post.og_image_url %}
+  ,"image": "{{ post.og_image_url }}"
+  {% elif post.cover_image_url %}
+  ,"image": "{{ post.cover_image_url }}"
+  {% endif %}
+}
+</script>
+{% endblock %}
+
+{% block og %}
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="Everbolt Foods">
+<meta property="og:title" content="{{ post.og_title_display|default:post.seo_title_display|default:post.title }}">
+<meta property="og:description" content="{{ post.og_description_display|default:post.meta_description_display|default:post.excerpt }}">
+<meta property="og:url" content="{{ request.build_absolute_uri }}">
+
+{% if post.og_image_url %}
+<meta property="og:image" content="{{ post.og_image_url }}">
+{% elif post.cover_image_url %}
+<meta property="og:image" content="{{ post.cover_image_url }}">
+{% endif %}
+
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="{{ post.og_title_display|default:post.seo_title_display|default:post.title }}">
+<meta name="twitter:description" content="{{ post.og_description_display|default:post.meta_description_display|default:post.excerpt }}">
+
+{% if post.og_image_url %}
+<meta name="twitter:image" content="{{ post.og_image_url }}">
+{% elif post.cover_image_url %}
+<meta name="twitter:image" content="{{ post.cover_image_url }}">
+{% endif %}
+{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/blog.css' %}">
+{% endblock %}
+
+{% block content %}
+
+<article class="blog-post">
+
+    <!-- POST HEADER -->
+    <header class="post-header">
+        <div class="post-header-bg" aria-hidden="true">
+            <svg viewBox="0 0 1400 320" fill="none" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid slice">
+                <circle cx="120" cy="160" r="100" stroke="#ffffff" stroke-width="1.5" opacity="0.26"/>
+                <circle cx="120" cy="160" r="60" stroke="#f4c430" stroke-width="1.5" opacity="0.24"/>
+                <circle cx="1310" cy="160" r="120" stroke="#ffffff" stroke-width="1.5" opacity="0.22"/>
+            </svg>
+        </div>
+
+        <div class="post-header-inner">
+            <a href="{% url 'blog_list' %}" class="post-back">← Back to Blog</a>
+
+            <div class="post-meta">
+                {% if post.focus_keyword %}
+                    <span class="post-tag">{{ post.focus_keyword }}</span>
+                {% endif %}
+
+                {% if post.published_at %}
+                    <span class="post-date">{{ post.published_at|slice:":10" }}</span>
+                {% endif %}
+
+                {% if post.author %}
+                    <span class="post-author">by {{ post.author }}</span>
+                {% endif %}
+            </div>
+
+            <h1 class="post-title">{{ post.title }}</h1>
+
+            {% if post.excerpt %}
+                <p class="post-excerpt">{{ post.excerpt }}</p>
+            {% endif %}
+        </div>
+    </header>
+
+    <!-- COVER IMAGE -->
+    {% if post.cover_image_url %}
+    <div class="post-cover">
+        <div class="blog-container">
+            <img src="{{ post.cover_image_url }}" alt="{{ post.title }}" class="post-cover-img">
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- POST BODY -->
+    <div class="post-body-wrap">
+        <div class="blog-container blog-container--narrow">
+
+            <div class="post-body">
+                {% if post.body %}
+                    {{ post.body|safe }}
+                {% else %}
+                    <p>No blog content available.</p>
+                {% endif %}
+            </div>
+
+            <!-- SHARE FOOTER -->
+            <footer class="post-footer">
+                <div class="post-footer-divider"></div>
+
+                <p class="post-footer-label">Share this post</p>
+
+                <div class="post-share-links">
+                    <a href="https://www.facebook.com/sharer/sharer.php?u={{ request.build_absolute_uri|urlencode }}"
+                       target="_blank"
+                       rel="noopener"
+                       class="share-btn share-fb">
+                        Facebook
+                    </a>
+
+                    <a href="https://wa.me/?text={{ post.title|urlencode }}%20{{ request.build_absolute_uri|urlencode }}"
+                       target="_blank"
+                       rel="noopener"
+                       class="share-btn share-wa">
+                        WhatsApp
+                    </a>
+
+                    <a href="https://twitter.com/intent/tweet?text={{ post.title|urlencode }}&url={{ request.build_absolute_uri|urlencode }}"
+                       target="_blank"
+                       rel="noopener"
+                       class="share-btn share-tw">
+                        Twitter / X
+                    </a>
+                </div>
+
+                <a href="{% url 'blog_list' %}" class="post-back-bottom">← All posts</a>
+            </footer>
+
+        </div>
+    </div>
+
+</article>
+
+{% endblock %}

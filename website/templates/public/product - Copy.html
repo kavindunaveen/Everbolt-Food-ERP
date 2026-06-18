@@ -1,0 +1,409 @@
+{% extends "public/base.html" %}
+{% load static %}
+
+{% block title %}{{ product.name }} – Everbolt Foods{% endblock %}
+
+{% block seo %}
+<meta name="description" content="{{ product.description|default:'Premium food product from Everbolt Foods, Sri Lanka.'|truncatechars:155 }}">
+<meta name="robots" content="index, follow">
+{% endblock %}
+
+{% block og %}
+<meta property="og:type" content="product">
+<meta property="og:site_name" content="Everbolt Foods">
+<meta property="og:title" content="{{ product.name }} – Everbolt Foods">
+<meta property="og:description" content="{{ product.description|default:'Premium food product from Everbolt Foods, Sri Lanka.'|truncatechars:155 }}">
+{% if product.featured_image %}
+<meta property="og:image" content="{{ product.featured_image.url }}">
+{% endif %}
+{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/product.css' %}">
+{% endblock %}
+
+{% block content %}
+
+<!-- ===== BREADCRUMB ===== -->
+<div class="breadcrumb-bar">
+    <div class="container">
+        <nav class="breadcrumb" aria-label="Breadcrumb">
+            <a href="{% url 'home' %}">Home</a>
+            <span class="breadcrumb-sep">›</span>
+            <a href="{% url 'products' %}">Products</a>
+            <span class="breadcrumb-sep">›</span>
+            {% if product.category %}
+            <a href="{% url 'products' %}?category={{ product.category.slug }}">{{ product.category.name }}</a>
+            <span class="breadcrumb-sep">›</span>
+            {% endif %}
+            <span class="breadcrumb-current">{{ product.name }}</span>
+        </nav>
+    </div>
+</div>
+
+<!-- ===== PRODUCT DETAIL ===== -->
+<main class="product-detail-page">
+    <div class="container">
+        <div class="product-layout">
+
+            <!-- GALLERY -->
+            <div class="product-gallery">
+                <div class="gallery-main">
+                    <div class="gallery-main-inner">
+                        {% if product.is_on_sale %}
+                        <div class="sale-badge">Sale!</div>
+                        {% endif %}
+
+                        {% if product.featured_image %}
+                            <img id="mainImage"
+                                 src="{{ product.featured_image.url }}"
+                                 alt="{{ product.name }}"
+                                 class="gallery-main-img">
+                        {% else %}
+                            {% with product.images.first as first_image %}
+                                {% if first_image %}
+                                    <img id="mainImage"
+                                         src="{{ first_image.image.url }}"
+                                         alt="{{ product.name }}"
+                                         class="gallery-main-img">
+                                {% else %}
+                                    <div class="gallery-placeholder">
+                                        <svg viewBox="0 0 80 80" fill="none" width="80" height="80">
+                                            <rect x="10" y="20" width="60" height="45" rx="4" stroke="#D4A853" stroke-width="2"/>
+                                            <circle cx="28" cy="35" r="7" stroke="#D4A853" stroke-width="1.5"/>
+                                            <path d="M10 52 l18-14 14 10 10-8 18 12" stroke="#D4A853" stroke-width="1.5" fill="none"/>
+                                        </svg>
+                                        <p>No image available</p>
+                                    </div>
+                                {% endif %}
+                            {% endwith %}
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Thumbnails -->
+                {% if product.images.count > 0 or product.featured_image %}
+                <div class="gallery-thumbs">
+                    {% if product.featured_image %}
+                    <button class="thumb-btn thumb-active"
+                            onclick="switchImage(this, '{{ product.featured_image.url }}')"
+                            aria-label="View main image"
+                            type="button">
+                        <img src="{{ product.featured_image.url }}" alt="{{ product.name }}">
+                    </button>
+                    {% endif %}
+
+                    {% for img in product.images.all %}
+                    <button class="thumb-btn {% if not product.featured_image and forloop.first %}thumb-active{% endif %}"
+                            onclick="switchImage(this, '{{ img.image.url }}')"
+                            aria-label="View image {{ forloop.counter }}"
+                            type="button">
+                        <img src="{{ img.image.url }}" alt="{{ product.name }} view {{ forloop.counter }}">
+                    </button>
+                    {% endfor %}
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- PRODUCT INFO -->
+            <div class="product-info">
+                {% if product.category %}
+                <p class="product-brand">{{ product.category.name|upper }} · EVERBOLT FOODS</p>
+                {% else %}
+                <p class="product-brand">EVERBOLT FOODS · PREMIUM QUALITY</p>
+                {% endif %}
+
+                <h1 class="product-title">{{ product.name }}</h1>
+
+                <!-- Price -->
+                <div class="product-price-wrap">
+                    {% if product.original_price and product.original_price != product.price %}
+                    <span class="price-original">රු{{ product.original_price|floatformat:2 }}</span>
+                    {% endif %}
+                    <span class="price-current">රු{{ product.price|floatformat:2 }}</span>
+                    {% if product.is_on_sale %}
+                    <span class="price-save-tag">Save {{ product.discount_percent }}%</span>
+                    {% endif %}
+                </div>
+
+                <div class="product-divider"></div>
+
+                <!-- Description -->
+                <div class="product-description">
+                    <p>{{ product.description }}</p>
+                </div>
+
+                <!-- SKU / Category meta -->
+                <div class="product-meta">
+                    {% if product.sku %}
+                    <span><strong>SKU:</strong> {{ product.sku }}</span>
+                    {% endif %}
+                    {% if product.category %}
+                    <span><strong>Category:</strong>
+                        <a href="{% url 'products' %}?category={{ product.category.slug }}">{{ product.category.name }}</a>
+                    </span>
+                    {% endif %}
+                    {% if product.stock_status %}
+                    <span class="stock-status {% if product.in_stock %}in-stock{% else %}out-of-stock{% endif %}">
+                        {% if product.in_stock %}✓ In Stock{% else %}✗ Out of Stock{% endif %}
+                    </span>
+                    {% endif %}
+                </div>
+
+                <!-- Quantity + Add to Cart -->
+                <div class="product-cart-row">
+                    <div class="qty-control">
+                        <button class="qty-btn" onclick="adjustQty(-1)" type="button" aria-label="Decrease quantity">−</button>
+                        <input id="qtyInput" class="qty-input" type="number" value="1" min="1" max="99" readonly aria-label="Quantity">
+                        <button class="qty-btn" onclick="adjustQty(1)" type="button" aria-label="Increase quantity">+</button>
+                    </div>
+                    <button class="btn-add-to-cart" onclick="addToCart()" type="button">
+                        <svg viewBox="0 0 24 24" fill="none" width="18" height="18">
+                            <path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
+                            <line x1="3" y1="6" x2="21" y2="6" stroke="currentColor" stroke-width="1.8"/>
+                            <path d="M16 10a4 4 0 01-8 0" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+                        </svg>
+                        Add to Cart
+                    </button>
+                </div>
+
+                <!-- Contact Actions -->
+                <div class="product-actions">
+                    <a href="mailto:info@everboltfoods.com?subject=Inquiry about {{ product.name|urlencode }}&body=Hello, I would like to know more about {{ product.name|urlencode }}."
+                       class="btn-email"
+                       aria-label="Contact us by email">
+                        <svg viewBox="0 0 24 24" fill="none" width="17" height="17">
+                            <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" stroke="currentColor" stroke-width="1.8"/>
+                            <polyline points="22,6 12,13 2,6" stroke="currentColor" stroke-width="1.8"/>
+                        </svg>
+                        Email Us
+                    </a>
+
+                    <a href="https://wa.me/94773434827?text=Hello%20Everbolt%20Foods,%20I%20am%20interested%20in%20{{ product.name|urlencode }}."
+                       class="btn-whatsapp"
+                       target="_blank"
+                       rel="noopener noreferrer"
+                       aria-label="Contact us via WhatsApp">
+                        <svg viewBox="0 0 24 24" fill="currentColor" width="17" height="17">
+                            <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/>
+                            <path d="M11.5 2a9.5 9.5 0 00-8.18 14.28L2 22l5.86-1.28A9.5 9.5 0 1011.5 2z" fill="none" stroke="currentColor" stroke-width="1.8"/>
+                        </svg>
+                        WhatsApp
+                    </a>
+                </div>
+
+                <!-- Trust Badges -->
+                <div class="product-badges">
+                    <div class="badge-item">
+                        <div class="badge-icon">
+                            <svg viewBox="0 0 32 32" fill="none" width="26" height="26">
+                                <path d="M16 4 C10 4 6 9 6 14 C6 22 16 28 16 28 C16 28 26 22 26 14 C26 9 22 4 16 4Z" stroke="#D4A853" stroke-width="1.5" fill="none"/>
+                                <path d="M12 14 l3 3 5-5" stroke="#D4A853" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                        </div>
+                        <span>100% Natural</span>
+                    </div>
+
+                    <div class="badge-item">
+                        <div class="badge-icon">
+                            <svg viewBox="0 0 32 32" fill="none" width="26" height="26">
+                                <circle cx="16" cy="16" r="10" stroke="#D4A853" stroke-width="1.5"/>
+                                <path d="M16 10 Q20 14 16 18 Q12 14 16 10Z" stroke="#D4A853" stroke-width="1.2" fill="none"/>
+                            </svg>
+                        </div>
+                        <span>No Preservatives</span>
+                    </div>
+
+                    <div class="badge-item">
+                        <div class="badge-icon">
+                            <svg viewBox="0 0 32 32" fill="none" width="26" height="26">
+                                <rect x="6" y="10" width="20" height="14" rx="3" stroke="#D4A853" stroke-width="1.5"/>
+                                <path d="M11 10 V8 a5 5 0 0 1 10 0 V10" stroke="#D4A853" stroke-width="1.5" stroke-linecap="round"/>
+                            </svg>
+                        </div>
+                        <span>Secure Checkout</span>
+                    </div>
+
+                    <div class="badge-item">
+                        <div class="badge-icon">
+                            <svg viewBox="0 0 32 32" fill="none" width="26" height="26">
+                                <path d="M6 16 L16 6 L26 16 L26 26 L6 26 Z" stroke="#D4A853" stroke-width="1.5" fill="none" stroke-linejoin="round"/>
+                                <path d="M12 26 V20 h8 V26" stroke="#D4A853" stroke-width="1.5"/>
+                            </svg>
+                        </div>
+                        <span>Ships Islandwide</span>
+                    </div>
+
+                    <div class="badge-item">
+                        <div class="badge-icon">
+                            <svg viewBox="0 0 32 32" fill="none" width="26" height="26">
+                                <path d="M8 20 Q10 10 16 8 Q22 10 24 20" stroke="#D4A853" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+                                <rect x="6" y="20" width="20" height="6" rx="2" stroke="#D4A853" stroke-width="1.5"/>
+                            </svg>
+                        </div>
+                        <span>Sri Lanka Made</span>
+                    </div>
+
+                    <div class="badge-item">
+                        <div class="badge-icon">
+                            <svg viewBox="0 0 32 32" fill="none" width="26" height="26">
+                                <path d="M16 6 l2.5 5 5.5.8-4 3.9.95 5.5L16 18.5l-4.95 2.7.95-5.5-4-3.9 5.5-.8Z" stroke="#D4A853" stroke-width="1.4" fill="none" stroke-linejoin="round"/>
+                            </svg>
+                        </div>
+                        <span>Premium Quality</span>
+                    </div>
+                </div>
+
+            </div><!-- /.product-info -->
+        </div><!-- /.product-layout -->
+
+
+        <!-- ===== TABS: Description / Additional Info / Store Policies ===== -->
+        <div class="product-tabs-section">
+            <div class="tabs-nav" role="tablist">
+                <button class="tab-btn tab-active" role="tab" aria-selected="true" onclick="switchTab(this, 'tab-description')" type="button">Description</button>
+                <button class="tab-btn" role="tab" aria-selected="false" onclick="switchTab(this, 'tab-additional')" type="button">Additional Information</button>
+                <button class="tab-btn" role="tab" aria-selected="false" onclick="switchTab(this, 'tab-policies')" type="button">Store Policies</button>
+                <button class="tab-btn" role="tab" aria-selected="false" onclick="switchTab(this, 'tab-inquiries')" type="button">Inquiries</button>
+            </div>
+
+            <div class="tab-panel tab-panel-active" id="tab-description">
+                <h2>{{ product.name }}</h2>
+                <div class="tab-content-body">
+                    {{ product.long_description|default:product.description|linebreaks }}
+                </div>
+            </div>
+
+            <div class="tab-panel" id="tab-additional">
+                <table class="info-table">
+                    {% if product.weight %}<tr><th>Weight</th><td>{{ product.weight }}</td></tr>{% endif %}
+                    {% if product.dimensions %}<tr><th>Dimensions</th><td>{{ product.dimensions }}</td></tr>{% endif %}
+                    {% if product.category %}<tr><th>Category</th><td>{{ product.category.name }}</td></tr>{% endif %}
+                    {% if product.tags.all %}
+                    <tr>
+                        <th>Tags</th>
+                        <td>{% for tag in product.tags.all %}{{ tag.name }}{% if not forloop.last %}, {% endif %}{% endfor %}</td>
+                    </tr>
+                    {% endif %}
+                </table>
+            </div>
+
+            <div class="tab-panel" id="tab-policies">
+                <div class="tab-content-body">
+                    <h3>Shipping Policy</h3>
+                    <p>We deliver islandwide across Sri Lanka. Standard delivery takes 2–5 business days. Express delivery options are available at checkout.</p>
+                    <h3>Return Policy</h3>
+                    <p>Due to the nature of food products, returns are only accepted for damaged or incorrectly delivered items. Please contact us within 24 hours of receiving your order.</p>
+                    <h3>Freshness Guarantee</h3>
+                    <p>All Everbolt Foods products are packed fresh and dispatched within 48 hours of your order being placed.</p>
+                </div>
+            </div>
+
+            <div class="tab-panel" id="tab-inquiries">
+                <div class="tab-content-body">
+                    <p>Have a question about this product? Reach out to us directly:</p>
+                    <ul>
+                        <li>📧 <a href="mailto:info@everboltfoods.com">info@everboltfoods.com</a></li>
+                        <li>📱 <a href="https://wa.me/94773434827" target="_blank" rel="noopener">WhatsApp: +94 77 343 4827</a></li>
+                    </ul>
+                    <p>We respond within 24 hours on business days.</p>
+                </div>
+            </div>
+        </div>
+
+
+        <!-- ===== RELATED PRODUCTS ===== -->
+        {% if related_products %}
+        <section class="related-products-section">
+            <h2 class="section-heading">Related Products</h2>
+            <div class="related-products-grid">
+                {% for rp in related_products %}
+                <a href="{% url 'product_detail' rp.slug %}" class="related-card">
+                    <div class="related-card-img-wrap">
+                        {% if rp.is_on_sale %}
+                        <span class="related-sale-badge">Sale</span>
+                        {% endif %}
+                        {% if rp.featured_image %}
+                            <img src="{{ rp.featured_image.url }}" alt="{{ rp.name }}" loading="lazy">
+                        {% elif rp.images.first %}
+                            <img src="{{ rp.images.first.image.url }}" alt="{{ rp.name }}" loading="lazy">
+                        {% else %}
+                            <div class="related-img-placeholder">
+                                <svg viewBox="0 0 60 60" fill="none" width="48" height="48">
+                                    <rect x="8" y="15" width="44" height="33" rx="3" stroke="#D4A853" stroke-width="1.5"/>
+                                    <circle cx="20" cy="27" r="5" stroke="#D4A853" stroke-width="1.2"/>
+                                    <path d="M8 38 l12-10 10 7 8-6 14 9" stroke="#D4A853" stroke-width="1.2" fill="none"/>
+                                </svg>
+                            </div>
+                        {% endif %}
+                    </div>
+                    <div class="related-card-body">
+                        {% if rp.category %}
+                        <span class="related-category">{{ rp.category.name }}</span>
+                        {% endif %}
+                        <p class="related-name">{{ rp.name }}</p>
+                        <div class="related-price-row">
+                            {% if rp.original_price and rp.original_price != rp.price %}
+                            <span class="related-price-orig">රු{{ rp.original_price|floatformat:2 }}</span>
+                            {% endif %}
+                            <span class="related-price">රු{{ rp.price|floatformat:2 }}</span>
+                        </div>
+                    </div>
+                </a>
+                {% endfor %}
+            </div>
+        </section>
+        {% endif %}
+
+    </div><!-- /.container -->
+</main>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    /* ---- Gallery ---- */
+    function switchImage(btn, src) {
+        const mainImage = document.getElementById('mainImage');
+        if (mainImage) {
+            mainImage.style.opacity = '0';
+            setTimeout(() => {
+                mainImage.src = src;
+                mainImage.style.opacity = '1';
+            }, 150);
+        }
+        document.querySelectorAll('.thumb-btn').forEach(b => b.classList.remove('thumb-active'));
+        btn.classList.add('thumb-active');
+    }
+
+    /* ---- Quantity ---- */
+    function adjustQty(delta) {
+        const input = document.getElementById('qtyInput');
+        const val = parseInt(input.value) + delta;
+        if (val >= 1 && val <= 99) input.value = val;
+    }
+
+    /* ---- Add to Cart (stub — wire to your Django cart view) ---- */
+    function addToCart() {
+        const qty = document.getElementById('qtyInput').value;
+        const btn = document.querySelector('.btn-add-to-cart');
+        btn.textContent = '✓ Added!';
+        btn.classList.add('btn-added');
+        setTimeout(() => {
+            btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" width="18" height="18"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><line x1="3" y1="6" x2="21" y2="6" stroke="currentColor" stroke-width="1.8"/><path d="M16 10a4 4 0 01-8 0" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg> Add to Cart`;
+            btn.classList.remove('btn-added');
+        }, 2000);
+    }
+
+    /* ---- Tabs ---- */
+    function switchTab(btn, panelId) {
+        document.querySelectorAll('.tab-btn').forEach(b => {
+            b.classList.remove('tab-active');
+            b.setAttribute('aria-selected', 'false');
+        });
+        document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('tab-panel-active'));
+        btn.classList.add('tab-active');
+        btn.setAttribute('aria-selected', 'true');
+        document.getElementById(panelId).classList.add('tab-panel-active');
+    }
+</script>
+{% endblock %}

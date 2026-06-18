@@ -1,0 +1,176 @@
+{% extends "public/base.html" %}
+{% load static %}
+
+{% block title %}
+    {% if selected_category_name %}
+        {{ selected_category_name }} Products – Everbolt Foods
+    {% elif selected_category %}
+        {{ selected_category }} Products – Everbolt Foods
+    {% elif q %}
+        Search Results for "{{ q }}" – Everbolt Foods
+    {% else %}
+        Products – Everbolt Foods
+    {% endif %}
+{% endblock %}
+
+{% block meta_description %}
+    Explore Everbolt Foods products including flavoured tea, herbal tea, spices, dried fruits, kithul products and hotel supplies in Sri Lanka.
+{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/product.css' %}">
+{% endblock %}
+
+{% block content %}
+
+<section class="page-hero">
+    <div class="container">
+        {% if selected_category_name %}
+            <h1>{{ selected_category_name }}</h1>
+            <p>Explore our {{ selected_category_name }} product range.</p>
+        {% elif selected_category %}
+            <h1>{{ selected_category }}</h1>
+            <p>Explore our {{ selected_category }} product range.</p>
+        {% elif q %}
+            <h1>Search Results</h1>
+            <p>Showing products for "{{ q }}".</p>
+        {% else %}
+            <h1>Our Products</h1>
+            <p>Explore premium quality food products from Everbolt Foods.</p>
+        {% endif %}
+    </div>
+</section>
+
+<section class="products-page-section">
+    <div class="container">
+
+        <div class="products-top-bar">
+
+            <form method="get" action="{% url 'products' %}" class="product-search-form">
+                {% if selected_category %}
+                    <input type="hidden" name="category" value="{{ selected_category }}">
+                {% endif %}
+
+                <input 
+                    type="text" 
+                    name="q" 
+                    value="{{ q }}" 
+                    placeholder="Search products..."
+                >
+
+                <button type="submit">Search</button>
+            </form>
+
+            {% if selected_category or q %}
+                <a href="{% url 'products' %}" class="clear-filter-btn">Clear Filters</a>
+            {% endif %}
+
+        </div>
+
+        {% if categories %}
+            <div class="category-filter-row">
+                <a href="{% url 'products' %}" 
+                   class="category-filter-btn {% if not selected_category %}active{% endif %}">
+                    All
+                </a>
+
+                {% for cat in categories %}
+                    <a href="{% url 'products' %}?category={{ cat.id }}"
+                       class="category-filter-btn {% if selected_category == cat.id|stringformat:'s' %}active{% endif %}">
+                        {{ cat.name }}
+                    </a>
+                {% endfor %}
+            </div>
+        {% endif %}
+
+        {% if products %}
+            <div class="products-grid">
+
+                {% for product in products %}
+                    <article class="product-card">
+
+                        <a href="{% url 'product_detail' product.id %}" class="product-card-image-link">
+
+                            {% if product.main_image %}
+                                <img src="{{ product.main_image }}"
+                                     alt="{{ product.display_name_final|default:product.display_name }}"
+                                     class="product-card-img"
+                                     loading="lazy">
+                            {% else %}
+                                <div class="product-card-placeholder">
+                                    <span>No Image</span>
+                                </div>
+                            {% endif %}
+
+                        </a>
+
+                        <div class="product-card-body">
+
+                            {% if product.website_category %}
+                                <p class="product-card-category">
+                                    Category ID: {{ product.website_category }}
+                                </p>
+                            {% endif %}
+
+                            <h3 class="product-card-title">
+                                <a href="{% url 'product_detail' product.id %}">
+                                    {{ product.display_name_final|default:product.display_name }}
+                                </a>
+                            </h3>
+
+                            {% if product.short_description %}
+                                <p class="product-card-desc">
+                                    {{ product.short_description|truncatewords:18 }}
+                                </p>
+                            {% elif product.description %}
+                                <p class="product-card-desc">
+                                    {{ product.description|truncatewords:18 }}
+                                </p>
+                            {% endif %}
+
+                            <div class="product-card-footer">
+
+                                <div class="product-card-price">
+                                    {% if product.final_price %}
+                                        රු{{ product.final_price }}
+                                    {% elif product.base_price %}
+                                        රු{{ product.base_price }}
+                                    {% else %}
+                                        Price on Request
+                                    {% endif %}
+                                </div>
+
+                                <a href="{% url 'product_detail' product.id %}" class="product-view-btn">
+                                    View Product
+                                </a>
+
+                            </div>
+
+                        </div>
+
+                    </article>
+                {% endfor %}
+
+            </div>
+        {% else %}
+            <div class="no-products">
+                {% if selected_category_name %}
+                    <h3>No products found in {{ selected_category_name }}.</h3>
+                    <p>Please check another category or contact us for more information.</p>
+                {% elif selected_category %}
+                    <h3>No products found in {{ selected_category }}.</h3>
+                    <p>Please check another category or contact us for more information.</p>
+                {% elif q %}
+                    <h3>No products found for "{{ q }}".</h3>
+                    <p>Try searching with another keyword.</p>
+                {% else %}
+                    <h3>No products available yet.</h3>
+                    <p>Please check again later.</p>
+                {% endif %}
+            </div>
+        {% endif %}
+
+    </div>
+</section>
+
+{% endblock %}

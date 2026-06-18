@@ -1,0 +1,1294 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Everbolt Foods | Hotel Suppliers in Sri Lanka{% endblock %}</title>
+    <meta name="description" content="{% block meta_description %}Everbolt Food Products supplies flavoured tea, herbal tea, spices, dried fruits, kithul products and hotel supply products in Sri Lanka.{% endblock %}">
+
+    <link rel="icon" type="image/x-icon" href="{% static 'images/logo.ico' %}">
+    <link rel="shortcut icon" type="image/x-icon" href="{% static 'images/logo.ico' %}">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;800;900&family=Lato:ital,wght@0,300;0,400;0,700;1,300&family=Outfit:wght@300;400;500;600;700;800&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="{% static 'css/home.css' %}">
+    {% block extra_css %}{% endblock %}
+
+    <style>
+        /* ================================
+        ANNOUNCE BAR
+        ================================ */
+
+        .announce-bar {
+            background: #1e3a1e;
+            color: #ffffff;
+            font-size: 11.5px;
+            font-family: 'Lato', sans-serif;
+            font-weight: 600;
+            letter-spacing: 0.3px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 7px 20px;
+            gap: 12px;
+            min-height: 36px;
+            overflow: hidden;
+        }
+
+        .announce-left {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: nowrap;
+        }
+
+        .announce-right {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            flex-shrink: 0;
+        }
+
+        .announce-links {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .announce-links a {
+            color: rgba(255,255,255,0.85);
+            text-decoration: none;
+            transition: color 0.2s;
+        }
+
+        .announce-links a:hover {
+            color: #ffffff;
+        }
+
+        .announce-sep {
+            color: rgba(255,255,255,0.35);
+        }
+
+        .social-icons {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .soc {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 24px;
+            height: 24px;
+            border-radius: 4px;
+            background: rgba(255,255,255,0.12);
+            color: rgba(255,255,255,0.85);
+            font-size: 10px;
+            font-weight: 700;
+            text-decoration: none;
+            transition: background 0.2s, color 0.2s;
+        }
+
+        .soc:hover {
+            background: rgba(255,255,255,0.25);
+            color: #ffffff;
+        }
+
+        .announce-marquee-wrap {
+            display: none;
+            overflow: hidden;
+            width: 100%;
+        }
+
+        .announce-marquee {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            white-space: nowrap;
+            animation: marquee-scroll 22s linear infinite;
+        }
+
+        .announce-marquee span {
+            flex-shrink: 0;
+        }
+
+        @keyframes marquee-scroll {
+            0%   { transform: translateX(0); }
+            100% { transform: translateX(-50%); }
+        }
+
+        /* ================================
+        CART BUTTON
+        ================================ */
+
+        .cart-btn {
+            position: relative;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            padding: 7px 14px;
+            background: #f5f5f5;
+            border: 1.5px solid #e0e0e0;
+            border-radius: 8px;
+            color: #222222;
+            text-decoration: none;
+            font-family: 'Montserrat', sans-serif;
+            font-size: 13px;
+            font-weight: 700;
+            transition: background 0.2s, border-color 0.2s, color 0.2s;
+            white-space: nowrap;
+            box-sizing: border-box;
+        }
+
+        .cart-btn:hover {
+            background: #ffffff;
+            border-color: #c0392b;
+            color: #c0392b;
+        }
+
+        .cart-icon {
+            flex-shrink: 0;
+            transition: stroke 0.2s;
+        }
+
+        .cart-btn:hover .cart-icon {
+            stroke: #c0392b;
+        }
+
+        .cart-label {
+            font-size: 12px;
+            font-weight: 700;
+            letter-spacing: 0.3px;
+        }
+
+        .cart-count {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 18px;
+            height: 18px;
+            padding: 0 4px;
+            background: #c0392b;
+            color: #ffffff;
+            border-radius: 20px;
+            font-size: 10px;
+            font-weight: 800;
+            font-family: 'Montserrat', sans-serif;
+            line-height: 1;
+            box-sizing: border-box;
+        }
+
+        /* ================================
+        CERTIFICATIONS
+        ================================ */
+
+        .cert-section {
+            padding: 36px 0;
+            background: #ffffff;
+            border-top: 1px solid #f0f0f0;
+            border-bottom: 1px solid #f0f0f0;
+            overflow: hidden;
+        }
+
+        .cert-grid {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 48px;
+            flex-wrap: wrap;
+        }
+
+        .cert-item {
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            opacity: 0;
+            transform: translateY(24px) scale(0.9);
+            transition: opacity 0.6s ease, transform 0.6s ease;
+        }
+
+        .cert-item.cert-visible {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+        }
+
+        .cert-item:nth-child(1) { transition-delay: 0s; }
+        .cert-item:nth-child(2) { transition-delay: 0.15s; }
+        .cert-item:nth-child(3) { transition-delay: 0.3s; }
+
+        .cert-item img {
+            height: 90px;
+            width: auto;
+            object-fit: contain;
+            filter: grayscale(20%);
+            transition: transform 0.35s ease, filter 0.35s ease;
+        }
+
+        .cert-item:hover img {
+            transform: scale(1.1) rotate(-2deg);
+            filter: grayscale(0%);
+        }
+
+        .cert-item::before {
+            content: '';
+            position: absolute;
+            inset: -8px;
+            border-radius: 50%;
+            border: 2px dashed #d4e8c2;
+            opacity: 0;
+            transition: opacity 0.35s ease;
+            animation: spin-ring 8s linear infinite;
+        }
+
+        .cert-item:hover::before {
+            opacity: 1;
+        }
+
+        @keyframes spin-ring {
+            from { transform: rotate(0deg); }
+            to   { transform: rotate(360deg); }
+        }
+
+        /* ================================
+        INFO BAR
+        ================================ */
+
+        .info-bar {
+            background: #c0392b;
+            padding: 18px 0;
+        }
+
+        .info-bar-grid {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 40px;
+            flex-wrap: wrap;
+        }
+
+        .info-bar-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            color: #ffffff;
+        }
+
+        .info-icon-wrap {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            border: 2px solid rgba(255,255,255,0.4);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            flex-shrink: 0;
+            background: rgba(255,255,255,0.1);
+        }
+
+        .info-bar-item strong {
+            display: block;
+            font-size: 13px;
+            font-weight: 800;
+            letter-spacing: 0.5px;
+            color: #ffffff;
+            font-family: 'Montserrat', sans-serif;
+        }
+
+        .info-bar-item p {
+            margin: 2px 0 0;
+            font-size: 12px;
+            color: rgba(255,255,255,0.82);
+            font-family: 'Lato', sans-serif;
+        }
+
+        /* ================================
+        NEWSLETTER
+        ================================ */
+
+        .newsletter-section {
+            background: #1a3c1a url("{% static 'images/background-banner.webp' %}") center/cover no-repeat;
+            position: relative;
+            padding: 64px 0;
+        }
+
+        .newsletter-section::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: rgba(10, 30, 10, 0.72);
+        }
+
+        .newsletter-overlay {
+            position: relative;
+            z-index: 2;
+        }
+
+        .newsletter-content {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            gap: 16px;
+        }
+
+        .newsletter-content h2 {
+            font-family: 'Montserrat', sans-serif;
+            font-size: 32px;
+            font-weight: 800;
+            color: #ffffff;
+            margin: 0;
+            letter-spacing: 0.5px;
+        }
+
+        .newsletter-content h2 span {
+            color: #f9ca24;
+        }
+
+        .newsletter-content p {
+            color: rgba(255,255,255,0.75);
+            font-size: 14px;
+            margin: 0;
+            font-family: 'Lato', sans-serif;
+        }
+
+        .newsletter-form {
+            display: flex;
+            align-items: center;
+            width: 100%;
+            max-width: 480px;
+            border-radius: 6px;
+            overflow: hidden;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+            margin-top: 8px;
+        }
+
+        .newsletter-form input[type="email"] {
+            flex: 1;
+            padding: 14px 18px;
+            border: none;
+            font-size: 14px;
+            font-family: 'Lato', sans-serif;
+            outline: none;
+            background: #ffffff;
+            color: #333;
+        }
+
+        .newsletter-form input[type="email"]::placeholder {
+            color: #aaa;
+        }
+
+        .newsletter-form button {
+            padding: 14px 28px;
+            background: #c0392b;
+            color: #ffffff;
+            font-size: 13px;
+            font-weight: 800;
+            font-family: 'Montserrat', sans-serif;
+            letter-spacing: 0.8px;
+            text-transform: uppercase;
+            border: none;
+            cursor: pointer;
+            transition: background 0.2s;
+            white-space: nowrap;
+        }
+
+        .newsletter-form button:hover {
+            background: #96281b;
+        }
+
+        /* ================================
+        FOOTER SOCIAL BUTTONS
+        ================================ */
+
+        .footer .social-links {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-top: 14px;
+            flex-wrap: wrap;
+        }
+
+        .footer .social-links a.social-btn {
+            position: relative !important;
+            display: inline-flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            width: 38px !important;
+            height: 38px !important;
+            min-width: 38px !important;
+            min-height: 38px !important;
+            padding: 0 !important;
+            margin: 0 !important;
+            border-radius: 50% !important;
+            background: rgba(255,255,255,0.1);
+            border: 1.5px solid rgba(255,255,255,0.2);
+            color: #ffffff;
+            text-decoration: none;
+            line-height: 1 !important;
+            box-sizing: border-box !important;
+            overflow: hidden;
+            transition: background 0.2s, border-color 0.2s;
+        }
+
+        .footer .social-links a.social-btn:hover {
+            background: #c0392b;
+            border-color: #c0392b;
+        }
+
+        .footer .social-links a.social-btn svg {
+            position: absolute !important;
+            top: 50% !important;
+            left: 50% !important;
+            width: 16px !important;
+            height: 16px !important;
+            display: block !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            transform: translate(-50%, -50%) !important;
+        }
+
+        /* ================================
+        MOBILE NAV BASE (all screen sizes)
+        ================================ */
+
+        body.menu-open {
+            overflow: hidden;
+        }
+
+        .mobile-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.45);
+            z-index: 9998;
+            pointer-events: none;
+        }
+
+        .mobile-overlay.open {
+            display: block;
+            pointer-events: auto;
+        }
+
+        .mobile-menu-close {
+            display: none;
+        }
+
+        .dropdown-toggle {
+            background: none;
+            border: none;
+            cursor: pointer;
+            text-align: left;
+            width: auto;
+        }
+
+        /* ================================
+        DESKTOP ONLY — hide mobile elements
+        ================================ */
+
+        @media (min-width: 769px) {
+            .mobile-overlay,
+            .mobile-menu-close,
+            .mobile-menu-btn {
+                display: none !important;
+            }
+
+            /* Make sure no leftover inline drawer style from a previous
+               mobile session can affect desktop layout */
+            #navbar.navbar {
+                position: static !important;
+                right: auto !important;
+                width: auto !important;
+                max-width: none !important;
+                height: auto !important;
+                box-shadow: none !important;
+                transition: none !important;
+            }
+        }
+
+        /* ================================
+        MOBILE — max 768px
+        ================================ */
+
+        @media (max-width: 768px) {
+
+            .announce-bar {
+                padding: 7px 12px;
+                justify-content: center;
+            }
+
+            .announce-left,
+            .announce-right {
+                display: none;
+            }
+
+            .announce-marquee-wrap {
+                display: block;
+            }
+
+            .main-header {
+                overflow-x: unset !important;
+            }
+
+            .header-container {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                gap: 8px;
+                width: 100%;
+                padding-left: 10px;
+                padding-right: 10px;
+                box-sizing: border-box;
+            }
+
+            .logo-wrap {
+                flex: 0 1 auto;
+                max-width: 120px;
+            }
+
+            .logo-wrap img {
+                max-width: 105px;
+                height: auto;
+                display: block;
+            }
+
+            /* THE DRAWER — hidden by default, slides in when .open is added.
+               Uses an ID selector (#navbar) so it always wins over any
+               .navbar rule defined in home.css, regardless of load order. */
+            #navbar.navbar {
+                position: fixed !important;
+                top: 0 !important;
+                left: auto !important;
+                right: -100% !important;
+                width: 75vw !important;
+                max-width: 300px !important;
+                height: 100vh !important;
+                margin: 0 !important;
+                background: #ffffff !important;
+                z-index: 10001 !important;
+                display: flex !important;
+                flex-direction: column !important;
+                padding: 60px 24px 32px !important;
+                box-shadow: -4px 0 24px rgba(0,0,0,0.15) !important;
+                overflow-y: auto !important;
+                gap: 0 !important;
+                transition: right 0.3s ease !important;
+                pointer-events: auto !important;
+            }
+
+            #navbar.navbar.open {
+                right: 0 !important;
+            }
+
+            #navbar.navbar .nav-link,
+            #navbar.navbar .dropdown-toggle,
+            #navbar.navbar .dropdown-menu a {
+                position: relative !important;
+                z-index: 1 !important;
+                pointer-events: auto !important;
+            }
+
+            .mobile-menu-close {
+                display: flex !important;
+                align-items: center !important;
+                justify-content: center !important;
+                position: absolute !important;
+                top: 14px !important;
+                right: 14px !important;
+                width: 38px !important;
+                height: 38px !important;
+                background: #f5f5f5 !important;
+                border: none !important;
+                border-radius: 50% !important;
+                font-size: 20px !important;
+                color: #333 !important;
+                cursor: pointer !important;
+                z-index: 10002 !important;
+                pointer-events: auto !important;
+                touch-action: manipulation !important;
+            }
+
+            .mobile-menu-close:hover {
+                background: #e5e5e5 !important;
+            }
+
+            .mobile-menu-btn {
+                width: 38px;
+                height: 38px;
+                min-width: 38px;
+                padding: 0;
+                margin-left: 0;
+                display: inline-flex !important;
+                align-items: center;
+                justify-content: center;
+                flex-shrink: 0;
+                border-radius: 8px;
+                box-sizing: border-box;
+                touch-action: manipulation;
+            }
+
+            .navbar .nav-link {
+                padding: 14px 4px;
+                border-bottom: 1px solid #f0f0f0;
+                font-size: 15px;
+                color: #222;
+                display: block;
+                font-family: 'Montserrat', sans-serif;
+                font-weight: 600;
+                text-decoration: none;
+            }
+
+            .navbar button.nav-link {
+                width: 100%;
+                background: none;
+                border-left: none;
+                border-right: none;
+                border-top: none;
+                cursor: pointer;
+            }
+
+            .navbar .nav-link.active {
+                color: #c0392b;
+            }
+
+            .navbar .dropdown {
+                border-bottom: 1px solid #f0f0f0;
+            }
+
+            .navbar .dropdown .dropdown-toggle {
+                border-bottom: none;
+            }
+
+            .navbar .dropdown-menu {
+                display: none !important;
+                position: static !important;
+                box-shadow: none !important;
+                padding: 0 0 8px 16px !important;
+                background: transparent !important;
+                border: none !important;
+                opacity: 1 !important;
+                transform: none !important;
+                pointer-events: auto !important;
+            }
+
+            .navbar .dropdown.open .dropdown-menu {
+                display: block !important;
+            }
+
+            .navbar .dropdown-menu a {
+                padding: 10px 4px;
+                font-size: 14px;
+                color: #555;
+                display: block;
+                border-bottom: 1px solid #f8f8f8;
+                text-decoration: none;
+            }
+
+            .navbar .dropdown-menu a:last-child {
+                border-bottom: none;
+            }
+
+            .header-actions {
+                display: flex;
+                align-items: center;
+                justify-content: flex-end;
+                gap: 6px;
+                flex: 0 0 auto;
+                margin-left: auto;
+                max-width: calc(100% - 120px);
+                box-sizing: border-box;
+            }
+
+            .search-box,
+            .whatsapp-btn {
+                display: none !important;
+            }
+
+            .cart-btn {
+                width: auto;
+                min-width: 44px;
+                height: 36px;
+                padding: 6px 7px;
+                border-radius: 7px;
+                gap: 3px;
+                box-sizing: border-box;
+                flex-shrink: 0;
+            }
+
+            .cart-icon {
+                width: 17px;
+                height: 17px;
+            }
+
+            .cart-label {
+                display: none !important;
+            }
+
+            .cart-count {
+                min-width: 16px;
+                height: 16px;
+                font-size: 9px;
+                padding: 0 4px;
+            }
+
+            .info-bar-grid {
+                flex-direction: column;
+                align-items: center;
+                gap: 20px;
+            }
+
+            .info-bar-item {
+                flex-direction: column;
+                align-items: center;
+                text-align: center;
+                gap: 8px;
+            }
+        }
+
+        /* ================================
+        SMALL MOBILE — max 600px
+        ================================ */
+
+        @media (max-width: 600px) {
+
+            .newsletter-section {
+                padding: 48px 20px;
+            }
+
+            .newsletter-content h2 {
+                font-size: 24px;
+            }
+
+            .newsletter-form {
+                flex-direction: column;
+            }
+
+            .newsletter-form input[type="email"] {
+                width: 100%;
+                border-radius: 6px 6px 0 0;
+                box-sizing: border-box;
+            }
+
+            .newsletter-form button {
+                width: 100%;
+                border-radius: 0 0 6px 6px;
+            }
+        }
+
+        /* ================================
+        TINY MOBILE — max 380px
+        ================================ */
+
+        @media (max-width: 380px) {
+
+            .logo-wrap img {
+                max-width: 92px;
+            }
+
+            .header-actions {
+                gap: 5px;
+                max-width: calc(100% - 98px);
+            }
+
+            .cart-btn {
+                min-width: 40px;
+                height: 34px;
+                padding: 5px 6px;
+            }
+
+            .cart-icon {
+                width: 16px;
+                height: 16px;
+            }
+
+            .mobile-menu-btn {
+                width: 36px;
+                height: 36px;
+                min-width: 36px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- Announce Bar -->
+    <div class="announce-bar">
+
+        <div class="announce-marquee-wrap">
+            <div class="announce-marquee">
+                <span>100% Natural</span>
+                <span class="announce-sep">|</span>
+                <span>Quality Assured</span>
+                <span class="announce-sep">|</span>
+                <span>Islandwide Delivery</span>
+                <span class="announce-sep">|</span>
+                <span>Trusted by Homes &amp; Businesses</span>
+                <span class="announce-sep">|</span>
+                <span>100% Natural</span>
+                <span class="announce-sep">|</span>
+                <span>Quality Assured</span>
+                <span class="announce-sep">|</span>
+                <span>Islandwide Delivery</span>
+                <span class="announce-sep">|</span>
+                <span>Trusted by Homes &amp; Businesses</span>
+                <span class="announce-sep">|</span>
+            </div>
+        </div>
+
+        <div class="announce-left">
+            <span>100% Natural</span>
+            <span class="announce-sep">|</span>
+            <span>Quality Assured</span>
+            <span class="announce-sep">|</span>
+            <span>Islandwide Delivery</span>
+            <span class="announce-sep">|</span>
+            <span>Trusted by Homes &amp; Businesses</span>
+        </div>
+
+        <div class="announce-right">
+            <div class="announce-links">
+                <a href="{% url 'about' %}">About Us</a>
+                <span class="announce-sep">|</span>
+                <a href="{% url 'blog_list' %}">Blog</a>
+                <span class="announce-sep">|</span>
+                <a href="{% url 'contact' %}">Contact Us</a>
+            </div>
+
+            <div class="social-icons">
+                <a href="#" class="soc" aria-label="Facebook">f</a>
+                <a href="#" class="soc" aria-label="Instagram">in</a>
+                <a href="#" class="soc" aria-label="TikTok">t</a>
+                <a href="#" class="soc" aria-label="LinkedIn">li</a>
+            </div>
+        </div>
+
+    </div>
+
+
+    <!-- Mobile Nav Overlay -->
+    <div class="mobile-overlay" id="mobileOverlay"></div>
+
+    <!-- Header -->
+    <header class="main-header">
+        <div class="header-container">
+
+            <a href="{% url 'home' %}" class="logo-wrap">
+                <img src="{% static 'images/logo.webp' %}" alt="Everbolt Food Products">
+            </a>
+
+            <nav class="navbar" id="navbar">
+
+                <button class="mobile-menu-close" id="mobileMenuCloseBtn" type="button" aria-label="Close menu">✕</button>
+
+                <a href="{% url 'home' %}" class="nav-link {% if request.resolver_match.url_name == 'home' %}active{% endif %}">Home</a>
+
+                <div class="dropdown">
+                    <button class="nav-link dropdown-toggle" type="button">
+                        Shop <span class="arrow">▾</span>
+                    </button>
+
+                    <div class="dropdown-menu">
+                        <a href="{% url 'products' %}">All Products</a>
+
+                        {% for category in erp_categories %}
+                            <a href="{% url 'products' %}?category={{ category.id }}">{{ category.name }}</a>
+                        {% empty %}
+                            <a href="{% url 'products' %}">No Categories Found</a>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <a href="{% url 'about' %}" class="nav-link">About Us</a>
+                <a href="{% url 'blog_list' %}" class="nav-link">Blog</a>
+                <a href="{% url 'contact' %}" class="nav-link">Contact Us</a>
+
+            </nav>
+
+            <div class="header-actions">
+
+                <form method="get" action="{% url 'products' %}" class="search-box">
+                    <input type="text" name="q" placeholder="Search products...">
+                    <button type="submit" aria-label="Search">🔍</button>
+                </form>
+
+                <a href="{% url 'cart' %}" class="cart-btn" aria-label="Cart">
+                    <svg class="cart-icon" xmlns="http://www.w3.org/2000/svg" width="18" height="18"
+                        viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                        stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="9" cy="21" r="1"/>
+                        <circle cx="20" cy="21" r="1"/>
+                        <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/>
+                    </svg>
+                    <span class="cart-label">Cart</span>
+                    <span class="cart-count">{{ cart_count|default:"0" }}</span>
+                </a>
+
+                <a href="https://wa.me/94765400084"
+                class="whatsapp-btn"
+                target="_blank"
+                rel="noopener noreferrer">
+                    <img src="{% static 'images/whatsapp.svg' %}"
+                        alt="WhatsApp"
+                        class="whatsapp-icon">
+                    WhatsApp Us
+                </a>
+
+                <button class="mobile-menu-btn" id="mobileMenuOpenBtn" type="button" aria-label="Open menu">☰</button>
+
+            </div>
+        </div>
+    </header>
+
+    <!-- Page Content -->
+    <main>
+        {% block content %}
+        {% endblock %}
+    </main>
+
+    <!-- Certifications -->
+    <section class="cert-section">
+        <div class="container cert-grid">
+            <div class="cert-item">
+                <img src="{% static 'images/iso-logo.webp' %}" alt="ISO 22000 Certified">
+            </div>
+
+            <div class="cert-item">
+                <img src="{% static 'images/gmp-logo.webp' %}" alt="GMP Certified">
+            </div>
+
+            <div class="cert-item">
+                <img src="{% static 'images/sgs-logo.webp' %}" alt="SGS Certified">
+            </div>
+        </div>
+    </section>
+
+    <!-- Info Bar -->
+    <section class="info-bar">
+        <div class="container info-bar-grid">
+
+            <div class="info-bar-item">
+                <div class="info-icon-wrap">🚚</div>
+                <div>
+                    <strong>FREE SHIPPING</strong>
+                    <p>On qualifying orders</p>
+                </div>
+            </div>
+
+            <div class="info-bar-item">
+                <div class="info-icon-wrap">🌿</div>
+                <div>
+                    <strong>100% ORGANIC</strong>
+                    <p>Natural, no additives</p>
+                </div>
+            </div>
+
+            <div class="info-bar-item">
+                <div class="info-icon-wrap">📞</div>
+                <div>
+                    <strong>HOTLINE</strong>
+                    <p>+94 76 540 0284</p>
+                </div>
+            </div>
+
+        </div>
+    </section>
+
+    <!-- Newsletter -->
+    <section class="newsletter-section">
+        <div class="newsletter-overlay">
+            <div class="container newsletter-content">
+                <h2>Sign Up <span>Newsletter</span></h2>
+                <p>Get the latest offers, new products and updates delivered to your inbox.</p>
+
+                <form class="newsletter-form" onsubmit="handleNewsletterSubmit(event)">
+                    <input type="email" placeholder="Enter your email address" required>
+                    <button type="submit">Submit</button>
+                </form>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container footer-grid">
+
+            <div class="footer-brand">
+                <img src="{% static 'images/logo.webp' %}" alt="Everbolt Food Products" class="footer-logo">
+            </div>
+
+            <div class="footer-col">
+                <h4>CONTACT US</h4>
+                <p><span class="fc-icon">📍</span> No.548/B Naiwala Rd, Sri Jayawardenapura Kotte 10100</p>
+                <p><span class="fc-icon">✉</span> info@organicfoodslanka.com</p>
+                <p><span class="fc-icon">📞</span> +94 76 540 0284</p>
+
+                <div class="social-links">
+                    <a href="#" class="social-btn" aria-label="Facebook">
+                        <svg viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/>
+                        </svg>
+                    </a>
+
+                    <a href="#" class="social-btn" aria-label="Instagram">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
+                            <rect x="2" y="2" width="20" height="20" rx="5" ry="5"/>
+                            <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/>
+                            <line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/>
+                        </svg>
+                    </a>
+
+                    <a href="#" class="social-btn" aria-label="TikTok">
+                        <svg viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-2.88 2.5 2.89 2.89 0 0 1-2.89-2.89 2.89 2.89 0 0 1 2.89-2.89c.28 0 .54.04.79.1V9.01a6.33 6.33 0 0 0-.79-.05 6.34 6.34 0 0 0-6.34 6.34 6.34 6.34 0 0 0 6.34 6.34 6.34 6.34 0 0 0 6.33-6.34V8.69a8.18 8.18 0 0 0 4.78 1.52V6.76a4.85 4.85 0 0 1-1.01-.07z"/>
+                        </svg>
+                    </a>
+                </div>
+            </div>
+
+            <div class="footer-col">
+                <h4>QUICK LINKS</h4>
+                <a href="{% url 'about' %}">About Us</a>
+                <a href="{% url 'contact' %}">Contact Us</a>
+                <a href="{% url 'privacy_policy' %}">Privacy &amp; Policy</a>
+                <a href="{% url 'terms_conditions' %}">Terms &amp; Conditions</a>
+                <a href="{% url 'delivery_charges' %}">Delivery &amp; Returns</a>
+            </div>
+
+            <div class="footer-col">
+                <h4>FIND US</h4>
+                <div class="footer-map">
+                    <iframe
+                        src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3961.3753782082996!2d79.90187!3d6.8902!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3ae25a8e4a8b9e4f%3A0x0!2zNsKwNTMnMjQuNyJOIDc5wrA1NCcwNi43IkU!5e0!3m2!1sen!2slk!4v1620000000000!5m2!1sen!2slk"
+                        width="100%"
+                        height="130"
+                        style="border:0; border-radius:6px;"
+                        allowfullscreen=""
+                        loading="lazy">
+                    </iframe>
+                </div>
+            </div>
+
+        </div>
+
+        <div class="footer-bottom">
+            <p>© 2024 Everbolt Foods. All Rights Reserved.</p>
+        </div>
+    </footer>
+
+    <!-- Back to top -->
+    <button class="back-to-top" type="button" onclick="window.scrollTo({top: 0, behavior: 'smooth'})">↑</button>
+
+    <script src="{% static 'js/scripts.js' %}"></script>
+
+    {% block extra_js %}{% endblock %}
+
+    <script>
+        function getMobileMenuElements() {
+            return {
+                navbar: document.getElementById('navbar'),
+                overlay: document.getElementById('mobileOverlay'),
+                openBtn: document.getElementById('mobileMenuOpenBtn'),
+                closeBtn: document.getElementById('mobileMenuCloseBtn')
+            };
+        }
+
+        function openMenu() {
+            var el = getMobileMenuElements();
+
+            if (!el.navbar || !el.overlay) {
+                return;
+            }
+
+            /* Reparent the drawer to <body> so its position:fixed can never
+               be trapped inside a header/container that has transform,
+               filter, perspective, contain, or will-change set in home.css
+               (any of those would re-root fixed positioning and silently
+               break click hit-testing even though z-index looks correct). */
+            if (el.navbar.parentNode !== document.body) {
+                el.navbar.dataset.originalNextSibling = '';
+                el.navbar._originalParent = el.navbar.parentNode;
+                el.navbar._originalNextSibling = el.navbar.nextSibling;
+                document.body.appendChild(el.navbar);
+            }
+
+            el.navbar.classList.add('open');
+            el.navbar.style.setProperty('right', '0', 'important');
+            el.overlay.classList.add('open');
+            document.body.classList.add('menu-open');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeMenu() {
+            var el = getMobileMenuElements();
+
+            if (!el.navbar || !el.overlay) {
+                return;
+            }
+
+            el.navbar.classList.remove('open');
+            el.navbar.style.setProperty('right', '-100%', 'important');
+            el.overlay.classList.remove('open');
+            document.body.classList.remove('menu-open');
+            document.body.style.overflow = '';
+
+            document.querySelectorAll('.navbar .dropdown.open').forEach(function (dropdown) {
+                dropdown.classList.remove('open');
+            });
+
+            /* Move the drawer back to its original spot in the header after
+               the slide-out transition finishes, so desktop layout/markup
+               structure stays exactly as before. */
+            if (el.navbar._originalParent) {
+                setTimeout(function () {
+                    if (el.navbar._originalNextSibling) {
+                        el.navbar._originalParent.insertBefore(el.navbar, el.navbar._originalNextSibling);
+                    } else {
+                        el.navbar._originalParent.appendChild(el.navbar);
+                    }
+                }, 320);
+            }
+        }
+
+        function toggleMenu() {
+            var el = getMobileMenuElements();
+
+            if (!el.navbar) {
+                return;
+            }
+
+            if (el.navbar.classList.contains('open')) {
+                closeMenu();
+            } else {
+                openMenu();
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', function () {
+            var el = getMobileMenuElements();
+
+            /* Ensure the drawer starts fully closed on load, regardless of
+               any inline style left over from a previous page render. */
+            if (el.navbar) {
+                el.navbar.classList.remove('open');
+                el.navbar.style.removeProperty('right');
+            }
+
+            if (el.openBtn) {
+                el.openBtn.addEventListener('click', function (event) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    openMenu();
+                });
+            }
+
+            if (el.closeBtn) {
+                el.closeBtn.addEventListener('click', function (event) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    closeMenu();
+                });
+
+                el.closeBtn.addEventListener('touchend', function (event) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    closeMenu();
+                }, { passive: false });
+            }
+
+            if (el.overlay) {
+                el.overlay.addEventListener('click', function (event) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    closeMenu();
+                });
+            }
+
+            document.querySelectorAll('.navbar .dropdown-toggle').forEach(function (toggle) {
+                toggle.addEventListener('click', function (event) {
+                    if (window.innerWidth <= 768) {
+                        event.preventDefault();
+                        event.stopPropagation();
+
+                        var dropdown = this.closest('.dropdown');
+
+                        if (dropdown) {
+                            dropdown.classList.toggle('open');
+                        }
+                    }
+                });
+            });
+
+            document.querySelectorAll('.navbar a').forEach(function (link) {
+                link.addEventListener('click', function () {
+                    if (window.innerWidth <= 768) {
+                        closeMenu();
+                    }
+                });
+            });
+
+            document.addEventListener('keydown', function (event) {
+                if (event.key === 'Escape') {
+                    closeMenu();
+                }
+            });
+
+            window.addEventListener('resize', function () {
+                if (window.innerWidth > 768) {
+                    closeMenu();
+                }
+            });
+
+            /* --- Certification scroll-in animation --- */
+            var items = document.querySelectorAll('.cert-item');
+
+            if (items.length && 'IntersectionObserver' in window) {
+                var observer = new IntersectionObserver(function (entries) {
+                    entries.forEach(function (entry) {
+                        if (entry.isIntersecting) {
+                            entry.target.classList.add('cert-visible');
+                            observer.unobserve(entry.target);
+                        }
+                    });
+                }, {
+                    threshold: 0.2
+                });
+
+                items.forEach(function (item) {
+                    observer.observe(item);
+                });
+            } else {
+                items.forEach(function (item) {
+                    item.classList.add('cert-visible');
+                });
+            }
+        });
+
+        function handleNewsletterSubmit(event) {
+            event.preventDefault();
+
+            var btn = event.target.querySelector('button');
+            var input = event.target.querySelector('input');
+
+            if (!btn || !input) {
+                return;
+            }
+
+            btn.textContent = '✓ Subscribed!';
+            btn.style.background = '#27ae60';
+            input.value = '';
+
+            setTimeout(function () {
+                btn.textContent = 'Submit';
+                btn.style.background = '';
+            }, 3000);
+        }
+    </script>
+</body>
+</html>
