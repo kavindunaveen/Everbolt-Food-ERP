@@ -1,494 +1,491 @@
 {% extends "public/base.html" %}
 {% load static %}
 
-{% block title %}Everbolt Foods | Future of Culinary{% endblock %}
-
 {% block extra_css %}
 <style>
 /* ================================================
-   CYBERPUNK / FUTURISTIC HOME STYLES
+   ORGANIC LIGHT HOME STYLES
 ================================================ */
-.cyber-hero {
+
+/* --- HERO SECTION --- */
+.organic-hero {
     position: relative;
-    height: 100vh;
+    height: 90vh;
+    min-height: 600px;
     display: flex;
     align-items: center;
     justify-content: center;
-    overflow: hidden;
-}
-
-.cyber-hero-bg {
-    position: absolute;
-    inset: -5%; /* slightly larger for parallax */
-    background: url("{% static 'images/hero-futuristic.png' %}") center/cover no-repeat;
-    z-index: 1;
-    transition: transform 0.1s ease-out; /* Parallax smooth */
-}
-
-.cyber-hero-overlay {
-    position: absolute;
-    inset: 0;
-    z-index: 2;
-    background: linear-gradient(0deg, var(--bg-base) 0%, rgba(5, 5, 8, 0.4) 50%, var(--bg-base) 100%);
-}
-
-.cyber-hero-content {
-    position: relative;
-    z-index: 3;
-    text-align: center;
-    max-width: 900px;
+    background: url("{% static 'images/main-bg.webp' %}") center/cover no-repeat;
     padding: 0 24px;
 }
 
-.cyber-glitch-text {
-    font-size: clamp(48px, 8vw, 100px);
-    font-weight: 900;
-    text-transform: uppercase;
-    line-height: 1;
-    margin-bottom: 24px;
-    position: relative;
-    color: #fff;
-    text-shadow: 0 0 20px rgba(255, 255, 255, 0.3);
+.organic-hero::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.2); /* Soft darkening to make the white card pop */
 }
 
-/* Glitch Effect */
-.cyber-glitch-text::before, .cyber-glitch-text::after {
-    content: attr(data-text);
-    position: absolute;
-    top: 0;
-    left: 0;
+.hero-glass-card {
+    position: relative;
+    z-index: 2;
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.6);
+    border-radius: var(--radius-lg);
+    padding: 64px 48px;
+    max-width: 800px;
+    text-align: center;
+    box-shadow: 0 32px 64px rgba(0, 0, 0, 0.1);
+    transform: translateY(20px);
+    opacity: 0;
+    animation: slideUpFade 1s 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes slideUpFade {
+    to { transform: translateY(0); opacity: 1; }
+}
+
+.hero-pill {
+    display: inline-block;
+    padding: 6px 16px;
+    background: var(--brand-red-light);
+    color: var(--brand-red);
+    border-radius: var(--radius-pill);
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: 24px;
+}
+
+.hero-glass-card h1 {
+    font-size: clamp(36px, 5vw, 64px);
+    font-weight: 800;
+    color: var(--text-primary);
+    line-height: 1.1;
+    margin-bottom: 24px;
+}
+
+.hero-glass-card p {
+    font-size: 18px;
+    color: var(--text-secondary);
+    margin-bottom: 40px;
+    line-height: 1.7;
+}
+
+.hero-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px 40px;
+    background: var(--brand-red);
+    color: #fff;
+    font-family: var(--font-heading);
+    font-weight: 600;
+    font-size: 16px;
+    border-radius: var(--radius-pill);
+    transition: var(--transition);
+    box-shadow: 0 10px 24px rgba(192, 57, 43, 0.2);
+}
+
+.hero-btn:hover {
+    background: var(--brand-red-hover);
+    transform: translateY(-3px);
+    box-shadow: 0 16px 32px rgba(192, 57, 43, 0.3);
+    color: #fff;
+}
+
+/* --- COMMON SECTIONS --- */
+.section-padding {
+    padding: 120px 0;
+}
+
+.section-header {
+    text-align: center;
+    margin-bottom: 64px;
+}
+
+.section-header h2 {
+    font-size: 40px;
+    font-weight: 800;
+    color: var(--text-primary);
+    margin-bottom: 16px;
+}
+
+.section-header p {
+    font-size: 18px;
+    color: var(--text-secondary);
+}
+
+/* --- CATEGORIES GRID --- */
+.category-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 24px;
+}
+
+.cat-card {
+    position: relative;
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    aspect-ratio: 4/5;
+    background: #fff;
+    box-shadow: var(--shadow-sm);
+    transition: var(--transition);
+}
+
+.cat-card:hover {
+    box-shadow: var(--shadow-hover);
+    transform: translateY(-8px);
+}
+
+.cat-img {
     width: 100%;
     height: 100%;
-    background: transparent;
-}
-.cyber-glitch-text::before {
-    left: 2px;
-    text-shadow: -2px 0 var(--brand-neon-red);
-    animation: glitch-anim-1 2s infinite linear alternate-reverse;
-}
-.cyber-glitch-text::after {
-    left: -2px;
-    text-shadow: 2px 0 var(--brand-cyan);
-    animation: glitch-anim-2 3s infinite linear alternate-reverse;
+    object-fit: cover;
+    transition: transform 0.8s ease;
 }
 
-@keyframes glitch-anim-1 {
-    0% { clip-path: inset(20% 0 80% 0); }
-    20% { clip-path: inset(60% 0 10% 0); }
-    40% { clip-path: inset(40% 0 50% 0); }
-    60% { clip-path: inset(80% 0 5% 0); }
-    80% { clip-path: inset(10% 0 70% 0); }
-    100% { clip-path: inset(30% 0 40% 0); }
-}
-@keyframes glitch-anim-2 {
-    0% { clip-path: inset(10% 0 60% 0); }
-    20% { clip-path: inset(30% 0 20% 0); }
-    40% { clip-path: inset(70% 0 10% 0); }
-    60% { clip-path: inset(20% 0 50% 0); }
-    80% { clip-path: inset(50% 0 30% 0); }
-    100% { clip-path: inset(5% 0 80% 0); }
+.cat-card:hover .cat-img {
+    transform: scale(1.08);
 }
 
-.cyber-subtitle {
+.cat-overlay {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(to top, rgba(192, 57, 43, 0.9) 0%, rgba(0, 0, 0, 0) 60%);
+    display: flex;
+    align-items: flex-end;
+    padding: 32px 24px;
+    opacity: 0;
+    transition: var(--transition);
+}
+
+.cat-card:hover .cat-overlay {
+    opacity: 1;
+}
+
+.cat-overlay h3 {
+    color: #fff;
+    font-size: 24px;
+    margin: 0;
+    transform: translateY(10px);
+    transition: var(--transition);
+}
+
+.cat-card:hover .cat-overlay h3 {
+    transform: translateY(0);
+}
+
+/* --- WHY CHOOSE US --- */
+.bg-light {
+    background: #ffffff;
+    border-top: 1px solid var(--border-soft);
+    border-bottom: 1px solid var(--border-soft);
+}
+
+.why-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 32px;
+}
+
+.why-item {
+    background: var(--bg-base);
+    border: 1px solid var(--border-soft);
+    padding: 48px 32px;
+    border-radius: var(--radius-lg);
+    text-align: center;
+    transition: var(--transition);
+}
+
+.why-item:hover {
+    background: #fff;
+    border-color: var(--brand-red);
+    box-shadow: var(--shadow-hover);
+    transform: translateY(-8px);
+}
+
+.why-icon {
+    width: 64px;
+    height: 64px;
+    background: var(--brand-red-light);
+    color: var(--brand-red);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 28px;
+    margin: 0 auto 24px;
+    transition: var(--transition);
+}
+
+.why-item:hover .why-icon {
+    background: var(--brand-red);
+    color: #fff;
+}
+
+.why-item h3 {
     font-size: 20px;
-    color: var(--text-secondary);
-    max-width: 600px;
-    margin: 0 auto 48px;
-    text-transform: uppercase;
-    letter-spacing: 4px;
+    margin-bottom: 12px;
 }
 
-.cyber-hero-cta {
+.why-item p {
+    font-size: 14px;
+    color: var(--text-secondary);
+    line-height: 1.6;
+}
+
+/* --- FEATURED PRODUCTS --- */
+.product-slider {
     display: flex;
     gap: 24px;
+    overflow-x: auto;
+    padding: 24px 0;
+    scroll-snap-type: x mandatory;
+    scrollbar-width: none;
+}
+
+.product-slider::-webkit-scrollbar { display: none; }
+
+.prod-card {
+    flex: 0 0 300px;
+    scroll-snap-align: start;
+    background: #fff;
+    border: 1px solid var(--border-soft);
+    border-radius: var(--radius-md);
+    padding: 24px;
+    transition: var(--transition);
+}
+
+.prod-card:hover {
+    border-color: var(--brand-red);
+    box-shadow: var(--shadow-hover);
+    transform: translateY(-8px);
+}
+
+.prod-img-wrap {
+    height: 220px;
+    background: var(--bg-base);
+    border-radius: var(--radius-sm);
+    margin-bottom: 24px;
+    padding: 16px;
+    display: flex;
+    align-items: center;
     justify-content: center;
 }
 
-.btn-neon {
-    padding: 16px 40px;
-    background: transparent;
-    border: 2px solid var(--brand-neon-red);
-    color: #fff;
-    font-family: var(--font-heading);
-    font-weight: 800;
-    font-size: 16px;
-    text-transform: uppercase;
-    letter-spacing: 2px;
-    position: relative;
-    overflow: hidden;
-    transition: var(--transition);
-    box-shadow: 0 0 10px rgba(255, 0, 60, 0.3), inset 0 0 10px rgba(255, 0, 60, 0.3);
-}
-
-.btn-neon::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: -100%;
-    width: 100%;
-    height: 100%;
-    background: var(--brand-neon-red);
-    transition: var(--transition);
-    z-index: -1;
-}
-
-.btn-neon:hover {
-    color: #fff;
-    box-shadow: 0 0 30px rgba(255, 0, 60, 0.8), inset 0 0 20px rgba(255, 0, 60, 0.8);
-}
-
-.btn-neon:hover::before {
-    left: 0;
-}
-
-/* ================================================
-   3D TILT CATEGORIES
-================================================ */
-.cyber-section {
-    padding: 120px 0;
-    position: relative;
-}
-
-.cyber-section-title {
-    text-align: center;
-    font-size: 48px;
-    font-weight: 800;
-    text-transform: uppercase;
-    margin-bottom: 80px;
-    color: #fff;
-    text-shadow: var(--neon-glow);
-}
-
-.tilt-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-    gap: 32px;
-}
-
-.tilt-card {
-    background: var(--bg-surface);
-    border: 1px solid rgba(255, 255, 255, 0.05);
-    border-radius: var(--radius-md);
-    padding: 24px;
-    transform-style: preserve-3d;
-    box-shadow: 0 20px 40px rgba(0,0,0,0.5);
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    text-align: center;
-    transition: border-color 0.4s;
-}
-
-.tilt-card:hover {
-    border-color: var(--brand-neon-red);
-    box-shadow: 0 20px 50px rgba(255, 0, 60, 0.2);
-}
-
-.tilt-icon {
-    width: 100%;
-    height: 180px;
-    object-fit: cover;
-    border-radius: var(--radius-sm);
-    margin-bottom: 24px;
-    transform: translateZ(30px); /* 3D pop out */
-}
-
-.tilt-card h3 {
-    font-size: 24px;
-    margin-bottom: 12px;
-    transform: translateZ(40px);
-}
-
-.tilt-card p {
-    font-size: 14px;
-    color: var(--text-secondary);
-    transform: translateZ(20px);
-}
-
-/* ================================================
-   NEON FLOATING "WHY CHOOSE US"
-================================================ */
-.cyber-why {
-    background: linear-gradient(180deg, var(--bg-base) 0%, rgba(20,0,5,0.8) 50%, var(--bg-base) 100%);
-    border-top: 1px solid rgba(255,0,60,0.2);
-    border-bottom: 1px solid rgba(255,0,60,0.2);
-}
-
-.cyber-why-grid {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 40px;
-}
-
-.cyber-why-item {
-    text-align: center;
-    position: relative;
-    padding: 40px 20px;
-}
-
-.cyber-why-item::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    border: 1px dashed rgba(255,0,60,0.3);
-    border-radius: 50%;
-    animation: rotate-border 10s linear infinite;
-    opacity: 0;
-    transition: opacity 0.4s;
-}
-
-.cyber-why-item:hover::before {
-    opacity: 1;
-}
-
-@keyframes rotate-border {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
-}
-
-.cyber-icon {
-    font-size: 48px;
-    color: var(--brand-neon-red);
-    margin-bottom: 24px;
-    text-shadow: var(--neon-glow);
-    display: inline-block;
-}
-
-.cyber-why-item:hover .cyber-icon {
-    animation: bounce 1s infinite;
-}
-
-@keyframes bounce {
-    0%, 100% { transform: translateY(0); }
-    50% { transform: translateY(-10px); }
-}
-
-.cyber-why-item h3 {
-    font-size: 20px;
-    margin-bottom: 16px;
-}
-
-.cyber-why-item p {
-    color: var(--text-secondary);
-    font-size: 14px;
-}
-
-/* ================================================
-   HOLOGRAM PRODUCTS
-================================================ */
-.holo-product-grid {
-    display: flex;
-    overflow-x: auto;
-    gap: 32px;
-    padding: 40px 0;
-    scroll-snap-type: x mandatory;
-    scrollbar-width: thin;
-    scrollbar-color: var(--brand-neon-red) var(--bg-surface);
-}
-
-.holo-product {
-    flex: 0 0 300px;
-    scroll-snap-align: center;
-    background: linear-gradient(145deg, rgba(255,255,255,0.05), rgba(0,0,0,0.5));
-    border: 1px solid rgba(255,255,255,0.05);
-    border-radius: var(--radius-lg);
-    padding: 24px;
-    position: relative;
-    transition: var(--transition);
-}
-
-.holo-product::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: radial-gradient(circle at top right, rgba(255,0,60,0.2), transparent 50%);
-    opacity: 0;
-    transition: var(--transition);
-    border-radius: var(--radius-lg);
-}
-
-.holo-product:hover {
-    transform: translateY(-10px);
-    border-color: var(--brand-neon-red);
-    box-shadow: var(--neon-glow);
-}
-
-.holo-product:hover::before {
-    opacity: 1;
-}
-
-.holo-img {
-    height: 200px;
-    width: 100%;
+.prod-img-wrap img {
+    max-width: 100%;
+    max-height: 100%;
     object-fit: contain;
-    margin-bottom: 24px;
-    filter: drop-shadow(0 10px 10px rgba(0,0,0,0.5));
+    mix-blend-mode: multiply;
     transition: var(--transition);
 }
 
-.holo-product:hover .holo-img {
-    transform: scale(1.1) rotate(2deg);
+.prod-card:hover .prod-img-wrap img {
+    transform: scale(1.08);
 }
 
-.holo-product h4 {
-    font-size: 20px;
-    margin-bottom: 8px;
-    position: relative;
-    z-index: 1;
+.prod-card .category {
+    font-size: 12px;
+    color: var(--text-light);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-weight: 600;
 }
 
-.holo-product .price {
-    font-family: var(--font-body);
-    font-size: 24px;
-    font-weight: 700;
-    color: var(--brand-cyan);
-    margin-bottom: 16px;
-    position: relative;
-    z-index: 1;
+.prod-card h4 {
+    font-size: 18px;
+    margin: 8px 0 16px;
+    color: var(--text-primary);
 }
+
+.prod-card .price {
+    font-size: 22px;
+    font-weight: 800;
+    color: var(--brand-red);
+}
+
+/* SCROLL REVEAL UTILITY */
+.reveal {
+    opacity: 0;
+    transform: translateY(30px);
+    transition: var(--transition);
+}
+
+.reveal.active {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.delay-1 { transition-delay: 0.1s; }
+.delay-2 { transition-delay: 0.2s; }
+.delay-3 { transition-delay: 0.3s; }
 
 @media (max-width: 992px) {
-    .cyber-why-grid { grid-template-columns: repeat(2, 1fr); }
+    .category-grid, .why-grid { grid-template-columns: repeat(2, 1fr); }
+    .hero-glass-card { padding: 48px 32px; }
 }
 
 @media (max-width: 576px) {
-    .cyber-why-grid { grid-template-columns: 1fr; }
-    .cyber-glitch-text { font-size: 40px; }
+    .category-grid, .why-grid { grid-template-columns: 1fr; }
+    .hero-glass-card { padding: 32px 24px; }
 }
-
 </style>
 {% endblock %}
 
 {% block content %}
 
-<!-- PARALLAX HERO SECTION -->
-<section class="cyber-hero">
-    <div class="cyber-hero-bg" id="heroBg"></div>
-    <div class="cyber-hero-overlay"></div>
-    
-    <div class="cyber-hero-content">
+<!-- ELEGANT HERO SECTION -->
+<section class="organic-hero">
+    <div class="hero-glass-card">
+        <span class="hero-pill">Premium Authentic Quality</span>
         {% if hero and hero.title %}
-            <h1 class="cyber-glitch-text" data-text="{{ hero.title }}">{{ hero.title }}</h1>
+            <h1>{{ hero.title }}</h1>
         {% else %}
-            <h1 class="cyber-glitch-text" data-text="THE FUTURE OF FLAVOR">THE FUTURE OF FLAVOR</h1>
+            <h1>The Essence of Pure Taste.</h1>
         {% endif %}
         
-        <p class="cyber-subtitle">
-            {% if hero and hero.description %}
-                {{ hero.description }}
-            {% else %}
-                ULTRA-PREMIUM SOURCING // ADVANCED CULINARY LOGISTICS
-            {% endif %}
-        </p>
+        {% if hero and hero.description %}
+            <p>{{ hero.description }}</p>
+        {% else %}
+            <p>Everbolt Foods brings you the finest selection of 100% natural, premium Sri Lankan teas, spices, and hotel supplies. Sourced organically and refined for the world's best culinary experiences.</p>
+        {% endif %}
         
-        <div class="cyber-hero-cta">
-            <a href="{% url 'products' %}" class="btn-neon">ENTER CATALOG</a>
-        </div>
+        <a href="{% url 'products' %}" class="hero-btn">Shop Our Collection</a>
     </div>
 </section>
 
-<!-- 3D TILT CATEGORIES -->
-<section class="cyber-section container">
-    <h2 class="cyber-section-title">SYSTEM_MODULES // CATEGORIES</h2>
-    <div class="tilt-grid">
-        <a href="{% url 'products' %}?q=flavoured tea" class="tilt-card" data-tilt data-tilt-max="15" data-tilt-speed="400" data-tilt-glare="true" data-tilt-max-glare="0.2">
-            <img src="{% static 'images/flavoured-tea.gif' %}" alt="Tea" class="tilt-icon">
-            <h3>Flavoured Teas</h3>
-            <p>Advanced Botanical Blends</p>
-        </a>
-        <a href="{% url 'products' %}?q=spices" class="tilt-card" data-tilt data-tilt-max="15" data-tilt-speed="400" data-tilt-glare="true" data-tilt-max-glare="0.2">
-            <img src="{% static 'images/spices-powder.gif' %}" alt="Spices" class="tilt-icon">
-            <h3>Pure Spices</h3>
-            <p>High-Density Flavor Profiles</p>
-        </a>
-        <a href="{% url 'products' %}?q=kithul" class="tilt-card" data-tilt data-tilt-max="15" data-tilt-speed="400" data-tilt-glare="true" data-tilt-max-glare="0.2">
-            <img src="{% static 'images/kithul-products-foods.gif' %}" alt="Kithul" class="tilt-icon">
-            <h3>Kithul Extract</h3>
-            <p>Organic Sweetening Matrices</p>
-        </a>
-        <a href="{% url 'products' %}?q=hotel supplies" class="tilt-card" data-tilt data-tilt-max="15" data-tilt-speed="400" data-tilt-glare="true" data-tilt-max-glare="0.2">
-            <img src="{% static 'images/hotel-supplies-foods.gif' %}" alt="Hotel Supplies" class="tilt-icon">
-            <h3>Hotel Logistics</h3>
-            <p>Bulk Operational Supply</p>
-        </a>
-    </div>
-</section>
-
-<!-- FLOATING WHY CHOOSE US -->
-<section class="cyber-section cyber-why">
+<!-- CATEGORIES GRID -->
+<section class="section-padding">
     <div class="container">
-        <h2 class="cyber-section-title" style="margin-bottom: 120px;">CORE // DIRECTIVES</h2>
-        <div class="cyber-why-grid">
-            <div class="cyber-why-item">
-                <div class="cyber-icon">◈</div>
-                <h3>100% Organic</h3>
-                <p>Pure extractions from terrestrial zones.</p>
+        <div class="section-header reveal">
+            <h2>Shop by Category</h2>
+            <p>Explore our carefully curated selections</p>
+        </div>
+        
+        <div class="category-grid">
+            <a href="{% url 'products' %}?q=flavoured tea" class="cat-card reveal">
+                <img src="{% static 'images/flavoured-tea.gif' %}" alt="Tea" class="cat-img">
+                <div class="cat-overlay">
+                    <h3>Flavoured Teas</h3>
+                </div>
+            </a>
+            <a href="{% url 'products' %}?q=spices" class="cat-card reveal delay-1">
+                <img src="{% static 'images/spices-powder.gif' %}" alt="Spices" class="cat-img">
+                <div class="cat-overlay">
+                    <h3>Premium Spices</h3>
+                </div>
+            </a>
+            <a href="{% url 'products' %}?q=kithul" class="cat-card reveal delay-2">
+                <img src="{% static 'images/kithul-products-foods.gif' %}" alt="Kithul" class="cat-img">
+                <div class="cat-overlay">
+                    <h3>Kithul Products</h3>
+                </div>
+            </a>
+            <a href="{% url 'products' %}?q=hotel supplies" class="cat-card reveal delay-3">
+                <img src="{% static 'images/hotel-supplies-foods.gif' %}" alt="Hotel Supplies" class="cat-img">
+                <div class="cat-overlay">
+                    <h3>Hotel Supplies</h3>
+                </div>
+            </a>
+        </div>
+    </div>
+</section>
+
+<!-- WHY CHOOSE US -->
+<section class="section-padding bg-light">
+    <div class="container">
+        <div class="section-header reveal">
+            <h2>The Everbolt Standard</h2>
+            <p>Why chefs and hoteliers partner with us</p>
+        </div>
+        
+        <div class="why-grid">
+            <div class="why-item reveal">
+                <div class="why-icon">🌿</div>
+                <h3>100% Natural</h3>
+                <p>Absolutely no artificial additives. Only pure, organically sourced ingredients from trusted estates.</p>
             </div>
-            <div class="cyber-why-item">
-                <div class="cyber-icon">⎔</div>
-                <h3>Max Purity</h3>
-                <p>Filtered through advanced QA algorithms.</p>
+            <div class="why-item reveal delay-1">
+                <div class="why-icon">🏅</div>
+                <h3>Certified Quality</h3>
+                <p>Every product undergoes strict quality control to meet premium international culinary standards.</p>
             </div>
-            <div class="cyber-why-item">
-                <div class="cyber-icon">⟡</div>
-                <h3>Global Routing</h3>
-                <p>Logistics mapped to any coordinates.</p>
+            <div class="why-item reveal delay-2">
+                <div class="why-icon">📦</div>
+                <h3>Bulk Supply</h3>
+                <p>Reliable, scalable packaging solutions designed specifically for the hospitality sector.</p>
             </div>
-            <div class="cyber-why-item">
-                <div class="cyber-icon">◬</div>
-                <h3>Secure Protocol</h3>
-                <p>Encrypted data and secure supply chains.</p>
+            <div class="why-item reveal delay-3">
+                <div class="why-icon">✈️</div>
+                <h3>Global Delivery</h3>
+                <p>Efficient supply chain logistics ensuring freshness upon arrival, anywhere in the world.</p>
             </div>
         </div>
     </div>
 </section>
 
-<!-- HOLOGRAM FEATURED PRODUCTS -->
+<!-- FEATURED PRODUCTS -->
 {% if home_products %}
-<section class="cyber-section container">
-    <h2 class="cyber-section-title">FEATURED // ASSETS</h2>
-    <div class="holo-product-grid">
-        {% for product in home_products %}
-        <a href="{% url 'product_detail' product.id %}" class="holo-product">
-            {% if product.main_image %}
-                {% if product.main_image|slice:":4" == "http" %}
-                    <img src="{{ product.main_image }}" class="holo-img" alt="Product">
-                {% else %}
-                    <img src="{{ erp_media_base_url }}{{ product.main_image }}" class="holo-img" alt="Product">
-                {% endif %}
-            {% else %}
-                <img src="{% static 'images/no-image.webp' %}" class="holo-img" alt="No image">
-            {% endif %}
-            
-            <p style="font-size:10px; color:var(--brand-neon-red); letter-spacing:2px; margin-bottom:8px;">ID: {{ product.id|stringformat:"04d" }}</p>
-            <h4>{{ product.product_name|default:product.display_name_final|default:product.display_name }}</h4>
-            
-            <div class="price">
-                {% if product.website_price %}
-                    රු{{ product.website_price }}
-                {% elif product.price %}
-                    රු{{ product.price }}
-                {% else %}
-                    N/A
-                {% endif %}
-            </div>
-        </a>
-        {% endfor %}
+<section class="section-padding">
+    <div class="container">
+        <div class="section-header reveal">
+            <h2>Featured Selections</h2>
+            <p>Our most sought-after products</p>
+        </div>
+        
+        <div class="product-slider reveal">
+            {% for product in home_products %}
+            <a href="{% url 'product_detail' product.id %}" class="prod-card">
+                <div class="prod-img-wrap">
+                    {% if product.main_image %}
+                        {% if product.main_image|slice:":4" == "http" %}
+                            <img src="{{ product.main_image }}" alt="Product">
+                        {% else %}
+                            <img src="{{ erp_media_base_url }}{{ product.main_image }}" alt="Product">
+                        {% endif %}
+                    {% else %}
+                        <img src="{% static 'images/no-image.webp' %}" alt="No image">
+                    {% endif %}
+                </div>
+                
+                <div class="category">{{ product.category_name|default:"Product" }}</div>
+                <h4>{{ product.product_name|default:product.display_name_final|default:product.display_name }}</h4>
+                
+                <div class="price">
+                    {% if product.website_price %}
+                        රු{{ product.website_price }}
+                    {% elif product.price %}
+                        රු{{ product.price }}
+                    {% else %}
+                        Price on Request
+                    {% endif %}
+                </div>
+            </a>
+            {% endfor %}
+        </div>
     </div>
 </section>
 {% endif %}
 
-<!-- SCRIPTS FOR PARALLAX & 3D TILT -->
-<!-- VanillaTilt.js CDN -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/vanilla-tilt/1.8.0/vanilla-tilt.min.js"></script>
+<!-- SCROLL REVEAL SCRIPT -->
 <script>
-    // Hero Parallax Effect
-    document.addEventListener('mousemove', function(e) {
-        const bg = document.getElementById('heroBg');
-        const x = (e.clientX / window.innerWidth - 0.5) * 20; // 20px translation max
-        const y = (e.clientY / window.innerHeight - 0.5) * 20;
-        bg.style.transform = `translate(${x}px, ${y}px)`;
-    });
+document.addEventListener('DOMContentLoaded', function() {
+    const reveals = document.querySelectorAll('.reveal');
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                entry.target.classList.add('active');
+            }
+        });
+    }, { threshold: 0.1 });
+    
+    reveals.forEach(el => observer.observe(el));
+});
 </script>
 
 {% endblock %}

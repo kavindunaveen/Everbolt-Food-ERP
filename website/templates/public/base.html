@@ -4,40 +4,45 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}Everbolt Foods | Future of Culinary{% endblock %}</title>
-    <meta name="description" content="{% block meta_description %}Experience the future of premium food and hotel supplies in Sri Lanka.{% endblock %}">
+    <title>{% block title %}Everbolt Foods | Premium Organic Suppliers{% endblock %}</title>
+    <meta name="description" content="{% block meta_description %}Everbolt Foods provides 100% natural, premium Sri Lankan spices, tea, and hotel supplies with unparalleled quality and authenticity.{% endblock %}">
 
     <link rel="icon" type="image/x-icon" href="{% static 'images/logo.ico' %}">
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
     <style>
         :root {
-            /* Futuristic Dark Theme Variables */
-            --bg-base: #030305;
-            --bg-surface: rgba(15, 15, 20, 0.6);
-            --bg-surface-light: rgba(30, 30, 40, 0.4);
+            /* Organic Premium Light Theme Variables */
+            --bg-base: #fafafa;
+            --bg-surface: #ffffff;
             
-            --brand-neon-red: #ff003c;
-            --brand-neon-red-dim: rgba(255, 0, 60, 0.2);
-            --brand-cyan: #00f0ff;
+            --brand-red: #c0392b;
+            --brand-red-hover: #a93226;
+            --brand-red-light: rgba(192, 57, 43, 0.08);
             
-            --text-primary: #ffffff;
-            --text-secondary: rgba(255, 255, 255, 0.6);
+            --text-primary: #1c1c1e;
+            --text-secondary: #636366;
+            --text-light: #8e8e93;
             
-            --neon-glow: 0 0 20px rgba(255, 0, 60, 0.5);
-            --glass-border: 1px solid rgba(255, 255, 255, 0.08);
+            --border-soft: #f2f2f7;
+            --glass-bg: rgba(255, 255, 255, 0.85);
+            --glass-border: rgba(255, 255, 255, 0.5);
+            
+            --shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.04);
+            --shadow-md: 0 12px 32px rgba(0, 0, 0, 0.06);
+            --shadow-hover: 0 20px 48px rgba(192, 57, 43, 0.12);
             
             --font-heading: 'Outfit', sans-serif;
-            --font-body: 'Space Grotesk', sans-serif;
+            --font-body: 'Inter', sans-serif;
             
             --radius-pill: 100px;
-            --radius-lg: 24px;
-            --radius-md: 16px;
+            --radius-lg: 20px;
+            --radius-md: 12px;
             
-            --transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+            --transition: all 0.35s cubic-bezier(0.25, 1, 0.5, 1);
         }
 
         * {
@@ -56,7 +61,8 @@
 
         h1, h2, h3, h4, h5, h6 {
             font-family: var(--font-heading);
-            letter-spacing: 0.02em;
+            color: var(--text-primary);
+            letter-spacing: -0.02em;
         }
 
         a {
@@ -64,221 +70,192 @@
             color: inherit;
         }
 
-        /* GLOBALLY ENFORCE DARK MODE ON CHILD PAGES */
-        .container { max-width: 1200px; margin: 0 auto; padding: 0 24px; }
-        input, textarea, select {
-            background: var(--bg-surface-light) !important;
-            border: var(--glass-border) !important;
-            color: #fff !important;
-            font-family: var(--font-body);
+        .container {
+            max-width: 1240px;
+            margin: 0 auto;
+            padding: 0 24px;
         }
-        input:focus {
-            border-color: var(--brand-neon-red) !important;
-            box-shadow: var(--neon-glow) !important;
+
+        /* Clean Forms */
+        input, textarea, select {
+            background: #fff;
+            border: 1px solid #e5e5ea;
+            border-radius: var(--radius-md);
+            color: var(--text-primary);
+            font-family: var(--font-body);
+            padding: 12px 16px;
+            transition: var(--transition);
+        }
+        input:focus, textarea:focus {
+            border-color: var(--brand-red);
+            box-shadow: 0 0 0 3px var(--brand-red-light);
             outline: none;
         }
 
         /* ================================================
-           FLOATING GLASSMORPHIC HEADER
+           ELEGANT GLASS HEADER
         ================================================ */
-        .cyber-header {
+        .organic-header {
             position: fixed;
-            top: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 95%;
-            max-width: 1200px;
-            height: 70px;
-            background: rgba(10, 10, 15, 0.5);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-bottom: 1px solid rgba(255, 0, 60, 0.3);
-            border-radius: var(--radius-pill);
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 80px;
+            background: transparent;
             display: flex;
             align-items: center;
             justify-content: space-between;
-            padding: 0 32px;
+            padding: 0 40px;
             z-index: 9999;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.5), inset 0 -2px 10px rgba(255, 0, 60, 0.1);
             transition: var(--transition);
         }
 
-        .cyber-header.scrolled {
-            top: 10px;
-            width: 100%;
-            max-width: 100%;
-            border-radius: 0;
-            border: none;
-            border-bottom: 1px solid rgba(255, 0, 60, 0.5);
-            background: rgba(5, 5, 8, 0.8);
+        .organic-header.scrolled {
+            background: var(--glass-bg);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+            box-shadow: var(--shadow-sm);
         }
 
-        .cyber-logo {
+        .organic-logo {
             display: flex;
             align-items: center;
             gap: 12px;
             font-family: var(--font-heading);
             font-size: 20px;
             font-weight: 800;
-            color: #fff;
+            color: var(--text-primary);
             text-transform: uppercase;
-            letter-spacing: 2px;
+            letter-spacing: 1px;
         }
 
-        .cyber-logo img {
-            height: 36px;
-            filter: drop-shadow(0 0 8px rgba(255, 255, 255, 0.8));
+        .organic-logo img {
+            height: 44px;
+            transition: var(--transition);
+        }
+        
+        .organic-header.scrolled .organic-logo img {
+            height: 38px;
         }
 
-        .cyber-nav {
+        .organic-nav {
             display: flex;
-            gap: 32px;
+            gap: 36px;
         }
 
-        .cyber-nav a {
-            font-size: 14px;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 1.5px;
-            color: var(--text-secondary);
+        .organic-nav a {
+            font-size: 15px;
+            font-weight: 500;
+            color: var(--text-primary);
             position: relative;
             transition: var(--transition);
         }
 
-        .cyber-nav a:hover, .cyber-nav a.active {
-            color: #fff;
-            text-shadow: 0 0 10px var(--brand-neon-red);
+        .organic-nav a:hover, .organic-nav a.active {
+            color: var(--brand-red);
         }
 
-        .cyber-nav a::after {
+        .organic-nav a::after {
             content: '';
             position: absolute;
-            bottom: -6px;
+            bottom: -4px;
             left: 50%;
             transform: translateX(-50%);
             width: 0;
             height: 2px;
-            background: var(--brand-neon-red);
+            background: var(--brand-red);
             transition: var(--transition);
-            box-shadow: var(--neon-glow);
         }
 
-        .cyber-nav a:hover::after, .cyber-nav a.active::after {
+        .organic-nav a:hover::after, .organic-nav a.active::after {
             width: 100%;
         }
 
-        .cyber-actions {
+        .organic-actions {
             display: flex;
             align-items: center;
             gap: 16px;
         }
 
-        .cyber-btn {
+        .organic-btn {
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            height: 40px;
+            height: 44px;
             padding: 0 24px;
             border-radius: var(--radius-pill);
-            background: transparent;
-            border: 1px solid var(--brand-neon-red);
-            color: #fff;
-            font-family: var(--font-heading);
-            font-size: 13px;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 1px;
+            background: #fff;
+            border: 1px solid #e5e5ea;
+            color: var(--text-primary);
+            font-family: var(--font-body);
+            font-size: 14px;
+            font-weight: 600;
+            box-shadow: var(--shadow-sm);
             cursor: pointer;
             transition: var(--transition);
-            position: relative;
-            overflow: hidden;
         }
 
-        .cyber-btn::before {
-            content: '';
-            position: absolute;
-            inset: 0;
-            background: var(--brand-neon-red);
-            opacity: 0;
-            transition: var(--transition);
-            z-index: -1;
+        .organic-btn:hover {
+            border-color: var(--brand-red);
+            color: var(--brand-red);
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
         }
 
-        .cyber-btn:hover {
-            box-shadow: var(--neon-glow);
-        }
-
-        .cyber-btn:hover::before {
-            opacity: 1;
-        }
-
-        /* Mobile Menu Toggle */
         .mobile-toggle {
             display: none;
             background: none;
             border: none;
-            color: #fff;
+            color: var(--text-primary);
             font-size: 24px;
             cursor: pointer;
         }
 
         @media (max-width: 992px) {
-            .cyber-nav { display: none; }
+            .organic-nav { display: none; }
             .mobile-toggle { display: block; }
-            .cyber-actions .cyber-btn { display: none; }
+            .organic-actions .organic-btn { display: none; }
+            .organic-header { padding: 0 24px; }
         }
 
         /* ================================================
-           CYBER FOOTER
+           CLEAN MODERN FOOTER
         ================================================ */
-        .cyber-footer {
-            background: #000;
-            border-top: 1px solid rgba(255, 0, 60, 0.3);
+        .organic-footer {
+            background: #ffffff;
+            border-top: 1px solid #f2f2f7;
             padding: 80px 0 40px;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .cyber-footer::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 100vw;
-            height: 1px;
-            background: linear-gradient(90deg, transparent, var(--brand-neon-red), transparent);
-            box-shadow: var(--neon-glow);
         }
 
         .footer-grid {
             display: grid;
             grid-template-columns: 2fr 1fr 1fr 1.5fr;
             gap: 48px;
-            max-width: 1200px;
+            max-width: 1240px;
             margin: 0 auto;
             padding: 0 24px;
         }
 
         .footer-brand h2 {
-            font-size: 24px;
+            font-size: 22px;
             margin-bottom: 16px;
-            color: #fff;
+            font-weight: 800;
         }
 
         .footer-brand p {
             color: var(--text-secondary);
-            font-size: 14px;
+            font-size: 15px;
+            line-height: 1.7;
         }
 
         .footer-title {
-            font-size: 16px;
+            font-size: 15px;
             font-weight: 700;
-            color: #fff;
             margin-bottom: 24px;
             text-transform: uppercase;
-            letter-spacing: 2px;
+            letter-spacing: 1px;
+            color: var(--text-primary);
         }
 
         .footer-links {
@@ -286,65 +263,66 @@
         }
 
         .footer-links li {
-            margin-bottom: 12px;
+            margin-bottom: 14px;
         }
 
         .footer-links a {
             color: var(--text-secondary);
-            font-size: 14px;
+            font-size: 15px;
             transition: var(--transition);
         }
 
         .footer-links a:hover {
-            color: var(--brand-neon-red);
-            padding-left: 8px;
-            text-shadow: 0 0 8px var(--brand-neon-red);
+            color: var(--brand-red);
         }
 
-        .cyber-newsletter {
+        .newsletter-box {
+            background: var(--bg-base);
+            padding: 24px;
+            border-radius: var(--radius-md);
+            border: 1px solid #e5e5ea;
+        }
+
+        .newsletter-box p {
+            font-size: 14px;
+            color: var(--text-secondary);
+            margin-bottom: 16px;
+        }
+
+        .newsletter-form {
             display: flex;
-            flex-direction: column;
-            gap: 16px;
+            gap: 8px;
         }
 
-        .cyber-input-group {
-            display: flex;
-            height: 48px;
-            border-radius: var(--radius-sm);
-            overflow: hidden;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-        }
-
-        .cyber-input-group input {
+        .newsletter-form input {
             flex: 1;
-            background: rgba(255, 255, 255, 0.05) !important;
-            border: none !important;
-            padding: 0 16px;
-            color: #fff;
+            padding: 12px 16px;
+            border-radius: 8px;
+            border: 1px solid #e5e5ea;
         }
 
-        .cyber-input-group button {
-            background: var(--brand-neon-red);
+        .newsletter-form button {
+            background: var(--brand-red);
             color: #fff;
             border: none;
-            padding: 0 24px;
-            font-weight: 700;
+            padding: 0 20px;
+            border-radius: 8px;
+            font-weight: 600;
             cursor: pointer;
             transition: var(--transition);
         }
 
-        .cyber-input-group button:hover {
-            box-shadow: inset 0 0 10px rgba(0,0,0,0.5);
+        .newsletter-form button:hover {
+            background: var(--brand-red-hover);
         }
 
         .footer-bottom {
             margin-top: 64px;
             text-align: center;
-            border-top: 1px solid rgba(255, 255, 255, 0.05);
-            padding-top: 24px;
-            color: var(--text-secondary);
-            font-size: 13px;
-            letter-spacing: 1px;
+            border-top: 1px solid #f2f2f7;
+            padding-top: 32px;
+            color: var(--text-light);
+            font-size: 14px;
         }
 
         @media (max-width: 992px) {
@@ -359,35 +337,35 @@
 </head>
 <body>
 
-    <!-- FLOATING HEADER -->
-    <header class="cyber-header" id="cyberHeader">
-        <a href="{% url 'home' %}" class="cyber-logo">
+    <!-- CLEAN GLASS HEADER -->
+    <header class="organic-header" id="organicHeader">
+        <a href="{% url 'home' %}" class="organic-logo">
             <img src="{% static 'images/logo.webp' %}" alt="Everbolt Logo">
-            EVERBOLT
+            Everbolt Foods
         </a>
-        <nav class="cyber-nav">
+        <nav class="organic-nav">
             <a href="{% url 'home' %}" class="{% if request.path == '/' %}active{% endif %}">Home</a>
-            <a href="{% url 'about' %}" class="{% if 'about' in request.path %}active{% endif %}">About</a>
-            <a href="{% url 'products' %}" class="{% if 'products' in request.path %}active{% endif %}">Products</a>
+            <a href="{% url 'about' %}" class="{% if 'about' in request.path %}active{% endif %}">About Us</a>
+            <a href="{% url 'products' %}" class="{% if 'products' in request.path %}active{% endif %}">Shop Products</a>
             <a href="{% url 'contact' %}" class="{% if 'contact' in request.path %}active{% endif %}">Contact</a>
         </nav>
-        <div class="cyber-actions">
-            <a href="{% url 'cart' %}" class="cyber-btn">Cart (0)</a>
+        <div class="organic-actions">
+            <a href="{% url 'cart' %}" class="organic-btn">View Cart</a>
             <button class="mobile-toggle">☰</button>
         </div>
     </header>
 
-    <!-- PAGE CONTENT -->
+    <!-- MAIN CONTENT -->
     <main>
         {% block content %}{% endblock %}
     </main>
 
-    <!-- FOOTER -->
-    <footer class="cyber-footer">
+    <!-- CLEAN FOOTER -->
+    <footer class="organic-footer">
         <div class="footer-grid">
             <div class="footer-brand">
-                <h2>EVERBOLT FOODS</h2>
-                <p>The future of premium Sri Lankan spices, teas, and luxury hotel supplies. Sourced globally, refined meticulously.</p>
+                <h2>Everbolt Foods</h2>
+                <p>100% natural, premium Sri Lankan spices, herbal teas, and hotel supplies. Cultivated with care, delivered with excellence.</p>
             </div>
             <div>
                 <h4 class="footer-title">Explore</h4>
@@ -405,25 +383,27 @@
                     <li><a href="{% url 'custom_page_detail' 'terms-conditions' %}">Terms of Service</a></li>
                 </ul>
             </div>
-            <div class="cyber-newsletter">
-                <h4 class="footer-title">Access the Future</h4>
-                <p style="color:var(--text-secondary); font-size:14px; margin-bottom:8px;">Subscribe for exclusive premium offers.</p>
-                <div class="cyber-input-group">
-                    <input type="email" placeholder="ENTER EMAIL_">
-                    <button>INITIATE</button>
+            <div>
+                <h4 class="footer-title">Stay Updated</h4>
+                <div class="newsletter-box">
+                    <p>Subscribe for exclusive offers and premium releases.</p>
+                    <div class="newsletter-form">
+                        <input type="email" placeholder="Email Address">
+                        <button>Join</button>
+                    </div>
                 </div>
             </div>
         </div>
         <div class="footer-bottom">
-            &copy; {% now "Y" %} EVERBOLT FOODS. ALL SYSTEMS OPERATIONAL.
+            &copy; {% now "Y" %} Everbolt Food Products (Pvt) Ltd. All Rights Reserved.
         </div>
     </footer>
 
-    <!-- SCRIPT FOR HEADER SHRINK -->
+    <!-- HEADER SHRINK SCRIPT -->
     <script>
         window.addEventListener('scroll', () => {
-            const header = document.getElementById('cyberHeader');
-            if(window.scrollY > 50) {
+            const header = document.getElementById('organicHeader');
+            if(window.scrollY > 20) {
                 header.classList.add('scrolled');
             } else {
                 header.classList.remove('scrolled');
