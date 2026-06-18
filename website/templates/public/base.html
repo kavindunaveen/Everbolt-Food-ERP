@@ -369,7 +369,7 @@
 <body>
 
     <!-- CLEAN GLASS HEADER -->
-    <header class="organic-header" id="organicHeader">
+    <header class="organic-header {% if request.path != '/' %}scrolled{% endif %}" id="organicHeader">
         <a href="{% url 'home' %}" class="organic-logo">
             <img src="{% static 'images/logo.webp' %}" alt="Everbolt Logo">
             Everbolt Foods
