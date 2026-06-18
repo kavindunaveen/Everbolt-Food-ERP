@@ -203,6 +203,37 @@
             border-radius: 100px;
         }
 
+        .header-search-form {
+            display: flex;
+            align-items: center;
+            background: rgba(255,255,255,0.15);
+            border-radius: var(--radius-pill);
+            padding: 2px 6px 2px 16px;
+            border: 1px solid rgba(255,255,255,0.2);
+            transition: var(--transition);
+        }
+        .organic-header.scrolled .header-search-form {
+            background: #f2f2f7;
+            border-color: #e5e5ea;
+        }
+        .search-input {
+            background: transparent;
+            border: none;
+            color: #fff;
+            padding: 6px 0;
+            width: 160px;
+            font-size: 14px;
+            font-family: var(--font-body);
+        }
+        .search-input:focus {
+            outline: none;
+            box-shadow: none;
+            border-color: transparent;
+        }
+        .search-input::placeholder { color: rgba(255,255,255,0.7); }
+        .organic-header.scrolled .search-input { color: var(--text-primary); }
+        .organic-header.scrolled .search-input::placeholder { color: var(--text-light); }
+
         .mobile-toggle {
             display: none;
             background: none;
@@ -357,7 +388,10 @@
             <a href="{% url 'contact' %}" class="{% if 'contact' in request.path %}active{% endif %}">Contact</a>
         </nav>
         <div class="organic-actions">
-            <button class="icon-btn" aria-label="Search"><i class="fa-solid fa-search"></i></button>
+            <form action="{% url 'products' %}" method="get" class="header-search-form">
+                <input type="text" name="q" placeholder="Search..." class="search-input" required>
+                <button type="submit" class="icon-btn" aria-label="Search"><i class="fa-solid fa-search"></i></button>
+            </form>
             <a href="{% url 'cart' %}" class="icon-btn" aria-label="Cart">
                 <i class="fa-solid fa-shopping-cart"></i>
                 <span class="cart-badge">0</span>
