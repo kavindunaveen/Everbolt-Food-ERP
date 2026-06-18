@@ -4,182 +4,244 @@
 {% block title %}About Us | Everbolt Foods{% endblock %}
 
 {% block meta_description %}
-Learn about Everbolt Foods, our natural wellness products, quality standards, hygiene practices, and commitment to customer satisfaction.
+Learn about Everbolt Foods — our natural wellness products, strict quality standards, hygiene practices, and commitment to customer satisfaction.
 {% endblock %}
 
 {% block extra_css %}
-<link rel="stylesheet" href="{% static 'css/about.css' %}?v=2.1">
+<link rel="stylesheet" href="{% static 'css/about.css' %}?v=3.0">
 {% endblock %}
 
 {% block content %}
 
-<!-- HERO SECTION -->
-<section class="about-hero" style="background-image: linear-gradient(rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.6)), url('{% static 'images/background-banner.webp' %}');">
-    <div class="container text-center">
-        <h1 class="hero-title" data-aos="fade-up">About Everbolt Foods</h1>
-        <p class="hero-subtitle" data-aos="fade-up" data-aos-delay="100">Committed to Quality, Hygiene, and Natural Wellness</p>
+<!-- ═══════════════════════════════════════════════
+     HERO SECTION
+═══════════════════════════════════════════════ -->
+<section class="ab-hero" style="background-image: url('{% static 'images/background-banner.webp' %}');">
+    <div class="ab-hero-inner">
+        <span class="ab-hero-tag">Since 2015 · Sri Lanka</span>
+        <h1>Crafting Nature's Best<br>For the World</h1>
+        <p>We specialize in premium dehydrated products, herbal teas, and hotel supplies — made with 100% natural ingredients and strict quality controls.</p>
     </div>
 </section>
 
-<!-- HEALTH IS WEALTH SECTION -->
-<section class="section-padding">
-    <div class="container">
-        <div class="about-split">
-            <div class="about-img" data-aos="fade-right">
-                <img src="{% static 'images/about-us-1.webp' %}" alt="Everbolt Foods Production" class="rounded-img shadow-lg">
-            </div>
-            <div class="about-text" data-aos="fade-left">
-                <div class="section-title left-align">
-                    <h2>Health Is Wealth</h2>
-                    <p class="subtitle">Our Story</p>
+<!-- ═══════════════════════════════════════════════
+     OUR STORY SECTION
+═══════════════════════════════════════════════ -->
+<section class="ab-story">
+    <div class="ab-story-inner">
+
+        <div class="ab-story-img">
+            <img src="{% static 'images/about-us-1.webp' %}" alt="Everbolt Foods Production Floor">
+        </div>
+
+        <div class="ab-story-text">
+            <p class="ab-eyebrow">Our Story</p>
+            <h2>Health Is Wealth</h2>
+            <p>Welcome to <strong>Everbolt Foods (Pvt) Ltd</strong>, where quality and customer satisfaction are at the heart of everything we do. We specialize in producing a wide range of dehydrated products, herbal teas, and essential hotel supplies.</p>
+            <p>Our products are crafted with the utmost care and attention to detail, ensuring each item meets the highest standards of quality and taste. We pride ourselves on delivering products that not only meet but exceed expectations.</p>
+            <p>Whether you're looking for healthy herbal teas, hotel supplies, or high-quality dehydrated foods — Everbolt Foods is your trusted partner. Let us provide you with the best, every time.</p>
+
+            <div class="ab-story-stats">
+                <div class="ab-stat">
+                    <strong>100%</strong>
+                    <span>Natural Ingredients</span>
                 </div>
-                <p>Welcome to <strong>Everbolt Foods (Pvt) Ltd</strong>, where quality and customer satisfaction are at the heart of everything we do. We specialize in producing a wide range of dehydrated products, herbal teas, and essential hotel supplies.</p>
-                <p>Our products are crafted with the utmost care and attention to detail, ensuring that each item meets the highest standards of quality and taste. We pride ourselves on our commitment to customer satisfaction, delivering products that not only meet but exceed expectations.</p>
-                <p>Whether you are looking for healthy herbal teas, convenient hotel supplies, or high-quality dehydrated foods, Everbolt Foods is your trusted partner. Let us provide you with the best, every time.</p>
+                <div class="ab-stat">
+                    <strong>50+</strong>
+                    <span>Products</span>
+                </div>
+                <div class="ab-stat">
+                    <strong>ISO</strong>
+                    <span>Certified</span>
+                </div>
             </div>
         </div>
+
     </div>
 </section>
 
-<!-- OUR STANDARDS SECTION -->
-<section class="section-padding bg-light">
-    <div class="container">
-        <div class="section-title" data-aos="fade-up">
-            <h2>Our Standards</h2>
-            <p>Quality and hygiene, guaranteed in every pack.</p>
-        </div>
-        
-        <div class="about-grid">
-            <div class="standard-card" data-aos="fade-up" data-aos-delay="100">
-                <div class="standard-img">
-                    <img src="{% static 'images/about-us-standard.webp' %}" alt="Strict Hygiene Protocols">
-                </div>
-                <div class="standard-content">
-                    <h3>Strict Hygiene Protocols</h3>
-                    <p>At Everbolt Foods, we take pride in our strict hygiene protocols to ensure every dehydrated product is made with the utmost care and cleanliness.</p>
-                </div>
-            </div>
-            <div class="standard-card" data-aos="fade-up" data-aos-delay="200">
-                <div class="standard-img">
-                    <img src="{% static 'images/about-us-standard-1.webp' %}" alt="Careful Sourcing">
-                </div>
-                <div class="standard-content">
-                    <h3>Careful Sourcing</h3>
-                    <p>From sourcing to packaging, our team follows the highest safety standards, so you can enjoy our products with confidence.</p>
-                </div>
-            </div>
-            <div class="standard-card" data-aos="fade-up" data-aos-delay="300">
-                <div class="standard-img">
-                    <img src="{% static 'images/about-us-standard-2.webp' %}" alt="Premium Packaging">
-                </div>
-                <div class="standard-content">
-                    <h3>Premium Packaging</h3>
-                    <p>Our final products are securely packed to lock in freshness, flavor, and natural nutrients, ensuring safe delivery worldwide.</p>
-                </div>
-            </div>
-        </div>
-    </div>
-</section>
-
-<!-- TESTIMONIALS SECTION -->
-<section class="section-padding testimonial-wrap">
-    <div class="container">
-        <div class="section-title" data-aos="fade-up">
-            <h2>What Our Leaders Say</h2>
-        </div>
-        
-        <div class="testimonial-slider-modern" data-aos="fade-up" data-aos-delay="100">
-            <div class="testi-slide active">
-                <div class="testi-card">
-                    <i class="fa-solid fa-quote-left quote-icon"></i>
-                    <p>"Our team at Everbolt Group of Companies decided to enter the food industry with the idea of providing good healthy, premium products that can be consumed in your day-to-day life."</p>
-                    <div class="testi-author">
-                        <img src="{% static 'images/prabath-guruge.webp' %}" alt="Prabath Guruge">
-                        <div class="author-info">
-                            <h4>Prabath Guruge</h4>
-                            <span>Chairman</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="testi-slide">
-                <div class="testi-card">
-                    <i class="fa-solid fa-quote-left quote-icon"></i>
-                    <p>"Everbolt Foods has been committed to delivering the finest quality products to our customers, ensuring every bite reflects our dedication to health, taste, and excellence."</p>
-                    <div class="testi-author">
-                        <img src="{% static 'images/hashan.webp' %}" alt="Hashan Fonseka">
-                        <div class="author-info">
-                            <h4>Hashan Fonseka</h4>
-                            <span>Brand Manager</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="testi-slide">
-                <div class="testi-card">
-                    <i class="fa-solid fa-quote-left quote-icon"></i>
-                    <p>"These recipes were created considering all the health and natural benefits that can be obtained through Ayurvedic medicine throughout Sri Lanka."</p>
-                    <div class="testi-author">
-                        <img src="{% static 'images/prof.webp' %}" alt="Prof. Sajeewa Herapathdeniya">
-                        <div class="author-info">
-                            <h4>Prof. Sajeewa Herapathdeniya</h4>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="testi-dots">
-            <span class="active" data-index="0"></span>
-            <span data-index="1"></span>
-            <span data-index="2"></span>
-        </div>
-    </div>
-</section>
-
-<!-- CERTIFICATIONS MARQUEE -->
-<section class="certifications-banner bg-light">
-    <div class="container">
-        <div class="cert-grid">
+<!-- ═══════════════════════════════════════════════
+     CERTIFICATIONS BANNER
+═══════════════════════════════════════════════ -->
+<div class="ab-certs">
+    <div class="ab-certs-inner">
+        <h3>Certified & Trusted By</h3>
+        <div class="ab-cert-logos">
             <img src="{% static 'images/ISO_22000.png' %}" alt="ISO 22000">
             <img src="{% static 'images/GMP.png' %}" alt="GMP Certified">
-            <img src="{% static 'images/SGS.png' %}" alt="SGS">
             <img src="{% static 'images/HACCP.png' %}" alt="HACCP">
+            <img src="{% static 'images/SGS.png' %}" alt="SGS">
         </div>
+    </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════
+     OUR STANDARDS SECTION
+═══════════════════════════════════════════════ -->
+<section class="ab-standards">
+    <div class="ab-section-header">
+        <p class="ab-eyebrow">How We Work</p>
+        <h2>Our Standards</h2>
+        <p>From farm to shelf — every step is guided by strict hygiene, careful sourcing, and premium packaging.</p>
+        <div class="ab-section-divider"></div>
+    </div>
+
+    <div class="ab-standards-grid">
+
+        <div class="ab-std-card">
+            <div class="ab-std-card-img">
+                <img src="{% static 'images/about-us-standard.webp' %}" alt="Strict Hygiene Protocols">
+            </div>
+            <div class="ab-std-card-body">
+                <div class="ab-std-icon"><i class="fa-solid fa-shield-halved"></i></div>
+                <h3>Strict Hygiene Protocols</h3>
+                <p>Every dehydrated product is processed in a controlled clean environment, meeting the highest food safety benchmarks at every stage.</p>
+            </div>
+        </div>
+
+        <div class="ab-std-card">
+            <div class="ab-std-card-img">
+                <img src="{% static 'images/about-us-standard-1.webp' %}" alt="Careful Sourcing">
+            </div>
+            <div class="ab-std-card-body">
+                <div class="ab-std-icon"><i class="fa-solid fa-leaf"></i></div>
+                <h3>Careful Sourcing</h3>
+                <p>We work with trusted local Sri Lankan farmers who use natural, sustainable farming methods — ensuring the finest quality raw ingredients.</p>
+            </div>
+        </div>
+
+        <div class="ab-std-card">
+            <div class="ab-std-card-img">
+                <img src="{% static 'images/about-us-standard-2.webp' %}" alt="Premium Packaging">
+            </div>
+            <div class="ab-std-card-body">
+                <div class="ab-std-icon"><i class="fa-solid fa-box-open"></i></div>
+                <h3>Premium Packaging</h3>
+                <p>Products are sealed to lock in freshness, flavor, and nutrients — ready for worldwide delivery to hotels and businesses.</p>
+            </div>
+        </div>
+
     </div>
 </section>
 
-<!-- FAQ SECTION -->
-<section class="section-padding">
-    <div class="container" style="max-width: 800px;">
-        <div class="section-title" data-aos="fade-up">
-            <h2>Frequently Asked Questions</h2>
+<!-- ═══════════════════════════════════════════════
+     TESTIMONIALS
+═══════════════════════════════════════════════ -->
+<section class="ab-testi">
+    <div class="ab-testi-inner">
+
+        <div class="ab-section-header">
+            <p class="ab-eyebrow">Our Leaders</p>
+            <h2>What They Say</h2>
+            <div class="ab-section-divider"></div>
         </div>
-        
-        <div class="faq-accordion" data-aos="fade-up" data-aos-delay="100">
-            <div class="faq-item">
-                <button class="faq-btn">How are your products sourced? <i class="fa-solid fa-chevron-down"></i></button>
-                <div class="faq-content">
+
+        <div class="ab-testi-slider" id="ab-testi-slider">
+
+            <div class="ab-testi-slide active">
+                <div class="ab-testi-card">
+                    <blockquote>"Our team at Everbolt Group of Companies decided to enter the food industry with the idea of providing good healthy, premium products that can be consumed in your day-to-day life."</blockquote>
+                    <div class="ab-testi-author">
+                        <img src="{% static 'images/prabath-guruge.webp' %}" alt="Prabath Guruge">
+                        <div class="ab-testi-author-info">
+                            <strong>Prabath Guruge</strong>
+                            <em>Chairman</em>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="ab-testi-slide">
+                <div class="ab-testi-card">
+                    <blockquote>"Everbolt Foods has been committed to delivering the finest quality products to our customers, ensuring every bite reflects our dedication to health, taste, and excellence."</blockquote>
+                    <div class="ab-testi-author">
+                        <img src="{% static 'images/hashan.webp' %}" alt="Hashan Fonseka">
+                        <div class="ab-testi-author-info">
+                            <strong>Hashan Fonseka</strong>
+                            <em>Brand Manager</em>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="ab-testi-slide">
+                <div class="ab-testi-card">
+                    <blockquote>"These recipes were created considering all the health and natural benefits that can be obtained through Ayurvedic medicine throughout Sri Lanka."</blockquote>
+                    <div class="ab-testi-author">
+                        <img src="{% static 'images/prof.webp' %}" alt="Prof. Sajeewa Herapathdeniya">
+                        <div class="ab-testi-author-info">
+                            <strong>Prof. Sajeewa Herapathdeniya</strong>
+                            <em>Academic Advisor</em>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <div class="ab-testi-dots">
+            <button class="ab-testi-dot active" data-index="0" aria-label="Slide 1"></button>
+            <button class="ab-testi-dot" data-index="1" aria-label="Slide 2"></button>
+            <button class="ab-testi-dot" data-index="2" aria-label="Slide 3"></button>
+        </div>
+
+    </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════
+     FAQ SECTION
+═══════════════════════════════════════════════ -->
+<section class="ab-faq">
+    <div class="ab-faq-inner">
+
+        <div class="ab-section-header">
+            <p class="ab-eyebrow">Need Help?</p>
+            <h2>Frequently Asked Questions</h2>
+            <div class="ab-section-divider"></div>
+        </div>
+
+        <div class="ab-faq-list">
+
+            <div class="ab-faq-item">
+                <button class="ab-faq-btn" type="button">
+                    <span>How are your products sourced?</span>
+                    <div class="ab-faq-icon"><i class="fa-solid fa-chevron-down"></i></div>
+                </button>
+                <div class="ab-faq-body">
                     <p>We source our ingredients from trusted local farmers in Sri Lanka who practice sustainable and natural farming methods, ensuring the highest quality raw materials.</p>
                 </div>
             </div>
-            <div class="faq-item">
-                <button class="faq-btn">Do you offer international shipping? <i class="fa-solid fa-chevron-down"></i></button>
-                <div class="faq-content">
+
+            <div class="ab-faq-item">
+                <button class="ab-faq-btn" type="button">
+                    <span>Do you offer international shipping?</span>
+                    <div class="ab-faq-icon"><i class="fa-solid fa-chevron-down"></i></div>
+                </button>
+                <div class="ab-faq-body">
                     <p>Yes, we export our premium quality products to hotels and businesses worldwide. Please contact us directly for bulk international orders.</p>
                 </div>
             </div>
-            <div class="faq-item">
-                <button class="faq-btn">Are there any artificial additives? <i class="fa-solid fa-chevron-down"></i></button>
-                <div class="faq-content">
+
+            <div class="ab-faq-item">
+                <button class="ab-faq-btn" type="button">
+                    <span>Are there any artificial additives in your products?</span>
+                    <div class="ab-faq-icon"><i class="fa-solid fa-chevron-down"></i></div>
+                </button>
+                <div class="ab-faq-body">
                     <p>Absolutely not. We pride ourselves on offering 100% natural products with zero artificial colors, flavors, or preservatives.</p>
                 </div>
             </div>
-            <div class="faq-item">
-                <button class="faq-btn">How can I place a bulk order? <i class="fa-solid fa-chevron-down"></i></button>
-                <div class="faq-content">
-                    <p>For B2B or hotel supply orders, you can reach out to us via the Contact Us page, email, or WhatsApp. We offer specialized pricing and packaging for bulk clients.</p>
+
+            <div class="ab-faq-item">
+                <button class="ab-faq-btn" type="button">
+                    <span>How can I place a bulk order?</span>
+                    <div class="ab-faq-icon"><i class="fa-solid fa-chevron-down"></i></div>
+                </button>
+                <div class="ab-faq-body">
+                    <p>For B2B or hotel supply orders, reach out to us via the Contact page, email, or WhatsApp. We offer specialized pricing and custom packaging for bulk clients.</p>
                 </div>
             </div>
+
         </div>
     </div>
 </section>
@@ -188,54 +250,56 @@ Learn about Everbolt Foods, our natural wellness products, quality standards, hy
 
 {% block extra_js %}
 <script>
-    // Testimonial Slider
-    const slides = document.querySelectorAll('.testi-slide');
-    const dots = document.querySelectorAll('.testi-dots span');
-    let current = 0;
+(function () {
+    'use strict';
+
+    /* ── TESTIMONIAL SLIDER ─────────── */
+    const slides = document.querySelectorAll('.ab-testi-slide');
+    const dots   = document.querySelectorAll('.ab-testi-dot');
+    let current  = 0;
     let timer;
 
-    function goTo(index) {
-        slides.forEach(s => s.classList.remove('active'));
-        dots.forEach(d => d.classList.remove('active'));
-        current = (index + slides.length) % slides.length;
+    function goTo(n) {
+        slides[current].classList.remove('active');
+        dots[current].classList.remove('active');
+        current = (n + slides.length) % slides.length;
         slides[current].classList.add('active');
         dots[current].classList.add('active');
     }
 
     function startTimer() {
-        timer = setInterval(() => goTo(current + 1), 5000);
+        timer = setInterval(function () { goTo(current + 1); }, 5000);
     }
-    
-    dots.forEach((dot, index) => {
-        dot.addEventListener('click', () => {
+
+    dots.forEach(function (dot) {
+        dot.addEventListener('click', function () {
             clearInterval(timer);
-            goTo(index);
+            goTo(parseInt(this.dataset.index));
             startTimer();
         });
     });
-    
+
     startTimer();
 
-    // FAQ Accordion
-    const faqBtns = document.querySelectorAll('.faq-btn');
-    faqBtns.forEach(btn => {
-        btn.addEventListener('click', () => {
-            const content = btn.nextElementSibling;
-            const isOpen = content.classList.contains('open');
-            
-            // Close all
-            document.querySelectorAll('.faq-content').forEach(c => {
-                c.classList.remove('open');
-                c.style.maxHeight = null;
+    /* ── FAQ ACCORDION ──────────────── */
+    document.querySelectorAll('.ab-faq-btn').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            const item   = btn.closest('.ab-faq-item');
+            const body   = item.querySelector('.ab-faq-body');
+            const isOpen = item.classList.contains('open');
+
+            /* close all */
+            document.querySelectorAll('.ab-faq-item.open').forEach(function (el) {
+                el.classList.remove('open');
+                el.querySelector('.ab-faq-body').style.maxHeight = null;
             });
-            document.querySelectorAll('.faq-btn i').forEach(i => i.style.transform = 'rotate(0deg)');
-            
+
             if (!isOpen) {
-                content.classList.add('open');
-                content.style.maxHeight = content.scrollHeight + "px";
-                btn.querySelector('i').style.transform = 'rotate(180deg)';
+                item.classList.add('open');
+                body.style.maxHeight = body.scrollHeight + 'px';
             }
         });
     });
+}());
 </script>
 {% endblock %}
