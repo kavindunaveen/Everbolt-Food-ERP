@@ -33,7 +33,7 @@ def website_dashboard(request):
     settings = WebsiteSettings.get_settings()
 
     total_orders = WebsiteOrder.objects.count()
-    new_orders_count = WebsiteOrder.objects.filter(status=WebsiteOrder.Status.NEW).count()
+    new_orders_count = WebsiteOrder.objects.filter(sync_status='pending').count()
     recent_orders = WebsiteOrder.objects.order_by('-created_at')[:5]
 
     # Products not yet listed on the website
@@ -295,9 +295,9 @@ class WebsiteOrderDetailView(LoginRequiredMixin, DetailView):
 
     def post(self, request, *args, **kwargs):
         self.object = self.get_object()
-        new_status = request.POST.get('status')
-        if new_status in dict(WebsiteOrder.Status.choices):
-            self.object.status = new_status
+        new_status = request.POST.get('sync_status')
+        if new_status in dict(WebsiteOrder.SYNC_STATUS_CHOICES):
+            self.object.sync_status = new_status
             self.object.save()
-            messages.success(request, f"Order status updated to {self.object.get_status_display()}")
+            messages.success(request, f"Order status updated to {self.object.get_sync_status_display()}")
         return redirect('website_order_detail', pk=self.object.pk)

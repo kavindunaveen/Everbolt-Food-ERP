@@ -22,11 +22,10 @@
         </div>
         <form method="post" action="{% url 'website_order_detail' object.pk %}" class="flex items-center gap-3">
             {% csrf_token %}
-            <select name="status" class="bg-white border border-gray-200 text-gray-900 text-sm rounded-xl focus:ring-red-500 focus:border-red-500 block w-full p-2.5 font-bold">
-                <option value="NEW" {% if object.status == 'NEW' %}selected{% endif %}>New</option>
-                <option value="PROCESSING" {% if object.status == 'PROCESSING' %}selected{% endif %}>Processing</option>
-                <option value="COMPLETED" {% if object.status == 'COMPLETED' %}selected{% endif %}>Completed</option>
-                <option value="CANCELLED" {% if object.status == 'CANCELLED' %}selected{% endif %}>Cancelled</option>
+            <select name="sync_status" class="bg-white border border-gray-200 text-gray-900 text-sm rounded-xl focus:ring-red-500 focus:border-red-500 block w-full p-2.5 font-bold">
+                <option value="pending" {% if object.sync_status == 'pending' %}selected{% endif %}>Pending</option>
+                <option value="converted" {% if object.sync_status == 'converted' %}selected{% endif %}>Converted to Sales Order</option>
+                <option value="cancelled" {% if object.sync_status == 'cancelled' %}selected{% endif %}>Cancelled</option>
             </select>
             <button type="submit" class="btn-primary">Update Status</button>
         </form>
