@@ -5,491 +5,401 @@
 
 {% block extra_css %}
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <style>
 /* ============================================================
-   EVERBOLT FOODS — PREMIUM REDESIGN
-   Brand: Red #C0392B | White | Light Cream
+   EVERBOLT FOODS — PREMIUM REDESIGN v3
+   All elements visible by default. GSAP only enhances.
 ============================================================ */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 :root {
     --red: #C0392B;
     --red-dark: #96281B;
-    --red-light: #E8524A;
     --cream: #FDF8F4;
-    --cream-2: #F5EDE5;
+    --cream-2: #F7EFE8;
     --dark: #1A1A1A;
-    --mid: #4A4A4A;
-    --light-text: #888;
+    --mid: #555;
+    --light: #888;
     --border: rgba(0,0,0,0.08);
-    --font-heading: 'Playfair Display', Georgia, serif;
-    --font-body: 'Inter', -apple-system, sans-serif;
-    --radius: 20px;
-    --radius-sm: 12px;
-    --shadow: 0 8px 32px rgba(0,0,0,0.08);
-    --shadow-hover: 0 20px 60px rgba(192,57,43,0.15);
-    --transition: all 0.45s cubic-bezier(0.16, 1, 0.3, 1);
+    --font-serif: 'Playfair Display', Georgia, serif;
+    --font-sans: 'Inter', -apple-system, sans-serif;
+    --r20: 20px;
+    --r12: 12px;
+    --ease: cubic-bezier(0.16, 1, 0.3, 1);
+    --t: all 0.45s var(--ease);
 }
 
-body { font-family: var(--font-body); color: var(--dark); background: #fff; }
+body { font-family: var(--font-sans); color: var(--dark); background: #fff; }
 a { text-decoration: none; color: inherit; }
-img { display: block; }
 
-/* ---- HERO ---- */
+/* ─── HERO ─────────────────────────────────────── */
 .ef-hero {
     position: relative;
-    min-height: 100vh;
-    display: grid;
-    grid-template-columns: 1fr 1fr;
+    min-height: 92vh;
+    display: flex;
     align-items: center;
+    background: url("{% static 'images/background-banner.webp' %}") center/cover no-repeat;
     overflow: hidden;
-    background: var(--cream);
 }
 
-.ef-hero::after {
+.ef-hero::before {
     content: '';
     position: absolute;
-    right: 0;
-    top: 0;
-    width: 50%;
-    height: 100%;
-    background: linear-gradient(135deg, var(--red) 0%, var(--red-dark) 100%);
-    clip-path: polygon(15% 0, 100% 0, 100% 100%, 0% 100%);
-    z-index: 0;
+    inset: 0;
+    background: linear-gradient(
+        105deg,
+        rgba(253,248,244,0.97) 0%,
+        rgba(253,248,244,0.90) 40%,
+        rgba(192,57,43,0.75) 75%,
+        rgba(150,40,27,0.92) 100%
+    );
 }
 
-.ef-hero-text {
+.ef-hero-inner {
     position: relative;
     z-index: 2;
-    padding: 80px 60px 80px 8%;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 100px 24px;
+    display: grid;
+    grid-template-columns: 55% 45%;
+    gap: 60px;
+    align-items: center;
+    width: 100%;
 }
 
-.ef-hero-badge {
+.hero-tag {
     display: inline-flex;
     align-items: center;
     gap: 8px;
     background: rgba(192,57,43,0.1);
     color: var(--red);
-    padding: 8px 18px;
+    padding: 8px 20px;
     border-radius: 100px;
-    font-size: 13px;
-    font-weight: 600;
-    letter-spacing: 1px;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
     text-transform: uppercase;
-    margin-bottom: 32px;
+    margin-bottom: 28px;
     border: 1px solid rgba(192,57,43,0.2);
-    opacity: 0;
 }
 
-.ef-hero-badge span { width: 6px; height: 6px; background: var(--red); border-radius: 50%; }
+.hero-tag::before {
+    content: '';
+    width: 7px;
+    height: 7px;
+    background: var(--red);
+    border-radius: 50%;
+}
 
 .ef-hero-text h1 {
-    font-family: var(--font-heading);
-    font-size: clamp(3rem, 5vw, 4.5rem);
+    font-family: var(--font-serif);
+    font-size: clamp(2.8rem, 4.5vw, 4.2rem);
     font-weight: 900;
-    line-height: 1.05;
+    line-height: 1.08;
     color: var(--dark);
     margin-bottom: 24px;
-    overflow: hidden;
 }
 
-.ef-hero-text h1 em {
+.ef-hero-text h1 strong {
     color: var(--red);
-    font-style: normal;
     display: block;
 }
 
-.ef-hero-tagline {
+.hero-sub {
     font-size: 1.1rem;
     color: var(--mid);
-    line-height: 1.7;
-    max-width: 440px;
+    line-height: 1.75;
+    max-width: 480px;
     margin-bottom: 44px;
-    opacity: 0;
 }
 
-.ef-hero-actions {
+.hero-btns {
     display: flex;
     gap: 16px;
     flex-wrap: wrap;
-    opacity: 0;
 }
 
-.btn-primary {
+.btn-red {
     display: inline-flex;
     align-items: center;
     gap: 10px;
     background: var(--red);
-    color: white;
-    padding: 16px 36px;
+    color: #fff;
+    padding: 17px 36px;
     border-radius: 100px;
     font-weight: 700;
     font-size: 15px;
-    transition: var(--transition);
-    box-shadow: 0 8px 24px rgba(192,57,43,0.3);
+    transition: var(--t);
+    box-shadow: 0 8px 28px rgba(192,57,43,0.35);
 }
-.btn-primary:hover {
-    background: var(--red-dark);
-    transform: translateY(-2px);
-    box-shadow: 0 12px 32px rgba(192,57,43,0.4);
-}
+.btn-red:hover { background: var(--red-dark); transform: translateY(-2px); box-shadow: 0 14px 36px rgba(192,57,43,0.4); }
 
-.btn-outline {
+.btn-ghost {
     display: inline-flex;
     align-items: center;
     gap: 10px;
     background: transparent;
     color: var(--dark);
-    padding: 16px 36px;
+    padding: 17px 36px;
     border-radius: 100px;
     font-weight: 600;
     font-size: 15px;
-    border: 2px solid var(--border);
-    transition: var(--transition);
+    border: 2px solid rgba(0,0,0,0.15);
+    transition: var(--t);
 }
-.btn-outline:hover {
-    border-color: var(--red);
-    color: var(--red);
+.btn-ghost:hover { border-color: var(--red); color: var(--red); }
+
+/* Hero right — floating stats */
+.hero-stats-col {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
 }
 
-.ef-hero-visual {
-    position: relative;
-    z-index: 2;
+.hero-stat-card {
+    background: rgba(255,255,255,0.92);
+    backdrop-filter: blur(16px);
+    border-radius: var(--r20);
+    padding: 28px 24px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+    border: 1px solid rgba(255,255,255,0.7);
+    transition: var(--t);
+}
+.hero-stat-card:hover { transform: translateY(-4px); box-shadow: 0 16px 40px rgba(0,0,0,0.12); }
+.hero-stat-card:first-child { grid-column: span 2; }
+
+.hsc-num {
+    font-family: var(--font-serif);
+    font-size: 2.8rem;
+    font-weight: 900;
+    color: var(--red);
+    line-height: 1;
+    margin-bottom: 6px;
+}
+.hsc-label { font-size: 13px; color: var(--mid); font-weight: 500; }
+
+.hero-product-preview {
+    grid-column: span 2;
+    background: rgba(255,255,255,0.92);
+    backdrop-filter: blur(16px);
+    border-radius: var(--r20);
+    padding: 20px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.08);
+    border: 1px solid rgba(255,255,255,0.7);
     display: flex;
     align-items: center;
-    justify-content: center;
-    padding: 60px 8% 60px 60px;
-    min-height: 100vh;
+    gap: 16px;
 }
 
-.hero-img-container {
-    position: relative;
-    width: 100%;
-    max-width: 480px;
-}
-
-.hero-img-main {
-    width: 100%;
-    border-radius: var(--radius);
-    box-shadow: 0 40px 80px rgba(0,0,0,0.25);
+.hpp-img {
+    width: 72px;
+    height: 72px;
+    border-radius: var(--r12);
     object-fit: cover;
-    aspect-ratio: 4/5;
-    opacity: 0;
+    background: var(--cream-2);
+    flex-shrink: 0;
 }
 
-.hero-float-card {
-    position: absolute;
-    background: white;
-    border-radius: 16px;
-    padding: 16px 22px;
-    box-shadow: 0 12px 40px rgba(0,0,0,0.12);
-    opacity: 0;
-}
+.hpp-text .hpp-title { font-size: 14px; font-weight: 700; color: var(--dark); margin-bottom: 4px; }
+.hpp-text .hpp-sub { font-size: 12px; color: var(--red); font-weight: 600; }
 
-.hero-float-card.card-1 {
-    bottom: -20px;
-    left: -40px;
-}
-
-.hero-float-card.card-2 {
-    top: 30px;
-    right: -40px;
-}
-
-.hero-float-card .hfc-label {
-    font-size: 11px;
-    color: var(--light-text);
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    margin-bottom: 4px;
-}
-
-.hero-float-card .hfc-value {
-    font-size: 20px;
-    font-weight: 800;
-    color: var(--red);
-}
-
-.hero-float-card .hfc-sub {
-    font-size: 12px;
-    color: var(--mid);
-}
-
-/* ---- INFO BAR ---- */
+/* ─── INFO BAR ─────────────────────────────────── */
 .ef-infobar {
     background: var(--red);
-    padding: 20px 0;
+    padding: 0;
 }
 
 .ef-infobar-inner {
     max-width: 1200px;
     margin: 0 auto;
     padding: 0 24px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 60px;
-    flex-wrap: wrap;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    divide-x: 1px solid rgba(255,255,255,0.15);
 }
 
-.ef-infobar-item {
+.ib-item {
     display: flex;
     align-items: center;
-    gap: 14px;
+    gap: 16px;
+    padding: 24px 40px;
     color: white;
+    border-right: 1px solid rgba(255,255,255,0.15);
+    transition: background 0.3s;
 }
+.ib-item:last-child { border-right: none; }
+.ib-item:hover { background: rgba(255,255,255,0.08); }
 
-.ef-infobar-item .ib-icon {
-    width: 44px;
-    height: 44px;
+.ib-icon-wrap {
+    width: 48px;
+    height: 48px;
     background: rgba(255,255,255,0.15);
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 20px;
+    font-size: 22px;
     flex-shrink: 0;
 }
 
-.ef-infobar-item .ib-text strong {
-    display: block;
-    font-weight: 700;
-    font-size: 14px;
-    letter-spacing: 0.5px;
-}
+.ib-text strong { display: block; font-size: 14px; font-weight: 700; margin-bottom: 3px; }
+.ib-text span { font-size: 12px; opacity: 0.8; }
 
-.ef-infobar-item .ib-text span {
-    font-size: 12px;
-    opacity: 0.8;
-}
+/* ─── SHARED SECTION ────────────────────────────── */
+.ef-sec { padding: 96px 0; }
+.ef-sec.bg-cream { background: var(--cream); }
 
-/* ---- SECTIONS ---- */
-.ef-section {
-    padding: 100px 0;
-}
-
-.ef-container {
+.ef-wrap {
     max-width: 1200px;
     margin: 0 auto;
     padding: 0 24px;
 }
 
-.ef-section-tag {
+.sec-label {
     display: inline-flex;
     align-items: center;
-    gap: 8px;
-    color: var(--red);
+    gap: 10px;
     font-size: 12px;
     font-weight: 700;
-    letter-spacing: 2px;
+    color: var(--red);
     text-transform: uppercase;
-    margin-bottom: 16px;
+    letter-spacing: 2px;
+    margin-bottom: 14px;
 }
+.sec-label::before { content: ''; width: 24px; height: 2px; background: var(--red); }
 
-.ef-section-tag::before {
-    content: '';
-    width: 24px;
-    height: 2px;
-    background: var(--red);
-}
-
-.ef-section-title {
-    font-family: var(--font-heading);
-    font-size: clamp(2rem, 3.5vw, 3rem);
-    font-weight: 800;
+h2.sec-title {
+    font-family: var(--font-serif);
+    font-size: clamp(2rem, 3vw, 2.8rem);
+    font-weight: 900;
     line-height: 1.15;
     color: var(--dark);
-    margin-bottom: 16px;
+    margin-bottom: 14px;
 }
+h2.sec-title em { color: var(--red); font-style: normal; }
 
-.ef-section-title em {
-    color: var(--red);
-    font-style: normal;
-}
-
-.ef-section-sub {
+.sec-sub {
     font-size: 1.05rem;
     color: var(--mid);
-    line-height: 1.7;
+    line-height: 1.75;
     max-width: 560px;
 }
 
-/* ---- CATEGORY GRID ---- */
+/* ─── CATEGORIES ───────────────────────────────── */
 .cat-grid {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
-    gap: 24px;
-    margin-top: 56px;
+    grid-template-rows: auto auto;
+    gap: 20px;
+    margin-top: 52px;
 }
 
 .cat-card {
     position: relative;
-    border-radius: var(--radius);
+    border-radius: var(--r20);
     overflow: hidden;
-    aspect-ratio: 4/3;
     display: block;
     cursor: pointer;
     background: var(--cream-2);
+    aspect-ratio: 4/3;
 }
+.cat-card.span-2 { grid-column: span 2; aspect-ratio: 16/7; }
 
-.cat-card.large {
-    grid-column: span 2;
-    aspect-ratio: 16/9;
-}
-
-.cat-card-img {
+.cat-card img {
     width: 100%;
     height: 100%;
     object-fit: cover;
-    transition: transform 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+    transition: transform 0.65s var(--ease);
 }
+.cat-card:hover img { transform: scale(1.06); }
 
-.cat-card:hover .cat-card-img { transform: scale(1.07); }
-
-.cat-card-overlay {
+.cat-overlay {
     position: absolute;
     inset: 0;
-    background: linear-gradient(0deg, rgba(26,26,26,0.65) 0%, transparent 55%);
-    transition: var(--transition);
+    background: linear-gradient(0deg, rgba(20,20,20,0.7) 0%, rgba(20,20,20,0.1) 55%, transparent 100%);
+    transition: var(--t);
 }
+.cat-card:hover .cat-overlay { background: linear-gradient(0deg, rgba(192,57,43,0.75) 0%, rgba(192,57,43,0.25) 60%, transparent 100%); }
 
-.cat-card:hover .cat-card-overlay {
-    background: linear-gradient(0deg, rgba(192,57,43,0.7) 0%, rgba(192,57,43,0.2) 60%);
-}
-
-.cat-card-label {
+.cat-info {
     position: absolute;
     bottom: 0;
     left: 0;
     right: 0;
     padding: 28px;
 }
-
-.cat-card-label h3 {
-    font-family: var(--font-heading);
-    font-size: 1.5rem;
+.cat-info h3 {
+    font-family: var(--font-serif);
+    font-size: 1.45rem;
     font-weight: 700;
     color: white;
     margin-bottom: 8px;
-    transform: translateY(5px);
-    transition: var(--transition);
 }
-
-.cat-card:hover .cat-card-label h3 { transform: translateY(0); }
-
-.cat-card-label .cat-arrow {
+.cat-cta {
     display: inline-flex;
     align-items: center;
     gap: 6px;
-    color: rgba(255,255,255,0.8);
     font-size: 13px;
     font-weight: 600;
-    opacity: 0;
+    color: rgba(255,255,255,0.85);
     transform: translateY(8px);
-    transition: var(--transition);
+    opacity: 0;
+    transition: var(--t);
 }
+.cat-card:hover .cat-cta { opacity: 1; transform: translateY(0); }
 
-.cat-card:hover .cat-arrow {
-    opacity: 1;
-    transform: translateY(0);
-}
-
-/* ---- CATEGORY PLACEHOLDER (no image) ---- */
-.cat-placeholder-wrap {
+/* fallback for cats without image */
+.cat-noimg {
     width: 100%;
     height: 100%;
     display: flex;
+    flex-direction: column;
     align-items: center;
     justify-content: center;
-    flex-direction: column;
     gap: 12px;
-    background: linear-gradient(135deg, var(--cream-2), #fff);
-}
-
-.cat-placeholder-wrap .cat-icon {
-    font-size: 52px;
-    line-height: 1;
-}
-
-.cat-placeholder-wrap .cat-name-placeholder {
-    font-family: var(--font-heading);
-    font-size: 1.25rem;
+    font-family: var(--font-serif);
+    font-size: 1.2rem;
     font-weight: 700;
     color: var(--mid);
 }
+.cat-noimg .ico { font-size: 52px; }
 
-/* ---- ABOUT ---- */
-.ef-about {
-    background: var(--cream);
-}
-
-.ef-about-inner {
+/* ─── ABOUT ─────────────────────────────────────── */
+.about-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 80px;
+    gap: 72px;
     align-items: center;
 }
 
-.ef-about-img-wrap {
+.about-img-stack {
     position: relative;
-    border-radius: var(--radius);
-    overflow: hidden;
-    aspect-ratio: 4/5;
-    background: var(--cream-2);
 }
-
-.ef-about-img-wrap img {
+.about-img-stack .img-main {
     width: 100%;
-    height: 100%;
+    border-radius: var(--r20);
+    aspect-ratio: 4/5;
     object-fit: cover;
+    display: block;
 }
-
-.about-accent-badge {
+.about-badge {
     position: absolute;
-    bottom: 32px;
+    bottom: -24px;
     right: -24px;
     background: var(--red);
     color: white;
-    padding: 24px 32px;
     border-radius: 20px;
+    padding: 24px 32px;
     text-align: center;
-    box-shadow: 0 16px 40px rgba(192,57,43,0.3);
+    box-shadow: 0 16px 48px rgba(192,57,43,0.35);
 }
+.about-badge .num { font-family: var(--font-serif); font-size: 3rem; font-weight: 900; display: block; line-height: 1; }
+.about-badge .lbl { font-size: 11px; font-weight: 700; opacity: 0.85; letter-spacing: 0.5px; margin-top: 6px; }
 
-.about-accent-badge .big-num {
-    font-family: var(--font-heading);
-    font-size: 3rem;
-    font-weight: 900;
-    line-height: 1;
-    display: block;
-}
-
-.about-accent-badge .small-text {
-    font-size: 12px;
-    font-weight: 600;
-    opacity: 0.85;
-    letter-spacing: 0.5px;
-    margin-top: 4px;
-}
-
-.ef-about-text .ef-section-sub {
-    max-width: 100%;
-    margin-bottom: 32px;
-}
-
-.about-list {
-    list-style: none;
-    display: flex;
-    flex-direction: column;
-    gap: 14px;
-    margin-bottom: 40px;
-}
-
-.about-list li {
+.about-checklist { list-style: none; margin: 28px 0 40px; display: flex; flex-direction: column; gap: 14px; }
+.about-checklist li {
     display: flex;
     align-items: flex-start;
     gap: 12px;
@@ -497,11 +407,10 @@ img { display: block; }
     color: var(--mid);
     line-height: 1.5;
 }
-
-.about-list li::before {
+.about-checklist li::before {
     content: '✓';
-    width: 22px;
-    height: 22px;
+    width: 24px;
+    height: 24px;
     background: rgba(192,57,43,0.1);
     color: var(--red);
     border-radius: 50%;
@@ -509,50 +418,40 @@ img { display: block; }
     align-items: center;
     justify-content: center;
     font-size: 12px;
-    font-weight: 700;
+    font-weight: 800;
     flex-shrink: 0;
     margin-top: 1px;
 }
 
-/* ---- WHY CHOOSE US ---- */
+/* ─── WHY CHOOSE US ─────────────────────────────── */
 .why-grid {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
-    gap: 28px;
-    margin-top: 56px;
+    gap: 24px;
+    margin-top: 52px;
 }
 
 .why-card {
     background: white;
     border: 1px solid var(--border);
-    border-radius: var(--radius);
-    padding: 40px 32px;
+    border-radius: var(--r20);
+    padding: 40px 28px;
     text-align: center;
-    transition: var(--transition);
     position: relative;
     overflow: hidden;
+    transition: var(--t);
 }
-
-.why-card::before {
+.why-card::after {
     content: '';
     position: absolute;
-    bottom: 0;
-    left: 0;
-    right: 0;
+    bottom: 0; left: 0; right: 0;
     height: 3px;
     background: var(--red);
     transform: scaleX(0);
-    transition: var(--transition);
-    transform-origin: center;
+    transition: transform 0.4s var(--ease);
 }
-
-.why-card:hover {
-    transform: translateY(-6px);
-    box-shadow: var(--shadow-hover);
-    border-color: transparent;
-}
-
-.why-card:hover::before { transform: scaleX(1); }
+.why-card:hover { transform: translateY(-6px); box-shadow: 0 20px 56px rgba(192,57,43,0.1); border-color: transparent; }
+.why-card:hover::after { transform: scaleX(1); }
 
 .why-icon {
     width: 72px;
@@ -562,160 +461,81 @@ img { display: block; }
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 30px;
-    margin: 0 auto 24px;
-    transition: var(--transition);
+    font-size: 32px;
+    margin: 0 auto 22px;
+    transition: var(--t);
 }
+.why-card:hover .why-icon { background: var(--red); }
 
-.why-card:hover .why-icon {
-    background: var(--red);
-}
+.why-card h3 { font-family: var(--font-serif); font-size: 1.15rem; font-weight: 700; color: var(--dark); margin-bottom: 10px; }
+.why-card p { font-size: 14px; color: var(--light); line-height: 1.7; }
 
-.why-card h3 {
-    font-family: var(--font-heading);
-    font-size: 1.2rem;
-    font-weight: 700;
-    color: var(--dark);
-    margin-bottom: 12px;
-}
-
-.why-card p {
-    font-size: 14px;
-    color: var(--light-text);
-    line-height: 1.7;
-}
-
-/* ---- FEATURED PRODUCTS ---- */
-.ef-featured { background: var(--cream); }
+/* ─── FEATURED PRODUCTS ─────────────────────────── */
+.prod-header { display: flex; align-items: flex-end; justify-content: space-between; flex-wrap: wrap; gap: 20px; margin-bottom: 48px; }
 
 .prod-grid {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
     gap: 24px;
-    margin-top: 56px;
 }
 
 .prod-card {
     background: white;
-    border-radius: var(--radius);
+    border-radius: var(--r20);
     overflow: hidden;
     border: 1px solid var(--border);
-    transition: var(--transition);
+    transition: var(--t);
     display: block;
 }
+.prod-card:hover { transform: translateY(-6px); box-shadow: 0 20px 56px rgba(192,57,43,0.1); border-color: transparent; }
 
-.prod-card:hover {
-    transform: translateY(-6px);
-    box-shadow: var(--shadow-hover);
-    border-color: transparent;
-}
-
-.prod-card-img {
+.prod-img {
     aspect-ratio: 1;
     overflow: hidden;
     background: var(--cream-2);
     display: flex;
     align-items: center;
     justify-content: center;
-    position: relative;
 }
+.prod-img img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.55s var(--ease); }
+.prod-card:hover .prod-img img { transform: scale(1.06); }
+.prod-noimg { font-size: 60px; }
 
-.prod-card-img img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-.prod-card:hover .prod-card-img img { transform: scale(1.06); }
-
-.prod-no-img {
-    font-size: 56px;
-    color: var(--light-text);
-}
-
-.prod-card-body { padding: 20px; }
-
-.prod-cat-tag {
-    font-size: 11px;
-    font-weight: 700;
-    letter-spacing: 1.5px;
-    text-transform: uppercase;
-    color: var(--red);
-    margin-bottom: 8px;
-}
-
-.prod-name {
-    font-family: var(--font-heading);
-    font-size: 1.05rem;
-    font-weight: 700;
-    color: var(--dark);
-    margin-bottom: 12px;
-    line-height: 1.3;
-}
-
-.prod-footer {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-}
-
-.prod-price {
-    font-size: 1.2rem;
-    font-weight: 800;
-    color: var(--red);
-}
-
-.prod-btn {
-    width: 36px;
-    height: 36px;
+.prod-body { padding: 20px; }
+.prod-cat { font-size: 11px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; color: var(--red); margin-bottom: 7px; }
+.prod-name { font-family: var(--font-serif); font-size: 1.05rem; font-weight: 700; color: var(--dark); margin-bottom: 16px; line-height: 1.3; }
+.prod-footer-row { display: flex; align-items: center; justify-content: space-between; }
+.prod-price { font-size: 1.2rem; font-weight: 800; color: var(--red); }
+.prod-arrow {
+    width: 38px; height: 38px;
     background: var(--red);
     color: white;
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 18px;
-    line-height: 1;
-    transition: var(--transition);
+    font-size: 17px;
+    transition: var(--t);
 }
+.prod-card:hover .prod-arrow { background: var(--red-dark); transform: scale(1.1) rotate(45deg); }
 
-.prod-card:hover .prod-btn {
-    background: var(--red-dark);
-    transform: scale(1.1);
-}
-
-/* ---- NEWSLETTER ---- */
-.ef-newsletter {
+/* ─── NEWSLETTER ─────────────────────────────────── */
+.ef-nl {
     background: linear-gradient(135deg, var(--red) 0%, var(--red-dark) 100%);
-    padding: 100px 0;
+    padding: 96px 0;
     position: relative;
     overflow: hidden;
 }
-
-.ef-newsletter::before {
+.ef-nl::before, .ef-nl::after {
     content: '';
     position: absolute;
-    top: -80px;
-    left: -80px;
-    width: 300px;
-    height: 300px;
-    background: rgba(255,255,255,0.05);
     border-radius: 50%;
+    background: rgba(255,255,255,0.06);
 }
+.ef-nl::before { width: 400px; height: 400px; top: -150px; left: -100px; }
+.ef-nl::after  { width: 300px; height: 300px; bottom: -100px; right: -60px; }
 
-.ef-newsletter::after {
-    content: '';
-    position: absolute;
-    bottom: -100px;
-    right: -60px;
-    width: 350px;
-    height: 350px;
-    background: rgba(255,255,255,0.05);
-    border-radius: 50%;
-}
-
-.ef-newsletter-inner {
+.nl-inner {
     position: relative;
     z-index: 1;
     text-align: center;
@@ -724,155 +544,138 @@ img { display: block; }
     padding: 0 24px;
 }
 
-.ef-newsletter-inner .ef-section-tag { color: rgba(255,255,255,0.7); }
-.ef-newsletter-inner .ef-section-tag::before { background: rgba(255,255,255,0.5); }
+.nl-inner .sec-label { color: rgba(255,255,255,0.75); justify-content: center; }
+.nl-inner .sec-label::before { background: rgba(255,255,255,0.5); }
 
-.ef-newsletter-inner h2 {
-    font-family: var(--font-heading);
-    font-size: 2.5rem;
-    font-weight: 800;
-    color: white;
-    margin-bottom: 16px;
-}
-
-.ef-newsletter-inner p {
-    color: rgba(255,255,255,0.8);
-    margin-bottom: 40px;
-    font-size: 1.05rem;
-    line-height: 1.6;
-}
+.nl-inner h2 { font-family: var(--font-serif); font-size: 2.4rem; font-weight: 900; color: white; margin-bottom: 14px; }
+.nl-inner p { color: rgba(255,255,255,0.8); font-size: 1.05rem; line-height: 1.65; margin-bottom: 38px; }
 
 .nl-form {
     display: flex;
-    gap: 0;
     background: white;
     border-radius: 100px;
     overflow: hidden;
-    box-shadow: 0 12px 40px rgba(0,0,0,0.2);
+    box-shadow: 0 16px 48px rgba(0,0,0,0.2);
 }
-
 .nl-form input {
     flex: 1;
     border: none;
     outline: none;
     padding: 18px 28px;
     font-size: 15px;
-    font-family: var(--font-body);
+    font-family: var(--font-sans);
     color: var(--dark);
-    background: transparent;
 }
-
 .nl-form button {
     background: var(--red-dark);
     color: white;
     border: none;
-    padding: 18px 32px;
-    font-size: 15px;
+    padding: 0 32px;
+    font-size: 14px;
     font-weight: 700;
     cursor: pointer;
     border-radius: 100px;
     margin: 4px;
-    transition: var(--transition);
-    font-family: var(--font-body);
+    font-family: var(--font-sans);
+    transition: var(--t);
+    white-space: nowrap;
 }
-
 .nl-form button:hover { background: #7a1e13; }
 
-/* ---- RESPONSIVE ---- */
+/* ─── RESPONSIVE ─────────────────────────────────── */
 @media (max-width: 1024px) {
-    .ef-hero { grid-template-columns: 1fr; min-height: auto; }
-    .ef-hero::after { display: none; }
-    .ef-hero-text { padding: 100px 6% 60px; text-align: center; }
-    .ef-hero-tagline { margin: 0 auto 44px; }
-    .ef-hero-actions { justify-content: center; }
-    .ef-hero-visual { display: none; }
-    .ef-about-inner { grid-template-columns: 1fr; gap: 40px; }
-    .ef-about-img-wrap { display: none; }
+    .ef-hero-inner { grid-template-columns: 1fr; }
+    .hero-stats-col { display: none; }
+    .ef-hero-text h1 { font-size: 3rem; }
+    .about-grid { grid-template-columns: 1fr; gap: 40px; }
+    .about-img-stack { display: none; }
     .why-grid { grid-template-columns: repeat(2, 1fr); }
     .prod-grid { grid-template-columns: repeat(2, 1fr); }
     .cat-grid { grid-template-columns: repeat(2, 1fr); }
-    .cat-card.large { grid-column: span 2; }
+    .cat-card.span-2 { grid-column: span 2; }
+    .ef-infobar-inner { grid-template-columns: 1fr; }
+    .ib-item { border-right: none; border-bottom: 1px solid rgba(255,255,255,0.12); justify-content: center; }
+    .ib-item:last-child { border-bottom: none; }
 }
 
 @media (max-width: 640px) {
-    .ef-section { padding: 70px 0; }
-    .ef-infobar-inner { gap: 28px; }
+    .ef-sec { padding: 64px 0; }
     .cat-grid { grid-template-columns: 1fr; }
-    .cat-card.large { grid-column: span 1; aspect-ratio: 4/3; }
+    .cat-card.span-2 { grid-column: span 1; aspect-ratio: 4/3; }
     .why-grid, .prod-grid { grid-template-columns: 1fr; }
-    .hero-float-card { display: none; }
-}
-
-/* ---- ANIMATIONS ---- */
-.ef-reveal {
-    opacity: 0;
-    transform: translateY(40px);
+    .hero-btns { flex-direction: column; }
+    .btn-red, .btn-ghost { text-align: center; justify-content: center; }
+    .nl-form { flex-direction: column; border-radius: 20px; }
+    .nl-form button { border-radius: 16px; padding: 14px 28px; margin: 0 4px 4px; }
 }
 </style>
 {% endblock %}
 
 {% block content %}
 
-<!-- =================== HERO =================== -->
+<!-- ══════════ HERO ══════════ -->
 <section class="ef-hero">
-    <div class="ef-hero-text">
-        <div class="ef-hero-badge">
-            <span></span> A Commitment to Natural Wellness
-        </div>
-        <h1>
-            Sri Lanka's Finest
-            <em>Natural Foods &</em>
-            Hotel Supplies
-        </h1>
-        <p class="ef-hero-tagline">
-            Premium flavoured teas, herbal blends, spices, kithul products & hotel supplies — crafted with care, delivered worldwide.
-        </p>
-        <div class="ef-hero-actions">
-            <a href="{% url 'products' %}" class="btn-primary">
-                Explore Products
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
-            </a>
-            <a href="{% url 'about' %}" class="btn-outline">
-                Our Story
-            </a>
-        </div>
-    </div>
-    <div class="ef-hero-visual">
-        <div class="hero-img-container">
-            <img src="{% static 'images/hero-organic.png' %}" alt="Everbolt Premium Products" class="hero-img-main" onerror="this.style.display='none'">
-            <div class="hero-float-card card-1">
-                <div class="hfc-label">Products</div>
-                <div class="hfc-value">100+</div>
-                <div class="hfc-sub">Premium SKUs</div>
+    <div class="ef-hero-inner">
+        <div class="ef-hero-text">
+            <div class="hero-tag">A Commitment to Natural Wellness</div>
+            <h1>
+                Sri Lanka's Finest
+                <strong>Natural Foods &<br>Hotel Supplies</strong>
+            </h1>
+            <p class="hero-sub">Premium flavoured teas, herbal blends, spices, kithul products & hotel supplies — crafted with care, trusted by leading hotels worldwide.</p>
+            <div class="hero-btns">
+                <a href="{% url 'products' %}" class="btn-red">
+                    Explore Products
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+                </a>
+                <a href="{% url 'contact' %}" class="btn-ghost">Contact Us</a>
             </div>
-            <div class="hero-float-card card-2">
-                <div class="hfc-label">Quality</div>
-                <div class="hfc-value">100%</div>
-                <div class="hfc-sub">Natural & Organic</div>
+        </div>
+
+        <div class="hero-stats-col">
+            <div class="hero-stat-card" style="display:flex;align-items:center;gap:20px;">
+                <img src="{% static 'images/everleaf-tea.gif' %}" alt="Everleaf Tea" style="width:72px;height:72px;border-radius:12px;object-fit:cover;background:#f5ede5;">
+                <div>
+                    <div style="font-size:13px;color:#888;margin-bottom:4px;font-weight:500;">Featured Brand</div>
+                    <div style="font-family:'Playfair Display',serif;font-size:1.2rem;font-weight:900;color:#1a1a1a;">Everleaf Tea</div>
+                    <div style="font-size:12px;color:#C0392B;font-weight:600;margin-top:2px;">Pure Ceylon Tea</div>
+                </div>
+            </div>
+            <div class="hero-stat-card">
+                <div class="hsc-num">100+</div>
+                <div class="hsc-label">Premium Products</div>
+            </div>
+            <div class="hero-stat-card">
+                <div class="hsc-num">15+</div>
+                <div class="hsc-label">Years of Excellence</div>
+            </div>
+            <div class="hero-stat-card" style="grid-column:span 2;">
+                <div class="hsc-num" style="font-size:2rem;">100%</div>
+                <div class="hsc-label">Natural & Organic — No artificial additives, ever.</div>
             </div>
         </div>
     </div>
 </section>
 
-<!-- =================== INFO BAR =================== -->
+<!-- ══════════ INFO BAR ══════════ -->
 <div class="ef-infobar">
     <div class="ef-infobar-inner">
-        <div class="ef-infobar-item">
-            <div class="ib-icon">🚚</div>
+        <div class="ib-item">
+            <div class="ib-icon-wrap">🚚</div>
             <div class="ib-text">
                 <strong>Free Shipping</strong>
                 <span>Worldwide</span>
             </div>
         </div>
-        <div class="ef-infobar-item">
-            <div class="ib-icon">🌿</div>
+        <div class="ib-item">
+            <div class="ib-icon-wrap">🌿</div>
             <div class="ib-text">
                 <strong>100% Organic</strong>
                 <span>Natural and Vegan</span>
             </div>
         </div>
-        <div class="ef-infobar-item">
-            <div class="ib-icon">📞</div>
+        <div class="ib-item">
+            <div class="ib-icon-wrap">📞</div>
             <div class="ib-text">
                 <strong>Hotline</strong>
                 <span>+94 76 540 0084</span>
@@ -881,129 +684,129 @@ img { display: block; }
     </div>
 </div>
 
-<!-- =================== CATEGORIES =================== -->
-<section class="ef-section">
-    <div class="ef-container">
-        <div class="ef-reveal">
-            <div class="ef-section-tag">Our Range</div>
-            <h2 class="ef-section-title">Shop by <em>Category</em></h2>
-            <p class="ef-section-sub">From aromatic teas to wholesome spices and premium hotel supplies — discover everything Everbolt has to offer.</p>
-        </div>
+<!-- ══════════ CATEGORIES ══════════ -->
+<section class="ef-sec">
+    <div class="ef-wrap">
+        <div class="sec-label">Our Range</div>
+        <h2 class="sec-title">Shop by <em>Category</em></h2>
+        <p class="sec-sub">From aromatic Ceylon teas to wholesome spices, kithul products, and everything your hotel kitchen needs.</p>
 
-        <div class="cat-grid ef-reveal">
-            <a href="{% url 'products' %}?q=flavoured+tea" class="cat-card large">
-                <img src="{% static 'images/cat-tea.png' %}" alt="Flavoured Tea" class="cat-card-img" onerror="this.style.display='none'">
-                <div class="cat-card-overlay"></div>
-                <div class="cat-card-label">
+        <div class="cat-grid">
+            <!-- Large: Flavoured Tea -->
+            <a href="{% url 'products' %}?q=flavoured+tea" class="cat-card span-2">
+                <img src="{% static 'images/flavoured-tea.gif' %}" alt="Flavoured Tea">
+                <div class="cat-overlay"></div>
+                <div class="cat-info">
                     <h3>Flavoured Tea</h3>
-                    <span class="cat-arrow">Shop Now →</span>
+                    <span class="cat-cta">Shop Now →</span>
                 </div>
             </a>
-            <a href="{% url 'products' %}?q=herbal" class="cat-card">
-                <img src="{% static 'images/cat-kithul.png' %}" alt="Herbal Tea" class="cat-card-img" onerror="this.style.display='none'">
-                <div class="cat-card-overlay"></div>
-                <div class="cat-card-label">
+
+            <!-- Herbal Tea -->
+            <a href="{% url 'products' %}?q=herbal+tea" class="cat-card">
+                <img src="{% static 'images/herbal-tea.gif' %}" alt="Herbal Tea">
+                <div class="cat-overlay"></div>
+                <div class="cat-info">
                     <h3>Herbal Tea</h3>
-                    <span class="cat-arrow">Shop Now →</span>
+                    <span class="cat-cta">Shop Now →</span>
                 </div>
             </a>
+
+            <!-- Spices -->
             <a href="{% url 'products' %}?q=spices" class="cat-card">
-                <img src="{% static 'images/cat-spices.png' %}" alt="Spices" class="cat-card-img" onerror="this.style.display='none'">
-                <div class="cat-card-overlay"></div>
-                <div class="cat-card-label">
+                <img src="{% static 'images/spices-powder.gif' %}" alt="Spices">
+                <div class="cat-overlay"></div>
+                <div class="cat-info">
                     <h3>Premium Spices</h3>
-                    <span class="cat-arrow">Shop Now →</span>
+                    <span class="cat-cta">Shop Now →</span>
                 </div>
             </a>
+
+            <!-- Kithul -->
             <a href="{% url 'products' %}?q=kithul" class="cat-card">
-                <img src="{% static 'images/cat-hotel.png' %}" alt="Kithul" class="cat-card-img" onerror="this.style.display='none'">
-                <div class="cat-card-overlay"></div>
-                <div class="cat-card-label">
+                <img src="{% static 'images/kithul-products-foods.gif' %}" alt="Kithul Products">
+                <div class="cat-overlay"></div>
+                <div class="cat-info">
                     <h3>Kithul Products</h3>
-                    <span class="cat-arrow">Shop Now →</span>
+                    <span class="cat-cta">Shop Now →</span>
                 </div>
             </a>
+
+            <!-- Hotel Supplies -->
             <a href="{% url 'products' %}?q=hotel+supplies" class="cat-card">
-                <div class="cat-placeholder-wrap" style="background:linear-gradient(135deg,#fff0ee,#ffe4e1)">
-                    <div class="cat-icon">🏨</div>
-                    <div class="cat-name-placeholder">Hotel Supplies</div>
-                </div>
-                <div class="cat-card-overlay"></div>
-                <div class="cat-card-label">
+                <img src="{% static 'images/hotel-supplies-foods.gif' %}" alt="Hotel Supplies">
+                <div class="cat-overlay"></div>
+                <div class="cat-info">
                     <h3>Hotel Supplies</h3>
-                    <span class="cat-arrow">Shop Now →</span>
+                    <span class="cat-cta">Shop Now →</span>
                 </div>
             </a>
-            <a href="{% url 'products' %}?q=dehydrated" class="cat-card">
-                <div class="cat-placeholder-wrap" style="background:linear-gradient(135deg,#f5f0ff,#ede5ff)">
-                    <div class="cat-icon">🌾</div>
-                    <div class="cat-name-placeholder">Dehydrated Products</div>
-                </div>
-                <div class="cat-card-overlay"></div>
-                <div class="cat-card-label">
-                    <h3>Dehydrated Products</h3>
-                    <span class="cat-arrow">Shop Now →</span>
+
+            <!-- Everleaf Range -->
+            <a href="{% url 'products' %}?q=everleaf" class="cat-card">
+                <img src="{% static 'images/everleaf-tea.gif' %}" alt="Everleaf Tea Range">
+                <div class="cat-overlay"></div>
+                <div class="cat-info">
+                    <h3>Everleaf Tea Range</h3>
+                    <span class="cat-cta">Shop Now →</span>
                 </div>
             </a>
         </div>
     </div>
 </section>
 
-<!-- =================== ABOUT =================== -->
-<section class="ef-section ef-about">
-    <div class="ef-container">
-        <div class="ef-about-inner">
-            <div class="ef-about-img-wrap ef-reveal">
-                <img src="{% static 'images/hero-organic.png' %}" alt="Everbolt Foods" onerror="this.src=''">
-                <div class="about-accent-badge">
-                    <span class="big-num">15+</span>
-                    <span class="small-text">Years of Excellence</span>
+<!-- ══════════ ABOUT ══════════ -->
+<section class="ef-sec bg-cream">
+    <div class="ef-wrap">
+        <div class="about-grid">
+            <div class="about-img-stack">
+                <img src="{% static 'images/about-us-standard.webp' %}" alt="Everbolt Foods" class="img-main">
+                <div class="about-badge">
+                    <span class="num">15+</span>
+                    <span class="lbl">Years of<br>Excellence</span>
                 </div>
             </div>
-            <div class="ef-about-text ef-reveal">
-                <div class="ef-section-tag">About Us</div>
-                <h2 class="ef-section-title">Everbolt Food<br><em>Products (PVT)</em></h2>
-                <p class="ef-section-sub">
-                    We are a Sri Lankan food company dedicated to bringing premium natural products to homes, hotels, and businesses worldwide. From the highlands of Ceylon to kitchens around the globe, our commitment to purity never wavers.
-                </p>
-                <ul class="about-list">
+            <div>
+                <div class="sec-label">About Us</div>
+                <h2 class="sec-title">Everbolt Food<br><em>Products (PVT)</em></h2>
+                <p class="sec-sub">We are a Sri Lankan food company dedicated to bringing premium natural products to homes, hotels, and businesses worldwide. From the highlands of Ceylon to kitchens around the globe — our commitment to purity never wavers.</p>
+                <ul class="about-checklist">
                     <li>100% natural ingredients — no artificial additives ever</li>
                     <li>Trusted by leading hotels and restaurants across Sri Lanka</li>
-                    <li>Export-ready with international certifications</li>
+                    <li>Export-ready with international quality certifications</li>
                     <li>Direct from source — traceable and sustainable supply chain</li>
                 </ul>
-                <a href="{% url 'about' %}" class="btn-primary">Learn More About Us</a>
+                <a href="{% url 'about' %}" class="btn-red">Learn More About Us</a>
             </div>
         </div>
     </div>
 </section>
 
-<!-- =================== WHY CHOOSE US =================== -->
-<section class="ef-section">
-    <div class="ef-container">
-        <div class="ef-reveal" style="text-align:center;">
-            <div class="ef-section-tag" style="justify-content:center;">Why Choose Us</div>
-            <h2 class="ef-section-title">The <em>Everbolt</em> Difference</h2>
-            <p class="ef-section-sub" style="margin: 0 auto;">Everything we do is driven by our commitment to quality, nature, and the trust of our customers.</p>
+<!-- ══════════ WHY CHOOSE US ══════════ -->
+<section class="ef-sec">
+    <div class="ef-wrap">
+        <div style="text-align:center;">
+            <div class="sec-label" style="justify-content:center;">Why Choose Us</div>
+            <h2 class="sec-title">The <em>Everbolt</em> Difference</h2>
+            <p class="sec-sub" style="margin:0 auto;">Everything we do is driven by our commitment to quality, nature, and the trust of our customers.</p>
         </div>
-
         <div class="why-grid">
-            <div class="why-card ef-reveal">
+            <div class="why-card">
                 <div class="why-icon">🌱</div>
                 <h3>100% Natural</h3>
                 <p>All our products are 100% natural, crafted with care to ensure quality and purity. Experience the essence of nature in every detail.</p>
             </div>
-            <div class="why-card ef-reveal">
+            <div class="why-card">
                 <div class="why-icon">🏅</div>
                 <h3>High Quality</h3>
                 <p>Our products are of the highest quality, meticulously crafted to deliver excellence and reliability you can trust.</p>
             </div>
-            <div class="why-card ef-reveal">
+            <div class="why-card">
                 <div class="why-icon">🎧</div>
                 <h3>Customer Care</h3>
                 <p>We prioritize exceptional customer care, ensuring your satisfaction with dedicated support every step of the way.</p>
             </div>
-            <div class="why-card ef-reveal">
+            <div class="why-card">
                 <div class="why-icon">✈️</div>
                 <h3>Global Delivery</h3>
                 <p>We ensure reliable and prompt delivery, bringing your products to you around the globe with care and efficiency.</p>
@@ -1012,34 +815,33 @@ img { display: block; }
     </div>
 </section>
 
-<!-- =================== FEATURED PRODUCTS =================== -->
+<!-- ══════════ FEATURED PRODUCTS ══════════ -->
 {% if home_products %}
-<section class="ef-section ef-featured">
-    <div class="ef-container">
-        <div class="ef-reveal" style="display:flex; align-items:flex-end; justify-content:space-between; flex-wrap:wrap; gap:20px;">
+<section class="ef-sec bg-cream">
+    <div class="ef-wrap">
+        <div class="prod-header">
             <div>
-                <div class="ef-section-tag">Handpicked</div>
-                <h2 class="ef-section-title">Featured <em>Products</em></h2>
+                <div class="sec-label">Handpicked for You</div>
+                <h2 class="sec-title">Featured <em>Products</em></h2>
             </div>
-            <a href="{% url 'products' %}" class="btn-outline">View All Products</a>
+            <a href="{% url 'products' %}" class="btn-ghost">View All Products</a>
         </div>
-
         <div class="prod-grid">
             {% for product in home_products %}
-            <a href="{% url 'product_detail' product.id %}" class="prod-card ef-reveal">
-                <div class="prod-card-img">
+            <a href="{% url 'product_detail' product.id %}" class="prod-card">
+                <div class="prod-img">
                     {% if product.main_image %}
                         <img src="{{ product.main_image.url }}" alt="{{ product.get_display_name }}">
                     {% else %}
-                        <div class="prod-no-img">🍵</div>
+                        <div class="prod-noimg">🍵</div>
                     {% endif %}
                 </div>
-                <div class="prod-card-body">
-                    <div class="prod-cat-tag">{{ product.website_category.name|default:"Product" }}</div>
+                <div class="prod-body">
+                    <div class="prod-cat">{{ product.website_category.name|default:"Product" }}</div>
                     <div class="prod-name">{{ product.get_display_name }}</div>
-                    <div class="prod-footer">
+                    <div class="prod-footer-row">
                         <div class="prod-price">රු{{ product.get_price|floatformat:2 }}</div>
-                        <div class="prod-btn">→</div>
+                        <div class="prod-arrow">→</div>
                     </div>
                 </div>
             </a>
@@ -1049,11 +851,11 @@ img { display: block; }
 </section>
 {% endif %}
 
-<!-- =================== NEWSLETTER =================== -->
-<section class="ef-newsletter">
-    <div class="ef-newsletter-inner">
-        <div class="ef-section-tag" style="justify-content:center;">Stay Updated</div>
-        <h2>Sign Up for Our <br>Newsletter</h2>
+<!-- ══════════ NEWSLETTER ══════════ -->
+<section class="ef-nl">
+    <div class="nl-inner">
+        <div class="sec-label">Stay Updated</div>
+        <h2>Sign Up for Our Newsletter</h2>
         <p>Get the latest product launches, exclusive offers, and wellness tips delivered straight to your inbox.</p>
         <form class="nl-form" onsubmit="return false;">
             <input type="email" placeholder="Enter your email address...">
@@ -1065,66 +867,33 @@ img { display: block; }
 {% endblock %}
 
 {% block extra_js %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js" defer></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js" defer></script>
 <script>
-document.addEventListener("DOMContentLoaded", () => {
+window.addEventListener('load', function() {
+    if (typeof gsap === 'undefined') return;
     gsap.registerPlugin(ScrollTrigger);
 
-    // Hero text stagger
-    gsap.to(".ef-hero-badge", {
-        y: 0, opacity: 1, duration: 0.8, ease: "power3.out", delay: 0.2
-    });
+    /* Hero text (GSAP from → visible, not TO invisible) */
+    gsap.from(".hero-tag", { y: -20, opacity: 0, duration: 0.7, ease: "power3.out", delay: 0.1 });
+    gsap.from(".ef-hero-text h1", { y: 40, opacity: 0, duration: 0.9, ease: "power4.out", delay: 0.25 });
+    gsap.from(".hero-sub", { y: 30, opacity: 0, duration: 0.8, ease: "power3.out", delay: 0.45 });
+    gsap.from(".hero-btns", { y: 20, opacity: 0, duration: 0.7, ease: "power3.out", delay: 0.6 });
+    gsap.from(".hero-stat-card", { y: 40, opacity: 0, duration: 0.8, stagger: 0.12, ease: "back.out(1.5)", delay: 0.5 });
 
-    gsap.from(".ef-hero-text h1", {
-        y: 60, opacity: 0, duration: 1, ease: "power4.out", delay: 0.4
-    });
-
-    gsap.to(".ef-hero-tagline", {
-        y: 0, opacity: 1, duration: 0.9, ease: "power3.out", delay: 0.65
-    });
-
-    gsap.to(".ef-hero-actions", {
-        y: 0, opacity: 1, duration: 0.8, ease: "power3.out", delay: 0.85
-    });
-
-    // Hero image
-    gsap.to(".hero-img-main", {
-        opacity: 1, x: 0, duration: 1.1, ease: "power3.out", delay: 0.5
-    });
-
-    gsap.to(".hero-float-card.card-1", {
-        opacity: 1, y: 0, duration: 0.8, ease: "back.out(1.4)", delay: 1.1
-    });
-
-    gsap.to(".hero-float-card.card-2", {
-        opacity: 1, y: 0, duration: 0.8, ease: "back.out(1.4)", delay: 1.3
-    });
-
-    // Scroll reveals
-    gsap.utils.toArray(".ef-reveal").forEach((el, i) => {
-        gsap.fromTo(el,
-            { opacity: 0, y: 50 },
-            {
-                opacity: 1, y: 0,
-                duration: 0.9,
-                ease: "power3.out",
-                scrollTrigger: {
-                    trigger: el,
-                    start: "top 88%",
-                    toggleActions: "play none none none"
-                },
-                delay: (i % 4) * 0.08
-            }
-        );
-    });
-
-    // Why cards hover filter
-    document.querySelectorAll('.why-card').forEach(card => {
-        const icon = card.querySelector('.why-icon');
-        card.addEventListener('mouseenter', () => {
-            icon.style.filter = 'brightness(0) invert(1)';
+    /* Scroll reveals */
+    gsap.utils.toArray(".cat-card, .why-card, .prod-card").forEach((el, i) => {
+        gsap.from(el, {
+            y: 45, opacity: 0, duration: 0.75, ease: "power3.out",
+            delay: (i % 4) * 0.07,
+            scrollTrigger: { trigger: el, start: "top 90%" }
         });
-        card.addEventListener('mouseleave', () => {
-            icon.style.filter = '';
+    });
+
+    gsap.utils.toArray(".about-img-stack, .about-grid > div:last-child, .nl-inner").forEach(el => {
+        gsap.from(el, {
+            y: 40, opacity: 0, duration: 0.85, ease: "power3.out",
+            scrollTrigger: { trigger: el, start: "top 88%" }
         });
     });
 });
