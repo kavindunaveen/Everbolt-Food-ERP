@@ -133,28 +133,27 @@ img { max-width: 100%; display: block; }
     min-height: 90vh;
     display: flex;
     align-items: center;
-    background: linear-gradient(to right, rgba(26, 26, 26, 0.85) 0%, rgba(26, 26, 26, 0.2) 100%), url("{% static 'images/hero-everleaf.png' %}") center/cover no-repeat;
+    background: url("{% static 'images/hero-tea-display.png' %}") center/cover no-repeat;
     background-attachment: fixed; /* Parallax Effect */
     padding-top: 80px;
     padding-bottom: 120px; /* Space for overlapping boxes */
 }
 
 .hero-content {
-    max-width: 800px;
-    color: var(--white);
+    position: relative;
+    z-index: 2;
 }
 .hero-content h1 {
     font-size: clamp(3rem, 5vw, 4.5rem);
-    color: var(--white);
+    color: var(--secondary);
     text-transform: uppercase;
     margin-bottom: 24px;
-    text-shadow: 0 2px 10px rgba(0,0,0,0.3);
 }
 .hero-content h1 span { color: var(--primary); }
 .hero-content p {
     font-size: 1.2rem;
     margin-bottom: 35px;
-    opacity: 0.9;
+    color: var(--text-body);
     max-width: 600px;
 }
 .hero-btns { display: flex; gap: 15px; flex-wrap: wrap; }
