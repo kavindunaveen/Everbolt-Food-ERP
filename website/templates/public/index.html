@@ -443,11 +443,7 @@
             <a href="{% url 'product_detail' product.id %}" class="prod-card">
                 <div class="prod-img-wrap">
                     {% if product.main_image %}
-                        {% if product.main_image|slice:":4" == "http" %}
-                            <img src="{{ product.main_image }}" alt="Product">
-                        {% else %}
-                            <img src="{{ erp_media_base_url }}{{ product.main_image }}" alt="Product">
-                        {% endif %}
+                        <img src="{{ product.main_image.url }}" alt="Product">
                     {% else %}
                         <img src="{% static 'images/no-image.webp' %}" alt="No image">
                     {% endif %}

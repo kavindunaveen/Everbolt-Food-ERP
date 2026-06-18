@@ -264,8 +264,8 @@ def add_to_cart(request, pk):
 
     product_name = product.get_display_name()
     product_price = product.get_price()
-    product_image = product.inventory_product.image.url if product.inventory_product.image else ""
-    estimated_weight_kg = product.inventory_product.weight_kg or 0
+    product_image = product.main_image.url if product.main_image else ""
+    estimated_weight_kg = product.inventory_product.estimated_weight_kg if hasattr(product.inventory_product, 'estimated_weight_kg') else 0
 
     inventory_product_id = product.inventory_product_id
 

@@ -90,9 +90,13 @@
                     <article class="product-card">
 
                         <a href="{% url 'product_detail' product.id %}" class="product-card-image-link">
-                            <div class="product-card-placeholder">
-                                <span>No Image</span>
-                            </div>
+                            {% if product.main_image %}
+                                <img src="{{ product.main_image.url }}" alt="Product Image" class="product-card-img" loading="lazy">
+                            {% else %}
+                                <div class="product-card-placeholder">
+                                    <span>No Image</span>
+                                </div>
+                            {% endif %}
                         </a>
 
                         <div class="product-card-body">

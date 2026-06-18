@@ -62,14 +62,18 @@
             <div class="product-gallery">
                 <div class="gallery-main">
                     <div class="gallery-main-inner">
-                        <div class="gallery-placeholder">
-                            <svg viewBox="0 0 80 80" fill="none" width="80" height="80">
-                                <rect x="10" y="20" width="60" height="45" rx="4" stroke="#C1272D" stroke-width="2"/>
-                                <circle cx="28" cy="35" r="7" stroke="#C1272D" stroke-width="1.5"/>
-                                <path d="M10 52 l18-14 14 10 10-8 18 12" stroke="#C1272D" stroke-width="1.5" fill="none"/>
-                            </svg>
-                            <p>No image available</p>
-                        </div>
+                        {% if product.main_image %}
+                            <img id="mainImage" src="{{ product.main_image.url }}" alt="{{ product.get_display_name }}" class="gallery-main-img">
+                        {% else %}
+                            <div class="gallery-placeholder">
+                                <svg viewBox="0 0 80 80" fill="none" width="80" height="80">
+                                    <rect x="10" y="20" width="60" height="45" rx="4" stroke="#C1272D" stroke-width="2"/>
+                                    <circle cx="28" cy="35" r="7" stroke="#C1272D" stroke-width="1.5"/>
+                                    <path d="M10 52 l18-14 14 10 10-8 18 12" stroke="#C1272D" stroke-width="1.5" fill="none"/>
+                                </svg>
+                                <p>No image available</p>
+                            </div>
+                        {% endif %}
                     </div>
                 </div>
             </div>
@@ -303,9 +307,13 @@
                         <a href="{% url 'product_detail' rp.id %}" class="related-card">
 
                             <div class="related-card-img-wrap">
+                                {% if rp.main_image %}
+                                    <img src="{{ rp.main_image.url }}" alt="{{ rp.get_display_name }}" loading="lazy">
+                                {% else %}
                                     <div class="related-img-placeholder">
                                         <span>No Image</span>
                                     </div>
+                                {% endif %}
                             </div>
 
                             <div class="related-card-body">

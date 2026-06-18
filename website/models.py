@@ -85,6 +85,7 @@ class WebsiteProduct(models.Model):
         WebsiteCategory, on_delete=models.SET_NULL,
         null=True, blank=True, related_name='products'
     )
+    main_image = models.ImageField(upload_to='website/products/', null=True, blank=True, help_text='Primary image for the website')
     display_name = models.CharField(max_length=200, blank=True, help_text='Override name on website (leave blank to use product name)')
     description = models.TextField(blank=True, help_text='Public-facing product description for the website')
     short_description = models.CharField(max_length=300, blank=True)

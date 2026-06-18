@@ -37,7 +37,7 @@ class WebsiteProductForm(forms.ModelForm):
     class Meta:
         model = WebsiteProduct
         fields = [
-            'inventory_product', 'website_category', 'display_name',
+            'inventory_product', 'website_category', 'main_image', 'display_name',
             'short_description', 'description', 'slug',
             'status', 'display_order', 'is_featured', 'show_stock', 'min_order_qty'
         ]
