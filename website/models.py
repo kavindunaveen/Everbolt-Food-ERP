@@ -1,6 +1,7 @@
 from django.db import models
 from django.utils.text import slugify
 from inventory.models import Product
+from decimal import Decimal
 
 
 class WebsiteSettings(models.Model):
@@ -109,7 +110,7 @@ class WebsiteProduct(models.Model):
 
     def get_price(self):
         """Returns MRP = selling_price × 1.18."""
-        return round(self.inventory_product.selling_price * 1.18, 2)
+        return round(self.inventory_product.selling_price * Decimal('1.18'), 2)
 
     def get_ex_vat_price(self):
         return self.inventory_product.selling_price
