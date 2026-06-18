@@ -1,244 +1,286 @@
-/* =============================================
-   EVERBOLT FOODS - CONTACT PAGE CSS
-   ============================================= */
+/* ═══════════════════════════════════════════════
+   EVERBOLT FOODS – CONTACT PAGE
+   contact.css
+   Premium Self-contained Design
+═══════════════════════════════════════════════ */
 
-/* Inherit global variables from base.html */
-
-.contact-page {
-    width: 100%;
-    background: var(--white);
-    color: var(--text);
-}
-
-/* ==============================
-   CONTACT INFO SECTION
-   ============================== */
-
-.contact-info-section {
-    padding: 95px 0 80px;
-    background: var(--white);
+/* ── HERO ─────────────────────────────────────── */
+.ct-hero {
+    padding: 120px 24px 64px;
+    background: linear-gradient(135deg, #fff8f7 0%, #fff 60%, #fafafa 100%);
     text-align: center;
+    border-bottom: 1px solid #f2f2f7;
+    position: relative;
+    overflow: hidden;
 }
 
-.contact-container {
-    width: min(1180px, 92%);
-    margin: 0 auto;
+.ct-hero::before {
+    content: '';
+    position: absolute;
+    top: -80px;
+    right: -80px;
+    width: 320px;
+    height: 320px;
+    background: radial-gradient(circle, rgba(192,57,43,0.06) 0%, transparent 70%);
+    border-radius: 50%;
+    pointer-events: none;
 }
 
-.contact-title {
-    font-family: var(--font-main);
-    font-size: clamp(38px, 5vw, 58px);
-    font-weight: 500;
-    color: var(--dark);
+.ct-hero-eyebrow {
+    display: inline-block;
+    font-family: var(--font-heading);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 3px;
     text-transform: uppercase;
-    letter-spacing: 14px;
-    margin-bottom: 70px;
-    line-height: 1.1;
+    color: var(--brand-red);
+    margin-bottom: 14px;
 }
 
-.contact-info-grid {
+.ct-hero h1 {
+    font-family: var(--font-heading);
+    font-size: clamp(2.2rem, 5vw, 3.5rem);
+    font-weight: 800;
+    color: var(--text-primary);
+    line-height: 1.15;
+    margin-bottom: 14px;
+    letter-spacing: -0.5px;
+}
+
+.ct-hero p {
+    font-size: 1.05rem;
+    color: var(--text-secondary);
+    max-width: 520px;
+    margin: 0 auto;
+    line-height: 1.7;
+}
+
+/* ── LAYOUT ───────────────────────────────────── */
+.ct-section {
+    padding: 80px 24px 100px;
+    background: #ffffff;
+}
+
+.ct-container {
+    max-width: 1200px;
+    margin: 0 auto;
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 34px;
+    grid-template-columns: 1fr 1.2fr;
+    gap: 80px;
     align-items: start;
 }
 
-.contact-info-card {
-    text-align: center;
+/* ── LEFT: CONTACT INFO ───────────────────────── */
+.ct-info-wrapper {
+    display: flex;
+    flex-direction: column;
+    gap: 40px;
 }
 
-.contact-icon {
-    width: 46px;
-    height: 46px;
-    margin: 0 auto 20px;
-    color: var(--primary-red);
-}
-
-.contact-icon svg {
-    width: 100%;
-    height: 100%;
-    fill: currentColor;
-}
-
-.contact-info-card h3 {
-    font-family: var(--font-main);
-    font-size: 15px;
-    font-weight: 900;
-    color: var(--dark);
-    text-transform: uppercase;
-    margin-bottom: 9px;
-}
-
-.contact-info-card p {
-    font-family: var(--font-body);
-    font-size: 15px;
+.ct-info-header h2 {
+    font-family: var(--font-heading);
+    font-size: 2rem;
     font-weight: 800;
-    color: var(--text);
-    line-height: 1.45;
-    text-transform: uppercase;
+    color: var(--text-primary);
+    margin-bottom: 16px;
+    line-height: 1.2;
 }
 
-/* ==============================
-   CONTACT FORM SECTION
-   ============================== */
-
-.contact-form-section {
-    padding: 60px 0 85px;
-    background: var(--white);
+.ct-info-header p {
+    font-size: 1.05rem;
+    color: var(--text-secondary);
+    line-height: 1.7;
 }
 
-.contact-form-wrap {
-    width: min(1120px, 92%);
-    margin: 0 auto;
-    background: #f8fcf6;
-    padding: 12px 0 12px;
+.ct-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
 }
 
-.contact-form {
-    width: min(730px, 88%);
-    margin: 0 auto;
+.ct-card {
+    background: #fafafa;
+    border: 1px solid #f2f2f7;
+    border-radius: 16px;
+    padding: 24px;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
 }
 
-.contact-form input,
-.contact-form textarea {
-    width: 100%;
-    display: block;
-    border: 1.5px solid var(--primary-red);
-    border-radius: 9px;
-    background: var(--white);
-    color: var(--text);
-    font-family: var(--font-main);
-    font-size: 14px;
+.ct-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 32px rgba(0,0,0,0.06);
+    background: #ffffff;
+    border-color: rgba(192,57,43,0.15);
+}
+
+.ct-icon {
+    width: 48px;
+    height: 48px;
+    background: var(--brand-red-light);
+    color: var(--brand-red);
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.4rem;
+    margin-bottom: 20px;
+}
+
+.ct-card h3 {
+    font-family: var(--font-heading);
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: 8px;
+}
+
+.ct-card p, .ct-card a {
+    font-size: 0.95rem;
+    color: var(--text-secondary);
+    line-height: 1.6;
+    margin: 0;
+    text-decoration: none;
+}
+
+.ct-card a:hover {
+    color: var(--brand-red);
+}
+
+/* Single column card for address to span full width */
+.ct-card.full-width {
+    grid-column: 1 / -1;
+}
+
+/* ── RIGHT: CONTACT FORM ──────────────────────── */
+.ct-form-card {
+    background: #ffffff;
+    border-radius: 24px;
+    padding: 48px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.08);
+    border: 1px solid rgba(0,0,0,0.03);
+}
+
+.ct-form-card h3 {
+    font-family: var(--font-heading);
+    font-size: 1.6rem;
+    font-weight: 800;
+    color: var(--text-primary);
+    margin-bottom: 8px;
+}
+
+.ct-form-card > p {
+    font-size: 0.95rem;
+    color: var(--text-secondary);
+    margin-bottom: 32px;
+}
+
+.ct-form {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.ct-form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+}
+
+.ct-input-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.ct-input-group label {
+    font-size: 0.85rem;
     font-weight: 600;
-    text-transform: none;
-    outline: none;
-    margin-bottom: 18px;
+    color: var(--text-primary);
 }
 
-.contact-form input {
-    height: 40px;
-    padding: 0 13px;
+.ct-input-group input,
+.ct-input-group textarea {
+    width: 100%;
+    padding: 14px 16px;
+    background: #fafafa;
+    border: 1.5px solid #e5e5ea;
+    border-radius: 12px;
+    font-family: var(--font-body);
+    font-size: 0.95rem;
+    color: var(--text-primary);
+    transition: all 0.25s ease;
 }
 
-.contact-form textarea {
-    min-height: 108px;
+.ct-input-group textarea {
+    min-height: 140px;
     resize: vertical;
-    padding: 13px;
 }
 
-.contact-form input::placeholder,
-.contact-form textarea::placeholder {
-    color: var(--text);
-    opacity: 0.75;
-    text-transform: none;
+.ct-input-group input:focus,
+.ct-input-group textarea:focus {
+    outline: none;
+    background: #ffffff;
+    border-color: var(--brand-red);
+    box-shadow: 0 0 0 4px rgba(192,57,43,0.08);
 }
 
-.contact-submit-wrap {
-    text-align: center;
-    margin-top: -10px;
+.ct-input-group input::placeholder,
+.ct-input-group textarea::placeholder {
+    color: var(--text-light);
 }
 
-.contact-form button {
+.ct-submit {
+    margin-top: 10px;
+    padding: 16px 32px;
+    background: var(--brand-red);
+    color: #ffffff;
     border: none;
-    background: var(--primary-red);
-    color: var(--white);
-    min-width: 88px;
-    height: 36px;
-    padding: 0 28px;
-    border-radius: 30px;
-    font-family: var(--font-main);
-    font-size: 13px;
-    font-weight: 800;
-    text-transform: uppercase;
+    border-radius: 100px;
+    font-family: var(--font-heading);
+    font-size: 1rem;
+    font-weight: 700;
     cursor: pointer;
-    transition: background 0.2s ease, transform 0.2s ease;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    width: 100%;
 }
 
-.contact-form button:hover {
-    background: #d90010;
-    transform: translateY(-1px);
+.ct-submit:hover {
+    background: var(--brand-red-hover);
+    transform: translateY(-2px);
+    box-shadow: 0 10px 24px rgba(192,57,43,0.25);
 }
 
-/* ==============================
-   RESPONSIVE
-   ============================== */
-
-@media (max-width: 992px) {
-    .contact-info-section {
-        padding: 70px 0 60px;
-    }
-
-    .contact-title {
-        letter-spacing: 9px;
-        margin-bottom: 55px;
-    }
-
-    .contact-info-grid {
-        grid-template-columns: repeat(2, 1fr);
-        gap: 45px 30px;
-    }
-}
-
-@media (max-width: 680px) {
-    .contact-info-section {
-        padding: 48px 0 45px;
-    }
-
-    .contact-title {
-        font-size: 34px;
-        letter-spacing: 5px;
-        margin-bottom: 42px;
-    }
-
-    .contact-info-grid {
+/* ── RESPONSIVE ───────────────────────────────── */
+@media (max-width: 1024px) {
+    .ct-container {
         grid-template-columns: 1fr;
-        gap: 34px;
-    }
-
-    .contact-icon {
-        width: 40px;
-        height: 40px;
-        margin-bottom: 14px;
-    }
-
-    .contact-info-card h3 {
-        font-size: 14px;
-    }
-
-    .contact-info-card p {
-        font-size: 14px;
-    }
-
-    .contact-form-section {
-        padding: 35px 0 55px;
-    }
-
-    .contact-form-wrap {
-        width: 92%;
-        padding: 18px 0;
-    }
-
-    .contact-form {
-        width: 90%;
-    }
-
-    .contact-form input {
-        height: 42px;
-    }
-
-    .contact-form textarea {
-        min-height: 120px;
+        gap: 64px;
+        max-width: 720px;
     }
 }
 
-@media (max-width: 420px) {
-    .contact-title {
-        font-size: 28px;
-        letter-spacing: 4px;
+@media (max-width: 768px) {
+    .ct-hero {
+        padding: 100px 24px 48px;
+    }
+    
+    .ct-section {
+        padding: 48px 24px 64px;
     }
 
-    .contact-form input,
-    .contact-form textarea {
-        font-size: 12px;
+    .ct-form-card {
+        padding: 32px 24px;
+    }
+
+    .ct-form-row {
+        grid-template-columns: 1fr;
+    }
+
+    .ct-grid {
+        grid-template-columns: 1fr;
     }
 }
