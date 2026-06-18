@@ -453,17 +453,11 @@
                     {% endif %}
                 </div>
                 
-                <div class="category">{{ product.category_name|default:"Product" }}</div>
-                <h4>{{ product.product_name|default:product.display_name_final|default:product.display_name }}</h4>
+                <div class="category">{{ product.website_category.name|default:"Product" }}</div>
+                <h4>{{ product.get_display_name }}</h4>
                 
                 <div class="price">
-                    {% if product.website_price %}
-                        රු{{ product.website_price }}
-                    {% elif product.price %}
-                        රු{{ product.price }}
-                    {% else %}
-                        Price on Request
-                    {% endif %}
+                    රු{{ product.get_price|floatformat:2 }}
                 </div>
             </a>
             {% endfor %}

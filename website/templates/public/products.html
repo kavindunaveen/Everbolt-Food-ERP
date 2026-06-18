@@ -90,31 +90,22 @@
                     <article class="product-card">
 
                         <a href="{% url 'product_detail' product.id %}" class="product-card-image-link">
-
-                            {% if product.main_image %}
-                                <img src="{{ product.main_image }}"
-                                     alt="{{ product.display_name_final|default:product.display_name }}"
-                                     class="product-card-img"
-                                     loading="lazy">
-                            {% else %}
-                                <div class="product-card-placeholder">
-                                    <span>No Image</span>
-                                </div>
-                            {% endif %}
-
+                            <div class="product-card-placeholder">
+                                <span>No Image</span>
+                            </div>
                         </a>
 
                         <div class="product-card-body">
 
                             {% if product.website_category %}
                                 <p class="product-card-category">
-                                    Category ID: {{ product.website_category }}
+                                    {{ product.website_category.name }}
                                 </p>
                             {% endif %}
 
                             <h3 class="product-card-title">
                                 <a href="{% url 'product_detail' product.id %}">
-                                    {{ product.display_name_final|default:product.display_name }}
+                                    {{ product.get_display_name }}
                                 </a>
                             </h3>
 
@@ -131,13 +122,7 @@
                             <div class="product-card-footer">
 
                                 <div class="product-card-price">
-                                    {% if product.final_price %}
-                                        රු{{ product.final_price }}
-                                    {% elif product.base_price %}
-                                        රු{{ product.base_price }}
-                                    {% else %}
-                                        Price on Request
-                                    {% endif %}
+                                    රු{{ product.get_price|floatformat:2 }}
                                 </div>
 
                                 <a href="{% url 'product_detail' product.id %}" class="product-view-btn">

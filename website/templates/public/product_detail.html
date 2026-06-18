@@ -2,10 +2,8 @@
 {% load static %}
 
 {% block title %}
-    {% if product.display_name_final %}
-        {{ product.display_name_final }} – Everbolt Foods
-    {% elif product.display_name %}
-        {{ product.display_name }} – Everbolt Foods
+    {% if product %}
+        {{ product.get_display_name }} – Everbolt Foods
     {% else %}
         Product – Everbolt Foods
     {% endif %}
@@ -49,11 +47,7 @@
             {% endif %}
 
             <span class="breadcrumb-current">
-                {% if product.display_name_final %}
-                    {{ product.display_name_final }}
-                {% else %}
-                    {{ product.display_name }}
-                {% endif %}
+                {{ product.get_display_name }}
             </span>
         </nav>
     </div>
@@ -68,79 +62,16 @@
             <div class="product-gallery">
                 <div class="gallery-main">
                     <div class="gallery-main-inner">
-
-                        {% if product.discount_percentage and product.discount_percentage != "0.00" %}
-                            <div class="sale-badge">Sale!</div>
-                        {% endif %}
-
-                        {% if product.main_image %}
-                            {% if product.main_image|slice:":4" == "http" %}
-                                <img id="mainImage"
-                                     src="{{ product.main_image }}"
-                                     alt="{% if product.display_name_final %}{{ product.display_name_final }}{% else %}{{ product.display_name }}{% endif %}"
-                                     class="gallery-main-img">
-                            {% else %}
-                                <img id="mainImage"
-                                     src="{{ erp_media_base_url }}{{ product.main_image }}"
-                                     alt="{% if product.display_name_final %}{{ product.display_name_final }}{% else %}{{ product.display_name }}{% endif %}"
-                                     class="gallery-main-img">
-                            {% endif %}
-                        {% else %}
-                            <div class="gallery-placeholder">
-                                <svg viewBox="0 0 80 80" fill="none" width="80" height="80">
-                                    <rect x="10" y="20" width="60" height="45" rx="4" stroke="#C1272D" stroke-width="2"/>
-                                    <circle cx="28" cy="35" r="7" stroke="#C1272D" stroke-width="1.5"/>
-                                    <path d="M10 52 l18-14 14 10 10-8 18 12" stroke="#C1272D" stroke-width="1.5" fill="none"/>
-                                </svg>
-                                <p>No image available</p>
-                            </div>
-                        {% endif %}
-
+                        <div class="gallery-placeholder">
+                            <svg viewBox="0 0 80 80" fill="none" width="80" height="80">
+                                <rect x="10" y="20" width="60" height="45" rx="4" stroke="#C1272D" stroke-width="2"/>
+                                <circle cx="28" cy="35" r="7" stroke="#C1272D" stroke-width="1.5"/>
+                                <path d="M10 52 l18-14 14 10 10-8 18 12" stroke="#C1272D" stroke-width="1.5" fill="none"/>
+                            </svg>
+                            <p>No image available</p>
+                        </div>
                     </div>
                 </div>
-
-                <!-- Thumbnails -->
-                {% if product.main_image or product.image_2 or product.image_3 %}
-                    <div class="gallery-thumbs">
-
-                        {% if product.main_image %}
-                            <button class="thumb-btn thumb-active"
-                                    onclick="switchImage(this, '{% if product.main_image|slice:':4' == 'http' %}{{ product.main_image }}{% else %}{{ erp_media_base_url }}{{ product.main_image }}{% endif %}')"
-                                    type="button">
-                                {% if product.main_image|slice:":4" == "http" %}
-                                    <img src="{{ product.main_image }}" alt="Main image">
-                                {% else %}
-                                    <img src="{{ erp_media_base_url }}{{ product.main_image }}" alt="Main image">
-                                {% endif %}
-                            </button>
-                        {% endif %}
-
-                        {% if product.image_2 %}
-                            <button class="thumb-btn"
-                                    onclick="switchImage(this, '{% if product.image_2|slice:':4' == 'http' %}{{ product.image_2 }}{% else %}{{ erp_media_base_url }}{{ product.image_2 }}{% endif %}')"
-                                    type="button">
-                                {% if product.image_2|slice:":4" == "http" %}
-                                    <img src="{{ product.image_2 }}" alt="Product image 2">
-                                {% else %}
-                                    <img src="{{ erp_media_base_url }}{{ product.image_2 }}" alt="Product image 2">
-                                {% endif %}
-                            </button>
-                        {% endif %}
-
-                        {% if product.image_3 %}
-                            <button class="thumb-btn"
-                                    onclick="switchImage(this, '{% if product.image_3|slice:':4' == 'http' %}{{ product.image_3 }}{% else %}{{ erp_media_base_url }}{{ product.image_3 }}{% endif %}')"
-                                    type="button">
-                                {% if product.image_3|slice:":4" == "http" %}
-                                    <img src="{{ product.image_3 }}" alt="Product image 3">
-                                {% else %}
-                                    <img src="{{ erp_media_base_url }}{{ product.image_3 }}" alt="Product image 3">
-                                {% endif %}
-                            </button>
-                        {% endif %}
-
-                    </div>
-                {% endif %}
             </div>
 
             <!-- PRODUCT INFO -->
@@ -149,30 +80,12 @@
                 <p class="product-brand">EVERBOLT FOODS · PREMIUM QUALITY</p>
 
                 <h1 class="product-title">
-                    {% if product.display_name_final %}
-                        {{ product.display_name_final }}
-                    {% else %}
-                        {{ product.display_name }}
-                    {% endif %}
+                    {{ product.get_display_name }}
                 </h1>
 
                 <!-- Price -->
                 <div class="product-price-wrap">
-                    {% if product.website_price and product.website_price != product.final_price %}
-                        <span class="price-original">රු{{ product.website_price }}</span>
-                    {% endif %}
-
-                    {% if product.final_price %}
-                        <span class="price-current">රු{{ product.final_price }}</span>
-                    {% elif product.base_price %}
-                        <span class="price-current">රු{{ product.base_price }}</span>
-                    {% else %}
-                        <span class="price-current">Price on Request</span>
-                    {% endif %}
-
-                    {% if product.discount_percentage and product.discount_percentage != "0.00" %}
-                        <span class="price-save-tag">Save {{ product.discount_percentage }}%</span>
-                    {% endif %}
+                    <span class="price-current">රු{{ product.get_price|floatformat:2 }}</span>
                 </div>
 
                 <div class="product-divider"></div>
@@ -198,8 +111,8 @@
                     {% if product.website_category %}
                         <span>
                             <strong>Category:</strong>
-                            <a href="{% url 'products' %}?category={{ product.website_category }}">
-                                Category {{ product.website_category }}
+                            <a href="{% url 'products' %}?category={{ product.website_category.id }}">
+                                {{ product.website_category.name }}
                             </a>
                         </span>
                     {% endif %}
@@ -239,12 +152,12 @@
 
                 <!-- Contact Actions -->
                 <div class="product-actions">
-                    <a href="mailto:info@organicfoodslanka.com?subject=Inquiry about {% if product.display_name_final %}{{ product.display_name_final|urlencode }}{% else %}{{ product.display_name|urlencode }}{% endif %}"
+                    <a href="mailto:info@organicfoodslanka.com?subject=Inquiry about {{ product.get_display_name|urlencode }}"
                        class="btn-email">
                         Email Us
                     </a>
 
-                    <a href="https://wa.me/94765400084?text=Hello%20Everbolt%20Foods,%20I%20am%20interested%20in%20{% if product.display_name_final %}{{ product.display_name_final|urlencode }}{% else %}{{ product.display_name|urlencode }}{% endif %}."
+                    <a href="https://wa.me/94765400084?text=Hello%20Everbolt%20Foods,%20I%20am%20interested%20in%20{{ product.get_display_name|urlencode }}."
                        class="btn-whatsapp"
                        target="_blank"
                        rel="noopener noreferrer">
@@ -300,11 +213,7 @@
 
             <div class="tab-panel tab-panel-active" id="tab-description">
                 <h2>
-                    {% if product.display_name_final %}
-                        {{ product.display_name_final }}
-                    {% else %}
-                        {{ product.display_name }}
-                    {% endif %}
+                    {{ product.get_display_name }}
                 </h2>
 
                 <div class="tab-content-body">
@@ -323,8 +232,8 @@
 
                     {% if product.website_category %}
                         <tr>
-                            <th>Category ID</th>
-                            <td>{{ product.website_category }}</td>
+                            <th>Category</th>
+                            <td>{{ product.website_category.name }}</td>
                         </tr>
                     {% endif %}
 
@@ -394,38 +303,18 @@
                         <a href="{% url 'product_detail' rp.id %}" class="related-card">
 
                             <div class="related-card-img-wrap">
-                                {% if rp.main_image %}
-                                    {% if rp.main_image|slice:":4" == "http" %}
-                                        <img src="{{ rp.main_image }}"
-                                             alt="{% if rp.display_name_final %}{{ rp.display_name_final }}{% else %}{{ rp.display_name }}{% endif %}"
-                                             loading="lazy">
-                                    {% else %}
-                                        <img src="{{ erp_media_base_url }}{{ rp.main_image }}"
-                                             alt="{% if rp.display_name_final %}{{ rp.display_name_final }}{% else %}{{ rp.display_name }}{% endif %}"
-                                             loading="lazy">
-                                    {% endif %}
-                                {% else %}
                                     <div class="related-img-placeholder">
                                         <span>No Image</span>
                                     </div>
-                                {% endif %}
                             </div>
 
                             <div class="related-card-body">
                                 <p class="related-name">
-                                    {% if rp.display_name_final %}
-                                        {{ rp.display_name_final }}
-                                    {% else %}
-                                        {{ rp.display_name }}
-                                    {% endif %}
+                                    {{ rp.get_display_name }}
                                 </p>
 
                                 <div class="related-price-row">
-                                    {% if rp.final_price %}
-                                        <span class="related-price">රු{{ rp.final_price }}</span>
-                                    {% elif rp.base_price %}
-                                        <span class="related-price">රු{{ rp.base_price }}</span>
-                                    {% endif %}
+                                    <span class="related-price">රු{{ rp.get_price|floatformat:2 }}</span>
                                 </div>
                             </div>
 
