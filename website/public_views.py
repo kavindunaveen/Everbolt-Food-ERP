@@ -297,7 +297,7 @@ def add_to_cart(request, pk):
 
     save_cart(request, cart)
     messages.success(request, f"{product_name} added to cart.")
-    return redirect("cart")
+    return redirect(request.META.get('HTTP_REFERER', 'home'))
 
 def cart_view(request):
     settings_data = WebsiteSettings.get_settings()
@@ -329,7 +329,7 @@ def update_cart(request):
         save_cart(request, cart)
         messages.success(request, "Cart updated.")
 
-    return redirect("cart")
+    return redirect(request.META.get('HTTP_REFERER', 'home'))
 
 def remove_from_cart(request, pk):
     cart = get_cart(request)
@@ -338,7 +338,7 @@ def remove_from_cart(request, pk):
         del cart[product_key]
         save_cart(request, cart)
         messages.success(request, "Product removed from cart.")
-    return redirect("cart")
+    return redirect(request.META.get('HTTP_REFERER', 'home'))
 
 # ============================================================
 # CHECKOUT & DELIVERY LOGIC
