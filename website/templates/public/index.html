@@ -459,6 +459,79 @@ img { max-width: 100%; display: block; }
     .hero-btns { justify-content: center; }
     .cat-grid, .product-grid { grid-template-columns: 1fr; }
 }
+/* ─── TRUST BANNER ─── */
+.trust-banner-container {
+    position: relative;
+    z-index: 10;
+    margin-top: -45px;
+    margin-bottom: 50px;
+    padding: 0 15px;
+}
+.trust-banner {
+    background: #fdfdf9;
+    border-radius: 12px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px 30px;
+    border: 1px solid #eaeaea;
+    max-width: 1400px;
+    margin: 0 auto;
+}
+.trust-item {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    padding: 0 20px;
+    border-right: 1px solid #e0e0e0;
+    flex: 1;
+}
+.trust-item:last-child {
+    border-right: none;
+}
+.trust-item i {
+    font-size: 28px;
+    color: var(--primary);
+}
+.trust-text {
+    display: flex;
+    flex-direction: column;
+}
+.trust-text strong {
+    font-size: 15px;
+    color: var(--secondary);
+    font-weight: 700;
+}
+.trust-text span {
+    font-size: 12px;
+    color: #666;
+}
+
+@media (max-width: 1200px) {
+    .trust-item {
+        flex-direction: column;
+        text-align: center;
+        gap: 10px;
+    }
+}
+@media (max-width: 992px) {
+    .trust-banner {
+        flex-direction: column;
+        gap: 20px;
+        align-items: center;
+    }
+    .trust-item {
+        border-right: none;
+        border-bottom: 1px solid #e0e0e0;
+        padding-bottom: 15px;
+        width: 100%;
+    }
+    .trust-item:last-child {
+        border-bottom: none;
+        padding-bottom: 0;
+    }
+}
 </style>
 {% endblock %}
 
@@ -477,6 +550,47 @@ img { max-width: 100%; display: block; }
         </div>
     </div>
 </section>
+
+<!-- ══════════ TRUST BANNER ══════════ -->
+<div class="trust-banner-container container" data-aos="fade-up" data-aos-delay="200">
+    <div class="trust-banner">
+        <div class="trust-item">
+            <i class="fa-solid fa-leaf"></i>
+            <div class="trust-text">
+                <strong>100% Natural</strong>
+                <span>Pure & Natural Ingredients</span>
+            </div>
+        </div>
+        <div class="trust-item">
+            <i class="fa-solid fa-shield-halved"></i>
+            <div class="trust-text">
+                <strong>Quality Assured</strong>
+                <span>ISO, GMP & HACCP Certified</span>
+            </div>
+        </div>
+        <div class="trust-item">
+            <i class="fa-solid fa-truck"></i>
+            <div class="trust-text">
+                <strong>Islandwide Delivery</strong>
+                <span>Safe & Reliable Shipping</span>
+            </div>
+        </div>
+        <div class="trust-item">
+            <i class="fa-solid fa-building"></i>
+            <div class="trust-text">
+                <strong>B2B Supply</strong>
+                <span>Hotels, Offices & Businesses</span>
+            </div>
+        </div>
+        <div class="trust-item">
+            <i class="fa-solid fa-headset"></i>
+            <div class="trust-text">
+                <strong>Customer Care</strong>
+                <span>We're Here to Help You</span>
+            </div>
+        </div>
+    </div>
+</div>
 
 <!-- ══════════ OVERLAPPING FEATURE BOXES ══════════ -->
 <div class="feature-boxes">
