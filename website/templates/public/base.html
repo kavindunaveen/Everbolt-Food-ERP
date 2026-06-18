@@ -119,6 +119,13 @@
             box-shadow: var(--shadow-sm);
         }
 
+        /* Solid white header for all inner pages (About, Products, Blog, etc.) */
+        .organic-header.solid {
+            background: #ffffff;
+            border-bottom: 1px solid #f2f2f7;
+            box-shadow: 0 2px 16px rgba(0,0,0,0.06);
+        }
+
         .organic-logo {
             display: flex;
             align-items: center;
@@ -369,7 +376,7 @@
 <body>
 
     <!-- CLEAN GLASS HEADER -->
-    <header class="organic-header {% if request.path != '/' %}scrolled{% endif %}" id="organicHeader">
+    <header class="organic-header {% if request.path != '/' %}solid{% endif %}" id="organicHeader">
         <a href="{% url 'home' %}" class="organic-logo">
             <img src="{% static 'images/logo.webp' %}" alt="Everbolt Logo">
             Everbolt Foods
