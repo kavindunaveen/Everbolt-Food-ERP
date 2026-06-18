@@ -280,7 +280,7 @@ def add_to_cart(request, pk):
         cart[product_key]["price"] = str(product_price)
         cart[product_key]["image"] = product_image
         cart[product_key]["inventory_product_id"] = inventory_product_id
-        cart[product_key]["sku"] = product.inventory_product.sku or ""
+        cart[product_key]["sku"] = product.inventory_product.product_id or ""
         cart[product_key]["estimated_weight_kg"] = str(estimated_weight_kg)
     else:
         cart[product_key] = {
@@ -291,7 +291,7 @@ def add_to_cart(request, pk):
             "price": str(product_price),
             "quantity": quantity,
             "image": product_image,
-            "sku": product.inventory_product.sku or "",
+            "sku": product.inventory_product.product_id or "",
             "estimated_weight_kg": str(estimated_weight_kg),
         }
 
