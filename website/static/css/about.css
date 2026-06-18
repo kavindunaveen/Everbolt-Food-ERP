@@ -1,554 +1,313 @@
 /* =============================================
-   EVERBOLT FOODS - ABOUT PAGE CSS
+   EVERBOLT FOODS - ABOUT PAGE CSS (Premium Redesign)
    ============================================= */
 
-/* Inherit global variables from base.html */
-
-.about-page {
-    width: 100%;
-    background: var(--white);
-    color: var(--text);
+.about-hero {
+    height: 60vh;
+    min-height: 400px;
+    background-size: cover;
+    background-position: center;
+    background-attachment: fixed; /* Parallax */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--white);
+    text-align: center;
+    position: relative;
 }
 
-.about-container {
-    width: min(980px, 92%);
+.hero-title {
+    font-family: var(--font-heading);
+    font-size: clamp(2.5rem, 5vw, 4rem);
+    font-weight: 800;
+    margin-bottom: 15px;
+    color: var(--white);
+    letter-spacing: 1px;
+}
+
+.hero-subtitle {
+    font-size: 1.2rem;
+    font-weight: 300;
+    opacity: 0.9;
+    max-width: 600px;
     margin: 0 auto;
 }
 
-/* ==============================
-   ABOUT HERO SECTION
-   ============================== */
-
-.about-hero-section {
-    padding: 50px 0 42px;
-    background: var(--white);
-}
-
-.about-hero-grid {
-    display: grid;
-    grid-template-columns: 1fr 1.1fr;
-    gap: 48px;
-    align-items: center;
-}
-
-.about-image-box {
+.rounded-img {
+    border-radius: var(--radius-lg);
     width: 100%;
-    display: flex;
-    justify-content: center;
-}
-
-.about-image-box img {
-    width: min(100%, 360px);
     height: auto;
-    display: block;
-    object-fit: contain;
+    object-fit: cover;
 }
 
-.about-text-box {
+.shadow-lg {
+    box-shadow: 0 20px 40px rgba(0,0,0,0.15);
+}
+
+.about-split {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 60px;
+    align-items: center;
+}
+
+.about-text p {
+    font-size: 1.05rem;
+    color: var(--text-body);
+    margin-bottom: 20px;
+    line-height: 1.7;
+}
+
+.standard-card {
+    background: var(--white);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+    transition: var(--transition);
+    border: 1px solid rgba(0,0,0,0.03);
+}
+
+.standard-card:hover {
+    transform: translateY(-8px);
+    box-shadow: 0 20px 40px rgba(0,0,0,0.08);
+}
+
+.standard-img {
+    height: 220px;
     width: 100%;
 }
 
-.about-title-row,
-.standards-title-row {
-    display: flex;
-    align-items: center;
-    gap: 18px;
-    margin-bottom: 28px;
+.standard-img img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
 }
 
-.about-title-row h1,
-.standards-title-row h2 {
-    font-family: var(--font-main);
-    font-size: 31px;
-    font-weight: 800;
-    color: var(--dark);
-    text-transform: uppercase;
-    line-height: 1;
+.standard-content {
+    padding: 30px;
+    text-align: center;
+}
+
+.standard-content h3 {
+    font-size: 1.3rem;
+    color: var(--secondary);
+    margin-bottom: 15px;
+    font-family: var(--font-heading);
+}
+
+.standard-content p {
+    color: var(--text-body);
+    font-size: 0.95rem;
     margin: 0;
 }
 
-.about-title-row span,
-.standards-title-row span {
-    width: 130px;
-    height: 1px;
-    background: var(--primary-red);
-    display: inline-block;
-}
-
-.about-text-box h2 {
-    font-family: var(--font-main);
-    font-size: 34px;
-    font-weight: 500;
-    color: var(--primary-red);
-    text-transform: uppercase;
-    letter-spacing: 7px;
-    margin-bottom: 30px;
-    line-height: 1.2;
-}
-
-.about-text-box p {
-    font-family: var(--font-body);
-    font-size: 13px;
-    color: var(--text);
-    line-height: 1.45;
-    margin-bottom: 8px;
-}
-
-/* ==============================
-   STANDARDS SECTION
-   ============================== */
-
-.standards-section {
-    padding: 22px 0 60px;
+/* Testimonials */
+.testimonial-wrap {
     background: var(--white);
-    text-align: center;
-}
-
-.standards-title-row {
-    justify-content: center;
-    margin-bottom: 34px;
-}
-
-.standards-title-row h2 {
-    font-size: 30px;
-}
-
-.standards-title-row span {
-    width: 95px;
-}
-
-.standards-intro {
-    max-width: 650px;
-    margin: 0 auto;
-    font-family: var(--font-body);
-    font-size: 13px;
-    line-height: 1.55;
-    color: var(--text);
-}
-
-.standards-intro.second {
-    margin-top: 8px;
-    margin-bottom: 30px;
-}
-
-.standards-gallery {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 18px;
-    width: min(760px, 100%);
-    margin: 0 auto;
-}
-
-.standard-image-card {
-    width: 100%;
-    height: 360px;
     overflow: hidden;
-    background: #f5f5f5;
 }
 
-.standard-image-card img {
-    width: 100%;
-    height: 100%;
-    display: block;
-    object-fit: cover;
-    object-position: center;
-}
-
-/* ==============================
-   TESTIMONIAL SECTION
-   ============================== */
-
-.testimonial-section {
+.testimonial-slider-modern {
     position: relative;
-    min-height: 320px;
-    background-image: url("../images/about-us-testimonial-banner.webp");
-    background-size: cover;
-    background-position: center;
-    background-repeat: no-repeat;
-    overflow: hidden;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    max-width: 800px;
+    margin: 0 auto;
+    min-height: 250px;
 }
 
-/* Dark overlay so text is readable over the background image */
-.testimonial-overlay {
+.testi-slide {
     position: absolute;
-    inset: 0;
-    background: rgba(240, 248, 255, 0.82);
-    z-index: 1;
+    top: 0;
+    left: 0;
+    width: 100%;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.5s ease;
+    transform: translateX(50px);
 }
 
-.testimonial-content {
+.testi-slide.active {
+    opacity: 1;
+    visibility: visible;
+    transform: translateX(0);
     position: relative;
-    z-index: 2;
-    width: min(760px, 92%);
-    margin: 0 auto;
+}
+
+.testi-card {
+    background: var(--light-bg);
+    padding: 50px;
+    border-radius: var(--radius-lg);
     text-align: center;
-    padding: 50px 0 38px;
-}
-
-.testimonial-content h2 {
-    font-family: var(--font-main);
-    font-size: 30px;
-    font-weight: 800;
-    color: var(--dark);
-    text-transform: uppercase;
-    margin-bottom: 36px;
-}
-
-/* ==============================
-   TESTIMONIAL SLIDESHOW
-   ============================== */
-
-.testimonial-slider {
     position: relative;
-    min-height: 130px;
+}
+
+.quote-icon {
+    font-size: 3rem;
+    color: rgba(142, 26, 31, 0.1); /* faded primary */
     margin-bottom: 20px;
 }
 
-.testimonial-slide {
-    display: none;
-    opacity: 0;
-    transition: opacity 0.6s ease;
-    animation: none;
+.testi-card p {
+    font-size: 1.15rem;
+    line-height: 1.8;
+    color: var(--text-body);
+    font-style: italic;
+    margin-bottom: 30px;
 }
 
-.testimonial-slide.active {
-    display: block;
-    opacity: 0;
-    animation: fadeInSlide 0.6s ease forwards;
-}
-
-@keyframes fadeInSlide {
-    from { opacity: 0; transform: translateY(8px); }
-    to   { opacity: 1; transform: translateY(0); }
-}
-
-.testimonial-text {
-    max-width: 560px;
-    margin: 0 auto 22px;
-    font-family: var(--font-body);
-    font-size: 11px;
-    line-height: 1.5;
-    color: var(--muted-text);
-}
-
-.testimonial-person {
-    display: inline-flex;
-    align-items: center;
-    gap: 14px;
-    margin-bottom: 4px;
-}
-
-.person-avatar {
-    width: 58px;
-    height: 58px;
-    border-radius: 50%;
-    overflow: hidden;
-    background: #ddd;
-    flex-shrink: 0;
-}
-
-.person-avatar img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-}
-
-.person-info {
-    text-align: left;
-}
-
-.person-info h4 {
-    font-family: var(--font-main);
-    font-size: 12px;
-    font-weight: 800;
-    color: var(--primary-red);
-    text-transform: uppercase;
-    margin: 0 0 3px;
-}
-
-.person-info p {
-    font-size: 10px;
-    color: var(--text);
-    margin: 0;
-}
-
-/* ==============================
-   TESTIMONIAL DOTS
-   ============================== */
-
-.testimonial-dots {
-    display: flex;
-    justify-content: center;
-    gap: 8px;
-    margin-top: 16px;
-}
-
-.testimonial-dots span {
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    background: #c9c9c9;
-    display: block;
-    cursor: pointer;
-    transition: background 0.3s ease, transform 0.3s ease;
-}
-
-.testimonial-dots span.active {
-    background: var(--primary-red);
-    transform: scale(1.25);
-}
-
-/* ==============================
-   CERTIFICATIONS
-   ============================== */
-
-.about-cert-section {
-    padding: 48px 0;
-    background: var(--white);
-}
-
-.about-cert-grid {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    gap: 70px;
-    flex-wrap: wrap;
-}
-
-.about-cert-card {
-    width: 135px;
-    height: 135px;
+.testi-author {
     display: flex;
     align-items: center;
     justify-content: center;
+    gap: 15px;
 }
 
-.about-cert-card img {
-    width: 100%;
-    height: 100%;
-    object-fit: contain;
-}
-
-/* ================================
-   FAQ
-================================ */
-
-.faq-section {
-    padding: 60px 0;
-    background: var(--white);
-    border-top: 1px solid var(--border);
-}
-
-.faq-title {
-    font-family: var(--font-main);
-    font-size: clamp(18px, 2.5vw, 28px);
-    font-weight: 800;
-    color: var(--dark);
-    text-align: center;
-    margin-bottom: 10px;
-}
-
-.faq-divider {
+.testi-author img {
     width: 60px;
-    height: 3px;
-    background: var(--primary-red);
-    margin: 0 auto 36px;
-    border-radius: 2px;
+    height: 60px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid var(--primary);
+}
+
+.author-info h4 {
+    font-size: 1.1rem;
+    color: var(--secondary);
+    margin: 0 0 5px;
+}
+
+.author-info span {
+    font-size: 0.85rem;
+    color: var(--primary);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.testi-dots {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    margin-top: 30px;
+}
+
+.testi-dots span {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: var(--border);
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.testi-dots span.active {
+    background: var(--primary);
+    transform: scale(1.3);
+}
+
+/* Certifications */
+.certifications-banner {
+    padding: 50px 0;
+    border-top: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+}
+
+.cert-grid {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 60px;
+}
+
+.cert-grid img {
+    height: 70px;
+    width: auto;
+    object-fit: contain;
+    filter: grayscale(100%) opacity(0.7);
+    transition: var(--transition);
+}
+
+.cert-grid img:hover {
+    filter: grayscale(0%) opacity(1);
+}
+
+/* FAQ Accordion */
+.faq-accordion {
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    border: 1px solid var(--border);
 }
 
 .faq-item {
-    border-radius: 4px;
-    overflow: hidden;
-    margin-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+}
+
+.faq-item:last-child {
+    border-bottom: none;
 }
 
 .faq-btn {
     width: 100%;
-    background: var(--primary-red);
-    color: var(--white);
+    text-align: left;
+    padding: 20px 30px;
+    background: var(--white);
     border: none;
-    padding: 16px 22px;
+    font-family: var(--font-heading);
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--secondary);
+    cursor: pointer;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    cursor: pointer;
-    font-family: var(--font-main);
-    font-size: 13px;
-    font-weight: 700;
-    letter-spacing: 0.8px;
-    text-transform: uppercase;
-    text-align: left;
-    transition: background 0.2s;
+    transition: var(--transition);
 }
 
-.faq-btn:hover { background: var(--dark-red); }
-
-.faq-icon {
-    font-size: 20px;
-    font-weight: 300;
-    flex-shrink: 0;
-    transition: transform 0.3s;
+.faq-btn:hover {
+    background: var(--light-bg);
+    color: var(--primary);
 }
 
-.faq-item.open .faq-icon { transform: rotate(45deg); }
+.faq-btn i {
+    transition: transform 0.3s ease;
+    color: var(--primary);
+}
 
 .faq-content {
-    display: none;
-    padding: 18px 22px;
-    background: #fff5f5;
-    border: 1px solid #fdd;
-    border-top: none;
+    max-height: 0;
+    overflow: hidden;
+    background: var(--white);
+    transition: max-height 0.3s ease;
 }
-
-.faq-item.open .faq-content { display: block; }
 
 .faq-content p {
-    font-size: 14px;
-    color: #555;
-    line-height: 1.65;
+    padding: 0 30px 20px;
+    margin: 0;
+    color: var(--text-body);
+    line-height: 1.7;
 }
 
-/* ==============================
-   RESPONSIVE DESIGN
-   ============================== */
-
+/* Responsive */
 @media (max-width: 992px) {
-    .about-container {
-        width: min(900px, 92%);
+    .about-split {
+        grid-template-columns: 1fr;
+        gap: 40px;
     }
-
-    .about-hero-grid {
-        gap: 34px;
-    }
-
-    .about-text-box h2 {
-        font-size: 29px;
-        letter-spacing: 5px;
-    }
-
-    .standard-image-card {
-        height: 310px;
+    
+    .about-img {
+        order: -1;
     }
 }
 
 @media (max-width: 768px) {
-    .about-hero-section {
-        padding: 38px 0 30px;
+    .testi-card {
+        padding: 30px 20px;
     }
-
-    .about-hero-grid {
-        grid-template-columns: 1fr;
-        text-align: center;
+    
+    .cert-grid {
+        gap: 30px;
     }
-
-    .about-title-row {
-        justify-content: center;
-    }
-
-    .about-title-row h1,
-    .standards-title-row h2 {
-        font-size: 26px;
-    }
-
-    .about-title-row span,
-    .standards-title-row span {
-        width: 70px;
-    }
-
-    .about-text-box h2 {
-        font-size: 25px;
-        letter-spacing: 4px;
-    }
-
-    .about-text-box p {
-        font-size: 13px;
-        line-height: 1.55;
-    }
-
-    .standards-gallery {
-        grid-template-columns: 1fr;
-        max-width: 360px;
-    }
-
-    .standard-image-card {
-        height: auto;
-    }
-
-    .standard-image-card img {
-        height: auto;
-        object-fit: contain;
-    }
-
-    .testimonial-section {
-        min-height: auto;
-    }
-
-    .testimonial-overlay {
-        background: rgba(240, 248, 255, 0.88);
-    }
-
-    .testimonial-content {
-        padding: 44px 0 36px;
-    }
-
-    .testimonial-content h2 {
-        font-size: 26px;
-        margin-bottom: 28px;
-    }
-
-    .about-cert-grid {
-        gap: 34px;
-    }
-
-    .about-cert-card {
-        width: 110px;
-        height: 110px;
-    }
-}
-
-@media (max-width: 480px) {
-    .about-container {
-        width: 90%;
-    }
-
-    .about-image-box img {
-        width: min(100%, 280px);
-    }
-
-    .about-title-row,
-    .standards-title-row {
-        gap: 12px;
-    }
-
-    .about-title-row h1,
-    .standards-title-row h2 {
-        font-size: 22px;
-    }
-
-    .about-title-row span,
-    .standards-title-row span {
-        width: 45px;
-    }
-
-    .about-text-box h2 {
-        font-size: 21px;
-        letter-spacing: 3px;
-        margin-bottom: 22px;
-    }
-
-    .standards-section {
-        padding-bottom: 42px;
-    }
-
-    .testimonial-person {
-        flex-direction: column;
-        gap: 8px;
-    }
-
-    .person-info {
-        text-align: center;
+    
+    .cert-grid img {
+        height: 50px;
     }
 }
