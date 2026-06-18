@@ -37,7 +37,22 @@
     </div>
 
     <!-- Stats Grid -->
-    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+    <div class="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
+        <a href="{% url 'website_order_list' %}" class="group bg-white rounded-2xl border border-gray-100 shadow-sm p-6 hover:shadow-xl hover:shadow-red-100/50 transition-all hover:-translate-y-0.5">
+            <div class="flex items-start justify-between mb-4">
+                <div class="w-12 h-12 bg-red-50 rounded-xl flex items-center justify-center">
+                    <svg class="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/></svg>
+                </div>
+                {% if new_orders_count %}
+                <span class="text-[10px] font-black text-white bg-red-500 px-2 py-1 rounded-full uppercase animate-pulse">{{ new_orders_count }} New</span>
+                {% else %}
+                <span class="text-[10px] font-black text-gray-500 bg-gray-100 px-2 py-1 rounded-full uppercase">Orders</span>
+                {% endif %}
+            </div>
+            <div class="text-3xl font-black text-gray-900 mb-1">{{ total_orders }}</div>
+            <div class="text-sm font-semibold text-gray-500">Website Orders</div>
+        </a>
+
         <a href="{% url 'website_product_list' %}" class="group bg-white rounded-2xl border border-gray-100 shadow-sm p-6 hover:shadow-xl hover:shadow-violet-100/50 transition-all hover:-translate-y-0.5">
             <div class="flex items-start justify-between mb-4">
                 <div class="w-12 h-12 bg-violet-50 rounded-xl flex items-center justify-center">
@@ -138,6 +153,38 @@
             <div class="px-6 py-16 text-center">
                 <svg class="w-12 h-12 text-gray-200 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
                 <p class="text-sm text-gray-400 font-medium">No new enquiries</p>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Recent Orders -->
+        <div class="lg:col-span-2 bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden mt-6">
+            <div class="px-6 py-4 border-b border-gray-100 bg-gray-50/50 flex justify-between items-center">
+                <h3 class="text-sm font-black text-gray-800 uppercase tracking-widest">Recent Orders</h3>
+                <a href="{% url 'website_order_list' %}" class="text-xs font-bold text-red-600 hover:text-red-800">View All →</a>
+            </div>
+            {% if recent_orders %}
+            <div class="divide-y divide-gray-50">
+                {% for order in recent_orders %}
+                <a href="{% url 'website_order_detail' order.pk %}" class="flex items-start gap-4 px-6 py-4 hover:bg-gray-50 transition-colors">
+                    <div class="w-9 h-9 bg-red-50 rounded-full flex items-center justify-center flex-shrink-0 text-sm font-black text-red-600">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/></svg>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <div class="flex items-center justify-between gap-2">
+                            <p class="text-sm font-bold text-gray-900 truncate">{{ order.website_order_number }}</p>
+                            <span class="text-[10px] text-gray-400 font-medium whitespace-nowrap">{{ order.created_at|timesince }} ago</span>
+                        </div>
+                        <p class="text-xs text-gray-500 truncate">{{ order.customer_name }} • {{ order.city }}</p>
+                        <p class="text-xs font-bold text-red-600 mt-0.5 truncate">රු{{ order.total_amount }}</p>
+                    </div>
+                </a>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="px-6 py-16 text-center">
+                <svg class="w-12 h-12 text-gray-200 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/></svg>
+                <p class="text-sm text-gray-400 font-medium">No recent orders</p>
             </div>
             {% endif %}
         </div>

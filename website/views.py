@@ -9,7 +9,7 @@ from django.utils.decorators import method_decorator
 from django.db.models import Q
 
 from inventory.models import Product
-from .models import WebsiteSettings, WebsiteCategory, WebsiteProduct, WebsitePage, WebsiteEnquiry
+from .models import WebsiteSettings, WebsiteCategory, WebsiteProduct, WebsitePage, WebsiteEnquiry, WebsiteOrder
 from .forms import (
     WebsiteSettingsForm, WebsiteCategoryForm, WebsiteProductForm,
     WebsitePageForm, WebsiteEnquiryNotesForm
@@ -32,6 +32,10 @@ def website_dashboard(request):
     recent_enquiries = WebsiteEnquiry.objects.filter(status=WebsiteEnquiry.Status.NEW).order_by('-submitted_at')[:5]
     settings = WebsiteSettings.get_settings()
 
+    total_orders = WebsiteOrder.objects.count()
+    new_orders_count = WebsiteOrder.objects.filter(status=WebsiteOrder.Status.NEW).count()
+    recent_orders = WebsiteOrder.objects.order_by('-created_at')[:5]
+
     # Products not yet listed on the website
     listed_ids = WebsiteProduct.objects.values_list('inventory_product_id', flat=True)
     unlisted_count = Product.objects.exclude(pk__in=listed_ids).count()
@@ -47,6 +51,9 @@ def website_dashboard(request):
         'total_categories': total_categories,
         'featured_products': featured_products,
         'recent_enquiries': recent_enquiries,
+        'total_orders': total_orders,
+        'new_orders_count': new_orders_count,
+        'recent_orders': recent_orders,
         'settings': settings,
         'unlisted_count': unlisted_count,
     }
@@ -273,3 +280,24 @@ class WebsiteSettingsView(LoginRequiredMixin, View):
             messages.success(request, 'Website settings saved successfully.')
             return redirect('website_settings')
         return render(request, self.template_name, {'form': form, 'settings': settings})
+
+# ─── Orders ───────────────────────────────────────────────────────────────────
+
+class WebsiteOrderListView(LoginRequiredMixin, ListView):
+    model = WebsiteOrder
+    template_name = 'website/order_list.html'
+    paginate_by = 20
+    ordering = ['-created_at']
+
+class WebsiteOrderDetailView(LoginRequiredMixin, DetailView):
+    model = WebsiteOrder
+    template_name = 'website/order_detail.html'
+
+    def post(self, request, *args, **kwargs):
+        self.object = self.get_object()
+        new_status = request.POST.get('status')
+        if new_status in dict(WebsiteOrder.Status.choices):
+            self.object.status = new_status
+            self.object.save()
+            messages.success(request, f"Order status updated to {self.object.get_status_display()}")
+        return redirect('website_order_detail', pk=self.object.pk)

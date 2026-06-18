@@ -23,6 +23,10 @@ urlpatterns = [
     path('pages/<int:pk>/edit/', views.WebsitePageEditView.as_view(), name='website_page_edit'),
     path('pages/<int:pk>/delete/', views.WebsitePageDeleteView.as_view(), name='website_page_delete'),
 
+    # Orders
+    path('orders/', views.WebsiteOrderListView.as_view(), name='website_order_list'),
+    path('orders/<int:pk>/', views.WebsiteOrderDetailView.as_view(), name='website_order_detail'),
+
     # Enquiries
     path('enquiries/', views.WebsiteEnquiryListView.as_view(), name='website_enquiry_list'),
     path('enquiries/<int:pk>/', views.WebsiteEnquiryDetailView.as_view(), name='website_enquiry_detail'),

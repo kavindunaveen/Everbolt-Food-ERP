@@ -1,0 +1,114 @@
+{% extends 'layouts/base.html' %}
+{% block title %}Order {{ object.website_order_number }} | Everbolt ERP{% endblock %}
+{% block breadcrumbs %}
+<li class="flex items-center space-x-2">
+    <svg class="w-4 h-4 text-gray-300" fill="currentColor" viewBox="0 0 20 20"><path d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z"/></svg>
+    <a href="{% url 'website_dashboard' %}" class="text-gray-500 hover:text-gray-900 transition-colors font-medium">Website</a>
+</li>
+<li class="flex items-center space-x-2 border-l border-gray-100 pl-4 ml-2">
+    <a href="{% url 'website_order_list' %}" class="text-gray-500 hover:text-gray-900 transition-colors font-medium">Orders</a>
+</li>
+<li class="flex items-center space-x-2 border-l border-gray-100 pl-4 ml-2">
+    <span class="text-gray-900 font-bold">{{ object.website_order_number }}</span>
+</li>
+{% endblock %}
+
+{% block content %}
+<div class="px-4 py-6 sm:px-0 max-w-5xl mx-auto">
+    <div class="flex justify-between items-end mb-6">
+        <div>
+            <h1 class="text-2xl font-extrabold text-gray-900 tracking-tight">Order {{ object.website_order_number }}</h1>
+            <p class="text-sm text-gray-500">Placed on {{ object.created_at|date:"F j, Y, g:i a" }}</p>
+        </div>
+        <form method="post" action="{% url 'website_order_detail' object.pk %}" class="flex items-center gap-3">
+            {% csrf_token %}
+            <select name="status" class="bg-white border border-gray-200 text-gray-900 text-sm rounded-xl focus:ring-red-500 focus:border-red-500 block w-full p-2.5 font-bold">
+                <option value="NEW" {% if object.status == 'NEW' %}selected{% endif %}>New</option>
+                <option value="PROCESSING" {% if object.status == 'PROCESSING' %}selected{% endif %}>Processing</option>
+                <option value="COMPLETED" {% if object.status == 'COMPLETED' %}selected{% endif %}>Completed</option>
+                <option value="CANCELLED" {% if object.status == 'CANCELLED' %}selected{% endif %}>Cancelled</option>
+            </select>
+            <button type="submit" class="btn-primary">Update Status</button>
+        </form>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Customer Details -->
+        <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 lg:col-span-1">
+            <h3 class="text-sm font-black text-gray-800 uppercase tracking-widest mb-4">Customer Details</h3>
+            <div class="space-y-4">
+                <div>
+                    <label class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Name</label>
+                    <p class="text-sm font-bold text-gray-900">{{ object.customer_name }}</p>
+                </div>
+                <div>
+                    <label class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Phone</label>
+                    <p class="text-sm font-medium text-gray-900">{{ object.phone }}</p>
+                </div>
+                {% if object.email %}
+                <div>
+                    <label class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Email</label>
+                    <p class="text-sm font-medium text-gray-900">{{ object.email }}</p>
+                </div>
+                {% endif %}
+                <div>
+                    <label class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Address</label>
+                    <p class="text-sm font-medium text-gray-900 whitespace-pre-wrap">{{ object.shipping_address }}</p>
+                    <p class="text-sm font-medium text-gray-600 mt-1">{{ object.city }}, {{ object.district }}</p>
+                </div>
+            </div>
+            
+            {% if object.internal_notes %}
+            <div class="mt-6 pt-4 border-t border-gray-100">
+                <h3 class="text-sm font-black text-gray-800 uppercase tracking-widest mb-2">Order Notes</h3>
+                <p class="text-sm text-gray-600 bg-yellow-50 p-3 rounded-xl border border-yellow-100">{{ object.internal_notes }}</p>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Order Items -->
+        <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-0 lg:col-span-2 overflow-hidden flex flex-col">
+            <div class="px-6 py-4 border-b border-gray-100 bg-gray-50/50">
+                <h3 class="text-sm font-black text-gray-800 uppercase tracking-widest">Order Items</h3>
+            </div>
+            <table class="min-w-full divide-y divide-gray-100">
+                <thead class="bg-gray-50/50">
+                    <tr>
+                        <th scope="col" class="px-6 py-3 text-left text-[11px] font-black text-gray-500 uppercase tracking-widest">Product</th>
+                        <th scope="col" class="px-6 py-3 text-left text-[11px] font-black text-gray-500 uppercase tracking-widest">SKU</th>
+                        <th scope="col" class="px-6 py-3 text-left text-[11px] font-black text-gray-500 uppercase tracking-widest">Qty</th>
+                        <th scope="col" class="px-6 py-3 text-right text-[11px] font-black text-gray-500 uppercase tracking-widest">Price</th>
+                        <th scope="col" class="px-6 py-3 text-right text-[11px] font-black text-gray-500 uppercase tracking-widest">Total</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-100">
+                    {% for item in object.items.all %}
+                    <tr>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-900">{{ item.product_name }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ item.sku }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-900">{{ item.quantity }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-right">රු{{ item.unit_price }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-bold text-red-600 text-right">රු{{ item.line_total }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            
+            <div class="p-6 bg-gray-50/50 mt-auto border-t border-gray-100">
+                <div class="flex justify-end gap-16">
+                    <div class="text-right space-y-2">
+                        <p class="text-sm text-gray-500 font-medium">Subtotal</p>
+                        <p class="text-sm text-gray-500 font-medium">Delivery Charge</p>
+                        <p class="text-lg text-gray-900 font-black pt-2">Total</p>
+                    </div>
+                    <div class="text-right space-y-2">
+                        <p class="text-sm font-bold text-gray-900">රු{{ object.subtotal }}</p>
+                        <p class="text-sm font-bold text-gray-900">රු{{ object.shipping_charge }}</p>
+                        <p class="text-lg font-black text-red-600 pt-2">රු{{ object.total_amount }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
