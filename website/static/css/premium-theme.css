@@ -188,8 +188,8 @@ img {
 
 .btn-primary:hover {
     background-color: var(--color-primary-dark);
-    transform: translateY(-2px);
-    box-shadow: 0 8px 20px rgba(30, 63, 32, 0.2);
+    transform: translateY(-4px) scale(1.02);
+    box-shadow: 0 12px 30px rgba(30, 63, 32, 0.35);
     color: var(--color-white);
 }
 
@@ -200,8 +200,8 @@ img {
 
 .btn-gold:hover {
     background-color: var(--color-accent-hover);
-    transform: translateY(-2px);
-    box-shadow: 0 8px 20px rgba(212, 175, 55, 0.2);
+    transform: translateY(-4px) scale(1.02);
+    box-shadow: 0 12px 30px rgba(212, 175, 55, 0.4);
     color: var(--color-white);
 }
 

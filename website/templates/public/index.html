@@ -26,15 +26,45 @@
     color: var(--color-white);
 }
 
-.hero-bg {
+/* --- Hero Slider --- */
+.hero-slider {
     position: absolute;
-    top: 0;
-    left: 0;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 1;
+}
+
+.hero-slide {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    opacity: 0;
+    transition: opacity 1.5s ease-in-out;
+}
+
+.hero-slide.active {
+    opacity: 1;
+}
+
+.hero-slide img {
     width: 100%;
     height: 100%;
     object-fit: cover;
-    opacity: 0.4;
-    z-index: 1;
+    transform: scale(1.05);
+    transition: transform 8s linear;
+}
+
+.hero-slide.active img {
+    transform: scale(1.15);
+}
+
+.hero-overlay {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(to right, rgba(10, 25, 15, 0.95) 0%, rgba(10, 25, 15, 0.3) 100%);
+    z-index: 2;
 }
 
 .hero-content {
@@ -72,15 +102,24 @@
 }
 
 .trust-card {
-    background: var(--color-white);
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.5);
     border-radius: var(--border-radius);
     padding: 24px 32px;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    box-shadow: var(--shadow-md);
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.08);
     flex-wrap: wrap;
     gap: 24px;
+    transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.4s ease;
+}
+
+.trust-card:hover {
+    transform: translateY(-10px);
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.15);
 }
 
 .trust-item {
@@ -89,18 +128,31 @@
     gap: 16px;
     flex: 1;
     min-width: 200px;
+    transition: transform 0.3s ease;
+}
+
+.trust-item:hover {
+    transform: translateX(5px);
 }
 
 .trust-icon {
     width: 48px;
     height: 48px;
-    background: rgba(30, 63, 32, 0.05);
+    background: linear-gradient(135deg, rgba(30, 63, 32, 0.1), rgba(30, 63, 32, 0.02));
     color: var(--color-primary);
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
     font-size: 1.25rem;
+    box-shadow: inset 0 2px 4px rgba(255,255,255,0.5);
+    transition: all 0.3s ease;
+}
+
+.trust-item:hover .trust-icon {
+    background: var(--color-primary);
+    color: var(--color-white);
+    transform: rotate(10deg) scale(1.1);
 }
 
 .trust-text h4 {
@@ -170,12 +222,20 @@
 }
 
 .marquee-logo {
-    font-size: 1.5rem;
+    font-size: 2.5rem;
     font-weight: 800;
-    color: var(--color-gray-300);
+    color: transparent;
+    -webkit-text-stroke: 1.5px var(--color-gray-300);
     white-space: nowrap;
     text-transform: uppercase;
-    letter-spacing: -0.02em;
+    letter-spacing: 0.05em;
+    transition: all 0.3s ease;
+}
+
+.marquee-logo:hover {
+    color: var(--color-primary);
+    -webkit-text-stroke: 0px;
+    transform: scale(1.05);
 }
 
 /* --- Testimonials --- */
@@ -388,6 +448,13 @@
     font-size: 3rem;
     color: var(--color-primary);
     margin-bottom: 24px;
+    transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    display: inline-block;
+}
+
+.feature-box:hover .feature-icon-large {
+    transform: scale(1.2) translateY(-5px);
+    color: var(--brand-red);
 }
 
 /* --- B2B Section --- */
@@ -621,7 +688,18 @@
 
 <!-- 4.1 HERO SECTION -->
 <section class="hero">
-    <img src="{% static 'images/hero-tea-display.png' %}" alt="Ceylon Tea Background" class="hero-bg">
+    <div class="hero-slider" id="heroSlider">
+        <div class="hero-slide active">
+            <img src="{% static 'images/hero-tea-display.png' %}" alt="Ceylon Tea">
+        </div>
+        <div class="hero-slide">
+            <img src="{% static 'images/hero-organic.png' %}" alt="Organic Spices">
+        </div>
+        <div class="hero-slide">
+            <img src="{% static 'images/main-bg.webp' %}" alt="Hotel Supplies">
+        </div>
+        <div class="hero-overlay"></div>
+    </div>
     <div class="container">
         <div class="hero-content" data-aos="fade-up" data-aos-duration="1000">
             <h1>Sri Lanka's Finest Natural Foods & Hotel Supplies</h1>
@@ -976,6 +1054,19 @@
         offset: 50,
         duration: 800,
         easing: 'ease-in-out-cubic',
+    });
+
+    // Hero Slider Logic
+    document.addEventListener('DOMContentLoaded', function() {
+        const slides = document.querySelectorAll('.hero-slide');
+        if (slides.length > 0) {
+            let currentSlide = 0;
+            setInterval(() => {
+                slides[currentSlide].classList.remove('active');
+                currentSlide = (currentSlide + 1) % slides.length;
+                slides[currentSlide].classList.add('active');
+            }, 6000);
+        }
     });
 
     // FAQ Accordion Logic
