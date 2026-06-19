@@ -984,34 +984,8 @@
     color: var(--color-white);
 }
 
-/* --- Certifications --- */
-.certifications {
-    padding: 48px 0;
-    background: var(--color-white);
-    border-top: 1px solid var(--color-gray-100);
-    border-bottom: 1px solid var(--color-gray-100);
-}
+/* --- Certifications --- (replaced below) */
 
-.cert-logos {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    gap: 64px;
-    flex-wrap: wrap;
-    opacity: 0.6;
-    filter: grayscale(100%);
-    transition: var(--transition-base);
-}
-
-.cert-logos:hover {
-    opacity: 1;
-    filter: grayscale(0%);
-}
-
-.cert-logos img {
-    height: 60px;
-    width: auto;
-}
 
 /* --- FAQ Accordion --- */
 .faq-section-wrap {
@@ -1171,46 +1145,151 @@
     max-height: 500px;
 }
 
-/* Certifications Bar */
+/* --- Certifications Section (Premium) --- */
 .certifications {
-    background: var(--color-white);
-    padding: 40px 0;
-    border-top: 1px solid var(--color-gray-100);
-    border-bottom: 1px solid var(--color-gray-100);
+    background: linear-gradient(135deg, #f8f5f0 0%, #ede8df 100%);
+    padding: 80px 0;
+    position: relative;
+    overflow: hidden;
 }
 
-.cert-logos {
+.certifications::before {
+    content: '';
+    position: absolute;
+    top: -60px;
+    right: -60px;
+    width: 280px;
+    height: 280px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(212,175,55,0.08) 0%, transparent 70%);
+    pointer-events: none;
+}
+
+.certifications::after {
+    content: '';
+    position: absolute;
+    bottom: -80px;
+    left: -80px;
+    width: 320px;
+    height: 320px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(30,63,32,0.05) 0%, transparent 70%);
+    pointer-events: none;
+}
+
+.cert-section-header {
+    text-align: center;
+    margin-bottom: 56px;
+}
+
+.cert-section-header .section-subtitle {
+    color: var(--color-primary);
+}
+
+.cert-section-header h2 {
+    font-size: clamp(1.8rem, 3vw, 2.4rem);
+    color: var(--color-tea-brown);
+    margin-bottom: 12px;
+}
+
+.cert-section-header p {
+    color: var(--color-gray-500);
+    font-size: 1rem;
+    max-width: 520px;
+    margin: 0 auto;
+}
+
+.cert-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 28px;
+    position: relative;
+    z-index: 1;
+}
+
+.cert-card {
+    background: var(--color-white);
+    border-radius: var(--border-radius);
+    padding: 40px 32px;
+    text-align: center;
+    border: 1px solid rgba(212,175,55,0.2);
+    box-shadow: 0 4px 24px rgba(0,0,0,0.06);
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.cert-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--color-accent), #c8a415);
+}
+
+.cert-card:hover {
+    transform: translateY(-6px);
+    box-shadow: 0 16px 48px rgba(30,63,32,0.12);
+    border-color: rgba(212,175,55,0.4);
+}
+
+.cert-logo-wrap {
+    width: 100px;
+    height: 100px;
+    background: linear-gradient(135deg, #f8f5f0, #ede8df);
+    border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 64px;
-    flex-wrap: wrap;
+    margin: 0 auto 24px;
+    border: 2px solid rgba(212,175,55,0.2);
+    transition: all 0.3s ease;
 }
 
-.cert-item {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 10px;
-    opacity: 0.75;
-    transition: opacity 0.2s ease;
+.cert-card:hover .cert-logo-wrap {
+    border-color: var(--color-accent);
+    background: linear-gradient(135deg, rgba(212,175,55,0.1), rgba(212,175,55,0.05));
 }
 
-.cert-item:hover {
-    opacity: 1;
-}
-
-.cert-item img {
+.cert-logo-wrap img {
     height: 64px;
     width: auto;
+    object-fit: contain;
 }
 
-.cert-item span {
-    font-size: 0.7rem;
+.cert-card h4 {
+    font-size: 1.1rem;
+    color: var(--color-tea-brown);
+    margin-bottom: 8px;
+    font-weight: 700;
+}
+
+.cert-card p {
+    font-size: 0.875rem;
+    color: var(--color-gray-500);
+    line-height: 1.6;
+    margin-bottom: 20px;
+}
+
+.cert-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: linear-gradient(135deg, rgba(30,63,32,0.08), rgba(30,63,32,0.05));
+    border: 1px solid rgba(30,63,32,0.15);
+    color: var(--color-primary);
+    font-size: 0.72rem;
     font-weight: 700;
     text-transform: uppercase;
-    letter-spacing: 0.1em;
-    color: var(--color-gray-500);
+    letter-spacing: 0.08em;
+    padding: 6px 14px;
+    border-radius: 100px;
+}
+
+.cert-badge i {
+    font-size: 0.8rem;
 }
 
 /* Responsive */
@@ -1590,18 +1669,41 @@
 <!-- 4.8 CERTIFICATIONS -->
 <div class="certifications">
     <div class="container">
-        <div class="cert-logos">
-            <div class="cert-item">
-                <img src="{% static 'images/iso-logo.webp' %}" alt="ISO Certified">
-                <span>ISO 22000</span>
+        <div class="cert-section-header" data-aos="fade-up">
+            <span class="section-subtitle">Quality Assurance</span>
+            <h2>Internationally Certified &amp; Tested</h2>
+            <p>Every product we make is backed by rigorous third-party testing and internationally recognised certifications — your assurance of uncompromising quality.</p>
+        </div>
+
+        <div class="cert-grid">
+            <!-- ISO -->
+            <div class="cert-card" data-aos="fade-up" data-aos-delay="100">
+                <div class="cert-logo-wrap">
+                    <img src="{% static 'images/iso-logo.webp' %}" alt="ISO 22000">
+                </div>
+                <h4>ISO 22000 Certified</h4>
+                <p>Certified to the international Food Safety Management System standard, ensuring our entire production chain meets the highest food safety protocols.</p>
+                <span class="cert-badge"><i class="fa-solid fa-shield-halved"></i> Internationally Recognised</span>
             </div>
-            <div class="cert-item">
-                <img src="{% static 'images/gmp-logo.webp' %}" alt="GMP Certified">
-                <span>GMP Certified</span>
+
+            <!-- GMP -->
+            <div class="cert-card" data-aos="fade-up" data-aos-delay="200">
+                <div class="cert-logo-wrap">
+                    <img src="{% static 'images/gmp-logo.webp' %}" alt="GMP Certified">
+                </div>
+                <h4>GMP Certified</h4>
+                <p>Good Manufacturing Practice certification guarantees our facility, processes, and quality controls meet strict pharmaceutical-grade manufacturing standards.</p>
+                <span class="cert-badge"><i class="fa-solid fa-shield-halved"></i> Manufacturing Standard</span>
             </div>
-            <div class="cert-item">
-                <img src="{% static 'images/sgs-logo.webp' %}" alt="SGS Tested">
-                <span>SGS Tested</span>
+
+            <!-- SGS -->
+            <div class="cert-card" data-aos="fade-up" data-aos-delay="300">
+                <div class="cert-logo-wrap">
+                    <img src="{% static 'images/sgs-logo.webp' %}" alt="SGS Tested">
+                </div>
+                <h4>SGS Independently Tested</h4>
+                <p>All product batches are independently verified by SGS — the world's leading testing, inspection, and certification company — for purity and quality.</p>
+                <span class="cert-badge"><i class="fa-solid fa-shield-halved"></i> Third-Party Verified</span>
             </div>
         </div>
     </div>
