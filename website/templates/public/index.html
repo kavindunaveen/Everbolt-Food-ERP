@@ -1300,6 +1300,7 @@
     .faq-inner { grid-template-columns: 1fr; gap: 48px; }
     .faq-left { position: static; }
     .b2b-inner { grid-template-columns: 1fr; gap: 40px; }
+    .cert-grid { grid-template-columns: repeat(2, 1fr); gap: 24px; }
 }
 
 @media (max-width: 768px) {
@@ -1307,6 +1308,7 @@
     .hero-actions { justify-content: center; }
     .about-badge { position: relative; bottom: 0; right: 0; border-radius: 0 0 var(--border-radius-lg) var(--border-radius-lg); }
     .about-image img { border-radius: var(--border-radius-lg) var(--border-radius-lg) 0 0; }
+    .cert-grid { grid-template-columns: 1fr; }
 }
 </style>
 {% endblock %}

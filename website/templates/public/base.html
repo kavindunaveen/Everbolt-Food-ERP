@@ -211,11 +211,101 @@
             cursor: pointer;
         }
 
+        /* Mobile Menu CSS */
+        .mobile-menu-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.5);
+            backdrop-filter: blur(4px);
+            z-index: 10002;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+        }
+        .mobile-menu-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+        .mobile-menu-slider {
+            position: fixed;
+            top: 0; right: -320px;
+            width: 100%;
+            max-width: 320px;
+            height: 100vh;
+            background: #ffffff;
+            z-index: 10003;
+            box-shadow: -10px 0 40px rgba(0,0,0,0.1);
+            transition: right 0.35s cubic-bezier(0.25, 1, 0.5, 1);
+            display: flex;
+            flex-direction: column;
+        }
+        .mobile-menu-slider.active {
+            right: 0;
+        }
+        .mobile-menu-header {
+            padding: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid #f2f2f7;
+        }
+        .mobile-menu-header img {
+            height: 40px;
+        }
+        .mobile-close-btn {
+            background: #fafafa;
+            border: none;
+            width: 36px; height: 36px;
+            border-radius: 50%;
+            cursor: pointer;
+            color: var(--text-secondary);
+            transition: background 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .mobile-close-btn:hover {
+            background: #e5e5ea;
+            color: var(--brand-red);
+        }
+        .mobile-nav-links {
+            flex: 1;
+            overflow-y: auto;
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        .mobile-nav-links a {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            text-decoration: none;
+        }
+        .mobile-nav-links a.active {
+            color: var(--brand-red);
+        }
+        .mobile-nav-cats {
+            padding-left: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-top: -8px;
+            border-left: 2px solid #f2f2f7;
+            margin-left: 8px;
+        }
+        .mobile-nav-cats a {
+            font-size: 0.95rem;
+            font-weight: 500;
+            color: var(--text-secondary);
+        }
+
         @media (max-width: 992px) {
             .organic-nav { display: none; }
             .mobile-toggle { display: block; }
             .organic-actions .organic-btn { display: none; }
             .organic-header { padding: 0 24px; }
+            .header-search-form { display: none; } /* Hide search in header on mobile to save space */
         }
         
         @media (min-width: 993px) {
@@ -380,9 +470,35 @@
                 <span class="cart-badge">{{ cart_count|default:"0" }}</span>
             </button>
             <a href="{% url 'products' %}" class="btn btn-primary organic-header-cta" style="padding: 8px 20px; font-size: 14px; border-radius: 6px; display: none;">Shop Now</a>
-            <button class="mobile-toggle">☰</button>
+            <button class="mobile-toggle" id="mobileMenuToggle">☰</button>
         </div>
     </header>
+
+    <!-- MOBILE MENU HTML -->
+    <div class="mobile-menu-overlay" id="mobileMenuOverlay"></div>
+    <div class="mobile-menu-slider" id="mobileMenuSlider">
+        <div class="mobile-menu-header">
+            <img src="{% static 'images/logo.webp' %}" alt="Everbolt Foods Logo">
+            <button class="mobile-close-btn" id="mobileMenuCloseBtn"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        <div class="mobile-nav-links">
+            <a href="{% url 'home' %}" class="{% if request.path == '/' %}active{% endif %}">Home</a>
+            <a href="{% url 'about' %}" class="{% if 'about' in request.path %}active{% endif %}">About Us</a>
+            <a href="{% url 'products' %}" class="{% if 'products' in request.path %}active{% endif %}">Shop Products</a>
+            <div class="mobile-nav-cats">
+                {% for cat in global_categories %}
+                    <a href="{% url 'products' %}?category={{ cat.id }}">{{ cat.name }}</a>
+                {% endfor %}
+            </div>
+            <a href="{% url 'blog_list' %}" class="{% if 'blog' in request.path %}active{% endif %}">Blog</a>
+            <a href="{% url 'contact' %}" class="{% if 'contact' in request.path %}active{% endif %}">Contact</a>
+            
+            <form action="{% url 'products' %}" method="get" style="display:flex; margin-top: 20px;">
+                <input type="text" name="q" placeholder="Search products..." style="flex:1; border-radius: 6px 0 0 6px;" required>
+                <button type="submit" style="background:var(--brand-red); color:white; border:none; padding: 0 16px; border-radius: 0 6px 6px 0;"><i class="fa-solid fa-search"></i></button>
+            </form>
+        </div>
+    </div>
 
     <!-- MAIN CONTENT -->
     <main>
@@ -715,6 +831,28 @@
             if (cartOverlay) {
                 cartOverlay.addEventListener('click', closeCart);
             }
+
+            // Mobile Menu Logic
+            const mobileToggle = document.getElementById('mobileMenuToggle');
+            const mobileClose = document.getElementById('mobileMenuCloseBtn');
+            const mobileOverlay = document.getElementById('mobileMenuOverlay');
+            const mobileSlider = document.getElementById('mobileMenuSlider');
+
+            function openMobile() {
+                mobileOverlay.classList.add('active');
+                mobileSlider.classList.add('active');
+                document.body.style.overflow = 'hidden';
+            }
+
+            function closeMobile() {
+                mobileOverlay.classList.remove('active');
+                mobileSlider.classList.remove('active');
+                document.body.style.overflow = '';
+            }
+
+            if (mobileToggle) mobileToggle.addEventListener('click', openMobile);
+            if (mobileClose) mobileClose.addEventListener('click', closeMobile);
+            if (mobileOverlay) mobileOverlay.addEventListener('click', closeMobile);
         });
     </script>
 
