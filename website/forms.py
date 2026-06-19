@@ -25,7 +25,7 @@ class WebsiteSettingsForm(forms.ModelForm):
 class WebsiteCategoryForm(forms.ModelForm):
     class Meta:
         model = WebsiteCategory
-        fields = ['name', 'slug', 'description', 'display_order', 'is_visible']
+        fields = ['name', 'slug', 'image', 'description', 'display_order', 'is_visible']
         widgets = {
             'name': forms.TextInput(attrs={'placeholder': 'e.g. Spices'}),
             'slug': forms.TextInput(attrs={'placeholder': 'auto-generated if blank'}),
