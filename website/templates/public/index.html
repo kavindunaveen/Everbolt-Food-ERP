@@ -336,7 +336,8 @@
     border-radius: var(--border-radius);
     overflow: hidden;
     aspect-ratio: 4/5;
-    flex: 0 0 300px;
+    flex: 1 0 250px; /* Allows them to grow and fill the line, down to 250px */
+    max-width: 350px; /* Prevents them from getting absurdly huge if there are only 1 or 2 */
     scroll-snap-align: start;
 }
 
@@ -406,76 +407,246 @@
     position: relative;
     border-radius: var(--border-radius-lg);
     overflow: hidden;
-    box-shadow: var(--shadow-lg);
+    box-shadow: 0 32px 64px rgba(30, 63, 32, 0.18);
+}
+
+.about-image::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, rgba(30,63,32,0.08) 0%, transparent 60%);
+    z-index: 1;
+    pointer-events: none;
+}
+
+/* Decorative corner frame */
+.about-image-frame {
+    position: absolute;
+    top: -16px;
+    left: -16px;
+    width: 120px;
+    height: 120px;
+    border-top: 4px solid var(--color-accent);
+    border-left: 4px solid var(--color-accent);
+    border-radius: 4px 0 0 0;
+    z-index: 2;
+}
+.about-image-frame-br {
+    position: absolute;
+    bottom: -16px;
+    right: -16px;
+    width: 120px;
+    height: 120px;
+    border-bottom: 4px solid var(--color-accent);
+    border-right: 4px solid var(--color-accent);
+    border-radius: 0 0 4px 0;
+    z-index: 2;
 }
 
 .about-badge {
     position: absolute;
     bottom: 32px;
-    right: 32px;
-    background: var(--color-primary);
+    right: -20px;
+    background: linear-gradient(135deg, var(--color-primary) 0%, #2d5a30 100%);
     color: var(--color-white);
-    padding: 24px;
+    padding: 28px 32px;
     border-radius: var(--border-radius);
     text-align: center;
-    box-shadow: 0 12px 32px rgba(30, 63, 32, 0.3);
+    box-shadow: 0 16px 40px rgba(30, 63, 32, 0.4);
+    z-index: 3;
+    min-width: 130px;
 }
 
 .about-badge h4 {
     color: var(--color-white);
-    font-size: 2.5rem;
+    font-size: 3rem;
     margin-bottom: 0;
     line-height: 1;
 }
 
 .about-badge span {
-    font-size: 0.875rem;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    opacity: 0.85;
+}
+
+.about-stat-row {
+    display: flex;
+    gap: 32px;
+    margin-bottom: 32px;
+}
+
+.about-stat {
+    text-align: center;
+    padding: 20px 24px;
+    background: var(--color-bg-cream);
+    border-radius: var(--border-radius);
+    border-left: 3px solid var(--color-accent);
+    flex: 1;
+}
+
+.about-stat-num {
+    font-size: 2rem;
+    font-weight: 800;
+    color: var(--color-primary);
+    line-height: 1;
+}
+
+.about-stat-label {
+    font-size: 0.75rem;
     text-transform: uppercase;
     letter-spacing: 0.05em;
-    opacity: 0.9;
+    color: var(--color-gray-500);
+    margin-top: 4px;
+}
+
+.about-check-list {
+    list-style: none;
+    margin-bottom: 36px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.about-check-list li {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    font-size: 1rem;
+    color: var(--color-gray-700);
+    padding: 12px 16px;
+    background: var(--color-white);
+    border-radius: 8px;
+    border: 1px solid var(--color-gray-100);
+    transition: all 0.2s ease;
+}
+
+.about-check-list li:hover {
+    border-color: var(--color-primary);
+    box-shadow: 0 4px 12px rgba(30,63,32,0.08);
+}
+
+.about-check-list .check-icon {
+    width: 32px;
+    height: 32px;
+    background: linear-gradient(135deg, var(--color-primary) 0%, #3a7040 100%);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 0.85rem;
+    flex-shrink: 0;
 }
 
 /* --- Features (Why Choose Us) --- */
+.features-section-bg {
+    background: linear-gradient(135deg, #0d2e0f 0%, #1e3f20 50%, #0d2e0f 100%);
+    position: relative;
+    overflow: hidden;
+}
+.features-section-bg::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image: radial-gradient(circle at 20% 50%, rgba(255,255,255,0.03) 0%, transparent 50%),
+                      radial-gradient(circle at 80% 20%, rgba(212,175,55,0.08) 0%, transparent 40%);
+    pointer-events: none;
+}
+
 .features-grid {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
-    gap: 40px;
+    gap: 32px;
+    position: relative;
+    z-index: 1;
 }
 
 .feature-box {
-    text-align: center;
-    padding: 40px 32px;
-    background: var(--color-white);
+    text-align: left;
+    padding: 40px 36px;
+    background: rgba(255,255,255,0.05);
     border-radius: var(--border-radius);
-    border: 1px solid var(--color-gray-100);
+    border: 1px solid rgba(255,255,255,0.1);
     transition: var(--transition-base);
+    position: relative;
+    overflow: hidden;
+    backdrop-filter: blur(8px);
+}
+
+.feature-box::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--color-accent), transparent);
+    opacity: 0;
+    transition: opacity 0.3s ease;
 }
 
 .feature-box:hover {
-    box-shadow: var(--shadow-md);
-    border-color: transparent;
-    transform: translateY(-4px);
+    background: rgba(255,255,255,0.09);
+    border-color: rgba(212,175,55,0.3);
+    transform: translateY(-6px);
+    box-shadow: 0 20px 60px rgba(0,0,0,0.3);
 }
 
-.feature-icon-large {
-    font-size: 3rem;
-    color: var(--color-primary);
+.feature-box:hover::before {
+    opacity: 1;
+}
+
+.feature-icon-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    background: rgba(212,175,55,0.15);
+    border: 1px solid rgba(212,175,55,0.3);
+    color: var(--color-accent);
+    padding: 10px 20px;
+    border-radius: 100px;
+    font-size: 0.85rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
     margin-bottom: 24px;
-    transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-    display: inline-block;
 }
 
-.feature-box:hover .feature-icon-large {
-    transform: scale(1.2) translateY(-5px);
-    color: var(--brand-red);
+.feature-icon-pill i {
+    font-size: 1.1rem;
+}
+
+.feature-box h3 {
+    color: #fff;
+    font-size: 1.4rem;
+    margin-bottom: 14px;
+}
+
+.feature-box p {
+    color: rgba(255,255,255,0.65);
+    font-size: 0.95rem;
+    line-height: 1.7;
+}
+
+.feature-box-num {
+    position: absolute;
+    bottom: 24px;
+    right: 28px;
+    font-size: 5rem;
+    font-weight: 900;
+    color: rgba(255,255,255,0.04);
+    line-height: 1;
+    font-family: var(--font-heading);
+    user-select: none;
 }
 
 /* --- B2B Section --- */
 .b2b-section {
-    background-color: var(--color-primary-dark);
+    background: linear-gradient(135deg, #0a1f0b 0%, #1a3a1c 100%);
     color: var(--color-white);
-    padding: 96px 0;
-    text-align: center;
+    padding: 100px 0;
     position: relative;
     overflow: hidden;
 }
@@ -483,42 +654,199 @@
 .b2b-section::before {
     content: '';
     position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: url('{% static "images/hero-tea-display.png" %}') center/cover no-repeat;
-    opacity: 0.15;
-    mix-blend-mode: overlay;
+    inset: 0;
+    background:
+        radial-gradient(circle at 10% 50%, rgba(212,175,55,0.12) 0%, transparent 50%),
+        radial-gradient(circle at 90% 50%, rgba(30,63,32,0.5) 0%, transparent 50%);
+    pointer-events: none;
 }
 
-.b2b-content {
+/* Decorative botanical SVG-like circles */
+.b2b-section::after {
+    content: '';
+    position: absolute;
+    top: -80px;
+    right: -80px;
+    width: 400px;
+    height: 400px;
+    border-radius: 50%;
+    border: 1px solid rgba(212,175,55,0.15);
+    pointer-events: none;
+}
+
+.b2b-inner {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 80px;
+    align-items: center;
     position: relative;
     z-index: 2;
-    max-width: 700px;
-    margin: 0 auto;
 }
 
-.b2b-content h2 {
+.b2b-text h2 {
     color: var(--color-white);
+    font-size: clamp(2rem, 4vw, 3rem);
+    margin-bottom: 20px;
+    line-height: 1.2;
 }
 
-.b2b-content p {
-    font-size: 1.125rem;
-    color: rgba(255, 255, 255, 0.9);
+.b2b-text p {
+    font-size: 1.1rem;
+    color: rgba(255,255,255,0.75);
     margin-bottom: 40px;
+    line-height: 1.8;
+}
+
+.b2b-features {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 40px;
+}
+
+.b2b-feat-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 18px;
+    background: rgba(255,255,255,0.06);
+    border-radius: 10px;
+    border: 1px solid rgba(255,255,255,0.08);
+    font-size: 0.9rem;
+    color: rgba(255,255,255,0.85);
+}
+
+.b2b-feat-item i {
+    color: var(--color-accent);
+    font-size: 1.1rem;
+    flex-shrink: 0;
+}
+
+.b2b-image-wrap {
+    position: relative;
+    border-radius: var(--border-radius-lg);
+    overflow: hidden;
+    box-shadow: 0 40px 80px rgba(0,0,0,0.4);
+    aspect-ratio: 4/3;
+}
+
+.b2b-image-wrap img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.b2b-image-badge {
+    position: absolute;
+    bottom: 24px;
+    left: 24px;
+    background: rgba(0,0,0,0.7);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(212,175,55,0.3);
+    padding: 16px 20px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+}
+
+.b2b-image-badge-icon {
+    width: 44px;
+    height: 44px;
+    background: linear-gradient(135deg, var(--color-accent), #b8960c);
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    font-size: 1.2rem;
+}
+
+.b2b-image-badge-text strong {
+    display: block;
+    color: #fff;
+    font-size: 0.9rem;
+}
+
+.b2b-image-badge-text span {
+    color: rgba(255,255,255,0.6);
+    font-size: 0.75rem;
 }
 
 /* --- Product Cards --- */
 .product-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-    gap: 32px;
+    gap: 28px;
 }
 
 .product-card {
     border: 1px solid var(--color-gray-100);
-    padding: 24px;
+    padding: 0;
+    overflow: hidden;
+    transition: all 0.3s ease;
+    position: relative;
+    background: var(--color-white);
+    border-radius: var(--border-radius);
+}
+
+.product-card:hover {
+    box-shadow: 0 20px 60px rgba(30,63,32,0.12);
+    transform: translateY(-4px);
+    border-color: transparent;
+}
+
+.product-badge-top {
+    position: absolute;
+    top: 14px;
+    left: 14px;
+    z-index: 3;
+    background: linear-gradient(135deg, var(--color-primary), #3a7040);
+    color: white;
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    padding: 6px 12px;
+    border-radius: 100px;
+}
+
+.product-card-body {
+    padding: 20px 24px 24px;
+}
+
+.product-price-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+}
+
+.product-rating {
+    font-size: 0.7rem;
+    letter-spacing: -1px;
+}
+
+.btn-view-detail {
+    width: 44px;
+    height: 44px;
+    background: var(--color-bg-cream);
+    border: 1px solid var(--color-gray-100);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--color-gray-600);
+    text-decoration: none;
+    flex-shrink: 0;
+    transition: all 0.2s ease;
+    font-size: 0.9rem;
+}
+
+.btn-view-detail:hover {
+    background: var(--color-primary);
+    color: white;
+    border-color: transparent;
 }
 
 .product-image-wrapper {
@@ -820,54 +1148,86 @@
 </section>
 
 <!-- 4.4 ABOUT US (BRIEF) -->
-<section class="section section-bg-white">
+<section class="section section-bg-white" style="overflow: visible;">
     <div class="container">
         <div class="about-split">
             <div class="about-image" data-aos="fade-right">
+                <div class="about-image-frame"></div>
+                <div class="about-image-frame-br"></div>
                 <img src="{% static 'images/about-us-standard.webp' %}" alt="Everbolt Manufacturing">
                 <div class="about-badge">
                     <h4>15+</h4>
-                    <span>Years Experience</span>
+                    <span>Years of Excellence</span>
                 </div>
             </div>
             <div class="about-content" data-aos="fade-left">
                 <span class="section-subtitle">Who We Are</span>
-                <h2 style="font-size: clamp(2rem, 4vw, 2.5rem); margin-bottom: 24px;">Authentic Sri Lankan Heritage, Globally Trusted.</h2>
-                <p style="font-size: 1.125rem; color: var(--color-gray-600); margin-bottom: 24px;">We are a dedicated Sri Lankan food company bringing premium natural products to homes, hotels, and businesses globally. From the highlands of Ceylon to your kitchen, our commitment to purity never wavers.</p>
-                <ul style="list-style: none; margin-bottom: 32px;">
-                    <li style="margin-bottom: 12px; display: flex; align-items: center; gap: 12px;"><i class="fa-solid fa-circle-check" style="color: var(--color-primary);"></i> Trusted by 100+ Leading Hotels in Sri Lanka</li>
-                    <li style="margin-bottom: 12px; display: flex; align-items: center; gap: 12px;"><i class="fa-solid fa-circle-check" style="color: var(--color-primary);"></i> State-of-the-art manufacturing facility</li>
-                    <li style="margin-bottom: 12px; display: flex; align-items: center; gap: 12px;"><i class="fa-solid fa-circle-check" style="color: var(--color-primary);"></i> Sustainably sourced directly from local farmers</li>
+                <h2 style="font-size: clamp(2rem, 4vw, 2.6rem); margin-bottom: 20px; line-height: 1.2;">Authentic Sri Lankan Heritage, <em style="color: var(--color-primary); font-style: normal;">Globally Trusted.</em></h2>
+                <p style="font-size: 1.05rem; color: var(--color-gray-600); margin-bottom: 28px; line-height: 1.8;">From the misty highlands of Ceylon to hotel tables worldwide — we bring pure, premium Sri Lankan natural products crafted with generations of expertise and an unwavering commitment to quality.</p>
+
+                <!-- Stats Row -->
+                <div class="about-stat-row">
+                    <div class="about-stat">
+                        <div class="about-stat-num">100+</div>
+                        <div class="about-stat-label">Hotels & Restaurants</div>
+                    </div>
+                    <div class="about-stat">
+                        <div class="about-stat-num">50+</div>
+                        <div class="about-stat-label">Product Varieties</div>
+                    </div>
+                    <div class="about-stat">
+                        <div class="about-stat-num">12+</div>
+                        <div class="about-stat-label">Export Countries</div>
+                    </div>
+                </div>
+
+                <ul class="about-check-list">
+                    <li>
+                        <div class="check-icon"><i class="fa-solid fa-hotel"></i></div>
+                        Trusted by 100+ Leading Hotels in Sri Lanka
+                    </li>
+                    <li>
+                        <div class="check-icon"><i class="fa-solid fa-industry"></i></div>
+                        State-of-the-art ISO & GMP certified facility
+                    </li>
+                    <li>
+                        <div class="check-icon"><i class="fa-solid fa-seedling"></i></div>
+                        Sustainably sourced directly from local farmers
+                    </li>
                 </ul>
-                <a href="{% url 'about' %}" class="btn btn-primary">Discover Our Story</a>
+                <a href="{% url 'about' %}" class="btn btn-primary">Discover Our Story &nbsp;<i class="fa-solid fa-arrow-right"></i></a>
             </div>
         </div>
     </div>
 </section>
 
 <!-- 4.5 WHY CHOOSE US -->
-<section class="section section-bg-cream">
+<section class="section features-section-bg">
     <div class="container">
-        <div class="section-title" data-aos="fade-up">
-            <span class="section-subtitle">The Everbolt Difference</span>
-            <h2>Why Choose Everbolt Foods?</h2>
+        <div class="section-title" data-aos="fade-up" style="color: #fff;">
+            <span class="section-subtitle" style="color: var(--color-accent);">The Everbolt Difference</span>
+            <h2 style="color: #fff;">Why Choose Everbolt Foods?</h2>
+            <p style="color: rgba(255,255,255,0.6); max-width: 580px; margin: 0 auto;">More than a supplier — a partner committed to elevating your product experience with nature's finest.</p>
         </div>
         
         <div class="features-grid">
             <div class="feature-box" data-aos="fade-up" data-aos-delay="100">
-                <div class="feature-icon-large"><i class="fa-solid fa-earth-americas"></i></div>
-                <h3>Export Quality</h3>
-                <p style="color: var(--color-gray-500); margin-top: 12px;">We strictly adhere to international quality standards ensuring our products are ready for the global market.</p>
+                <div class="feature-icon-pill"><i class="fa-solid fa-earth-americas"></i> Export Ready</div>
+                <h3>Global Quality Standards</h3>
+                <p>ISO & GMP certified processes ensure every product meets rigorous international standards, ready for any market worldwide.</p>
+                <div class="feature-box-num">01</div>
             </div>
             <div class="feature-box" data-aos="fade-up" data-aos-delay="200">
-                <div class="feature-icon-large"><i class="fa-solid fa-hands-holding-circle"></i></div>
+                <div class="feature-icon-pill"><i class="fa-solid fa-seedling"></i> Farm to Table</div>
                 <h3>Sustainable Sourcing</h3>
-                <p style="color: var(--color-gray-500); margin-top: 12px;">We work directly with local farmers to ethically source the finest ingredients while supporting local communities.</p>
+                <p>We partner directly with local Sri Lankan farmers — ethically sourcing the finest ingredients while uplifting rural communities.</p>
+                <div class="feature-box-num">02</div>
             </div>
             <div class="feature-box" data-aos="fade-up" data-aos-delay="300">
-                <div class="feature-icon-large"><i class="fa-solid fa-box-open"></i></div>
+                <div class="feature-icon-pill"><i class="fa-solid fa-box-open"></i> Tailored</div>
                 <h3>Custom Packaging</h3>
-                <p style="color: var(--color-gray-500); margin-top: 12px;">We provide flexible, customized packaging solutions specifically designed for hotel amenities and bulk orders.</p>
+                <p>Flexible, hotel-grade packaging solutions built to your brand and specifications — from single-serve sachets to bulk supply.</p>
+                <div class="feature-box-num">03</div>
             </div>
         </div>
     </div>
@@ -876,11 +1236,29 @@
 <!-- 4.6 B2B / HOTEL SUPPLY SECTION -->
 <section class="b2b-section">
     <div class="container">
-        <div class="b2b-content" data-aos="zoom-in">
-            <span class="badge badge-gold" style="margin-bottom: 16px;">B2B Wholesale</span>
-            <h2>Elevate Your Guest Experience</h2>
-            <p>Supplying premium natural products and room amenities for hotels, restaurants, offices, and distributors. We offer custom packaging, reliable global supply, and dedicated export support.</p>
-            <a href="{% url 'contact' %}" class="btn btn-gold">Request Bulk Pricing</a>
+        <div class="b2b-inner">
+            <div class="b2b-text" data-aos="fade-right">
+                <span class="badge badge-gold" style="margin-bottom: 20px;">B2B Wholesale</span>
+                <h2>Elevate Your<br><em style="font-style:normal; color: var(--color-accent);">Guest Experience</em></h2>
+                <p>Supplying premium natural products and room amenities for hotels, restaurants, offices, and distributors — with custom packaging, reliable supply, and dedicated export support.</p>
+                <div class="b2b-features">
+                    <div class="b2b-feat-item"><i class="fa-solid fa-boxes-stacked"></i> Bulk Ordering</div>
+                    <div class="b2b-feat-item"><i class="fa-solid fa-tag"></i> Custom Branding</div>
+                    <div class="b2b-feat-item"><i class="fa-solid fa-plane"></i> Export Support</div>
+                    <div class="b2b-feat-item"><i class="fa-solid fa-headset"></i> Dedicated Service</div>
+                </div>
+                <a href="{% url 'contact' %}" class="btn btn-gold">Request Bulk Pricing &nbsp;<i class="fa-solid fa-arrow-right"></i></a>
+            </div>
+            <div class="b2b-image-wrap" data-aos="fade-left">
+                <img src="{% static 'images/about-us-standard.webp' %}" alt="Hotel Supply">
+                <div class="b2b-image-badge">
+                    <div class="b2b-image-badge-icon"><i class="fa-solid fa-hotel"></i></div>
+                    <div class="b2b-image-badge-text">
+                        <strong>Trusted by 100+ Hotels</strong>
+                        <span>Across Sri Lanka &amp; beyond</span>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 </section>
@@ -944,16 +1322,21 @@
 
 <!-- 4.7 FEATURED PRODUCTS -->
 {% if home_products %}
-<section class="section section-bg-white">
+<section class="section" style="background: linear-gradient(180deg, var(--color-white) 0%, var(--color-bg-cream) 100%);">
     <div class="container">
         <div class="section-title" data-aos="fade-up">
             <span class="section-subtitle">Customer Favorites</span>
             <h2>Best Sellers</h2>
+            <p style="color: var(--color-gray-500); max-width: 520px; margin: 0 auto;">Hand-picked top products loved by our hotel partners and retail customers alike.</p>
         </div>
         
         <div class="product-grid">
             {% for product in home_products %}
             <div class="card product-card" data-aos="fade-up" data-aos-delay="{{ forloop.counter0|add:1 }}00">
+                <!-- Best Seller Badge on first product -->
+                {% if forloop.first %}
+                <div class="product-badge-top">⭐ Best Seller</div>
+                {% endif %}
                 <a href="{% url 'product_detail' product.id %}" class="product-image-wrapper">
                     {% if product.main_image %}
                         <img src="{{ product.main_image.url }}" alt="{{ product.get_display_name }}" loading="lazy">
@@ -961,23 +1344,29 @@
                         <div style="font-size: 3rem; color: var(--color-gray-200);"><i class="fa-solid fa-image"></i></div>
                     {% endif %}
                 </a>
-                <div class="product-category">{{ product.website_category.name|default:"Product" }}</div>
-                <h4 class="product-title"><a href="{% url 'product_detail' product.id %}">{{ product.get_display_name }}</a></h4>
-                <div class="product-price">රු{{ product.get_price|floatformat:2 }}</div>
-                <div class="product-actions">
-                    <form action="{% url 'add_to_cart' product.id %}" method="post" style="flex:1; display:flex;">
-                        {% csrf_token %}
-                        <button type="submit" class="btn-add-cart">
-                            <i class="fa-solid fa-cart-plus"></i> Add to Cart
-                        </button>
-                    </form>
+                <div class="product-card-body">
+                    <div class="product-category">{{ product.website_category.name|default:"Product" }}</div>
+                    <h4 class="product-title"><a href="{% url 'product_detail' product.id %}">{{ product.get_display_name }}</a></h4>
+                    <div class="product-price-row">
+                        <div class="product-price">රු{{ product.get_price|floatformat:2 }}</div>
+                        <div class="product-rating">⭐⭐⭐⭐⭐</div>
+                    </div>
+                    <div class="product-actions">
+                        <a href="{% url 'product_detail' product.id %}" class="btn-view-detail"><i class="fa-solid fa-eye"></i></a>
+                        <form action="{% url 'add_to_cart' product.id %}" method="post" style="flex:1; display:flex;">
+                            {% csrf_token %}
+                            <button type="submit" class="btn-add-cart">
+                                <i class="fa-solid fa-cart-plus"></i> Add to Cart
+                            </button>
+                        </form>
+                    </div>
                 </div>
             </div>
             {% endfor %}
         </div>
         
-        <div class="text-center" style="margin-top: 48px;" data-aos="fade-up">
-            <a href="{% url 'products' %}" class="btn btn-outline">View Full Catalog</a>
+        <div class="text-center" style="margin-top: 56px;" data-aos="fade-up">
+            <a href="{% url 'products' %}" class="btn btn-primary">View Full Catalog &nbsp;<i class="fa-solid fa-arrow-right"></i></a>
         </div>
     </div>
 </section>
