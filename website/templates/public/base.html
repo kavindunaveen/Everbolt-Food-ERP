@@ -321,8 +321,7 @@
     <!-- CLEAN GLASS HEADER -->
     <header class="organic-header {% if request.path != '/' %}solid{% endif %}" id="organicHeader">
         <a href="{% url 'home' %}" class="organic-logo">
-            <img src="{% static 'images/logo.webp' %}" alt="Everbolt Logo">
-            Everbolt Foods
+            <img src="{% static 'images/logo.webp' %}" alt="Everbolt Foods Logo">
         </a>
         <nav class="organic-nav">
             <a href="{% url 'home' %}" class="{% if request.path == '/' %}active{% endif %}">Home</a>
@@ -382,7 +381,7 @@
     <footer class="organic-footer">
         <div class="footer-grid">
             <div class="footer-brand">
-                <h2>Everbolt Foods</h2>
+                <img src="{% static 'images/logo.webp' %}" alt="Everbolt Foods Logo" style="height: 60px; margin-bottom: 16px;">
                 <p>100% natural, premium Sri Lankan spices, herbal teas, and hotel supplies. Cultivated with care, delivered with excellence.</p>
             </div>
             <div>
