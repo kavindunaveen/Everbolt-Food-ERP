@@ -324,10 +324,66 @@
     overflow-x: auto;
     padding-bottom: 24px;
     scroll-snap-type: x mandatory;
-    scrollbar-width: none; /* Firefox */
+    scrollbar-width: none;
+    scroll-behavior: smooth;
 }
 .categories-grid::-webkit-scrollbar {
-    display: none; /* Chrome/Safari */
+    display: none;
+}
+
+/* --- Categories Carousel Wrapper --- */
+.categories-carousel-wrap {
+    position: relative;
+}
+
+.cat-scroll-btn {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 10;
+    width: 52px;
+    height: 52px;
+    border-radius: 50%;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.1rem;
+    transition: all 0.25s ease;
+    background: var(--color-white);
+    color: var(--color-primary);
+    box-shadow: 0 6px 24px rgba(0,0,0,0.14);
+    opacity: 0;
+    pointer-events: none;
+}
+
+.categories-carousel-wrap:hover .cat-scroll-btn,
+.cat-scroll-btn:focus {
+    opacity: 1;
+    pointer-events: all;
+}
+
+.cat-scroll-btn:hover {
+    background: var(--color-primary);
+    color: #fff;
+    box-shadow: 0 10px 32px rgba(30,63,32,0.25);
+    transform: translateY(-50%) scale(1.08);
+}
+
+.cat-scroll-btn.prev { left: -26px; }
+.cat-scroll-btn.next { right: -26px; }
+
+.cat-scroll-btn.hidden {
+    opacity: 0 !important;
+    pointer-events: none !important;
+}
+
+/* Mobile: always show arrows */
+@media (max-width: 768px) {
+    .cat-scroll-btn { opacity: 1; pointer-events: all; }
+    .cat-scroll-btn.prev { left: 4px; }
+    .cat-scroll-btn.next { right: 4px; }
 }
 
 .category-card {
@@ -1129,20 +1185,28 @@
             <p>Discover our meticulously crafted ranges of teas, spices, and amenities.</p>
         </div>
 
-        <div class="categories-grid">
-            {% for category in categories %}
-            <a href="{% url 'products' %}?category={{ category.id }}" class="category-card" data-aos="fade-up" data-aos-delay="{{ forloop.counter0|add:1 }}00">
-                {% if category.image %}
-                    <img src="{{ category.image.url }}" alt="{{ category.name }}">
-                {% else %}
-                    <img src="{% static 'images/cat-tea.png' %}" alt="{{ category.name }}">
-                {% endif %}
-                <div class="category-content">
-                    <h3>{{ category.name }}</h3>
-                    <div class="category-cta">Shop Collection <i class="fa-solid fa-arrow-right"></i></div>
-                </div>
-            </a>
-            {% endfor %}
+        <div class="categories-carousel-wrap">
+            <button class="cat-scroll-btn prev hidden" id="catPrev" aria-label="Previous">
+                <i class="fa-solid fa-chevron-left"></i>
+            </button>
+            <div class="categories-grid" id="categoriesGrid">
+                {% for category in categories %}
+                <a href="{% url 'products' %}?category={{ category.id }}" class="category-card" data-aos="fade-up" data-aos-delay="{{ forloop.counter0|add:1 }}00">
+                    {% if category.image %}
+                        <img src="{{ category.image.url }}" alt="{{ category.name }}">
+                    {% else %}
+                        <img src="{% static 'images/cat-tea.png' %}" alt="{{ category.name }}">
+                    {% endif %}
+                    <div class="category-content">
+                        <h3>{{ category.name }}</h3>
+                        <div class="category-cta">Shop Collection <i class="fa-solid fa-arrow-right"></i></div>
+                    </div>
+                </a>
+                {% endfor %}
+            </div>
+            <button class="cat-scroll-btn next" id="catNext" aria-label="Next">
+                <i class="fa-solid fa-chevron-right"></i>
+            </button>
         </div>
     </div>
 </section>
@@ -1483,5 +1547,31 @@
             });
         });
     });
+    // --- Category Carousel ---
+    const grid = document.getElementById('categoriesGrid');
+    const btnPrev = document.getElementById('catPrev');
+    const btnNext = document.getElementById('catNext');
+
+    if (grid && btnPrev && btnNext) {
+        const scrollAmount = () => grid.querySelector('.category-card')?.offsetWidth + 32 || 330;
+
+        const updateButtons = () => {
+            const atStart = grid.scrollLeft <= 8;
+            const atEnd = grid.scrollLeft + grid.clientWidth >= grid.scrollWidth - 8;
+            btnPrev.classList.toggle('hidden', atStart);
+            btnNext.classList.toggle('hidden', atEnd);
+        };
+
+        btnNext.addEventListener('click', () => {
+            grid.scrollBy({ left: scrollAmount(), behavior: 'smooth' });
+        });
+
+        btnPrev.addEventListener('click', () => {
+            grid.scrollBy({ left: -scrollAmount(), behavior: 'smooth' });
+        });
+
+        grid.addEventListener('scroll', updateButtons, { passive: true });
+        updateButtons(); // initial state
+    }
 </script>
 {% endblock %}
