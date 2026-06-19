@@ -10,8 +10,12 @@ def global_cart(request):
     # Calculate total number of unique items (or total quantity if preferred, here we do total items)
     cart_count = len(items)
 
+    from website.models import WebsiteCategory
+    global_categories = WebsiteCategory.objects.filter(is_visible=True).order_by('display_order')
+
     return {
         'cart_items': items,
         'cart_subtotal': subtotal,
         'cart_count': cart_count,
+        'global_categories': global_categories,
     }

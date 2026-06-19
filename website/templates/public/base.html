@@ -329,30 +329,16 @@
             <div class="mega-menu-wrapper" style="display: flex; align-items: center; height: 100%;">
                 <a href="{% url 'products' %}" class="{% if 'products' in request.path %}active{% endif %}" style="display: flex; align-items: center; gap: 4px;">Shop Products <i class="fa-solid fa-chevron-down" style="font-size: 0.7rem; margin-top: 2px;"></i></a>
                 <div class="mega-menu">
-                    <a href="{% url 'products' %}?q=flavoured+tea" class="mega-menu-item">
-                        <img src="{% static 'images/cat-tea.png' %}" alt="Flavoured Tea" class="mega-menu-img">
-                        <div class="mega-menu-title">Flavoured Tea</div>
+                    {% for cat in global_categories %}
+                    <a href="{% url 'products' %}?category={{ cat.id }}" class="mega-menu-item">
+                        {% if cat.image %}
+                            <img src="{{ cat.image.url }}" alt="{{ cat.name }}" class="mega-menu-img" style="object-fit: cover;">
+                        {% else %}
+                            <img src="{% static 'images/cat-tea.png' %}" alt="{{ cat.name }}" class="mega-menu-img" style="object-fit: cover;">
+                        {% endif %}
+                        <div class="mega-menu-title">{{ cat.name }}</div>
                     </a>
-                    <a href="{% url 'products' %}?q=herbal+tea" class="mega-menu-item">
-                        <img src="{% static 'images/cat-tea.png' %}" alt="Herbal Tea" class="mega-menu-img">
-                        <div class="mega-menu-title">Herbal Tea</div>
-                    </a>
-                    <a href="{% url 'products' %}?q=spices" class="mega-menu-item">
-                        <img src="{% static 'images/cat-spices.png' %}" alt="Premium Spices" class="mega-menu-img">
-                        <div class="mega-menu-title">Premium Spices</div>
-                    </a>
-                    <a href="{% url 'products' %}?q=everleaf" class="mega-menu-item">
-                        <img src="{% static 'images/cat-tea.png' %}" alt="Everleaf Range" class="mega-menu-img">
-                        <div class="mega-menu-title">Everleaf Range</div>
-                    </a>
-                    <a href="{% url 'products' %}?q=kithul" class="mega-menu-item">
-                        <img src="{% static 'images/cat-kithul.png' %}" alt="Kithul Products" class="mega-menu-img">
-                        <div class="mega-menu-title">Kithul Products</div>
-                    </a>
-                    <a href="{% url 'products' %}?q=hotel+supplies" class="mega-menu-item">
-                        <img src="{% static 'images/cat-hotel.png' %}" alt="Hotel Supplies" class="mega-menu-img">
-                        <div class="mega-menu-title">Hotel Supplies</div>
-                    </a>
+                    {% endfor %}
                 </div>
             </div>
             <a href="{% url 'blog_list' %}" class="{% if 'blog' in request.path %}active{% endif %}">Blog</a>
