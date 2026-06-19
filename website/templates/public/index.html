@@ -1014,55 +1014,203 @@
 }
 
 /* --- FAQ Accordion --- */
-.faq-list {
-    max-width: 800px;
-    margin: 0 auto;
-}
-
-.faq-item {
-    background: var(--color-white);
-    border-radius: var(--border-radius);
-    margin-bottom: 16px;
-    box-shadow: var(--shadow-sm);
+.faq-section-wrap {
+    background: linear-gradient(135deg, #0d2e0f 0%, #1a3a1c 100%);
+    padding: 100px 0;
+    position: relative;
     overflow: hidden;
 }
 
+.faq-section-wrap::before {
+    content: '';
+    position: absolute;
+    bottom: -100px;
+    left: -100px;
+    width: 400px;
+    height: 400px;
+    border-radius: 50%;
+    border: 1px solid rgba(212,175,55,0.1);
+    pointer-events: none;
+}
+
+.faq-section-wrap::after {
+    content: '';
+    position: absolute;
+    top: -60px;
+    right: -60px;
+    width: 300px;
+    height: 300px;
+    border-radius: 50%;
+    border: 1px solid rgba(212,175,55,0.07);
+    pointer-events: none;
+}
+
+.faq-inner {
+    display: grid;
+    grid-template-columns: 1fr 1.6fr;
+    gap: 80px;
+    align-items: start;
+    position: relative;
+    z-index: 1;
+}
+
+.faq-left {
+    position: sticky;
+    top: 100px;
+}
+
+.faq-left .section-subtitle {
+    color: var(--color-accent);
+}
+
+.faq-left h2 {
+    color: #fff;
+    font-size: clamp(2rem, 3.5vw, 2.8rem);
+    margin-bottom: 20px;
+    line-height: 1.2;
+}
+
+.faq-left p {
+    color: rgba(255,255,255,0.65);
+    font-size: 1rem;
+    line-height: 1.8;
+    margin-bottom: 36px;
+}
+
+.faq-contact-cta {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    padding: 14px 24px;
+    background: rgba(212,175,55,0.12);
+    border: 1px solid rgba(212,175,55,0.3);
+    border-radius: 100px;
+    color: var(--color-accent);
+    font-size: 0.9rem;
+    font-weight: 600;
+    text-decoration: none;
+    transition: all 0.25s ease;
+}
+
+.faq-contact-cta:hover {
+    background: var(--color-accent);
+    color: #fff;
+    border-color: transparent;
+}
+
+.faq-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+}
+
+.faq-item {
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+    overflow: hidden;
+    transition: all 0.3s ease;
+}
+
+.faq-item:first-child {
+    border-top: 1px solid rgba(255,255,255,0.08);
+}
+
 .faq-question {
-    padding: 24px;
+    padding: 24px 0;
     display: flex;
     justify-content: space-between;
     align-items: center;
     cursor: pointer;
     font-weight: 600;
-    font-size: 1.125rem;
-    color: var(--color-tea-brown);
-    transition: var(--transition-base);
+    font-size: 1.05rem;
+    color: rgba(255,255,255,0.9);
+    transition: all 0.25s ease;
+    gap: 20px;
 }
 
 .faq-question:hover {
-    color: var(--color-primary);
+    color: var(--color-accent);
+}
+
+.faq-item.active .faq-question {
+    color: var(--color-accent);
 }
 
 .faq-icon {
-    color: var(--color-primary);
-    transition: transform 0.3s ease;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    border: 1px solid rgba(255,255,255,0.15);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.75rem;
+    color: rgba(255,255,255,0.5);
+    flex-shrink: 0;
+    transition: all 0.3s ease;
 }
 
 .faq-item.active .faq-icon {
+    background: var(--color-accent);
+    border-color: var(--color-accent);
+    color: #fff;
     transform: rotate(180deg);
 }
 
 .faq-answer {
-    padding: 0 24px;
+    padding: 0;
     max-height: 0;
     overflow: hidden;
-    transition: all 0.3s ease;
-    color: var(--color-gray-600);
+    transition: all 0.35s ease;
+    color: rgba(255,255,255,0.6);
+    font-size: 0.97rem;
+    line-height: 1.8;
 }
 
 .faq-item.active .faq-answer {
-    padding: 0 24px 24px;
+    padding: 0 0 24px;
     max-height: 500px;
+}
+
+/* Certifications Bar */
+.certifications {
+    background: var(--color-white);
+    padding: 40px 0;
+    border-top: 1px solid var(--color-gray-100);
+    border-bottom: 1px solid var(--color-gray-100);
+}
+
+.cert-logos {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 64px;
+    flex-wrap: wrap;
+}
+
+.cert-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    opacity: 0.75;
+    transition: opacity 0.2s ease;
+}
+
+.cert-item:hover {
+    opacity: 1;
+}
+
+.cert-item img {
+    height: 64px;
+    width: auto;
+}
+
+.cert-item span {
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--color-gray-500);
 }
 
 /* Responsive */
@@ -1070,6 +1218,9 @@
     .about-split { grid-template-columns: 1fr; }
     .features-grid { grid-template-columns: 1fr; }
     .trust-card { flex-direction: column; align-items: flex-start; }
+    .faq-inner { grid-template-columns: 1fr; gap: 48px; }
+    .faq-left { position: static; }
+    .b2b-inner { grid-template-columns: 1fr; gap: 40px; }
 }
 
 @media (max-width: 768px) {
@@ -1440,59 +1591,122 @@
 <div class="certifications">
     <div class="container">
         <div class="cert-logos">
-            <img src="{% static 'images/iso-logo.webp' %}" alt="ISO Certified">
-            <img src="{% static 'images/gmp-logo.webp' %}" alt="GMP Certified">
-            <img src="{% static 'images/sgs-logo.webp' %}" alt="SGS Tested">
+            <div class="cert-item">
+                <img src="{% static 'images/iso-logo.webp' %}" alt="ISO Certified">
+                <span>ISO 22000</span>
+            </div>
+            <div class="cert-item">
+                <img src="{% static 'images/gmp-logo.webp' %}" alt="GMP Certified">
+                <span>GMP Certified</span>
+            </div>
+            <div class="cert-item">
+                <img src="{% static 'images/sgs-logo.webp' %}" alt="SGS Tested">
+                <span>SGS Tested</span>
+            </div>
         </div>
     </div>
 </div>
 
 <!-- 4.9 FAQ SECTION -->
-<section class="section section-bg-cream">
+<section class="faq-section-wrap">
     <div class="container">
-        <div class="section-title" data-aos="fade-up">
-            <span class="section-subtitle">Common Questions</span>
-            <h2>Frequently Asked Questions</h2>
-        </div>
-        
-        <div class="faq-list" data-aos="fade-up">
-            <div class="faq-item">
-                <div class="faq-question">
-                    Are your products 100% natural?
-                    <i class="fa-solid fa-chevron-down faq-icon"></i>
-                </div>
-                <div class="faq-answer">
-                    Yes, all our products are strictly 100% natural and organic. We never use artificial flavors, colors, or preservatives in any of our food items, ensuring you get only the purest ingredients.
+        <div class="faq-inner">
+
+            <!-- Left: Sticky Title Panel -->
+            <div class="faq-left" data-aos="fade-right">
+                <span class="section-subtitle">Common Questions</span>
+                <h2>Frequently Asked<br>Questions</h2>
+                <p>Everything you need to know about our products, sourcing, delivery, and B2B supply services. Can't find an answer? We're here to help.</p>
+                <a href="{% url 'contact' %}" class="faq-contact-cta">
+                    <i class="fa-solid fa-envelope"></i> Ask Us Directly
+                </a>
+
+                <!-- Mini stats -->
+                <div style="margin-top: 48px; display: flex; flex-direction: column; gap: 20px;">
+                    <div style="display: flex; align-items: center; gap: 16px;">
+                        <div style="width: 48px; height: 48px; background: rgba(212,175,55,0.12); border: 1px solid rgba(212,175,55,0.25); border-radius: 12px; display: flex; align-items: center; justify-content: center; color: var(--color-accent); font-size: 1.2rem; flex-shrink: 0;"><i class="fa-solid fa-leaf"></i></div>
+                        <div>
+                            <div style="color: #fff; font-weight: 700; font-size: 0.95rem;">100% Natural Ingredients</div>
+                            <div style="color: rgba(255,255,255,0.5); font-size: 0.8rem;">No artificial preservatives ever</div>
+                        </div>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 16px;">
+                        <div style="width: 48px; height: 48px; background: rgba(212,175,55,0.12); border: 1px solid rgba(212,175,55,0.25); border-radius: 12px; display: flex; align-items: center; justify-content: center; color: var(--color-accent); font-size: 1.2rem; flex-shrink: 0;"><i class="fa-solid fa-truck-fast"></i></div>
+                        <div>
+                            <div style="color: #fff; font-weight: 700; font-size: 0.95rem;">2–4 Day Local Delivery</div>
+                            <div style="color: rgba(255,255,255,0.5); font-size: 0.8rem;">Island-wide shipping available</div>
+                        </div>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 16px;">
+                        <div style="width: 48px; height: 48px; background: rgba(212,175,55,0.12); border: 1px solid rgba(212,175,55,0.25); border-radius: 12px; display: flex; align-items: center; justify-content: center; color: var(--color-accent); font-size: 1.2rem; flex-shrink: 0;"><i class="fa-solid fa-boxes-stacked"></i></div>
+                        <div>
+                            <div style="color: #fff; font-weight: 700; font-size: 0.95rem;">Custom B2B Packaging</div>
+                            <div style="color: rgba(255,255,255,0.5); font-size: 0.8rem;">Hotel-grade amenity supply</div>
+                        </div>
+                    </div>
                 </div>
             </div>
-            
-            <div class="faq-item">
-                <div class="faq-question">
-                    Do you export internationally?
-                    <i class="fa-solid fa-chevron-down faq-icon"></i>
+
+            <!-- Right: FAQ Accordion -->
+            <div class="faq-list" data-aos="fade-left">
+                <div class="faq-item active">
+                    <div class="faq-question">
+                        Are your products 100% natural?
+                        <div class="faq-icon"><i class="fa-solid fa-chevron-down"></i></div>
+                    </div>
+                    <div class="faq-answer">
+                        Yes, all our products are strictly 100% natural and organic. We never use artificial flavors, colors, or preservatives in any of our food items, ensuring you get only the purest ingredients.
+                    </div>
                 </div>
-                <div class="faq-answer">
-                    Absolutely. We have a robust export network and currently supply our premium Ceylon products to hotels, restaurants, and distributors across the globe.
+
+                <div class="faq-item">
+                    <div class="faq-question">
+                        Do you export internationally?
+                        <div class="faq-icon"><i class="fa-solid fa-chevron-down"></i></div>
+                    </div>
+                    <div class="faq-answer">
+                        Absolutely. We have a robust export network and currently supply our premium Ceylon products to hotels, restaurants, and distributors across the globe.
+                    </div>
                 </div>
-            </div>
-            
-            <div class="faq-item">
-                <div class="faq-question">
-                    Can hotels request custom packaging?
-                    <i class="fa-solid fa-chevron-down faq-icon"></i>
+
+                <div class="faq-item">
+                    <div class="faq-question">
+                        Can hotels request custom packaging?
+                        <div class="faq-icon"><i class="fa-solid fa-chevron-down"></i></div>
+                    </div>
+                    <div class="faq-answer">
+                        Yes, we specialize in supplying hotel room amenities and offer custom packaging sizes suitable for hospitality needs. Please contact our sales team for bulk inquiries and personalized quotes.
+                    </div>
                 </div>
-                <div class="faq-answer">
-                    Yes, we specialize in supplying hotel room amenities and offer custom packaging sizes suitable for hospitality needs. Please contact our sales team for bulk inquiries and personalized quotes.
+
+                <div class="faq-item">
+                    <div class="faq-question">
+                        How long does local delivery take?
+                        <div class="faq-icon"><i class="fa-solid fa-chevron-down"></i></div>
+                    </div>
+                    <div class="faq-answer">
+                        For orders within Sri Lanka, we typically process and deliver within 2-4 business days. Bulk or custom wholesale orders may take slightly longer depending on the order size.
+                    </div>
                 </div>
-            </div>
-            
-            <div class="faq-item">
-                <div class="faq-question">
-                    How long does local delivery take?
-                    <i class="fa-solid fa-chevron-down faq-icon"></i>
+
+                <div class="faq-item">
+                    <div class="faq-question">
+                        What certifications do your products hold?
+                        <div class="faq-icon"><i class="fa-solid fa-chevron-down"></i></div>
+                    </div>
+                    <div class="faq-answer">
+                        Our products are ISO 22000 and GMP certified, and independently tested by SGS. These certifications reflect our unwavering commitment to food safety, quality, and international standards.
+                    </div>
                 </div>
-                <div class="faq-answer">
-                    For orders within Sri Lanka, we typically process and deliver within 2-4 business days. Bulk or custom wholesale orders may take slightly longer depending on the order size.
+
+                <div class="faq-item">
+                    <div class="faq-question">
+                        Do you offer minimum order quantities for B2B?
+                        <div class="faq-icon"><i class="fa-solid fa-chevron-down"></i></div>
+                    </div>
+                    <div class="faq-answer">
+                        Minimum order quantities vary by product and packaging type. For most B2B orders, our team works flexibly with you to match your specific needs — from small hotel pilots to large export contracts.
+                    </div>
                 </div>
             </div>
         </div>
