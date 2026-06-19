@@ -13,6 +13,13 @@
       {% for field in form %}
       <div>
         <label class="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-1.5">{{ field.label }}{% if field.field.required %} <span class="text-red-500">*</span>{% endif %}</label>
+        
+        {% if field.name == 'main_image' and form.instance.main_image %}
+          <div class="mb-3">
+            <img src="{{ form.instance.main_image.url }}" alt="Current Image" class="h-24 w-auto rounded-xl border border-gray-200 shadow-sm object-cover">
+          </div>
+        {% endif %}
+
         {{ field }}
         {% if field.help_text %}<p class="text-xs text-gray-400 mt-1">{{ field.help_text }}</p>{% endif %}
         {% if field.errors %}<p class="text-red-500 text-xs font-bold mt-1">{{ field.errors|striptags }}</p>{% endif %}
