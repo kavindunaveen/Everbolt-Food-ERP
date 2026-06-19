@@ -319,9 +319,15 @@
 
 /* --- Categories Grid --- */
 .categories-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    display: flex;
     gap: 32px;
+    overflow-x: auto;
+    padding-bottom: 24px;
+    scroll-snap-type: x mandatory;
+    scrollbar-width: none; /* Firefox */
+}
+.categories-grid::-webkit-scrollbar {
+    display: none; /* Chrome/Safari */
 }
 
 .category-card {
@@ -330,7 +336,8 @@
     border-radius: var(--border-radius);
     overflow: hidden;
     aspect-ratio: 4/5;
-    group;
+    flex: 0 0 300px;
+    scroll-snap-align: start;
 }
 
 .category-card img {
