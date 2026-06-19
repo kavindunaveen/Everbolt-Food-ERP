@@ -1,0 +1,270 @@
+/* ==========================================================================
+   EVERBOLT FOODS — PREMIUM THEME
+   Modern, organic, conversion-focused design system
+   ========================================================================== */
+
+:root {
+    /* Brand Colors */
+    --color-primary: #1E3F20;     /* Deep Forest Green */
+    --color-primary-dark: #122813;
+    --color-primary-light: #2A5A2E;
+    
+    /* Secondary & Accents */
+    --color-accent: #D4AF37;      /* Muted Gold */
+    --color-accent-hover: #b8952b;
+    --color-tea-brown: #2C1A12;   /* Dark Text/Headings */
+    
+    /* Backgrounds */
+    --color-bg-cream: #F9F6F0;    /* Warm Cream */
+    --color-bg-beige: #E8E1D5;    /* Earthy Beige */
+    --color-white: #FFFFFF;
+    
+    /* Neutrals */
+    --color-gray-50: #fbfbfb;
+    --color-gray-100: #f3f4f6;
+    --color-gray-200: #e5e7eb;
+    --color-gray-400: #9ca3af;
+    --color-gray-500: #6b7280;
+    --color-gray-600: #4b5563;
+    --color-gray-800: #1f2937;
+    
+    /* Typography */
+    --font-heading: 'Outfit', 'Inter', system-ui, sans-serif;
+    --font-body: 'Inter', system-ui, sans-serif;
+    
+    /* Borders & Shadows */
+    --border-radius: 8px;
+    --border-radius-sm: 4px;
+    --border-radius-lg: 16px;
+    --shadow-sm: 0 2px 8px rgba(0,0,0,0.04);
+    --shadow-md: 0 8px 24px rgba(0,0,0,0.06);
+    --shadow-lg: 0 16px 48px rgba(0,0,0,0.08);
+    
+    /* Transitions */
+    --transition-fast: all 0.2s ease;
+    --transition-base: all 0.3s ease;
+    --transition-slow: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    
+    /* Legacy Backward Compatibility Variables */
+    --bg-base: var(--color-bg-cream);
+    --bg-surface: var(--color-white);
+    --brand-red: var(--color-primary);
+    --brand-red-hover: var(--color-primary-dark);
+    --brand-red-light: rgba(30, 63, 32, 0.08);
+    --text-primary: var(--color-tea-brown);
+    --text-secondary: var(--color-gray-500);
+    --text-light: var(--color-gray-400);
+    --border-soft: var(--color-gray-200);
+    --glass-bg: rgba(255, 255, 255, 0.9);
+    --glass-border: rgba(255, 255, 255, 0.5);
+    --radius-pill: 100px;
+    --radius-lg: 20px;
+    --radius-md: 12px;
+    --transition: all 0.3s ease;
+}
+
+/* ==========================================================================
+   GLOBAL RESET & BASE STYLES
+   ========================================================================== */
+*, *::before, *::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: var(--font-body);
+    color: var(--color-gray-600);
+    line-height: 1.6;
+    background-color: var(--color-bg-cream);
+    overflow-x: hidden;
+    font-size: 16px;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-heading);
+    color: var(--color-tea-brown);
+    font-weight: 700;
+    line-height: 1.2;
+    margin-bottom: 0.5em;
+}
+
+a {
+    color: var(--color-primary);
+    text-decoration: none;
+    transition: var(--transition-base);
+}
+
+a:hover {
+    color: var(--color-primary-dark);
+}
+
+img {
+    max-width: 100%;
+    height: auto;
+    display: block;
+}
+
+.container {
+    width: 100%;
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 0 24px;
+}
+
+.section {
+    padding: 96px 0;
+}
+
+.section-bg-white {
+    background-color: var(--color-white);
+}
+
+.section-bg-cream {
+    background-color: var(--color-bg-cream);
+}
+
+/* ==========================================================================
+   TYPOGRAPHY UTILITIES
+   ========================================================================== */
+.text-center { text-align: center; }
+.text-left { text-align: left; }
+.text-right { text-align: right; }
+
+.section-title {
+    text-align: center;
+    margin-bottom: 56px;
+    max-width: 800px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.section-title h2 {
+    font-size: clamp(2rem, 4vw, 3rem);
+    letter-spacing: -0.02em;
+    margin-bottom: 16px;
+}
+
+.section-title p {
+    font-size: 1.125rem;
+    color: var(--color-gray-500);
+}
+
+.section-subtitle {
+    display: inline-block;
+    color: var(--color-primary);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    font-size: 0.875rem;
+    margin-bottom: 12px;
+}
+
+/* ==========================================================================
+   BUTTONS
+   ========================================================================== */
+.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 14px 32px;
+    font-family: var(--font-heading);
+    font-weight: 600;
+    font-size: 1rem;
+    border-radius: var(--border-radius);
+    transition: var(--transition-base);
+    cursor: pointer;
+    border: none;
+    line-height: 1;
+    gap: 8px;
+}
+
+.btn-primary {
+    background-color: var(--color-primary);
+    color: var(--color-white);
+}
+
+.btn-primary:hover {
+    background-color: var(--color-primary-dark);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(30, 63, 32, 0.2);
+    color: var(--color-white);
+}
+
+.btn-gold {
+    background-color: var(--color-accent);
+    color: var(--color-white);
+}
+
+.btn-gold:hover {
+    background-color: var(--color-accent-hover);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(212, 175, 55, 0.2);
+    color: var(--color-white);
+}
+
+.btn-outline {
+    background-color: transparent;
+    color: var(--color-tea-brown);
+    border: 2px solid var(--color-gray-200);
+}
+
+.btn-outline:hover {
+    border-color: var(--color-primary);
+    color: var(--color-primary);
+    background-color: transparent;
+}
+
+/* ==========================================================================
+   CARDS
+   ========================================================================== */
+.card {
+    background: var(--color-white);
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow-sm);
+    transition: var(--transition-base);
+    overflow: hidden;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+.card:hover {
+    box-shadow: var(--shadow-md);
+    transform: translateY(-4px);
+}
+
+/* ==========================================================================
+   BADGES & TAGS
+   ========================================================================== */
+.badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 4px 12px;
+    border-radius: 100px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.badge-primary {
+    background-color: rgba(30, 63, 32, 0.1);
+    color: var(--color-primary);
+}
+
+.badge-gold {
+    background-color: rgba(212, 175, 55, 0.1);
+    color: var(--color-accent-hover);
+}
+
+/* ==========================================================================
+   RESPONSIVE UTILITIES
+   ========================================================================== */
+@media (max-width: 768px) {
+    .section {
+        padding: 64px 0;
+    }
+}

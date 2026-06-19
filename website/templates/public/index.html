@@ -1,798 +1,761 @@
 {% extends "public/base.html" %}
 {% load static %}
 
-{% block title %}Everbolt Foods | Premium Hotel Suppliers in Sri Lanka{% endblock %}
+{% block title %}Everbolt Foods | Premium Natural Foods & Hotel Supplies{% endblock %}
+{% block meta_description %}Premium Ceylon teas, authentic spices, and complete hotel room amenities—sustainably sourced and trusted globally.{% endblock %}
 
 {% block extra_css %}
-<!-- Google Fonts -->
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <!-- AOS Animation Library -->
 <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
+<link rel="stylesheet" href="{% static 'css/premium-theme.css' %}">
 
 <style>
-/* ============================================================
-   EVERBOLT FOODS — PROFESSIONAL CORPORATE REDESIGN
-   Style: Parallax Hero, Overlapping Features, AOS Animations
-============================================================ */
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+/* ==========================================================================
+   HOMEPAGE SPECIFIC STYLES
+   ========================================================================== */
 
-:root {
-    --primary: #C0392B;        /* Brand Red */
-    --primary-dark: #96281B;
-    --secondary: #1a1a1a;      /* Dark Text */
-    --text-body: #555555;      /* Medium Text */
-    --light-bg: #f8f9fa;       /* Very Light Gray */
-    --white: #ffffff;
-    --border: #e9ecef;
-    --font-heading: 'Oswald', sans-serif;
-    --font-body: 'Inter', sans-serif;
-    --transition: all 0.3s ease;
-}
-
-body {
-    font-family: var(--font-body);
-    color: var(--text-body);
-    line-height: 1.6;
-    background-color: var(--white);
-    overflow-x: hidden;
-}
-
-h1, h2, h3, h4, h5, h6 {
-    font-family: var(--font-heading);
-    color: var(--secondary);
-    font-weight: 600;
-    line-height: 1.2;
-}
-
-a { text-decoration: none; transition: var(--transition); color: inherit; }
-img { max-width: 100%; display: block; }
-
-/* ─── BUTTONS ─── */
-.btn-primary {
-    display: inline-block;
-    background-color: var(--primary);
-    color: var(--white);
-    padding: 14px 32px;
-    font-family: var(--font-heading);
-    font-size: 1.1rem;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    border: 2px solid var(--primary);
-    border-radius: 4px;
-}
-.btn-primary:hover {
-    background-color: transparent;
-    color: var(--primary);
-}
-
-.btn-outline {
-    display: inline-block;
-    background-color: transparent;
-    color: var(--white);
-    padding: 14px 32px;
-    font-family: var(--font-heading);
-    font-size: 1.1rem;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    border: 2px solid var(--white);
-    border-radius: 4px;
-}
-.btn-outline:hover {
-    background-color: var(--white);
-    color: var(--secondary);
-}
-
-/* ─── SECTION UTILS ─── */
-.section-padding { padding: 100px 0; }
-.bg-light { background-color: var(--light-bg); }
-
-.container {
-    width: 100%;
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 0 20px;
-}
-
-.section-title {
-    text-align: center;
-    margin-bottom: 60px;
-}
-.section-title span {
-    display: block;
-    color: var(--primary);
-    font-size: 1rem;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 2px;
-    margin-bottom: 8px;
-}
-.section-title h2 {
-    font-size: 2.8rem;
-    text-transform: uppercase;
+/* --- Hero Section --- */
+.hero {
     position: relative;
-    display: inline-block;
-    padding-bottom: 15px;
-}
-.section-title h2::after {
-    content: '';
-    position: absolute;
-    bottom: 0;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 60px;
-    height: 3px;
-    background-color: var(--primary);
-}
-.section-title.text-left { text-align: left; margin-bottom: 30px; }
-.section-title.text-left h2::after { left: 0; transform: none; }
-
-/* ─── HERO SECTION (PARALLAX) ─── */
-.hero-section {
-    position: relative;
-    min-height: 90vh;
+    min-height: 100vh;
     display: flex;
     align-items: center;
-    background: url("{% static 'images/hero-tea-display.png' %}") center/cover no-repeat;
-    background-attachment: fixed; /* Parallax Effect */
-    padding-top: 80px;
-    padding-bottom: 120px; /* Space for overlapping boxes */
+    padding: 120px 0 80px;
+    background-color: var(--color-primary-dark);
+    overflow: hidden;
+    color: var(--color-white);
+}
+
+.hero-bg {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    opacity: 0.4;
+    z-index: 1;
 }
 
 .hero-content {
     position: relative;
     z-index: 2;
+    max-width: 800px;
 }
-.hero-content h1 {
-    font-size: clamp(3rem, 5vw, 4.5rem);
-    color: var(--secondary);
-    text-transform: uppercase;
+
+.hero h1 {
+    font-size: clamp(3rem, 6vw, 4.5rem);
+    color: var(--color-white);
     margin-bottom: 24px;
+    line-height: 1.1;
+    letter-spacing: -0.02em;
 }
-.hero-content h1 span { color: var(--primary); }
-.hero-content p {
-    font-size: 1.2rem;
-    margin-bottom: 35px;
-    color: var(--text-body);
+
+.hero p {
+    font-size: clamp(1.125rem, 2vw, 1.25rem);
+    color: rgba(255, 255, 255, 0.9);
+    margin-bottom: 40px;
     max-width: 600px;
 }
-.hero-btns { display: flex; gap: 15px; flex-wrap: wrap; }
 
-/* ─── VALUE PROPOSITION BOXES ─── */
-.feature-boxes {
-    padding: 80px 0;
-    background-color: var(--white);
-}
-.feature-grid {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 0;
-    background: var(--white);
-    box-shadow: 0 10px 40px rgba(0,0,0,0.1);
-    border-radius: 6px;
-    overflow: hidden;
-}
-.feature-box {
-    padding: 40px 30px;
-    border-right: 1px solid var(--border);
-    transition: var(--transition);
-    text-align: center;
-    border-bottom: 4px solid transparent;
-}
-.feature-box:last-child { border-right: none; }
-.feature-box:hover {
-    background-color: var(--light-bg);
-    border-bottom-color: var(--primary);
-    transform: translateY(-5px);
-}
-.feature-icon {
-    font-size: 40px;
-    color: var(--primary);
-    margin-bottom: 20px;
-}
-.feature-box h3 {
-    font-size: 1.3rem;
-    text-transform: uppercase;
-    margin-bottom: 10px;
-    color: var(--secondary);
-}
-.feature-box p {
-    color: var(--text-body);
-}
-
-/* ─── ABOUT US SPLIT ─── */
-.about-split {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 60px;
-    align-items: center;
-}
-.about-img {
-    position: relative;
-}
-.about-img img {
-    border-radius: 6px;
-    box-shadow: 0 15px 30px rgba(0,0,0,0.1);
-}
-.about-experience {
-    position: absolute;
-    bottom: -20px;
-    right: -20px;
-    background: var(--primary);
-    color: var(--white);
-    padding: 30px;
-    border-radius: 6px;
-    text-align: center;
-    box-shadow: 0 10px 20px rgba(192,57,43,0.3);
-}
-.about-experience h4 { color: var(--white); font-size: 3rem; margin-bottom: 0; }
-.about-experience span { font-size: 14px; text-transform: uppercase; letter-spacing: 1px; }
-
-.about-text p { margin-bottom: 20px; font-size: 1.05rem; }
-.about-list { list-style: none; margin-bottom: 30px; }
-.about-list li {
-    position: relative;
-    padding-left: 30px;
-    margin-bottom: 12px;
-    font-weight: 500;
-    color: var(--secondary);
-}
-.about-list li::before {
-    content: '✓';
-    position: absolute;
-    left: 0;
-    color: var(--primary);
-    font-weight: bold;
-}
-
-/* ─── CATEGORY GRID (STANDARD) ─── */
-.cat-grid {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 30px;
-}
-.cat-card {
-    background: var(--white);
-    border-radius: 6px;
-    overflow: hidden;
-    box-shadow: 0 5px 15px rgba(0,0,0,0.05);
-    border: 1px solid var(--border);
-    transition: var(--transition);
-}
-.cat-card:hover {
-    transform: translateY(-8px);
-    box-shadow: 0 15px 30px rgba(0,0,0,0.1);
-    border-color: var(--primary);
-}
-.cat-img-wrap {
-    width: 100%;
-    aspect-ratio: 4/3;
-    overflow: hidden;
-    background: var(--light-bg);
-}
-.cat-img-wrap img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    transition: transform 0.6s ease;
-}
-.cat-card:hover .cat-img-wrap img { transform: scale(1.08); }
-.cat-content {
-    padding: 25px;
-    text-align: center;
-}
-.cat-content h3 {
-    font-size: 1.4rem;
-    margin-bottom: 10px;
-}
-.cat-link {
-    color: var(--primary);
-    font-weight: 600;
-    text-transform: uppercase;
-    font-size: 0.9rem;
-    letter-spacing: 1px;
-}
-.cat-card:hover .cat-link { color: var(--primary-dark); }
-
-/* ─── CERTIFICATIONS ─── */
-.cert-section {
-    background-color: var(--secondary);
-    color: var(--white);
-    padding: 60px 0;
-    text-align: center;
-    overflow: hidden;
-}
-.cert-section h3 {
-    color: var(--white);
-    font-size: 1.8rem;
-    margin-bottom: 30px;
-    text-transform: uppercase;
-}
-.cert-marquee-wrap {
-    width: 100%;
-    overflow: hidden;
-    white-space: nowrap;
-    position: relative;
-}
-.cert-marquee {
-    display: inline-block;
-    white-space: nowrap;
-    animation: scroll-cert 20s linear infinite;
-}
-.cert-marquee:hover { animation-play-state: paused; }
-@keyframes scroll-cert {
-    0% { transform: translateX(0); }
-    100% { transform: translateX(-50%); }
-}
-.cert-grid {
-    display: inline-flex;
-    justify-content: center;
-    align-items: center;
-    gap: 80px;
-    padding-right: 80px;
-}
-.cert-item {
-    background: var(--white);
-    padding: 20px;
-    border-radius: 8px;
-    width: 140px;
-    height: 140px;
+.hero-actions {
     display: flex;
-    align-items: center;
-    justify-content: center;
-}
-.cert-item img { max-width: 100px; max-height: 100px; }
-
-/* ─── FEATURED PRODUCTS ─── */
-.product-grid {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 24px;
-}
-.product-card {
-    background: var(--white);
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    padding: 20px;
-    text-align: center;
-    transition: var(--transition);
-}
-.product-card:hover { border-color: var(--primary); box-shadow: 0 10px 20px rgba(0,0,0,0.05); }
-.product-img {
-    width: 100%;
-    aspect-ratio: 1;
-    object-fit: cover;
-    margin-bottom: 15px;
-    border-radius: 4px;
-}
-.product-no-img {
-    width: 100%;
-    aspect-ratio: 1;
-    background: var(--light-bg);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 40px;
-    margin-bottom: 15px;
-}
-.product-cat {
-    color: var(--primary);
-    font-size: 0.8rem;
-    text-transform: uppercase;
-    font-weight: 600;
-    letter-spacing: 1px;
-}
-.product-title {
-    font-size: 1.1rem;
-    margin: 10px 0;
-    font-family: var(--font-body);
-    font-weight: 600;
-}
-.product-price {
-    font-size: 1.2rem;
-    font-weight: 700;
-    color: var(--secondary);
-    margin-bottom: 15px;
-}
-.btn-sm-primary {
-    display: inline-block;
-    background: var(--primary);
-    color: var(--white);
-    padding: 8px 20px;
-    font-size: 0.9rem;
-    font-weight: 600;
-    border-radius: 4px;
-}
-.btn-sm-primary:hover { background: var(--secondary); }
-
-/* ─── FAQ SECTION ─── */
-.faq-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 40px;
-}
-.faq-item {
-    background: var(--white);
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    margin-bottom: 15px;
-    overflow: hidden;
-}
-.faq-question {
-    padding: 20px;
-    cursor: pointer;
-    background: var(--light-bg);
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    font-family: var(--font-heading);
-    font-size: 1.2rem;
-    color: var(--secondary);
-    transition: var(--transition);
-}
-.faq-question:hover { color: var(--primary); }
-.faq-question::after {
-    content: '+';
-    font-size: 1.5rem;
-    color: var(--primary);
-}
-.faq-item.active .faq-question::after { content: '−'; }
-.faq-answer {
-    padding: 0 20px;
-    max-height: 0;
-    overflow: hidden;
-    transition: max-height 0.3s ease, padding 0.3s ease;
-}
-.faq-item.active .faq-answer {
-    padding: 20px;
-    max-height: 200px;
-    border-top: 1px solid var(--border);
+    gap: 16px;
+    flex-wrap: wrap;
 }
 
-/* ─── RESPONSIVE ─── */
-@media (max-width: 992px) {
-    .feature-grid { grid-template-columns: 1fr; }
-    .feature-box { border-right: none; border-bottom: 1px solid var(--border); }
-    .about-split { grid-template-columns: 1fr; }
-    .cat-grid, .product-grid { grid-template-columns: repeat(2, 1fr); }
-    .faq-grid { grid-template-columns: 1fr; }
-}
-@media (max-width: 768px) {
-    .hero-section { padding-top: 120px; text-align: center; }
-    .hero-btns { justify-content: center; }
-    .cat-grid, .product-grid { grid-template-columns: 1fr; }
-}
-/* ─── TRUST BANNER ─── */
-.trust-banner-container {
+/* --- Trust Banner --- */
+.trust-banner {
     position: relative;
     z-index: 10;
-    margin-top: -45px;
-    margin-bottom: 50px;
-    padding: 0 15px;
+    margin-top: -40px;
 }
-.trust-banner {
-    background: #fdfdf9;
-    border-radius: 12px;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+
+.trust-card {
+    background: var(--color-white);
+    border-radius: var(--border-radius);
+    padding: 24px 32px;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 20px 30px;
-    border: 1px solid #eaeaea;
-    max-width: 1400px;
-    margin: 0 auto;
+    box-shadow: var(--shadow-md);
+    flex-wrap: wrap;
+    gap: 24px;
 }
+
 .trust-item {
     display: flex;
     align-items: center;
-    gap: 15px;
-    padding: 0 20px;
-    border-right: 1px solid #e0e0e0;
+    gap: 16px;
     flex: 1;
-}
-.trust-item:last-child {
-    border-right: none;
-}
-.trust-item i {
-    font-size: 28px;
-    color: var(--primary);
-}
-.trust-text {
-    display: flex;
-    flex-direction: column;
-}
-.trust-text strong {
-    font-size: 15px;
-    color: var(--secondary);
-    font-weight: 700;
-}
-.trust-text span {
-    font-size: 12px;
-    color: #666;
+    min-width: 200px;
 }
 
-@media (max-width: 1200px) {
-    .trust-item {
-        flex-direction: column;
-        text-align: center;
-        gap: 10px;
-    }
+.trust-icon {
+    width: 48px;
+    height: 48px;
+    background: rgba(30, 63, 32, 0.05);
+    color: var(--color-primary);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.25rem;
 }
+
+.trust-text h4 {
+    font-size: 1rem;
+    margin-bottom: 2px;
+}
+
+.trust-text p {
+    font-size: 0.875rem;
+    color: var(--color-gray-500);
+    margin: 0;
+}
+
+/* --- Categories Grid --- */
+.categories-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 32px;
+}
+
+.category-card {
+    display: block;
+    position: relative;
+    border-radius: var(--border-radius);
+    overflow: hidden;
+    aspect-ratio: 4/5;
+    group;
+}
+
+.category-card img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.6s cubic-bezier(0.25, 1, 0.5, 1);
+}
+
+.category-card::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(to top, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0) 60%);
+    transition: opacity 0.3s ease;
+}
+
+.category-content {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    padding: 32px;
+    z-index: 2;
+    color: var(--color-white);
+}
+
+.category-content h3 {
+    color: var(--color-white);
+    font-size: 1.5rem;
+    margin-bottom: 8px;
+}
+
+.category-cta {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 600;
+    font-size: 0.875rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--color-accent);
+    transform: translateY(10px);
+    opacity: 0;
+    transition: all 0.3s ease;
+}
+
+.category-card:hover img {
+    transform: scale(1.05);
+}
+
+.category-card:hover .category-cta {
+    transform: translateY(0);
+    opacity: 1;
+}
+
+/* --- About Split --- */
+.about-split {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 64px;
+    align-items: center;
+}
+
+.about-image {
+    position: relative;
+    border-radius: var(--border-radius-lg);
+    overflow: hidden;
+    box-shadow: var(--shadow-lg);
+}
+
+.about-badge {
+    position: absolute;
+    bottom: 32px;
+    right: 32px;
+    background: var(--color-primary);
+    color: var(--color-white);
+    padding: 24px;
+    border-radius: var(--border-radius);
+    text-align: center;
+    box-shadow: 0 12px 32px rgba(30, 63, 32, 0.3);
+}
+
+.about-badge h4 {
+    color: var(--color-white);
+    font-size: 2.5rem;
+    margin-bottom: 0;
+    line-height: 1;
+}
+
+.about-badge span {
+    font-size: 0.875rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    opacity: 0.9;
+}
+
+/* --- Features (Why Choose Us) --- */
+.features-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 40px;
+}
+
+.feature-box {
+    text-align: center;
+    padding: 40px 32px;
+    background: var(--color-white);
+    border-radius: var(--border-radius);
+    border: 1px solid var(--color-gray-100);
+    transition: var(--transition-base);
+}
+
+.feature-box:hover {
+    box-shadow: var(--shadow-md);
+    border-color: transparent;
+    transform: translateY(-4px);
+}
+
+.feature-icon-large {
+    font-size: 3rem;
+    color: var(--color-primary);
+    margin-bottom: 24px;
+}
+
+/* --- B2B Section --- */
+.b2b-section {
+    background-color: var(--color-primary-dark);
+    color: var(--color-white);
+    padding: 96px 0;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+}
+
+.b2b-section::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: url('{% static "images/hero-tea-display.png" %}') center/cover no-repeat;
+    opacity: 0.15;
+    mix-blend-mode: overlay;
+}
+
+.b2b-content {
+    position: relative;
+    z-index: 2;
+    max-width: 700px;
+    margin: 0 auto;
+}
+
+.b2b-content h2 {
+    color: var(--color-white);
+}
+
+.b2b-content p {
+    font-size: 1.125rem;
+    color: rgba(255, 255, 255, 0.9);
+    margin-bottom: 40px;
+}
+
+/* --- Product Cards --- */
+.product-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 32px;
+}
+
+.product-card {
+    border: 1px solid var(--color-gray-100);
+    padding: 24px;
+}
+
+.product-image-wrapper {
+    aspect-ratio: 1;
+    margin-bottom: 24px;
+    border-radius: var(--border-radius-sm);
+    overflow: hidden;
+    background: var(--color-bg-cream);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.product-image-wrapper img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    mix-blend-mode: multiply;
+    transition: transform 0.3s ease;
+}
+
+.product-card:hover .product-image-wrapper img {
+    transform: scale(1.05);
+}
+
+.product-category {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--color-gray-500);
+    margin-bottom: 8px;
+    font-weight: 600;
+}
+
+.product-title {
+    font-size: 1.125rem;
+    margin-bottom: 8px;
+}
+
+.product-title a {
+    color: var(--color-tea-brown);
+}
+
+.product-title a:hover {
+    color: var(--color-primary);
+}
+
+.product-price {
+    font-family: var(--font-heading);
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--color-primary);
+    margin-bottom: 24px;
+}
+
+.product-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.btn-add-cart {
+    flex: 1;
+    background: var(--color-bg-cream);
+    color: var(--color-primary);
+    border: none;
+    padding: 12px;
+    border-radius: var(--border-radius-sm);
+    font-weight: 600;
+    cursor: pointer;
+    transition: var(--transition-base);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+.btn-add-cart:hover {
+    background: var(--color-primary);
+    color: var(--color-white);
+}
+
+/* --- Certifications --- */
+.certifications {
+    padding: 48px 0;
+    background: var(--color-white);
+    border-top: 1px solid var(--color-gray-100);
+    border-bottom: 1px solid var(--color-gray-100);
+}
+
+.cert-logos {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 64px;
+    flex-wrap: wrap;
+    opacity: 0.6;
+    filter: grayscale(100%);
+    transition: var(--transition-base);
+}
+
+.cert-logos:hover {
+    opacity: 1;
+    filter: grayscale(0%);
+}
+
+.cert-logos img {
+    height: 60px;
+    width: auto;
+}
+
+/* --- FAQ Accordion --- */
+.faq-list {
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+.faq-item {
+    background: var(--color-white);
+    border-radius: var(--border-radius);
+    margin-bottom: 16px;
+    box-shadow: var(--shadow-sm);
+    overflow: hidden;
+}
+
+.faq-question {
+    padding: 24px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 1.125rem;
+    color: var(--color-tea-brown);
+    transition: var(--transition-base);
+}
+
+.faq-question:hover {
+    color: var(--color-primary);
+}
+
+.faq-icon {
+    color: var(--color-primary);
+    transition: transform 0.3s ease;
+}
+
+.faq-item.active .faq-icon {
+    transform: rotate(180deg);
+}
+
+.faq-answer {
+    padding: 0 24px;
+    max-height: 0;
+    overflow: hidden;
+    transition: all 0.3s ease;
+    color: var(--color-gray-600);
+}
+
+.faq-item.active .faq-answer {
+    padding: 0 24px 24px;
+    max-height: 500px;
+}
+
+/* Responsive */
 @media (max-width: 992px) {
-    .trust-banner {
-        flex-direction: column;
-        gap: 20px;
-        align-items: center;
-    }
-    .trust-item {
-        border-right: none;
-        border-bottom: 1px solid #e0e0e0;
-        padding-bottom: 15px;
-        width: 100%;
-    }
-    .trust-item:last-child {
-        border-bottom: none;
-        padding-bottom: 0;
-    }
+    .about-split { grid-template-columns: 1fr; }
+    .features-grid { grid-template-columns: 1fr; }
+    .trust-card { flex-direction: column; align-items: flex-start; }
+}
+
+@media (max-width: 768px) {
+    .hero { padding-top: 100px; text-align: center; }
+    .hero-actions { justify-content: center; }
+    .about-badge { position: relative; bottom: 0; right: 0; border-radius: 0 0 var(--border-radius-lg) var(--border-radius-lg); }
+    .about-image img { border-radius: var(--border-radius-lg) var(--border-radius-lg) 0 0; }
 }
 </style>
 {% endblock %}
 
 {% block content %}
 
-<!-- ══════════ HERO SECTION (PARALLAX) ══════════ -->
-<section class="hero-section">
+<!-- 4.1 HERO SECTION -->
+<section class="hero">
+    <img src="{% static 'images/hero-tea-display.png' %}" alt="Ceylon Tea Background" class="hero-bg">
     <div class="container">
         <div class="hero-content" data-aos="fade-up" data-aos-duration="1000">
-            <h1>Sri Lanka's Finest <span>Natural Foods</span> & Hotel Supplies</h1>
-            <p>Premium flavoured teas, herbal blends, authentic spices, and complete hotel room amenities—crafted with care, trusted by leading hotels worldwide.</p>
-            <div class="hero-btns">
-                <a href="{% url 'products' %}" class="btn-primary">Shop Now</a>
-                <a href="{% url 'about' %}" class="btn-outline">Discover Our Story</a>
+            <h1>Sri Lanka's Finest Natural Foods & Hotel Supplies</h1>
+            <p>Premium Ceylon teas, authentic spices, and complete hotel room amenities—sustainably sourced and trusted globally.</p>
+            <div class="hero-actions">
+                <a href="{% url 'products' %}" class="btn btn-primary">Shop Products</a>
+                <a href="{% url 'contact' %}" class="btn btn-gold">Bulk / Hotel Inquiry</a>
             </div>
         </div>
     </div>
 </section>
 
-<!-- ══════════ TRUST BANNER ══════════ -->
-<div class="trust-banner-container container" data-aos="fade-up" data-aos-delay="200">
-    <div class="trust-banner">
+<!-- 4.2 TRUST BANNER -->
+<div class="trust-banner container">
+    <div class="trust-card" data-aos="fade-up" data-aos-delay="200">
         <div class="trust-item">
-            <i class="fa-solid fa-leaf"></i>
+            <div class="trust-icon"><i class="fa-solid fa-leaf"></i></div>
             <div class="trust-text">
-                <strong>100% Natural</strong>
-                <span>Pure & Natural Ingredients</span>
+                <h4>100% Natural</h4>
+                <p>Pure Ingredients</p>
             </div>
         </div>
         <div class="trust-item">
-            <i class="fa-solid fa-shield-halved"></i>
+            <div class="trust-icon"><i class="fa-solid fa-shield-check"></i></div>
             <div class="trust-text">
-                <strong>Quality Assured</strong>
-                <span>ISO, GMP & HACCP Certified</span>
+                <h4>Quality Assured</h4>
+                <p>ISO & GMP Certified</p>
             </div>
         </div>
         <div class="trust-item">
-            <i class="fa-solid fa-truck"></i>
+            <div class="trust-icon"><i class="fa-solid fa-truck-fast"></i></div>
             <div class="trust-text">
-                <strong>Islandwide Delivery</strong>
-                <span>Safe & Reliable Shipping</span>
+                <h4>Fast Delivery</h4>
+                <p>Islandwide Shipping</p>
             </div>
         </div>
         <div class="trust-item">
-            <i class="fa-solid fa-building"></i>
+            <div class="trust-icon"><i class="fa-solid fa-building"></i></div>
             <div class="trust-text">
-                <strong>B2B Supply</strong>
-                <span>Hotels, Offices & Businesses</span>
-            </div>
-        </div>
-        <div class="trust-item">
-            <i class="fa-solid fa-headset"></i>
-            <div class="trust-text">
-                <strong>Customer Care</strong>
-                <span>We're Here to Help You</span>
+                <h4>B2B Supply</h4>
+                <p>Hotels & Restaurants</p>
             </div>
         </div>
     </div>
 </div>
 
-<!-- ══════════ ABOUT US ══════════ -->
-<section class="section-padding">
+<!-- 4.3 FEATURED CATEGORIES -->
+<section class="section section-bg-cream">
+    <div class="container">
+        <div class="section-title" data-aos="fade-up">
+            <span class="section-subtitle">Our Range</span>
+            <h2>Explore Premium Collections</h2>
+            <p>Discover our meticulously crafted ranges of teas, spices, and amenities.</p>
+        </div>
+
+        <div class="categories-grid">
+            <a href="{% url 'products' %}?q=flavoured+tea" class="category-card" data-aos="fade-up" data-aos-delay="100">
+                <img src="{% static 'images/cat-tea.png' %}" alt="Flavoured Tea">
+                <div class="category-content">
+                    <h3>Flavoured Tea</h3>
+                    <div class="category-cta">Shop Collection <i class="fa-solid fa-arrow-right"></i></div>
+                </div>
+            </a>
+            
+            <a href="{% url 'products' %}?q=herbal+tea" class="category-card" data-aos="fade-up" data-aos-delay="200">
+                <img src="{% static 'images/cat-tea.png' %}" alt="Herbal Tea">
+                <div class="category-content">
+                    <h3>Herbal Tea</h3>
+                    <div class="category-cta">Shop Collection <i class="fa-solid fa-arrow-right"></i></div>
+                </div>
+            </a>
+
+            <a href="{% url 'products' %}?q=spices" class="category-card" data-aos="fade-up" data-aos-delay="300">
+                <img src="{% static 'images/cat-spices.png' %}" alt="Premium Spices">
+                <div class="category-content">
+                    <h3>Premium Spices</h3>
+                    <div class="category-cta">Shop Collection <i class="fa-solid fa-arrow-right"></i></div>
+                </div>
+            </a>
+
+            <a href="{% url 'products' %}?q=everleaf" class="category-card" data-aos="fade-up" data-aos-delay="100">
+                <img src="{% static 'images/cat-tea.png' %}" alt="Everleaf Range">
+                <div class="category-content">
+                    <h3>Everleaf Range</h3>
+                    <div class="category-cta">Shop Collection <i class="fa-solid fa-arrow-right"></i></div>
+                </div>
+            </a>
+
+            <a href="{% url 'products' %}?q=kithul" class="category-card" data-aos="fade-up" data-aos-delay="200">
+                <img src="{% static 'images/cat-kithul.png' %}" alt="Kithul Products">
+                <div class="category-content">
+                    <h3>Kithul Products</h3>
+                    <div class="category-cta">Shop Collection <i class="fa-solid fa-arrow-right"></i></div>
+                </div>
+            </a>
+
+            <a href="{% url 'products' %}?q=hotel+supplies" class="category-card" data-aos="fade-up" data-aos-delay="300">
+                <img src="{% static 'images/cat-hotel.png' %}" alt="Hotel Supplies">
+                <div class="category-content">
+                    <h3>Hotel Supplies</h3>
+                    <div class="category-cta">Shop Collection <i class="fa-solid fa-arrow-right"></i></div>
+                </div>
+            </a>
+        </div>
+    </div>
+</section>
+
+<!-- 4.4 ABOUT US (BRIEF) -->
+<section class="section section-bg-white">
     <div class="container">
         <div class="about-split">
-            <div class="about-img" data-aos="fade-right" data-aos-duration="1000">
+            <div class="about-image" data-aos="fade-right">
                 <img src="{% static 'images/about-us-standard.webp' %}" alt="Everbolt Manufacturing">
-                <div class="about-experience">
+                <div class="about-badge">
                     <h4>15+</h4>
                     <span>Years Experience</span>
                 </div>
             </div>
-            <div class="about-text" data-aos="fade-left" data-aos-duration="1000">
-                <div class="section-title text-left">
-                    <span>Who We Are</span>
-                    <h2>Everbolt Food Products</h2>
-                </div>
-                <p>We are a dedicated Sri Lankan food company bringing premium natural products to homes, hotels, and businesses globally. From the highlands of Ceylon to your kitchen, our commitment to purity never wavers.</p>
-                <ul class="about-list">
-                    <li>Trusted by 100+ Leading Hotels in Sri Lanka</li>
-                    <li>State-of-the-art manufacturing facility</li>
-                    <li>Sustainably sourced directly from local farmers</li>
-                    <li>Customized packaging for hotel amenities</li>
+            <div class="about-content" data-aos="fade-left">
+                <span class="section-subtitle">Who We Are</span>
+                <h2 style="font-size: clamp(2rem, 4vw, 2.5rem); margin-bottom: 24px;">Authentic Sri Lankan Heritage, Globally Trusted.</h2>
+                <p style="font-size: 1.125rem; color: var(--color-gray-600); margin-bottom: 24px;">We are a dedicated Sri Lankan food company bringing premium natural products to homes, hotels, and businesses globally. From the highlands of Ceylon to your kitchen, our commitment to purity never wavers.</p>
+                <ul style="list-style: none; margin-bottom: 32px;">
+                    <li style="margin-bottom: 12px; display: flex; align-items: center; gap: 12px;"><i class="fa-solid fa-circle-check" style="color: var(--color-primary);"></i> Trusted by 100+ Leading Hotels in Sri Lanka</li>
+                    <li style="margin-bottom: 12px; display: flex; align-items: center; gap: 12px;"><i class="fa-solid fa-circle-check" style="color: var(--color-primary);"></i> State-of-the-art manufacturing facility</li>
+                    <li style="margin-bottom: 12px; display: flex; align-items: center; gap: 12px;"><i class="fa-solid fa-circle-check" style="color: var(--color-primary);"></i> Sustainably sourced directly from local farmers</li>
                 </ul>
-                <a href="{% url 'about' %}" class="btn-primary" style="margin-top: 15px;">Learn More</a>
+                <a href="{% url 'about' %}" class="btn btn-primary">Discover Our Story</a>
             </div>
         </div>
     </div>
 </section>
 
-<!-- ══════════ OVERLAPPING FEATURE BOXES MOVED HERE ══════════ -->
-<div class="feature-boxes">
-    <div class="container">
-        <div class="feature-grid" data-aos="fade-up" data-aos-delay="100">
-            <div class="feature-box">
-                <div class="feature-icon">🌿</div>
-                <h3>100% Natural</h3>
-                <p>Authentic, pure ingredients with zero artificial additives.</p>
-            </div>
-            <div class="feature-box">
-                <div class="feature-icon">✈️</div>
-                <h3>Global Export</h3>
-                <p>Reliable shipping for hotels and businesses worldwide.</p>
-            </div>
-            <div class="feature-box">
-                <div class="feature-icon">🏅</div>
-                <h3>Premium Quality</h3>
-                <p>Manufactured under strict ISO & GMP guidelines.</p>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- ══════════ CATEGORIES GRID ══════════ -->
-<section class="section-padding bg-light">
+<!-- 4.5 WHY CHOOSE US -->
+<section class="section section-bg-cream">
     <div class="container">
         <div class="section-title" data-aos="fade-up">
-            <span>Our Range</span>
-            <h2>Explore Categories</h2>
+            <span class="section-subtitle">The Everbolt Difference</span>
+            <h2>Why Choose Everbolt Foods?</h2>
         </div>
-
-        <div class="cat-grid">
-            <a href="{% url 'products' %}?q=flavoured+tea" class="cat-card" data-aos="fade-up" data-aos-delay="100">
-                <div class="cat-img-wrap"><img src="{% static 'images/cat-tea.png' %}" alt="Flavoured Tea"></div>
-                <div class="cat-content">
-                    <h3>Flavoured Tea</h3>
-                    <span class="cat-link">Shop Collection →</span>
-                </div>
-            </a>
-            
-            <a href="{% url 'products' %}?q=herbal+tea" class="cat-card" data-aos="fade-up" data-aos-delay="200">
-                <div class="cat-img-wrap"><img src="{% static 'images/cat-tea.png' %}" alt="Herbal Tea"></div>
-                <div class="cat-content">
-                    <h3>Herbal Tea</h3>
-                    <span class="cat-link">Shop Collection →</span>
-                </div>
-            </a>
-
-            <a href="{% url 'products' %}?q=spices" class="cat-card" data-aos="fade-up" data-aos-delay="300">
-                <div class="cat-img-wrap"><img src="{% static 'images/cat-spices.png' %}" alt="Premium Spices"></div>
-                <div class="cat-content">
-                    <h3>Premium Spices</h3>
-                    <span class="cat-link">Shop Collection →</span>
-                </div>
-            </a>
-
-            <a href="{% url 'products' %}?q=kithul" class="cat-card" data-aos="fade-up" data-aos-delay="100">
-                <div class="cat-img-wrap"><img src="{% static 'images/cat-kithul.png' %}" alt="Kithul Products"></div>
-                <div class="cat-content">
-                    <h3>Kithul Products</h3>
-                    <span class="cat-link">Shop Collection →</span>
-                </div>
-            </a>
-
-            <a href="{% url 'products' %}?q=hotel+supplies" class="cat-card" data-aos="fade-up" data-aos-delay="200">
-                <div class="cat-img-wrap"><img src="{% static 'images/cat-hotel.png' %}" alt="Hotel Supplies"></div>
-                <div class="cat-content">
-                    <h3>Hotel Supplies</h3>
-                    <span class="cat-link">Shop Collection →</span>
-                </div>
-            </a>
-
-            <a href="{% url 'products' %}?q=everleaf" class="cat-card" data-aos="fade-up" data-aos-delay="300">
-                <div class="cat-img-wrap"><img src="{% static 'images/cat-tea.png' %}" alt="Everleaf Tea"></div>
-                <div class="cat-content">
-                    <h3>Everleaf Range</h3>
-                    <span class="cat-link">Shop Collection →</span>
-                </div>
-            </a>
-        </div>
-    </div>
-</section>
-
-<!-- ══════════ CERTIFICATIONS (NEW) ══════════ -->
-<section class="cert-section">
-    <div class="container" data-aos="zoom-in" data-aos-duration="1000">
-        <h3>Certified Quality You Can Trust</h3>
-    </div>
-    <div class="cert-marquee-wrap">
-        <div class="cert-marquee">
-            <div class="cert-grid">
-                <div class="cert-item"><img src="{% static 'images/iso-logo.webp' %}" alt="ISO Certified"></div>
-                <div class="cert-item"><img src="{% static 'images/gmp-logo.webp' %}" alt="GMP Certified"></div>
-                <div class="cert-item"><img src="{% static 'images/sgs-logo.webp' %}" alt="SGS Tested"></div>
+        
+        <div class="features-grid">
+            <div class="feature-box" data-aos="fade-up" data-aos-delay="100">
+                <div class="feature-icon-large"><i class="fa-solid fa-earth-americas"></i></div>
+                <h3>Export Quality</h3>
+                <p style="color: var(--color-gray-500); margin-top: 12px;">We strictly adhere to international quality standards ensuring our products are ready for the global market.</p>
             </div>
-            <!-- Duplicate for seamless loop -->
-            <div class="cert-grid">
-                <div class="cert-item"><img src="{% static 'images/iso-logo.webp' %}" alt="ISO Certified"></div>
-                <div class="cert-item"><img src="{% static 'images/gmp-logo.webp' %}" alt="GMP Certified"></div>
-                <div class="cert-item"><img src="{% static 'images/sgs-logo.webp' %}" alt="SGS Tested"></div>
+            <div class="feature-box" data-aos="fade-up" data-aos-delay="200">
+                <div class="feature-icon-large"><i class="fa-solid fa-hands-holding-circle"></i></div>
+                <h3>Sustainable Sourcing</h3>
+                <p style="color: var(--color-gray-500); margin-top: 12px;">We work directly with local farmers to ethically source the finest ingredients while supporting local communities.</p>
+            </div>
+            <div class="feature-box" data-aos="fade-up" data-aos-delay="300">
+                <div class="feature-icon-large"><i class="fa-solid fa-box-open"></i></div>
+                <h3>Custom Packaging</h3>
+                <p style="color: var(--color-gray-500); margin-top: 12px;">We provide flexible, customized packaging solutions specifically designed for hotel amenities and bulk orders.</p>
             </div>
         </div>
     </div>
 </section>
 
-<!-- ══════════ FEATURED PRODUCTS ══════════ -->
+<!-- 4.6 B2B / HOTEL SUPPLY SECTION -->
+<section class="b2b-section">
+    <div class="container">
+        <div class="b2b-content" data-aos="zoom-in">
+            <span class="badge badge-gold" style="margin-bottom: 16px;">B2B Wholesale</span>
+            <h2>Elevate Your Guest Experience</h2>
+            <p>Supplying premium natural products and room amenities for hotels, restaurants, offices, and distributors. We offer custom packaging, reliable global supply, and dedicated export support.</p>
+            <a href="{% url 'contact' %}" class="btn btn-gold">Request Bulk Pricing</a>
+        </div>
+    </div>
+</section>
+
+<!-- 4.7 FEATURED PRODUCTS -->
 {% if home_products %}
-<section class="section-padding">
+<section class="section section-bg-white">
     <div class="container">
         <div class="section-title" data-aos="fade-up">
-            <span>Our Best Sellers</span>
-            <h2>Featured Products</h2>
+            <span class="section-subtitle">Customer Favorites</span>
+            <h2>Best Sellers</h2>
         </div>
         
         <div class="product-grid">
             {% for product in home_products %}
-            <div class="product-card" data-aos="fade-up" data-aos-delay="{{ forloop.counter0|add:1 }}00">
-                <a href="{% url 'product_detail' product.id %}">
+            <div class="card product-card" data-aos="fade-up" data-aos-delay="{{ forloop.counter0|add:1 }}00">
+                <a href="{% url 'product_detail' product.id %}" class="product-image-wrapper">
                     {% if product.main_image %}
-                        <img src="{{ product.main_image.url }}" alt="{{ product.get_display_name }}" class="product-img">
+                        <img src="{{ product.main_image.url }}" alt="{{ product.get_display_name }}" loading="lazy">
                     {% else %}
-                        <div class="product-no-img">🛍️</div>
+                        <div style="font-size: 3rem; color: var(--color-gray-200);"><i class="fa-solid fa-image"></i></div>
                     {% endif %}
-                    <div class="product-cat">{{ product.website_category.name|default:"Product" }}</div>
-                    <h4 class="product-title">{{ product.get_display_name }}</h4>
-                    <div class="product-price">රු{{ product.get_price|floatformat:2 }}</div>
                 </a>
-                <a href="{% url 'product_detail' product.id %}" class="btn-sm-primary">View Product</a>
+                <div class="product-category">{{ product.website_category.name|default:"Product" }}</div>
+                <h4 class="product-title"><a href="{% url 'product_detail' product.id %}">{{ product.get_display_name }}</a></h4>
+                <div class="product-price">රු{{ product.get_price|floatformat:2 }}</div>
+                <div class="product-actions">
+                    <form action="{% url 'add_to_cart' product.id %}" method="post" style="flex:1; display:flex;">
+                        {% csrf_token %}
+                        <button type="submit" class="btn-add-cart">
+                            <i class="fa-solid fa-cart-plus"></i> Add to Cart
+                        </button>
+                    </form>
+                </div>
             </div>
             {% endfor %}
         </div>
-        <div style="text-align: center; margin-top: 40px;" data-aos="fade-up">
-            <a href="{% url 'products' %}" class="btn-primary">View Full Catalog</a>
+        
+        <div class="text-center" style="margin-top: 48px;" data-aos="fade-up">
+            <a href="{% url 'products' %}" class="btn btn-outline">View Full Catalog</a>
         </div>
     </div>
 </section>
 {% endif %}
 
-<!-- ══════════ FAQ SECTION (NEW) ══════════ -->
-<section class="section-padding bg-light">
+<!-- 4.8 CERTIFICATIONS -->
+<div class="certifications">
+    <div class="container">
+        <div class="cert-logos">
+            <img src="{% static 'images/iso-logo.webp' %}" alt="ISO Certified">
+            <img src="{% static 'images/gmp-logo.webp' %}" alt="GMP Certified">
+            <img src="{% static 'images/sgs-logo.webp' %}" alt="SGS Tested">
+        </div>
+    </div>
+</div>
+
+<!-- 4.9 FAQ SECTION -->
+<section class="section section-bg-cream">
     <div class="container">
         <div class="section-title" data-aos="fade-up">
-            <span>Common Questions</span>
+            <span class="section-subtitle">Common Questions</span>
             <h2>Frequently Asked Questions</h2>
         </div>
         
-        <div class="faq-grid">
-            <div class="faq-column" data-aos="fade-right">
-                <div class="faq-item">
-                    <div class="faq-question">Are your products 100% natural?</div>
-                    <div class="faq-answer">Yes, all our products are strictly 100% natural and organic. We never use artificial flavors, colors, or preservatives in any of our food items.</div>
+        <div class="faq-list" data-aos="fade-up">
+            <div class="faq-item">
+                <div class="faq-question">
+                    Are your products 100% natural?
+                    <i class="fa-solid fa-chevron-down faq-icon"></i>
                 </div>
-                <div class="faq-item">
-                    <div class="faq-question">Do you export internationally?</div>
-                    <div class="faq-answer">Absolutely. We have a robust export network and currently supply our premium Ceylon products to hotels, restaurants, and distributors across the globe.</div>
-                </div>
-                <div class="faq-item">
-                    <div class="faq-question">Can hotels request custom packaging?</div>
-                    <div class="faq-answer">Yes, we specialize in supplying hotel room amenities and offer custom packaging sizes suitable for hospitality needs. Please contact our sales team for bulk inquiries.</div>
+                <div class="faq-answer">
+                    Yes, all our products are strictly 100% natural and organic. We never use artificial flavors, colors, or preservatives in any of our food items, ensuring you get only the purest ingredients.
                 </div>
             </div>
-            <div class="faq-column" data-aos="fade-left">
-                <div class="faq-item">
-                    <div class="faq-question">What certifications do you hold?</div>
-                    <div class="faq-answer">Our manufacturing facilities adhere to strict international standards and are ISO, GMP, and SGS certified, ensuring the highest level of food safety and quality.</div>
+            
+            <div class="faq-item">
+                <div class="faq-question">
+                    Do you export internationally?
+                    <i class="fa-solid fa-chevron-down faq-icon"></i>
                 </div>
-                <div class="faq-item">
-                    <div class="faq-question">How long does local delivery take?</div>
-                    <div class="faq-answer">For orders within Sri Lanka, we typically process and deliver within 2-4 business days. Bulk or custom orders may take slightly longer.</div>
+                <div class="faq-answer">
+                    Absolutely. We have a robust export network and currently supply our premium Ceylon products to hotels, restaurants, and distributors across the globe.
+                </div>
+            </div>
+            
+            <div class="faq-item">
+                <div class="faq-question">
+                    Can hotels request custom packaging?
+                    <i class="fa-solid fa-chevron-down faq-icon"></i>
+                </div>
+                <div class="faq-answer">
+                    Yes, we specialize in supplying hotel room amenities and offer custom packaging sizes suitable for hospitality needs. Please contact our sales team for bulk inquiries and personalized quotes.
+                </div>
+            </div>
+            
+            <div class="faq-item">
+                <div class="faq-question">
+                    How long does local delivery take?
+                    <i class="fa-solid fa-chevron-down faq-icon"></i>
+                </div>
+                <div class="faq-answer">
+                    For orders within Sri Lanka, we typically process and deliver within 2-4 business days. Bulk or custom wholesale orders may take slightly longer depending on the order size.
                 </div>
             </div>
         </div>
@@ -802,29 +765,37 @@ img { max-width: 100%; display: block; }
 {% endblock %}
 
 {% block extra_js %}
-<!-- AOS Animation Script -->
+<!-- AOS Animation Library -->
 <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
 <script>
     // Initialize AOS
     AOS.init({
-        once: true, // whether animation should happen only once - while scrolling down
-        offset: 100, // offset (in px) from the original trigger point
-        duration: 800, // values from 0 to 3000, with step 50ms
+        once: true,
+        offset: 50,
+        duration: 800,
+        easing: 'ease-in-out-cubic',
     });
 
     // FAQ Accordion Logic
-    document.querySelectorAll('.faq-question').forEach(item => {
-        item.addEventListener('click', event => {
-            const parent = event.target.closest('.faq-item');
-            
-            // Close other open items
-            document.querySelectorAll('.faq-item.active').forEach(activeItem => {
-                if(activeItem !== parent) activeItem.classList.remove('active');
+    document.addEventListener('DOMContentLoaded', function() {
+        const faqQuestions = document.querySelectorAll('.faq-question');
+        
+        faqQuestions.forEach(question => {
+            question.addEventListener('click', () => {
+                const item = question.parentElement;
+                const isActive = item.classList.contains('active');
+                
+                // Close all other items
+                document.querySelectorAll('.faq-item').forEach(i => {
+                    i.classList.remove('active');
+                });
+                
+                // Toggle current item
+                if (!isActive) {
+                    item.classList.add('active');
+                }
             });
-
-            // Toggle current item
-            parent.classList.toggle('active');
-        })
+        });
     });
 </script>
 {% endblock %}

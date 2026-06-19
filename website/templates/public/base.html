@@ -14,69 +14,8 @@
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
+    <link rel="stylesheet" href="{% static 'css/premium-theme.css' %}">
     <style>
-        :root {
-            /* Organic Premium Light Theme Variables */
-            --bg-base: #fafafa;
-            --bg-surface: #ffffff;
-            
-            --brand-red: #c0392b;
-            --brand-red-hover: #a93226;
-            --brand-red-light: rgba(192, 57, 43, 0.08);
-            
-            --text-primary: #1c1c1e;
-            --text-secondary: #636366;
-            --text-light: #8e8e93;
-            
-            --border-soft: #f2f2f7;
-            --glass-bg: rgba(255, 255, 255, 0.85);
-            --glass-border: rgba(255, 255, 255, 0.5);
-            
-            --shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.04);
-            --shadow-md: 0 12px 32px rgba(0, 0, 0, 0.06);
-            --shadow-hover: 0 20px 48px rgba(192, 57, 43, 0.12);
-            
-            --font-heading: 'Outfit', sans-serif;
-            --font-body: 'Inter', sans-serif;
-            
-            --radius-pill: 100px;
-            --radius-lg: 20px;
-            --radius-md: 12px;
-            
-            --transition: all 0.35s cubic-bezier(0.25, 1, 0.5, 1);
-        }
-
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-        }
-
-        body {
-            font-family: var(--font-body);
-            color: var(--text-primary);
-            background-color: var(--bg-base);
-            overflow-x: hidden;
-            line-height: 1.6;
-        }
-
-        h1, h2, h3, h4, h5, h6 {
-            font-family: var(--font-heading);
-            color: var(--text-primary);
-            letter-spacing: -0.02em;
-        }
-
-        a {
-            text-decoration: none;
-            color: inherit;
-        }
-
-        .container {
-            max-width: 1240px;
-            margin: 0 auto;
-            padding: 0 24px;
-        }
-
         /* Clean Forms */
         input, textarea, select {
             background: #fff;
@@ -256,6 +195,10 @@
             .organic-actions .organic-btn { display: none; }
             .organic-header { padding: 0 24px; }
         }
+        
+        @media (min-width: 993px) {
+            .organic-header-cta { display: inline-flex !important; }
+        }
 
         /* ================================================
            CLEAN MODERN FOOTER
@@ -397,6 +340,7 @@
                 <i class="fa-solid fa-shopping-cart"></i>
                 <span class="cart-badge">{{ cart_count|default:"0" }}</span>
             </button>
+            <a href="{% url 'products' %}" class="btn btn-primary organic-header-cta" style="padding: 8px 20px; font-size: 14px; border-radius: 6px; display: none;">Shop Now</a>
             <button class="mobile-toggle">☰</button>
         </div>
     </header>
