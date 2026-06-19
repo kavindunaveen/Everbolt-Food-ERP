@@ -327,7 +327,35 @@
         <nav class="organic-nav">
             <a href="{% url 'home' %}" class="{% if request.path == '/' %}active{% endif %}">Home</a>
             <a href="{% url 'about' %}" class="{% if 'about' in request.path %}active{% endif %}">About Us</a>
-            <a href="{% url 'products' %}" class="{% if 'products' in request.path %}active{% endif %}">Shop Products</a>
+            <div class="mega-menu-wrapper" style="display: flex; align-items: center; height: 100%;">
+                <a href="{% url 'products' %}" class="{% if 'products' in request.path %}active{% endif %}" style="display: flex; align-items: center; gap: 4px;">Shop Products <i class="fa-solid fa-chevron-down" style="font-size: 0.7rem; margin-top: 2px;"></i></a>
+                <div class="mega-menu">
+                    <a href="{% url 'products' %}?q=flavoured+tea" class="mega-menu-item">
+                        <img src="{% static 'images/cat-tea.png' %}" alt="Flavoured Tea" class="mega-menu-img">
+                        <div class="mega-menu-title">Flavoured Tea</div>
+                    </a>
+                    <a href="{% url 'products' %}?q=herbal+tea" class="mega-menu-item">
+                        <img src="{% static 'images/cat-tea.png' %}" alt="Herbal Tea" class="mega-menu-img">
+                        <div class="mega-menu-title">Herbal Tea</div>
+                    </a>
+                    <a href="{% url 'products' %}?q=spices" class="mega-menu-item">
+                        <img src="{% static 'images/cat-spices.png' %}" alt="Premium Spices" class="mega-menu-img">
+                        <div class="mega-menu-title">Premium Spices</div>
+                    </a>
+                    <a href="{% url 'products' %}?q=everleaf" class="mega-menu-item">
+                        <img src="{% static 'images/cat-tea.png' %}" alt="Everleaf Range" class="mega-menu-img">
+                        <div class="mega-menu-title">Everleaf Range</div>
+                    </a>
+                    <a href="{% url 'products' %}?q=kithul" class="mega-menu-item">
+                        <img src="{% static 'images/cat-kithul.png' %}" alt="Kithul Products" class="mega-menu-img">
+                        <div class="mega-menu-title">Kithul Products</div>
+                    </a>
+                    <a href="{% url 'products' %}?q=hotel+supplies" class="mega-menu-item">
+                        <img src="{% static 'images/cat-hotel.png' %}" alt="Hotel Supplies" class="mega-menu-img">
+                        <div class="mega-menu-title">Hotel Supplies</div>
+                    </a>
+                </div>
+            </div>
             <a href="{% url 'blog_list' %}" class="{% if 'blog' in request.path %}active{% endif %}">Blog</a>
             <a href="{% url 'contact' %}" class="{% if 'contact' in request.path %}active{% endif %}">Contact</a>
         </nav>
@@ -678,6 +706,11 @@
             }
         });
     </script>
+
+    <!-- FLOATING WHATSAPP BUTTON -->
+    <a href="https://wa.me/94765400084" class="whatsapp-float" target="_blank" aria-label="Chat with us on WhatsApp">
+        <i class="fa-brands fa-whatsapp"></i>
+    </a>
 
     {% block extra_js %}{% endblock %}
 </body>

@@ -42,8 +42,8 @@
                     <a href="{% url 'blog_detail' post.slug %}" class="bl-card">
                         
                         <div class="bl-card-img-wrap">
-                            {% if post.cover_image_url %}
-                                <img src="{{ post.cover_image_url }}" alt="{{ post.title }}" loading="lazy">
+                            {% if post.main_image %}
+                                <img src="{{ post.main_image.url }}" alt="{{ post.title }}" loading="lazy">
                             {% else %}
                                 <div class="bl-card-no-img"><i class="fa-solid fa-image"></i></div>
                             {% endif %}

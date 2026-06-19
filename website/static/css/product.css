@@ -678,6 +678,63 @@
     }
 }
 
+/* ── STICKY MOBILE ADD-TO-CART ────────────────── */
+.pd-sticky-mobile-cart {
+    display: none;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    background: #ffffff;
+    box-shadow: 0 -4px 16px rgba(0,0,0,0.1);
+    padding: 12px 24px;
+    z-index: 999;
+    justify-content: space-between;
+    align-items: center;
+    border-top: 1px solid #f2f2f7;
+    transition: transform 0.3s ease;
+    transform: translateY(100%);
+}
+
+.pd-sticky-mobile-cart.visible {
+    transform: translateY(0);
+}
+
+.pd-sticky-info {
+    display: flex;
+    flex-direction: column;
+}
+
+.pd-sticky-title {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    font-weight: 600;
+}
+
+.pd-sticky-price {
+    font-family: var(--font-heading);
+    font-size: 1.1rem;
+    font-weight: 800;
+    color: var(--brand-red);
+}
+
+.pd-sticky-btn {
+    background: var(--brand-red);
+    color: #ffffff;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 100px;
+    font-weight: 700;
+    font-size: 0.95rem;
+    box-shadow: 0 4px 12px rgba(192,57,43,0.3);
+}
+
+@media (max-width: 768px) {
+    .pd-sticky-mobile-cart {
+        display: flex;
+    }
+}
+
 
 /* ===== ANIMATIONS ===== */
 @keyframes fadeInUp {

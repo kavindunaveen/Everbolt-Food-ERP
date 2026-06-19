@@ -114,6 +114,143 @@
     margin: 0;
 }
 
+/* --- Trusted By Carousel --- */
+.trusted-by {
+    padding: 64px 0 32px;
+    background: var(--color-white);
+    text-align: center;
+    overflow: hidden;
+}
+
+.trusted-by h4 {
+    font-size: 0.875rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--color-gray-400);
+    margin-bottom: 32px;
+}
+
+.marquee-container {
+    width: 100%;
+    overflow: hidden;
+    position: relative;
+    display: flex;
+}
+
+.marquee-container::before, .marquee-container::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    width: 150px;
+    height: 100%;
+    z-index: 2;
+}
+
+.marquee-container::before {
+    left: 0;
+    background: linear-gradient(to right, var(--color-white) 0%, transparent 100%);
+}
+
+.marquee-container::after {
+    right: 0;
+    background: linear-gradient(to left, var(--color-white) 0%, transparent 100%);
+}
+
+.marquee-content {
+    display: flex;
+    gap: 64px;
+    animation: scroll-marquee 20s linear infinite;
+    align-items: center;
+    padding-left: 64px; /* Space between loops */
+}
+
+@keyframes scroll-marquee {
+    0% { transform: translateX(0); }
+    100% { transform: translateX(-50%); }
+}
+
+.marquee-logo {
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: var(--color-gray-300);
+    white-space: nowrap;
+    text-transform: uppercase;
+    letter-spacing: -0.02em;
+}
+
+/* --- Testimonials --- */
+.testimonials-section {
+    padding: 80px 0;
+    background: var(--color-bg-cream);
+}
+
+.testimonial-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 32px;
+}
+
+.testimonial-card {
+    background: var(--color-white);
+    padding: 40px 32px;
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow-sm);
+    position: relative;
+    transition: var(--transition-base);
+}
+
+.testimonial-card:hover {
+    transform: translateY(-8px);
+    box-shadow: var(--shadow-md);
+}
+
+.testimonial-stars {
+    color: #f1c40f;
+    font-size: 1.1rem;
+    margin-bottom: 16px;
+}
+
+.testimonial-text {
+    font-size: 1rem;
+    color: var(--color-gray-600);
+    line-height: 1.6;
+    margin-bottom: 24px;
+    font-style: italic;
+}
+
+.testimonial-author {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.testimonial-avatar {
+    width: 48px;
+    height: 48px;
+    background: var(--color-primary-light);
+    color: var(--color-primary);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 1.2rem;
+}
+
+.author-info h5 {
+    margin: 0 0 4px 0;
+    font-size: 1rem;
+}
+
+.author-info span {
+    font-size: 0.8rem;
+    color: var(--color-gray-400);
+}
+
+@media (max-width: 992px) {
+    .testimonial-grid { grid-template-columns: 1fr; }
+}
+
 /* --- Categories Grid --- */
 .categories-grid {
     display: grid;
@@ -531,6 +668,30 @@
     </div>
 </div>
 
+<!-- TRUSTED BY CAROUSEL -->
+<div class="trusted-by">
+    <h4>Trusted By Sri Lanka's Finest Hotels</h4>
+    <div class="marquee-container">
+        <div class="marquee-content">
+            <!-- First set of logos -->
+            <div class="marquee-logo">Cinnamon Hotels</div>
+            <div class="marquee-logo">Shangri-La</div>
+            <div class="marquee-logo">Taj Samudra</div>
+            <div class="marquee-logo">Heritance</div>
+            <div class="marquee-logo">Jetwing Hotels</div>
+            <div class="marquee-logo">Aitken Spence</div>
+            
+            <!-- Duplicate for seamless loop -->
+            <div class="marquee-logo">Cinnamon Hotels</div>
+            <div class="marquee-logo">Shangri-La</div>
+            <div class="marquee-logo">Taj Samudra</div>
+            <div class="marquee-logo">Heritance</div>
+            <div class="marquee-logo">Jetwing Hotels</div>
+            <div class="marquee-logo">Aitken Spence</div>
+        </div>
+    </div>
+</div>
+
 <!-- 4.3 FEATURED CATEGORIES -->
 <section class="section section-bg-cream">
     <div class="container">
@@ -654,6 +815,63 @@
             <h2>Elevate Your Guest Experience</h2>
             <p>Supplying premium natural products and room amenities for hotels, restaurants, offices, and distributors. We offer custom packaging, reliable global supply, and dedicated export support.</p>
             <a href="{% url 'contact' %}" class="btn btn-gold">Request Bulk Pricing</a>
+        </div>
+    </div>
+</section>
+
+<!-- TESTIMONIALS SECTION -->
+<section class="testimonials-section">
+    <div class="container">
+        <div class="section-title" data-aos="fade-up">
+            <span class="section-subtitle">Client Success</span>
+            <h2>What Our Partners Say</h2>
+        </div>
+        
+        <div class="testimonial-grid">
+            <!-- Testimonial 1 -->
+            <div class="testimonial-card" data-aos="fade-up" data-aos-delay="100">
+                <div class="testimonial-stars">
+                    <i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i>
+                </div>
+                <p class="testimonial-text">"Everbolt Foods has completely transformed our room amenities. Their premium herbal teas and custom packaging perfectly align with the luxury experience we want to offer our guests."</p>
+                <div class="testimonial-author">
+                    <div class="testimonial-avatar">C</div>
+                    <div class="author-info">
+                        <h5>Procurement Manager</h5>
+                        <span>Cinnamon Hotels & Resorts</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Testimonial 2 -->
+            <div class="testimonial-card" data-aos="fade-up" data-aos-delay="200">
+                <div class="testimonial-stars">
+                    <i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i>
+                </div>
+                <p class="testimonial-text">"Finding a reliable supplier for authentic, 100% natural Sri Lankan spices at scale was a challenge until we partnered with Everbolt. Their quality consistency is unmatched in the industry."</p>
+                <div class="testimonial-author">
+                    <div class="testimonial-avatar">T</div>
+                    <div class="author-info">
+                        <h5>Executive Chef</h5>
+                        <span>Taj Samudra</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Testimonial 3 -->
+            <div class="testimonial-card" data-aos="fade-up" data-aos-delay="300">
+                <div class="testimonial-stars">
+                    <i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i>
+                </div>
+                <p class="testimonial-text">"The Everleaf tea range has become an absolute favorite in our boutique cafes. Our customers frequently ask where they can buy it. The flavor profile is exceptional and purely organic."</p>
+                <div class="testimonial-author">
+                    <div class="testimonial-avatar">S</div>
+                    <div class="author-info">
+                        <h5>F&B Director</h5>
+                        <span>Shangri-La Colombo</span>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 </section>

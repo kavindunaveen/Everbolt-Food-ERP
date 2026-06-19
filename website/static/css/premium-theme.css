@@ -264,7 +264,111 @@ img {
    RESPONSIVE UTILITIES
    ========================================================================== */
 @media (max-width: 768px) {
-    .section {
-        padding: 64px 0;
+    .faq-item.active .faq-answer {
+        padding: 0 20px 20px;
+    }
+}
+
+/* ==========================================================================
+   FLOATING WHATSAPP WIDGET
+   ========================================================================== */
+.whatsapp-float {
+    position: fixed;
+    width: 60px;
+    height: 60px;
+    bottom: 40px;
+    right: 40px;
+    background-color: #25d366;
+    color: #FFF;
+    border-radius: 50px;
+    text-align: center;
+    font-size: 30px;
+    box-shadow: 0px 4px 15px rgba(37, 211, 102, 0.4);
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+    text-decoration: none;
+}
+
+.whatsapp-float:hover {
+    background-color: #1ebe57;
+    color: #FFF;
+    transform: translateY(-5px);
+    box-shadow: 0px 8px 20px rgba(37, 211, 102, 0.6);
+}
+
+@media (max-width: 768px) {
+    .whatsapp-float {
+        width: 50px;
+        height: 50px;
+        bottom: 20px;
+        right: 20px;
+        font-size: 26px;
+    }
+}
+
+/* ==========================================================================
+   MEGA MENU
+   ========================================================================== */
+.mega-menu-wrapper {
+    position: relative;
+}
+
+.mega-menu {
+    position: absolute;
+    top: 100%;
+    left: -200px; /* Center it roughly relative to the nav item */
+    width: 600px;
+    background: var(--color-white);
+    box-shadow: var(--shadow-lg);
+    border-radius: var(--border-radius);
+    padding: 24px;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(10px);
+    transition: all 0.3s ease;
+    z-index: 1000;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+}
+
+.mega-menu-wrapper:hover .mega-menu {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+}
+
+.mega-menu-item {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.mega-menu-img {
+    width: 100%;
+    aspect-ratio: 4/3;
+    object-fit: cover;
+    border-radius: var(--border-radius-sm);
+    background: var(--color-bg-cream);
+    transition: var(--transition-base);
+}
+
+.mega-menu-item:hover .mega-menu-img {
+    transform: scale(1.05);
+}
+
+.mega-menu-title {
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: var(--color-tea-brown);
+    text-align: center;
+}
+
+@media (max-width: 992px) {
+    .mega-menu {
+        display: none !important; /* Hide mega menu on mobile, just fallback to standard link */
     }
 }

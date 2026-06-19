@@ -184,15 +184,19 @@ def custom_page_detail(request, slug):
     })
 
 # ============================================================
-# BLOG VIEWS (DUMMY)
+# BLOG VIEWS
 # ============================================================
+from .models import WebsiteBlogPost
+
 def blog(request):
     settings_data = WebsiteSettings.get_settings()
-    return render(request, "public/blog.html", {"settings": settings_data, "posts": []})
+    posts = WebsiteBlogPost.objects.filter(status=WebsiteBlogPost.Status.PUBLISHED)
+    return render(request, "public/blog.html", {"settings": settings_data, "posts": posts})
 
 def blog_detail(request, slug):
     settings_data = WebsiteSettings.get_settings()
-    return render(request, "public/blog_detail.html", {"settings": settings_data})
+    post = get_object_or_404(WebsiteBlogPost, slug=slug, status=WebsiteBlogPost.Status.PUBLISHED)
+    return render(request, "public/blog_detail.html", {"settings": settings_data, "post": post})
 
 # ============================================================
 # CART HELPERS

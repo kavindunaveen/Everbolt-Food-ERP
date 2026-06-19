@@ -37,10 +37,8 @@
   },
   "datePublished": "{{ post.published_at }}",
   "dateModified": "{{ post.updated_at }}"
-  {% if post.og_image_url %}
-  ,"image": "{{ post.og_image_url }}"
-  {% elif post.cover_image_url %}
-  ,"image": "{{ post.cover_image_url }}"
+  {% if post.main_image %}
+  ,"image": "{{ post.main_image.url }}"
   {% endif %}
 }
 </script>
@@ -53,10 +51,8 @@
 <meta property="og:description" content="{{ post.og_description_display|default:post.meta_description_display|default:post.excerpt }}">
 <meta property="og:url" content="{{ request.build_absolute_uri }}">
 
-{% if post.og_image_url %}
-<meta property="og:image" content="{{ post.og_image_url }}">
-{% elif post.cover_image_url %}
-<meta property="og:image" content="{{ post.cover_image_url }}">
+{% if post.main_image %}
+<meta property="og:image" content="{{ post.main_image.url }}">
 {% endif %}
 
 <meta property="og:image:width" content="1200">
@@ -66,10 +62,8 @@
 <meta name="twitter:title" content="{{ post.og_title_display|default:post.seo_title_display|default:post.title }}">
 <meta name="twitter:description" content="{{ post.og_description_display|default:post.meta_description_display|default:post.excerpt }}">
 
-{% if post.og_image_url %}
-<meta name="twitter:image" content="{{ post.og_image_url }}">
-{% elif post.cover_image_url %}
-<meta name="twitter:image" content="{{ post.cover_image_url }}">
+{% if post.main_image %}
+<meta name="twitter:image" content="{{ post.main_image.url }}">
 {% endif %}
 {% endblock %}
 
@@ -112,13 +106,13 @@
 <section class="bl-section">
     <div class="bl-container-narrow">
 
-        {% if post.cover_image_url %}
-            <img src="{{ post.cover_image_url }}" alt="{{ post.title }}" class="bd-cover">
+        {% if post.main_image %}
+            <img src="{{ post.main_image.url }}" alt="{{ post.title }}" class="bd-cover">
         {% endif %}
 
         <div class="bd-content">
-            {% if post.body %}
-                {{ post.body|safe }}
+            {% if post.content %}
+                {{ post.content|safe }}
             {% else %}
                 <p>No blog content available.</p>
             {% endif %}

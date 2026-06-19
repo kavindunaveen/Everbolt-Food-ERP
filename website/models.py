@@ -236,3 +236,39 @@ class WebsiteOrderItem(models.Model):
 
     def __str__(self):
         return f"{self.product_name} - {self.quantity}"
+
+
+class WebsiteBlogPost(models.Model):
+    """Blog posts for the public website."""
+
+    class Status(models.TextChoices):
+        DRAFT = 'DRAFT', 'Draft'
+        PUBLISHED = 'PUBLISHED', 'Published'
+
+    title = models.CharField(max_length=200)
+    slug = models.SlugField(unique=True)
+    author = models.CharField(max_length=100, blank=True)
+    main_image = models.ImageField(upload_to='website/blog/', null=True, blank=True)
+    excerpt = models.TextField(blank=True, help_text="Short description for blog list page")
+    content = models.TextField(help_text='Main blog content (HTML supported)')
+    status = models.CharField(max_length=20, choices=Status.choices, default=Status.DRAFT)
+    
+    meta_title = models.CharField(max_length=200, blank=True)
+    meta_description = models.CharField(max_length=300, blank=True)
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    published_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ['-published_at', '-created_at']
+        verbose_name = 'Blog Post'
+        verbose_name_plural = 'Blog Posts'
+
+    def __str__(self):
+        return self.title
+
+    def save(self, *args, **kwargs):
+        if not self.slug:
+            self.slug = slugify(self.title)
+        super().save(*args, **kwargs)

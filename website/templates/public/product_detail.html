@@ -267,6 +267,17 @@
             </section>
         {% endif %}
 
+        <!-- STICKY MOBILE ADD-TO-CART -->
+        <div class="pd-sticky-mobile-cart" id="stickyMobileCart">
+            <div class="pd-sticky-info">
+                <span class="pd-sticky-title">{{ product.get_display_name|truncatechars:30 }}</span>
+                <span class="pd-sticky-price">රු{{ product.get_price|floatformat:2 }}</span>
+            </div>
+            <button type="button" class="pd-sticky-btn" onclick="document.querySelector('.pd-cart-form').submit();">
+                Add to Cart
+            </button>
+        </div>
+
     </div>
 </section>
 
@@ -314,6 +325,19 @@
         var panel = document.getElementById(panelId);
         if (panel) panel.classList.add('active');
     };
+
+    /* Sticky Mobile Cart Logic */
+    var stickyCart = document.getElementById('stickyMobileCart');
+    if (stickyCart) {
+        window.addEventListener('scroll', function() {
+            // Show sticky cart after scrolling past 300px
+            if (window.scrollY > 300) {
+                stickyCart.classList.add('visible');
+            } else {
+                stickyCart.classList.remove('visible');
+            }
+        });
+    }
 }());
 </script>
 {% endblock %}
