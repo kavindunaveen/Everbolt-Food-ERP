@@ -344,8 +344,9 @@
 <body>
 
     <!-- CLEAN GLASS HEADER -->
-    <header class="organic-header {% if request.path != '/' %}solid{% else %}home-transparent{% endif %}" id="organicHeader">
-        <a href="{% url 'home' %}" class="organic-logo">
+    {% url 'home' as home_url %}
+    <header class="organic-header {% if request.path != home_url and request.path != '/' %}solid{% else %}home-transparent{% endif %}" id="organicHeader">
+        <a href="{{ home_url }}" class="organic-logo">
             <img src="{% static 'images/logo.webp' %}" alt="Everbolt Foods Logo">
         </a>
         <nav class="organic-nav">
