@@ -720,53 +720,19 @@
         </div>
 
         <div class="categories-grid">
-            <a href="{% url 'products' %}?q=flavoured+tea" class="category-card" data-aos="fade-up" data-aos-delay="100">
-                <img src="{% static 'images/cat-tea.png' %}" alt="Flavoured Tea">
+            {% for category in categories %}
+            <a href="{% url 'products' %}?category={{ category.id }}" class="category-card" data-aos="fade-up" data-aos-delay="{{ forloop.counter0|add:1 }}00">
+                {% if category.image %}
+                    <img src="{{ category.image.url }}" alt="{{ category.name }}">
+                {% else %}
+                    <img src="{% static 'images/cat-tea.png' %}" alt="{{ category.name }}">
+                {% endif %}
                 <div class="category-content">
-                    <h3>Flavoured Tea</h3>
+                    <h3>{{ category.name }}</h3>
                     <div class="category-cta">Shop Collection <i class="fa-solid fa-arrow-right"></i></div>
                 </div>
             </a>
-            
-            <a href="{% url 'products' %}?q=herbal+tea" class="category-card" data-aos="fade-up" data-aos-delay="200">
-                <img src="{% static 'images/cat-tea.png' %}" alt="Herbal Tea">
-                <div class="category-content">
-                    <h3>Herbal Tea</h3>
-                    <div class="category-cta">Shop Collection <i class="fa-solid fa-arrow-right"></i></div>
-                </div>
-            </a>
-
-            <a href="{% url 'products' %}?q=spices" class="category-card" data-aos="fade-up" data-aos-delay="300">
-                <img src="{% static 'images/cat-spices.png' %}" alt="Premium Spices">
-                <div class="category-content">
-                    <h3>Premium Spices</h3>
-                    <div class="category-cta">Shop Collection <i class="fa-solid fa-arrow-right"></i></div>
-                </div>
-            </a>
-
-            <a href="{% url 'products' %}?q=everleaf" class="category-card" data-aos="fade-up" data-aos-delay="100">
-                <img src="{% static 'images/cat-tea.png' %}" alt="Everleaf Range">
-                <div class="category-content">
-                    <h3>Everleaf Range</h3>
-                    <div class="category-cta">Shop Collection <i class="fa-solid fa-arrow-right"></i></div>
-                </div>
-            </a>
-
-            <a href="{% url 'products' %}?q=kithul" class="category-card" data-aos="fade-up" data-aos-delay="200">
-                <img src="{% static 'images/cat-kithul.png' %}" alt="Kithul Products">
-                <div class="category-content">
-                    <h3>Kithul Products</h3>
-                    <div class="category-cta">Shop Collection <i class="fa-solid fa-arrow-right"></i></div>
-                </div>
-            </a>
-
-            <a href="{% url 'products' %}?q=hotel+supplies" class="category-card" data-aos="fade-up" data-aos-delay="300">
-                <img src="{% static 'images/cat-hotel.png' %}" alt="Hotel Supplies">
-                <div class="category-content">
-                    <h3>Hotel Supplies</h3>
-                    <div class="category-cta">Shop Collection <i class="fa-solid fa-arrow-right"></i></div>
-                </div>
-            </a>
+            {% endfor %}
         </div>
     </div>
 </section>

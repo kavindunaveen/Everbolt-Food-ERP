@@ -49,6 +49,7 @@ class WebsiteCategory(models.Model):
     """Product categories shown on the website shop."""
     name = models.CharField(max_length=100)
     slug = models.SlugField(unique=True, blank=True)
+    image = models.ImageField(upload_to='website/categories/', null=True, blank=True, help_text='Category cover image')
     description = models.TextField(blank=True)
     display_order = models.PositiveIntegerField(default=0)
     is_visible = models.BooleanField(default=True)
