@@ -128,7 +128,8 @@ class RecordPaymentView(LoginRequiredMixin, PermissionRequiredMixin, View):
                 raise ValueError("Payment amount is required.")
 
             invoice = get_object_or_404(Invoice, id=invoice_id)
-            amount = float(amount_str)
+            from decimal import Decimal
+            amount = Decimal(amount_str)
             
             if amount <= 0:
                 raise ValueError("Payment amount must be greater than 0.")
@@ -136,8 +137,8 @@ class RecordPaymentView(LoginRequiredMixin, PermissionRequiredMixin, View):
             total_paid = sum(p.amount for p in invoice.payments.all())
             balance = invoice.total_amount - total_paid
             
-            # Allow tiny floating point differences
-            if amount > balance + 0.01:
+            # Allow tiny differences
+            if amount > balance + Decimal('0.01'):
                 raise ValueError(f"Payment amount cannot exceed the current balance (Rs {balance:.2f}).")
                 
             if payment_method in ['CHEQUE', 'BANK_TRANSFER'] and not reference:
