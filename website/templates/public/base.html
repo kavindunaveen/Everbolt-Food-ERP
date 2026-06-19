@@ -101,6 +101,16 @@
             transition: var(--transition);
         }
 
+        .organic-header.home-transparent:not(.scrolled) .organic-nav a,
+        .organic-header.home-transparent:not(.scrolled) .organic-logo,
+        .organic-header.home-transparent:not(.scrolled) .icon-btn {
+            color: #ffffff;
+        }
+
+        .organic-header.home-transparent:not(.scrolled) .organic-logo img {
+            filter: brightness(0) invert(1);
+        }
+
         .organic-nav a:hover, .organic-nav a.active {
             color: var(--brand-red);
         }
@@ -160,6 +170,10 @@
             border: 1px solid rgba(0,0,0,0.1);
             transition: var(--transition);
         }
+        .organic-header.home-transparent:not(.scrolled) .header-search-form {
+            background: rgba(255,255,255,0.1);
+            border-color: rgba(255,255,255,0.2);
+        }
         .organic-header.scrolled .header-search-form {
             background: #f2f2f7;
             border-color: #e5e5ea;
@@ -172,6 +186,12 @@
             width: 160px;
             font-size: 14px;
             font-family: var(--font-body);
+        }
+        .organic-header.home-transparent:not(.scrolled) .search-input {
+            color: #ffffff;
+        }
+        .organic-header.home-transparent:not(.scrolled) .search-input::placeholder {
+            color: rgba(255,255,255,0.7);
         }
         .search-input:focus {
             outline: none;
@@ -324,7 +344,7 @@
 <body>
 
     <!-- CLEAN GLASS HEADER -->
-    <header class="organic-header {% if request.path != '/' %}solid{% endif %}" id="organicHeader">
+    <header class="organic-header {% if request.path != '/' %}solid{% else %}home-transparent{% endif %}" id="organicHeader">
         <a href="{% url 'home' %}" class="organic-logo">
             <img src="{% static 'images/logo.webp' %}" alt="Everbolt Foods Logo">
         </a>

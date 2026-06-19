@@ -11,7 +11,7 @@ import uuid
 
 from .models import (
     WebsiteSettings, WebsiteCategory, WebsiteProduct,
-    WebsitePage, WebsiteEnquiry, WebsiteOrder, WebsiteOrderItem
+    WebsitePage, WebsiteEnquiry, WebsiteOrder, WebsiteOrderItem, WebsiteHeroSlide
 )
 
 # ============================================================
@@ -40,6 +40,7 @@ def get_client_ip(request):
 def home(request):
     settings_data = WebsiteSettings.get_settings()
     categories = WebsiteCategory.objects.filter(is_visible=True).order_by('display_order')
+    hero_slides = WebsiteHeroSlide.objects.filter(is_active=True).order_by('display_order', '-created_at')
 
     hero = settings_data.hero_section
     product_block = settings_data.about_section
@@ -58,6 +59,7 @@ def home(request):
     return render(request, "public/index.html", {
         "settings": settings_data,
         "categories": categories,
+        "hero_slides": hero_slides,
         "hero": hero,
         "product_block": product_block,
         "about_summary": about_summary,

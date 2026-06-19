@@ -63,7 +63,7 @@
 .hero-overlay {
     position: absolute;
     inset: 0;
-    background: linear-gradient(to right, rgba(10, 25, 15, 0.95) 0%, rgba(10, 25, 15, 0.3) 100%);
+    background: linear-gradient(to right, rgba(0, 10, 5, 0.95) 0%, rgba(0, 10, 5, 0.8) 50%, rgba(0, 10, 5, 0.4) 100%);
     z-index: 2;
 }
 
@@ -689,21 +689,26 @@
 <!-- 4.1 HERO SECTION -->
 <section class="hero">
     <div class="hero-slider" id="heroSlider">
-        <div class="hero-slide active">
-            <img src="{% static 'images/hero-tea-display.png' %}" alt="Ceylon Tea">
-        </div>
-        <div class="hero-slide">
-            <img src="{% static 'images/hero-organic.png' %}" alt="Organic Spices">
-        </div>
-        <div class="hero-slide">
-            <img src="{% static 'images/main-bg.webp' %}" alt="Hotel Supplies">
-        </div>
+        {% if hero_slides %}
+            {% for slide in hero_slides %}
+            <div class="hero-slide {% if forloop.first %}active{% endif %}">
+                <img src="{{ slide.image.url }}" alt="{{ slide.title|default:'Hero Slide' }}">
+            </div>
+            {% endfor %}
+        {% else %}
+            <div class="hero-slide active">
+                <img src="{% static 'images/hero-tea-display.png' %}" alt="Ceylon Tea">
+            </div>
+            <div class="hero-slide">
+                <img src="{% static 'images/hero-organic.png' %}" alt="Organic Spices">
+            </div>
+        {% endif %}
         <div class="hero-overlay"></div>
     </div>
     <div class="container">
         <div class="hero-content" data-aos="fade-up" data-aos-duration="1000">
-            <h1>Sri Lanka's Finest Natural Foods & Hotel Supplies</h1>
-            <p>Premium Ceylon teas, authentic spices, and complete hotel room amenities—sustainably sourced and trusted globally.</p>
+            <h1>{% if hero.title %}{{ hero.title }}{% else %}Sri Lanka's Finest Natural Foods & Hotel Supplies{% endif %}</h1>
+            <p>{% if hero.description %}{{ hero.description }}{% else %}Premium Ceylon teas, authentic spices, and complete hotel room amenities—sustainably sourced and trusted globally.{% endif %}</p>
             <div class="hero-actions">
                 <a href="{% url 'products' %}" class="btn btn-primary">Shop Products</a>
                 <a href="{% url 'contact' %}" class="btn btn-gold">Bulk / Hotel Inquiry</a>

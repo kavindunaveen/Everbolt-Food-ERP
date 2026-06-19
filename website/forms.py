@@ -1,6 +1,21 @@
 from django import forms
-from .models import WebsiteSettings, WebsiteCategory, WebsiteProduct, WebsitePage, WebsiteEnquiry
+from .models import WebsiteSettings, WebsiteCategory, WebsiteProduct, WebsitePage, WebsiteEnquiry, WebsiteHeroSlide
 from inventory.models import Product
+
+
+class WebsiteHeroSlideForm(forms.ModelForm):
+    class Meta:
+        model = WebsiteHeroSlide
+        fields = ['title', 'subtitle', 'image', 'display_order', 'is_active']
+        widgets = {
+            'title': forms.TextInput(attrs={'class': 'mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-brand-red focus:ring-brand-red sm:text-sm'}),
+            'subtitle': forms.Textarea(attrs={'class': 'mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-brand-red focus:ring-brand-red sm:text-sm', 'rows': 3}),
+            'image': forms.FileInput(attrs={
+                'class': 'block w-full text-sm text-gray-500 file:mr-4 file:py-2.5 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-semibold file:bg-gray-50 file:text-brand-red hover:file:bg-gray-100 cursor-pointer'
+            }),
+            'display_order': forms.NumberInput(attrs={'class': 'mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-brand-red focus:ring-brand-red sm:text-sm'}),
+            'is_active': forms.CheckboxInput(attrs={'class': 'h-4 w-4 rounded border-gray-300 text-brand-red focus:ring-brand-red'}),
+        }
 
 
 class WebsiteSettingsForm(forms.ModelForm):

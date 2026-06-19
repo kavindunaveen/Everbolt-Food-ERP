@@ -1,0 +1,67 @@
+{% extends 'layouts/base.html' %}
+{% block title %}{% if object %}Edit Slide{% else %}Add Slide{% endif %}{% endblock %}
+{% block content %}
+<div class="max-w-2xl mx-auto px-4 py-6">
+  <div class="flex items-center gap-4 mb-8">
+    <a href="{% url 'website_slide_list' %}" class="w-10 h-10 bg-white border border-gray-200 rounded-xl flex items-center justify-center text-gray-500 hover:bg-gray-50 hover:text-gray-900 transition-all shadow-sm">
+      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+    </a>
+    <div>
+      <h1 class="text-2xl font-black text-gray-900">{% if object %}Edit Slide{% else %}New Slide{% endif %}</h1>
+      <p class="text-sm text-gray-500">Configure your homepage hero slide image and text.</p>
+    </div>
+  </div>
+
+  <div class="bg-white rounded-2xl border border-gray-100 shadow-xl shadow-gray-200/40 p-6 sm:p-8">
+    <form method="post" enctype="multipart/form-data" class="space-y-6">
+      {% csrf_token %}
+      {% if form.non_field_errors %}
+      <div class="p-4 bg-red-50 rounded-xl border border-red-100">
+        <div class="text-sm font-medium text-red-800">{{ form.non_field_errors }}</div>
+      </div>
+      {% endif %}
+
+      <div>
+        <label class="block text-sm font-black text-gray-900 mb-2">Slide Image (Required)</label>
+        {{ form.image }}
+        <p class="text-xs text-gray-500 mt-2">Recommended size: 1920x1080px. High resolution, landscape image.</p>
+        {% if form.image.errors %}<p class="mt-1 text-sm text-red-600">{{ form.image.errors.0 }}</p>{% endif %}
+        {% if object.image %}
+        <div class="mt-3">
+            <img src="{{ object.image.url }}" alt="Current Image" class="h-32 object-cover rounded-lg border border-gray-200">
+        </div>
+        {% endif %}
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div class="md:col-span-2">
+            <label class="block text-sm font-black text-gray-900 mb-2">Heading (Optional)</label>
+            {{ form.title }}
+            {% if form.title.errors %}<p class="mt-1 text-sm text-red-600">{{ form.title.errors.0 }}</p>{% endif %}
+          </div>
+          <div class="md:col-span-2">
+            <label class="block text-sm font-black text-gray-900 mb-2">Subheading (Optional)</label>
+            {{ form.subtitle }}
+            {% if form.subtitle.errors %}<p class="mt-1 text-sm text-red-600">{{ form.subtitle.errors.0 }}</p>{% endif %}
+          </div>
+          <div>
+            <label class="block text-sm font-black text-gray-900 mb-2">Display Order</label>
+            {{ form.display_order }}
+            <p class="text-xs text-gray-500 mt-1">Lower numbers appear first.</p>
+            {% if form.display_order.errors %}<p class="mt-1 text-sm text-red-600">{{ form.display_order.errors.0 }}</p>{% endif %}
+          </div>
+      </div>
+
+      <div class="flex items-center gap-3 pt-4 border-t border-gray-100">
+        {{ form.is_active }}
+        <label class="text-sm font-bold text-gray-700">Slide is Active</label>
+      </div>
+
+      <div class="pt-6 border-t border-gray-100 flex justify-end gap-3">
+        <a href="{% url 'website_slide_list' %}" class="px-6 py-2.5 text-sm font-bold text-gray-700 hover:bg-gray-100 rounded-xl transition-colors">Cancel</a>
+        <button type="submit" class="px-6 py-2.5 bg-brand-red text-white text-sm font-bold rounded-xl hover:bg-red-800 transition-all shadow-lg shadow-red-200">Save Slide</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

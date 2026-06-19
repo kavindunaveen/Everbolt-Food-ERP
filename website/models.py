@@ -45,6 +45,24 @@ class WebsiteSettings(models.Model):
         return obj
 
 
+class WebsiteHeroSlide(models.Model):
+    """Dynamic slides for the homepage hero section."""
+    title = models.CharField(max_length=200, blank=True, help_text="Optional heading for this slide")
+    subtitle = models.TextField(blank=True, help_text="Optional subheading for this slide")
+    image = models.ImageField(upload_to='website/hero/', help_text='High-res hero background image')
+    display_order = models.PositiveIntegerField(default=0)
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['display_order', '-created_at']
+        verbose_name = 'Hero Slide'
+        verbose_name_plural = 'Hero Slides'
+
+    def __str__(self):
+        return self.title or f"Slide {self.id}"
+
+
 class WebsiteCategory(models.Model):
     """Product categories shown on the website shop."""
     name = models.CharField(max_length=100)

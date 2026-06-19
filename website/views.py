@@ -9,10 +9,12 @@ from django.utils.decorators import method_decorator
 from django.db.models import Q
 
 from inventory.models import Product
-from .models import WebsiteSettings, WebsiteCategory, WebsiteProduct, WebsitePage, WebsiteEnquiry, WebsiteOrder
+from .models import (
+    WebsiteSettings, WebsiteCategory, WebsiteProduct, WebsitePage, WebsiteEnquiry, WebsiteOrder, WebsiteHeroSlide
+)
 from .forms import (
     WebsiteSettingsForm, WebsiteCategoryForm, WebsiteProductForm,
-    WebsitePageForm, WebsiteEnquiryNotesForm
+    WebsitePageForm, WebsiteEnquiryNotesForm, WebsiteHeroSlideForm
 )
 
 
@@ -134,6 +136,42 @@ def toggle_product_status(request, pk):
         messages.success(request, f'"{product.get_display_name()}" is now published on the website.')
     product.save(update_fields=['status'])
     return redirect('website_product_list')
+
+
+# ─── Hero Slides ───────────────────────────────────────────────────────────────
+
+class WebsiteHeroSlideListView(LoginRequiredMixin, ListView):
+    model = WebsiteHeroSlide
+    template_name = 'website/slide_list.html'
+    context_object_name = 'slides'
+
+class WebsiteHeroSlideCreateView(LoginRequiredMixin, CreateView):
+    model = WebsiteHeroSlide
+    form_class = WebsiteHeroSlideForm
+    template_name = 'website/slide_form.html'
+    success_url = reverse_lazy('website_slide_list')
+
+    def form_valid(self, form):
+        messages.success(self.request, 'Hero slide added successfully.')
+        return super().form_valid(form)
+
+class WebsiteHeroSlideEditView(LoginRequiredMixin, UpdateView):
+    model = WebsiteHeroSlide
+    form_class = WebsiteHeroSlideForm
+    template_name = 'website/slide_form.html'
+    success_url = reverse_lazy('website_slide_list')
+
+    def form_valid(self, form):
+        messages.success(self.request, 'Hero slide updated successfully.')
+        return super().form_valid(form)
+
+class WebsiteHeroSlideDeleteView(LoginRequiredMixin, DeleteView):
+    model = WebsiteHeroSlide
+    success_url = reverse_lazy('website_slide_list')
+
+    def delete(self, request, *args, **kwargs):
+        messages.success(request, 'Hero slide deleted successfully.')
+        return super().delete(request, *args, **kwargs)
 
 
 # ─── Categories ───────────────────────────────────────────────────────────────

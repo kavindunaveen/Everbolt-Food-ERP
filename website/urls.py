@@ -11,6 +11,12 @@ urlpatterns = [
     path('products/<int:pk>/edit/', views.WebsiteProductEditView.as_view(), name='website_product_edit'),
     path('products/<int:pk>/toggle/', views.toggle_product_status, name='website_product_toggle'),
 
+    # Hero Slides
+    path('slides/', views.WebsiteHeroSlideListView.as_view(), name='website_slide_list'),
+    path('slides/add/', views.WebsiteHeroSlideCreateView.as_view(), name='website_slide_add'),
+    path('slides/<int:pk>/edit/', views.WebsiteHeroSlideEditView.as_view(), name='website_slide_edit'),
+    path('slides/<int:pk>/delete/', views.WebsiteHeroSlideDeleteView.as_view(), name='website_slide_delete'),
+
     # Categories
     path('categories/', views.WebsiteCategoryListView.as_view(), name='website_category_list'),
     path('categories/add/', views.WebsiteCategoryCreateView.as_view(), name='website_category_add'),
