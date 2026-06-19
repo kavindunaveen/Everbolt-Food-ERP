@@ -30,6 +30,9 @@ class WebsiteCategoryForm(forms.ModelForm):
             'name': forms.TextInput(attrs={'placeholder': 'e.g. Spices'}),
             'slug': forms.TextInput(attrs={'placeholder': 'auto-generated if blank'}),
             'description': forms.Textarea(attrs={'rows': 3}),
+            'image': forms.FileInput(attrs={
+                'class': 'block w-full text-sm text-gray-500 file:mr-4 file:py-2.5 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-bold file:bg-violet-50 file:text-violet-700 hover:file:bg-violet-100 cursor-pointer border border-gray-200 rounded-xl bg-gray-50'
+            }),
         }
 
 
@@ -46,6 +49,9 @@ class WebsiteProductForm(forms.ModelForm):
             'short_description': forms.TextInput(attrs={'placeholder': 'Short one-liner shown in product cards'}),
             'description': forms.Textarea(attrs={'rows': 5, 'placeholder': 'Full product description for the website...'}),
             'slug': forms.TextInput(attrs={'placeholder': 'auto-generated if blank'}),
+            'main_image': forms.FileInput(attrs={
+                'class': 'block w-full text-sm text-gray-500 file:mr-4 file:py-2.5 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-bold file:bg-violet-50 file:text-violet-700 hover:file:bg-violet-100 cursor-pointer border border-gray-200 rounded-xl bg-gray-50'
+            }),
         }
 
     def __init__(self, *args, **kwargs):

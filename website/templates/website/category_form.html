@@ -3,7 +3,7 @@
 {% block content %}
 <div class="max-w-3xl mx-auto px-4 py-8">
   <h1 class="text-2xl font-extrabold text-gray-900 mb-6">{{ title }}</h1>
-  <form method="post" class="space-y-6">{% csrf_token %}
+  <form method="post" enctype="multipart/form-data" class="space-y-6">{% csrf_token %}
     <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 space-y-5">
       {% for field in form %}
       <div>
