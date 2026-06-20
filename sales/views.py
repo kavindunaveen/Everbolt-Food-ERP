@@ -796,6 +796,27 @@ class InvoiceUpdateView(LoginRequiredMixin, ERPPermissionRequiredMixin, UpdateVi
             
             self.object.save()
 
+            if self.object.status == 'DRAFT' and self.object.pk:
+                delivery_notes = self.object.delivery_notes.all()
+                if delivery_notes.exists():
+                    addr_parts = [
+                        self.object.snap_delivery_line1,
+                        self.object.snap_delivery_line2,
+                        self.object.snap_delivery_city,
+                        self.object.snap_delivery_province,
+                        self.object.snap_delivery_zip,
+                    ]
+                    if not any(addr_parts):
+                        addr_parts = [
+                            self.object.customer.delivery_address_line1,
+                            self.object.customer.delivery_address_line2,
+                            self.object.customer.delivery_city,
+                            self.object.customer.delivery_province,
+                            self.object.customer.delivery_zip_code,
+                        ]
+                    new_delivery_address = ", ".join([p for p in addr_parts if p])
+                    delivery_notes.update(delivery_address=new_delivery_address)
+
             if items.is_valid():
                 items.instance = self.object
                 saved_items = items.save(commit=False)
