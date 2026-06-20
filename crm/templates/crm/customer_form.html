@@ -139,7 +139,7 @@
                                     <div class="flex gap-1 ml-2 shrink-0">
                                         {% if not addr.is_default %}
                                         <button type="button" onclick="setDefaultAddr({{ form.instance.pk }}, {{ addr.pk }})"
-                                            class="text-[10px] font-bold text-blue-600 hover:text-blue-800 border border-blue-200 rounded px-1.5 py-0.5">Default</button>
+                                            class="text-[10px] font-bold text-blue-600 hover:text-blue-800 border border-blue-200 rounded px-1.5 py-0.5">Make Default</button>
                                         {% endif %}
                                         <button type="button" onclick="deleteAddr({{ form.instance.pk }}, {{ addr.pk }})"
                                             class="text-[10px] font-bold text-red-500 hover:text-red-700 border border-red-200 rounded px-1.5 py-0.5">✕</button>
@@ -343,7 +343,7 @@
                 </div>
                 <div class="flex gap-1 ml-2 shrink-0">
                     ${!a.is_default ? `<button type="button" onclick="setDefaultAddr(${customerId}, ${a.id})"
-                        class="text-[10px] font-bold text-blue-600 hover:text-blue-800 border border-blue-200 rounded px-1.5 py-0.5">Default</button>` : ''}
+                        class="text-[10px] font-bold text-blue-600 hover:text-blue-800 border border-blue-200 rounded px-1.5 py-0.5">Make Default</button>` : ''}
                     <button type="button" onclick="deleteAddr(${customerId}, ${a.id})"
                         class="text-[10px] font-bold text-red-500 hover:text-red-700 border border-red-200 rounded px-1.5 py-0.5">✕</button>
                 </div>
