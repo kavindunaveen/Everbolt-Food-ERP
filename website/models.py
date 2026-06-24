@@ -315,6 +315,21 @@ class WebsiteBlogPost(models.Model):
             self.slug = slugify(self.title)
         super().save(*args, **kwargs)
 
+class WebsiteProductVariant(models.Model):
+    """Additional variants for a website product (e.g., sizes, weights)."""
+    website_product = models.ForeignKey(WebsiteProduct, on_delete=models.CASCADE, related_name='variants')
+    inventory_product = models.OneToOneField('inventory.Product', on_delete=models.CASCADE, related_name='website_variant_listing')
+    variant_name = models.CharField(max_length=100, help_text='E.g., 5g, 7g, 100g')
+    display_order = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        ordering = ['display_order', 'variant_name']
+        verbose_name = 'Website Product Variant'
+        verbose_name_plural = 'Website Product Variants'
+
+    def __str__(self):
+        return f"{self.website_product.get_display_name()} - {self.variant_name}"
+
 class SEORedirect(models.Model):
     """Handles 301 redirects for broken links or changed URLs."""
     old_path = models.CharField(max_length=255, unique=True, help_text='Old URL path (e.g., /category/spices/)')

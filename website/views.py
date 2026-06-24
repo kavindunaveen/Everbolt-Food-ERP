@@ -125,6 +125,35 @@ class WebsiteProductEditView(LoginRequiredMixin, UpdateView):
         messages.success(self.request, f'Product "{form.instance.get_display_name()}" updated.')
         return super().form_valid(form)
 
+from django.forms import inlineformset_factory
+
+@login_required
+def manage_product_variants(request, pk):
+    from .models import WebsiteProductVariant
+    from inventory.models import Product
+    
+    website_product = get_object_or_404(WebsiteProduct, pk=pk)
+    
+    VariantFormSet = inlineformset_factory(
+        WebsiteProduct, WebsiteProductVariant,
+        fields=('inventory_product', 'variant_name', 'display_order'),
+        extra=1,
+        can_delete=True
+    )
+    
+    if request.method == 'POST':
+        formset = VariantFormSet(request.POST, instance=website_product)
+        if formset.is_valid():
+            formset.save()
+            messages.success(request, f'Variants updated for "{website_product.get_display_name()}"')
+            return redirect('website_product_list')
+    else:
+        formset = VariantFormSet(instance=website_product)
+        
+    return render(request, 'website/product_variants.html', {
+        'website_product': website_product,
+        'formset': formset
+    })
 
 @login_required
 def toggle_product_status(request, pk):

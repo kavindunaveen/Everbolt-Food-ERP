@@ -79,7 +79,6 @@ class WebsiteProductForm(forms.ModelForm):
             self.fields['inventory_product'].queryset = Product.objects.exclude(pk__in=listed_ids).order_by('category', 'name')
         else:
             self.fields['inventory_product'].queryset = Product.objects.order_by('category', 'name')
-        self.fields['inventory_product'].widget.attrs['class'] = 'no-select2'
 
 
 class WebsitePageForm(forms.ModelForm):

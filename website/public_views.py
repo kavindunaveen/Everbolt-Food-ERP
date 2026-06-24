@@ -144,7 +144,7 @@ def products(request):
 
 def product_detail(request, pk):
     settings_data = WebsiteSettings.get_settings()
-    product = get_object_or_404(WebsiteProduct.objects.select_related('inventory_product'), pk=pk, status=WebsiteProduct.Status.PUBLISHED)
+    product = get_object_or_404(WebsiteProduct.objects.select_related('inventory_product').prefetch_related('variants__inventory_product'), pk=pk, status=WebsiteProduct.Status.PUBLISHED)
 
     related_products = []
     if product.website_category:
@@ -153,14 +153,39 @@ def product_detail(request, pk):
             website_category=product.website_category
         ).exclude(id=product.id)[:4]
 
+    import json
+    variants_json = []
+    if product.variants.exists():
+        variants_json.append({
+            'id': str(product.inventory_product.id),
+            'name': 'Default / Standard',
+            'price': float(product.get_price()),
+            'stock': float(product.inventory_product.available_stock),
+            'sku': product.inventory_product.sku or '',
+            'unit': product.inventory_product.get_stock_unit_display() or ''
+        })
+        for v in product.variants.all():
+            price = round(v.inventory_product.selling_price * Decimal('1.18'), 2)
+            variants_json.append({
+                'id': str(v.inventory_product.id),
+                'name': v.variant_name,
+                'price': float(price),
+                'stock': float(v.inventory_product.available_stock),
+                'sku': v.inventory_product.sku or '',
+                'unit': v.inventory_product.get_stock_unit_display() or ''
+            })
+
     return render(request, "public/product_detail.html", {
         "settings": settings_data,
         "product": product,
+        "variants_json": variants_json,
+        "variants_json_str": json.dumps(variants_json),
         "related_products": related_products,
         "seo_title": product.meta_title or product.get_display_name(),
         "meta_description": product.meta_description or product.short_description or product.description[:155],
         "focus_keyword": product.focus_keyword,
         "og_image": product.main_image.url if product.main_image else None,
+        "cart_item_count": sum(item.get("quantity", 0) for item in request.session.get("cart", {}).values()),
     })
 
 # ============================================================
@@ -299,22 +324,42 @@ def add_to_cart(request, pk):
     if quantity < 1: quantity = 1
     if quantity > 99: quantity = 99
 
-    product_name = product.get_display_name()
-    product_price = product.get_price()
+    inventory_product_id_post = request.POST.get('inventory_product_id')
+    inv_product = None
+    if inventory_product_id_post:
+        from inventory.models import Product
+        inv_product = get_object_or_404(Product, pk=inventory_product_id_post)
+        if not (inv_product == product.inventory_product or product.variants.filter(inventory_product=inv_product).exists()):
+            messages.error(request, "Invalid variant selected.")
+            return redirect(request.META.get('HTTP_REFERER', reverse('products')))
+            
+        product_price = round(inv_product.selling_price * Decimal('1.18'), 2)
+        estimated_weight_kg = getattr(inv_product, 'estimated_weight_kg', 0)
+        variant = product.variants.filter(inventory_product=inv_product).first()
+        if variant:
+            product_name = f"{product.get_display_name()} - {variant.variant_name}"
+        else:
+            product_name = f"{product.get_display_name()} - Default"
+        inventory_product_id = inv_product.id
+        stock_to_check = inv_product.available_stock
+    else:
+        inv_product = product.inventory_product
+        product_name = product.get_display_name()
+        product_price = product.get_price()
+        estimated_weight_kg = getattr(product.inventory_product, 'estimated_weight_kg', 0)
+        inventory_product_id = product.inventory_product_id
+        stock_to_check = product.inventory_product.available_stock if product.inventory_product else 0
+
     product_image = product.main_image.url if product.main_image else ""
-    estimated_weight_kg = product.inventory_product.estimated_weight_kg if hasattr(product.inventory_product, 'estimated_weight_kg') else 0
-
-    inventory_product_id = product.inventory_product_id
-
     cart = get_cart(request)
-    product_key = str(pk)
+    product_key = f"{pk}_{inventory_product_id}"
 
     if product_key in cart:
         existing_qty = int(cart[product_key].get("quantity", 0))
         new_qty = existing_qty + quantity
         
-        if product.inventory_product and new_qty > product.inventory_product.available_stock:
-            messages.error(request, f"Cannot add {quantity} more. Only {product.inventory_product.available_stock} available in stock.")
+        if inv_product and new_qty > stock_to_check:
+            messages.error(request, f"Cannot add {quantity} more. Only {stock_to_check} available in stock.")
             return redirect(request.META.get('HTTP_REFERER', reverse('products')))
             
         cart[product_key]["quantity"] = min(new_qty, 99)
@@ -322,11 +367,11 @@ def add_to_cart(request, pk):
         cart[product_key]["price"] = str(product_price)
         cart[product_key]["image"] = product_image
         cart[product_key]["inventory_product_id"] = inventory_product_id
-        cart[product_key]["sku"] = product.inventory_product.product_id or ""
+        cart[product_key]["sku"] = inv_product.product_id if inv_product else ""
         cart[product_key]["estimated_weight_kg"] = str(estimated_weight_kg)
     else:
-        if product.inventory_product and quantity > product.inventory_product.available_stock:
-            messages.error(request, f"Cannot add {quantity}. Only {product.inventory_product.available_stock} available in stock.")
+        if inv_product and quantity > stock_to_check:
+            messages.error(request, f"Cannot add {quantity}. Only {stock_to_check} available in stock.")
             return redirect(request.META.get('HTTP_REFERER', reverse('products')))
             
         cart[product_key] = {
@@ -337,7 +382,7 @@ def add_to_cart(request, pk):
             "price": str(product_price),
             "quantity": quantity,
             "image": product_image,
-            "sku": product.inventory_product.product_id or "",
+            "sku": inv_product.product_id if inv_product else "",
             "estimated_weight_kg": str(estimated_weight_kg),
         }
 
@@ -369,10 +414,26 @@ def update_cart(request):
                 if product_id in cart:
                     if quantity > 0:
                         try:
-                            product = WebsiteProduct.objects.select_related('inventory_product').get(pk=product_id)
-                            if product.inventory_product and quantity > product.inventory_product.available_stock:
-                                messages.warning(request, f"Reduced '{product.get_display_name()}' to {product.inventory_product.available_stock} (maximum available stock).")
-                                cart[product_id]["quantity"] = int(product.inventory_product.available_stock)
+                            website_product_id = product_id.split('_')[0]
+                            inventory_product_id = product_id.split('_')[1] if '_' in product_id else None
+                            
+                            product = WebsiteProduct.objects.prefetch_related('variants__inventory_product').select_related('inventory_product').get(pk=website_product_id)
+                            
+                            inv_product = None
+                            if inventory_product_id:
+                                if str(product.inventory_product.id) == inventory_product_id:
+                                    inv_product = product.inventory_product
+                                else:
+                                    for v in product.variants.all():
+                                        if str(v.inventory_product.id) == inventory_product_id:
+                                            inv_product = v.inventory_product
+                                            break
+                            else:
+                                inv_product = product.inventory_product
+                                
+                            if inv_product and quantity > inv_product.available_stock:
+                                messages.warning(request, f"Reduced '{cart[product_id]['name']}' to {inv_product.available_stock} (maximum available stock).")
+                                cart[product_id]["quantity"] = int(inv_product.available_stock)
                             else:
                                 cart[product_id]["quantity"] = quantity
                         except WebsiteProduct.DoesNotExist:
@@ -389,9 +450,10 @@ def remove_from_cart(request, pk):
     cart = get_cart(request)
     product_key = str(pk)
     if product_key in cart:
+        name = cart[product_key].get("name", "Product")
         del cart[product_key]
         save_cart(request, cart)
-        messages.success(request, "Product removed from cart.")
+        messages.success(request, f"{name} removed from cart.")
     return redirect(request.META.get('HTTP_REFERER', 'home'))
 
 # ============================================================

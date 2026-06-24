@@ -132,8 +132,20 @@
 
                 <!-- Quantity + Add to Cart -->
                 {% if product.inventory_product and product.inventory_product.available_stock > 0 %}
-                <form method="post" action="{% url 'add_to_cart' product.id %}" class="pd-cart-form">
+                <form method="post" action="{% url 'add_to_cart' product.id %}" class="pd-cart-form" id="add-to-cart-form">
                     {% csrf_token %}
+                    
+                    {% if variants_json %}
+                    <div class="pd-variants" style="margin-bottom: 20px; width: 100%;">
+                        <label style="display:block; font-size:12px; font-weight:700; text-transform:uppercase; color:var(--text-secondary); margin-bottom:8px;">Select Variant:</label>
+                        <select id="variantSelector" name="inventory_product_id" style="width:100%; padding:12px 14px; border:2px solid #e5e7eb; border-radius:10px; font-family:var(--font-body); font-size:15px; color:var(--text-primary); cursor:pointer; background: #fff;">
+                            {% for v in variants_json %}
+                                <option value="{{ v.id }}">{{ v.name }} - රු{{ v.price|floatformat:2 }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    {% endif %}
+                    
                     <div class="pd-qty">
                         <button type="button" class="pd-qty-btn" onclick="adjustQty(this,-1)" aria-label="Decrease">−</button>
                         <input name="quantity" class="pd-qty-input" type="number" value="1" min="1" max="{{ product.inventory_product.available_stock|floatformat:0 }}" readonly>
@@ -335,8 +347,9 @@
     window.adjustQty = function (btn, delta) {
         var input = btn.closest('.pd-qty').querySelector('.pd-qty-input');
         if (!input) return;
+        var maxVal = parseInt(input.max, 10);
         var val = parseInt(input.value, 10) + delta;
-        if (val >= 1 && val <= 99) input.value = val;
+        if (val >= 1 && val <= maxVal) input.value = val;
     };
 
     /* Tab switcher */
@@ -358,7 +371,6 @@
     var stickyCart = document.getElementById('stickyMobileCart');
     if (stickyCart) {
         window.addEventListener('scroll', function() {
-            // Show sticky cart after scrolling past 300px
             if (window.scrollY > 300) {
                 stickyCart.classList.add('visible');
             } else {
@@ -366,6 +378,44 @@
             }
         });
     }
+
+    /* Variant Logic */
+    {% if variants_json_str %}
+    var variants = {{ variants_json_str|safe }};
+    var variantSelector = document.getElementById('variantSelector');
+    if (variantSelector && variants) {
+        variantSelector.addEventListener('change', function() {
+            var selectedId = this.value;
+            var selectedVariant = variants.find(function(v) { return v.id == selectedId; });
+            if (selectedVariant) {
+                var priceEl = document.querySelector('.pd-price');
+                if (priceEl) priceEl.innerText = 'රු' + selectedVariant.price.toFixed(2);
+                
+                var stickyPriceEl = document.querySelector('.pd-sticky-price');
+                if (stickyPriceEl) stickyPriceEl.innerText = 'රු' + selectedVariant.price.toFixed(2);
+                
+                var qtyInput = document.querySelector('.pd-qty-input');
+                if (qtyInput) {
+                    qtyInput.max = selectedVariant.stock;
+                    if (parseInt(qtyInput.value) > selectedVariant.stock) {
+                        qtyInput.value = selectedVariant.stock > 0 ? selectedVariant.stock : 1;
+                    }
+                }
+                
+                var badgeEl = document.querySelector('.pd-badge-available, .pd-badge-unavailable');
+                if (badgeEl) {
+                    if (selectedVariant.stock > 0) {
+                        badgeEl.className = 'pd-badge-available';
+                        badgeEl.innerHTML = '<i class="fa-solid fa-circle-check"></i> In Stock (' + selectedVariant.stock + ' ' + selectedVariant.unit + ')';
+                    } else {
+                        badgeEl.className = 'pd-badge-unavailable';
+                        badgeEl.innerHTML = '<i class="fa-solid fa-circle-xmark"></i> Out of Stock';
+                    }
+                }
+            }
+        });
+    }
+    {% endif %}
 }());
 </script>
 {% endblock %}
