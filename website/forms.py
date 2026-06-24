@@ -1,5 +1,5 @@
 from django import forms
-from .models import WebsiteSettings, WebsiteCategory, WebsiteProduct, WebsitePage, WebsiteEnquiry, WebsiteHeroSlide
+from .models import WebsiteSettings, WebsiteCategory, WebsiteProduct, WebsitePage, WebsiteEnquiry, WebsiteHeroSlide, SEORedirect
 from inventory.models import Product
 
 
@@ -40,7 +40,7 @@ class WebsiteSettingsForm(forms.ModelForm):
 class WebsiteCategoryForm(forms.ModelForm):
     class Meta:
         model = WebsiteCategory
-        fields = ['name', 'slug', 'image', 'description', 'display_order', 'is_visible']
+        fields = ['name', 'slug', 'image', 'description', 'display_order', 'is_visible', 'meta_title', 'meta_description', 'focus_keyword']
         widgets = {
             'name': forms.TextInput(attrs={'placeholder': 'e.g. Spices'}),
             'slug': forms.TextInput(attrs={'placeholder': 'auto-generated if blank'}),
@@ -57,7 +57,8 @@ class WebsiteProductForm(forms.ModelForm):
         fields = [
             'inventory_product', 'website_category', 'main_image', 'display_name',
             'short_description', 'description', 'slug',
-            'status', 'display_order', 'is_featured', 'show_stock', 'min_order_qty'
+            'status', 'display_order', 'is_featured', 'show_stock', 'min_order_qty',
+            'meta_title', 'meta_description', 'focus_keyword', 'image_alt_text'
         ]
         widgets = {
             'display_name': forms.TextInput(attrs={'placeholder': 'Leave blank to use inventory product name'}),
@@ -83,7 +84,7 @@ class WebsiteProductForm(forms.ModelForm):
 class WebsitePageForm(forms.ModelForm):
     class Meta:
         model = WebsitePage
-        fields = ['title', 'slug', 'content', 'meta_description', 'status', 'show_in_nav', 'nav_label', 'display_order']
+        fields = ['title', 'slug', 'content', 'meta_title', 'meta_description', 'focus_keyword', 'status', 'show_in_nav', 'nav_label', 'display_order']
         widgets = {
             'title': forms.TextInput(attrs={'placeholder': 'Page title'}),
             'slug': forms.TextInput(attrs={'placeholder': 'e.g. about-us'}),
@@ -99,4 +100,13 @@ class WebsiteEnquiryNotesForm(forms.ModelForm):
         fields = ['status', 'notes']
         widgets = {
             'notes': forms.Textarea(attrs={'rows': 4, 'placeholder': 'Internal notes about this enquiry...'}),
+        }
+
+class SEORedirectForm(forms.ModelForm):
+    class Meta:
+        model = SEORedirect
+        fields = ['old_path', 'new_path', 'is_active']
+        widgets = {
+            'old_path': forms.TextInput(attrs={'placeholder': 'e.g. /category/tea/'}),
+            'new_path': forms.TextInput(attrs={'placeholder': 'e.g. /shop/category/tea/'}),
         }

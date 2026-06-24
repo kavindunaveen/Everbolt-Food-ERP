@@ -97,6 +97,11 @@ def products(request):
 
     selected_category_name = ""
 
+    seo_title = ""
+    meta_description = ""
+    focus_keyword = ""
+    og_image = None
+    
     if category_id_or_name:
         # Check if it's an ID
         if category_id_or_name.isdigit():
@@ -104,6 +109,10 @@ def products(request):
             cat = WebsiteCategory.objects.filter(id=category_id_or_name).first()
             if cat:
                 selected_category_name = cat.name
+                seo_title = cat.meta_title or cat.name
+                meta_description = cat.meta_description or cat.description[:155]
+                focus_keyword = cat.focus_keyword
+                og_image = cat.image.url if cat.image else None
         else:
             product_list = product_list.filter(website_category__name__iexact=category_id_or_name)
             selected_category_name = category_id_or_name
@@ -121,6 +130,10 @@ def products(request):
         "q": q,
         "selected_category": category_id_or_name,
         "selected_category_name": selected_category_name,
+        "seo_title": seo_title,
+        "meta_description": meta_description,
+        "focus_keyword": focus_keyword,
+        "og_image": og_image,
     })
 
 def product_detail(request, pk):
@@ -138,6 +151,10 @@ def product_detail(request, pk):
         "settings": settings_data,
         "product": product,
         "related_products": related_products,
+        "seo_title": product.meta_title or product.get_display_name(),
+        "meta_description": product.meta_description or product.short_description or product.description[:155],
+        "focus_keyword": product.focus_keyword,
+        "og_image": product.main_image.url if product.main_image else None,
     })
 
 # ============================================================
@@ -183,6 +200,9 @@ def custom_page_detail(request, slug):
     return render(request, "public/page_detail.html", {
         "settings": settings_data,
         "page": page,
+        "seo_title": page.meta_title or page.title,
+        "meta_description": page.meta_description,
+        "focus_keyword": page.focus_keyword,
     })
 
 # ============================================================
@@ -465,3 +485,67 @@ def website_delivery_charge_api(request):
         })
     except Exception as e:
         return JsonResponse({"success": False, "message": str(e)})
+
+# ============================================================
+# SEO SITEMAP & ROBOTS.TXT
+# ============================================================
+from django.http import HttpResponse
+from datetime import datetime
+
+def robots_txt(request):
+    host = request.get_host().lower()
+    erp_hosts = ['erp.organicfoodslanka.com', 'staging.organicfoodslanka.com']
+    
+    # Hide ERP subdomains from search engines completely
+    if any(h in host for h in erp_hosts):
+        lines = [
+            "User-agent: *",
+            "Disallow: /"
+        ]
+    else:
+        # Main site allows all, but disallows cart, checkout etc.
+        lines = [
+            "User-agent: *",
+            "Disallow: /cart/",
+            "Disallow: /checkout/",
+            "Disallow: /search/",
+            "",
+            f"Sitemap: {request.scheme}://{request.get_host()}/sitemap.xml"
+        ]
+    return HttpResponse("\n".join(lines), content_type="text/plain")
+
+def sitemap_xml(request):
+    # Only expose public items
+    products = WebsiteProduct.objects.filter(status=WebsiteProduct.Status.PUBLISHED)
+    categories = WebsiteCategory.objects.filter(is_visible=True)
+    pages = WebsitePage.objects.filter(status=WebsitePage.Status.PUBLISHED)
+    
+    host_url = f"{request.scheme}://{request.get_host()}"
+    today = datetime.now().strftime("%Y-%m-%d")
+    
+    xml = ['<?xml version="1.0" encoding="UTF-8"?>']
+    xml.append('<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">')
+    
+    # Home
+    xml.append(f"<url><loc>{host_url}/</loc><lastmod>{today}</lastmod><changefreq>daily</changefreq><priority>1.0</priority></url>")
+    xml.append(f"<url><loc>{host_url}/about/</loc><lastmod>{today}</lastmod><changefreq>weekly</changefreq><priority>0.8</priority></url>")
+    xml.append(f"<url><loc>{host_url}/products/</loc><lastmod>{today}</lastmod><changefreq>daily</changefreq><priority>0.9</priority></url>")
+    xml.append(f"<url><loc>{host_url}/contact/</loc><lastmod>{today}</lastmod><changefreq>monthly</changefreq><priority>0.7</priority></url>")
+    
+    # Products
+    for p in products:
+        loc = f"{host_url}{reverse('product_detail', args=[p.id])}"
+        xml.append(f"<url><loc>{loc}</loc><lastmod>{p.updated_at.strftime('%Y-%m-%d') if hasattr(p, 'updated_at') else today}</lastmod><changefreq>weekly</changefreq><priority>0.8</priority></url>")
+        
+    # Categories
+    for c in categories:
+        loc = f"{host_url}{reverse('products')}?category={c.id}"
+        xml.append(f"<url><loc>{loc}</loc><lastmod>{today}</lastmod><changefreq>weekly</changefreq><priority>0.7</priority></url>")
+        
+    # Pages
+    for pg in pages:
+        loc = f"{host_url}{reverse('custom_page_detail', args=[pg.slug])}"
+        xml.append(f"<url><loc>{loc}</loc><lastmod>{pg.updated_at.strftime('%Y-%m-%d') if hasattr(pg, 'updated_at') else today}</lastmod><changefreq>monthly</changefreq><priority>0.6</priority></url>")
+        
+    xml.append('</urlset>')
+    return HttpResponse("\n".join(xml), content_type="application/xml")

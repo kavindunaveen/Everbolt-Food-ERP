@@ -6,8 +6,9 @@
   <form method="post" enctype="multipart/form-data" class="space-y-6">{% csrf_token %}
     <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 space-y-5">
       {% for field in form %}
+      {% if field.name != 'meta_title' and field.name != 'meta_description' and field.name != 'focus_keyword' %}
       <div>
-        <label class="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-1.5">{{ field.label }}</label>
+        <label class="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-1.5">{{ field.label }}{% if field.field.required %} <span class="text-red-500">*</span>{% endif %}</label>
         
         {% if field.name == 'image' and form.instance.image %}
           <div class="mb-3">
@@ -19,7 +20,35 @@
         {% if field.help_text %}<p class="text-xs text-gray-400 mt-1">{{ field.help_text }}</p>{% endif %}
         {% if field.errors %}<p class="text-red-500 text-xs font-bold mt-1">{{ field.errors|striptags }}</p>{% endif %}
       </div>
+      {% endif %}
       {% endfor %}
+    </div>
+
+    <!-- SEO Settings -->
+    <div class="bg-gray-50 rounded-2xl border border-gray-200 shadow-sm p-6 space-y-5">
+      <div class="flex items-center gap-2 mb-2">
+        <svg class="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+        <h3 class="text-lg font-extrabold text-gray-900">SEO Settings</h3>
+      </div>
+      <p class="text-xs text-gray-500 -mt-3 mb-4">Optimize how this category appears on Google Search.</p>
+      
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+        {% for field in form %}
+        {% if field.name == 'meta_title' or field.name == 'focus_keyword' %}
+        <div>
+          <label class="block text-xs font-bold text-gray-700 uppercase tracking-widest mb-1.5">{{ field.label }}</label>
+          {{ field }}
+          {% if field.help_text %}<p class="text-xs text-gray-400 mt-1">{{ field.help_text }}</p>{% endif %}
+        </div>
+        {% endif %}
+        {% endfor %}
+      </div>
+      
+      <div>
+        <label class="block text-xs font-bold text-gray-700 uppercase tracking-widest mb-1.5">Meta Description</label>
+        {{ form.meta_description }}
+        <p class="text-xs text-gray-400 mt-1">{{ form.meta_description.help_text }}</p>
+      </div>
     </div>
     <div class="flex gap-3">
       <button type="submit" class="px-6 py-2.5 bg-violet-600 text-white font-bold rounded-xl hover:bg-violet-700 transition-all shadow-lg shadow-violet-200">Save</button>

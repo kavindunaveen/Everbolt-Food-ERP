@@ -6,8 +6,13 @@ urlpatterns = [
     path("about/", views.about, name="about"),
     path("products/", views.products, name="products"),
     path("products/<int:pk>/", views.product_detail, name="product_detail"),
+    path('delivery-charge-api/', views.website_delivery_charge_api, name='website_delivery_charge_api'),
+
+    # SEO & Crawlers
+    path('robots.txt', views.robots_txt, name='robots_txt'),
+    path('sitemap.xml', views.sitemap_xml, name='sitemap_xml'),
+
     path("contact/", views.contact, name="contact"),
-    path("pages/<slug:slug>/", views.custom_page_detail, name="custom_page_detail"),
     path("blog/", views.blog, name="blog_list"),
     path("blog/<slug:slug>/", views.blog_detail, name="blog_detail"),
     
@@ -29,4 +34,7 @@ urlpatterns = [
 
     # API
     path("api/delivery-charge/", views.website_delivery_charge_api, name="website_delivery_charge_api"),
+
+    # Custom Pages (Catch-all must be at the bottom)
+    path('<slug:slug>/', views.custom_page_detail, name='custom_page_detail'),
 ]

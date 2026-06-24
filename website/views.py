@@ -10,11 +10,11 @@ from django.db.models import Q
 
 from inventory.models import Product
 from .models import (
-    WebsiteSettings, WebsiteCategory, WebsiteProduct, WebsitePage, WebsiteEnquiry, WebsiteOrder, WebsiteHeroSlide
+    WebsiteSettings, WebsiteCategory, WebsiteProduct, WebsitePage, WebsiteEnquiry, WebsiteOrder, WebsiteHeroSlide, SEORedirect
 )
 from .forms import (
     WebsiteSettingsForm, WebsiteCategoryForm, WebsiteProductForm,
-    WebsitePageForm, WebsiteEnquiryNotesForm, WebsiteHeroSlideForm
+    WebsitePageForm, WebsiteEnquiryNotesForm, WebsiteHeroSlideForm, SEORedirectForm
 )
 
 
@@ -339,3 +339,40 @@ class WebsiteOrderDetailView(LoginRequiredMixin, DetailView):
             self.object.save()
             messages.success(request, f"Order status updated to {self.object.get_sync_status_display()}")
         return redirect('website_order_detail', pk=self.object.pk)
+
+# ─── SEO Redirects ─────────────────────────────────────────────────────────────
+
+class SEORedirectListView(LoginRequiredMixin, ListView):
+    model = SEORedirect
+    template_name = 'website/redirect_list.html'
+    context_object_name = 'redirects'
+
+class SEORedirectCreateView(LoginRequiredMixin, CreateView):
+    model = SEORedirect
+    form_class = SEORedirectForm
+    template_name = 'website/redirect_form.html'
+    success_url = reverse_lazy('website_redirect_list')
+
+    def form_valid(self, form):
+        messages.success(self.request, "SEO Redirect created successfully.")
+        return super().form_valid(form)
+
+class SEORedirectUpdateView(LoginRequiredMixin, UpdateView):
+    model = SEORedirect
+    form_class = SEORedirectForm
+    template_name = 'website/redirect_form.html'
+    success_url = reverse_lazy('website_redirect_list')
+
+    def form_valid(self, form):
+        messages.success(self.request, "SEO Redirect updated successfully.")
+        return super().form_valid(form)
+
+class SEORedirectDeleteView(LoginRequiredMixin, DeleteView):
+    model = SEORedirect
+    template_name = 'website/redirect_confirm_delete.html'
+    success_url = reverse_lazy('website_redirect_list')
+
+    def delete(self, request, *args, **kwargs):
+        messages.success(self.request, "SEO Redirect deleted.")
+        return super().delete(request, *args, **kwargs)
+

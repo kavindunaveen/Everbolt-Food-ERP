@@ -1,18 +1,27 @@
 {% extends "public/base.html" %}
 {% load static %}
 
-{% block title %}
-    {% if product %}{{ product.get_display_name }} – Everbolt Foods
-    {% else %}Product – Everbolt Foods
-    {% endif %}
-{% endblock %}
-
-{% block meta_description %}
-    {% if product.meta_description %}{{ product.meta_description|truncatechars:155 }}
-    {% elif product.short_description %}{{ product.short_description|truncatechars:155 }}
-    {% elif product.description %}{{ product.description|truncatechars:155 }}
-    {% else %}Premium food product from Everbolt Foods, Sri Lanka.
-    {% endif %}
+{% block json_ld %}
+{% if product %}
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org/",
+  "@type": "Product",
+  "name": "{{ product.get_display_name|escapejs }}",
+  {% if product.main_image %}"image": "{{ request.scheme }}://{{ request.get_host }}{{ product.main_image.url }}",{% endif %}
+  "description": "{% if product.meta_description %}{{ product.meta_description|escapejs }}{% elif product.short_description %}{{ product.short_description|escapejs }}{% else %}{{ product.description|escapejs }}{% endif %}",
+  "sku": "{{ product.inventory_product.sku|escapejs }}",
+  "offers": {
+    "@type": "Offer",
+    "url": "{{ request.build_absolute_uri }}",
+    "priceCurrency": "LKR",
+    "price": "{{ product.get_price|floatformat:2 }}",
+    "itemCondition": "https://schema.org/NewCondition",
+    "availability": "{% if product.status == 'PUBLISHED' %}https://schema.org/InStock{% else %}https://schema.org/OutOfStock{% endif %}"
+  }
+}
+</script>
+{% endif %}
 {% endblock %}
 
 {% block extra_css %}

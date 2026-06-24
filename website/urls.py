@@ -39,4 +39,10 @@ urlpatterns = [
 
     # Settings
     path('settings/', views.WebsiteSettingsView.as_view(), name='website_settings'),
+
+    # SEO Redirects
+    path('redirects/', views.SEORedirectListView.as_view(), name='website_redirect_list'),
+    path('redirects/add/', views.SEORedirectCreateView.as_view(), name='website_redirect_add'),
+    path('redirects/<int:pk>/edit/', views.SEORedirectUpdateView.as_view(), name='website_redirect_edit'),
+    path('redirects/<int:pk>/delete/', views.SEORedirectDeleteView.as_view(), name='website_redirect_delete'),
 ]

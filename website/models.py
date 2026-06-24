@@ -69,6 +69,12 @@ class WebsiteCategory(models.Model):
     slug = models.SlugField(unique=True, blank=True)
     image = models.ImageField(upload_to='website/categories/', null=True, blank=True, help_text='Category cover image')
     description = models.TextField(blank=True)
+    
+    # SEO Fields
+    meta_title = models.CharField(max_length=200, blank=True, help_text='SEO Title (overrides default)')
+    meta_description = models.TextField(blank=True, help_text='SEO Description')
+    focus_keyword = models.CharField(max_length=150, blank=True, help_text='Main keyword for SEO')
+
     display_order = models.PositiveIntegerField(default=0)
     is_visible = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -109,6 +115,13 @@ class WebsiteProduct(models.Model):
     description = models.TextField(blank=True, help_text='Public-facing product description for the website')
     short_description = models.CharField(max_length=300, blank=True)
     slug = models.SlugField(unique=True, blank=True)
+    
+    # SEO Fields
+    meta_title = models.CharField(max_length=200, blank=True, help_text='SEO Title (overrides default)')
+    meta_description = models.TextField(blank=True, help_text='SEO Description')
+    focus_keyword = models.CharField(max_length=150, blank=True, help_text='Main keyword for SEO')
+    image_alt_text = models.CharField(max_length=150, blank=True, help_text='Alt text for the main image')
+
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.DRAFT)
     display_order = models.PositiveIntegerField(default=0)
     is_featured = models.BooleanField(default=False, help_text='Show in featured/hero section')
@@ -155,7 +168,12 @@ class WebsitePage(models.Model):
     title = models.CharField(max_length=200)
     slug = models.SlugField(unique=True)
     content = models.TextField(help_text='Main page content (HTML supported)')
-    meta_description = models.CharField(max_length=300, blank=True)
+    
+    # SEO Fields
+    meta_title = models.CharField(max_length=200, blank=True, help_text='SEO Title (overrides default)')
+    meta_description = models.TextField(blank=True, help_text='SEO Description')
+    focus_keyword = models.CharField(max_length=150, blank=True, help_text='Main keyword for SEO')
+
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.DRAFT)
     show_in_nav = models.BooleanField(default=False)
     nav_label = models.CharField(max_length=60, blank=True)
@@ -291,3 +309,19 @@ class WebsiteBlogPost(models.Model):
         if not self.slug:
             self.slug = slugify(self.title)
         super().save(*args, **kwargs)
+
+class SEORedirect(models.Model):
+    """Handles 301 redirects for broken links or changed URLs."""
+    old_path = models.CharField(max_length=255, unique=True, help_text='Old URL path (e.g., /category/spices/)')
+    new_path = models.CharField(max_length=255, help_text='New URL path (e.g., /shop/category/spices/)')
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+        verbose_name = 'SEO Redirect'
+        verbose_name_plural = 'SEO Redirects'
+
+    def __str__(self):
+        return f"{self.old_path} -> {self.new_path}"
+
