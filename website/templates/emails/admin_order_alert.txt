@@ -1,0 +1,10 @@
+New Order Received!
+
+Order Number: {{ order.website_order_number }}
+Customer: {{ order.customer_name }}
+Phone: {{ order.phone }}
+Email: {{ order.email|default:"N/A" }}
+City: {{ order.city }}, {{ order.district }}
+Total Value: Rs. {{ order.total_amount }}
+
+Please check the ERP dashboard for full details.

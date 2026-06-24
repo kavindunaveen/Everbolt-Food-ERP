@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Order Confirmation - Organic Foods Lanka</title>
+    <style>
+        body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background-color: #F9F6F0; color: #4b5563; margin: 0; padding: 0; }
+        .container { max-width: 600px; margin: 40px auto; background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
+        .header { background-color: #1E3F20; color: #ffffff; padding: 30px 40px; text-align: center; }
+        .header h1 { margin: 0; font-size: 24px; font-weight: 700; }
+        .content { padding: 40px; }
+        .content h2 { color: #2C1A12; margin-top: 0; font-size: 20px; }
+        .order-meta { background-color: #fbfbfb; padding: 20px; border-radius: 6px; margin-bottom: 30px; border: 1px solid #e5e7eb; }
+        .order-meta p { margin: 5px 0; font-size: 14px; }
+        .order-meta strong { color: #1E3F20; }
+        .table { width: 100%; border-collapse: collapse; margin-bottom: 30px; }
+        .table th { background-color: #f9fafb; padding: 12px; text-align: left; font-size: 13px; text-transform: uppercase; color: #6b7280; border-bottom: 1px solid #e5e7eb; }
+        .table td { padding: 16px 12px; border-bottom: 1px solid #e5e7eb; font-size: 15px; }
+        .totals { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        .totals td { padding: 8px 12px; font-size: 15px; }
+        .totals .label { text-align: right; color: #6b7280; }
+        .totals .value { text-align: right; font-weight: 600; color: #2C1A12; width: 120px; }
+        .totals .grand-total { font-size: 18px; color: #1E3F20; font-weight: 700; border-top: 2px solid #e5e7eb; padding-top: 16px; }
+        .footer { background-color: #f9fafb; padding: 20px 40px; text-align: center; font-size: 13px; color: #9ca3af; border-top: 1px solid #e5e7eb; }
+        .footer a { color: #1E3F20; text-decoration: none; }
+        .button { display: inline-block; padding: 12px 24px; background-color: #D4AF37; color: #ffffff; text-decoration: none; border-radius: 4px; font-weight: bold; margin-top: 20px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Thank you for your order!</h1>
+        </div>
+        <div class="content">
+            <h2>Hi {{ order.customer_name }},</h2>
+            <p>We've received your order and are getting it ready for dispatch. We will contact you shortly to confirm delivery details.</p>
+            
+            <div class="order-meta">
+                <p><strong>Order Number:</strong> {{ order.website_order_number }}</p>
+                <p><strong>Date:</strong> {{ order.created_at|date:"F j, Y" }}</p>
+                <p><strong>Payment Method:</strong> {{ order.payment_method }}</p>
+                <p><strong>Shipping Address:</strong><br>
+                {{ order.shipping_address|linebreaksbr }}<br>
+                {{ order.city }}{% if order.district %}, {{ order.district }}{% endif %}</p>
+                <p><strong>Contact Number:</strong> {{ order.phone }}</p>
+            </div>
+
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Item</th>
+                        <th style="text-align: center;">Qty</th>
+                        <th style="text-align: right;">Price</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in items %}
+                    <tr>
+                        <td>{{ item.product_name }}</td>
+                        <td style="text-align: center;">{{ item.quantity|floatformat:0 }}</td>
+                        <td style="text-align: right;">Rs. {{ item.line_total }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+
+            <table class="totals">
+                <tr>
+                    <td class="label">Subtotal:</td>
+                    <td class="value">Rs. {{ order.subtotal }}</td>
+                </tr>
+                <tr>
+                    <td class="label">Delivery Charge:</td>
+                    <td class="value">Rs. {{ order.shipping_charge }}</td>
+                </tr>
+                <tr>
+                    <td class="label grand-total">Total Amount:</td>
+                    <td class="value grand-total">Rs. {{ order.total_amount }}</td>
+                </tr>
+            </table>
+
+            <p style="margin-top: 40px; font-size: 14px; color: #6b7280;">If you have any questions about your order, please contact us at <a href="mailto:info@organicfoodslanka.com">info@organicfoodslanka.com</a>.</p>
+        </div>
+        <div class="footer">
+            <p>&copy; {% now "Y" %} Organic Foods Lanka. All rights reserved.</p>
+            <p>Everbolt Food ERP</p>
+        </div>
+    </div>
+</body>
+</html>

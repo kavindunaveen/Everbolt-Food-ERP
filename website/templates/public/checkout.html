@@ -62,19 +62,19 @@
                 <div class="ck-grid">
                     <div class="ck-group ck-col-full">
                         <label for="customer_name">Full Name <span class="required">*</span></label>
-                        <input type="text" id="customer_name" name="customer_name" class="ck-input" placeholder="Your full name" required autocomplete="name">
+                        <input type="text" id="customer_name" name="customer_name" class="ck-input" placeholder="Your full name" required autocomplete="name" {% if request.user.is_authenticated %}value="{{ request.user.first_name }} {{ request.user.last_name }}"{% endif %}>
                         <span class="ck-error-msg" data-error-for="customer_name">Please enter your full name.</span>
                     </div>
 
                     <div class="ck-group">
                         <label for="phone">Phone Number <span class="required">*</span></label>
-                        <input type="tel" id="phone" name="phone" class="ck-input" placeholder="+94 77 000 0000" required autocomplete="tel" inputmode="tel" pattern="^(\+94|0)[0-9]{9}$">
+                        <input type="tel" id="phone" name="phone" class="ck-input" placeholder="+94 77 000 0000" required autocomplete="tel" inputmode="tel" pattern="^(\+94|0)[0-9]{9}$" {% if request.user.is_authenticated %}value="{{ request.user.contact_number }}"{% endif %}>
                         <span class="ck-error-msg" data-error-for="phone">Enter a valid Sri Lankan phone number.</span>
                     </div>
 
                     <div class="ck-group">
                         <label for="email">Email <span class="optional">(optional)</span></label>
-                        <input type="email" id="email" name="email" class="ck-input" placeholder="you@example.com" autocomplete="email">
+                        <input type="email" id="email" name="email" class="ck-input" placeholder="you@example.com" autocomplete="email" {% if request.user.is_authenticated %}value="{{ request.user.email }}"{% endif %}>
                         <span class="ck-error-msg" data-error-for="email">Enter a valid email address.</span>
                     </div>
 

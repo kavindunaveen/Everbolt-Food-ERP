@@ -1,0 +1,47 @@
+{% extends "public/base.html" %}
+
+{% block title %}Login | {{ settings.site_name }}{% endblock %}
+
+{% block content %}
+<section style="padding: 120px 20px; background: #F9F6F0; min-height: 80vh; display: flex; align-items: center; justify-content: center;">
+    <div style="background: white; padding: 40px; border-radius: var(--radius-lg); box-shadow: 0 10px 30px rgba(0,0,0,0.05); width: 100%; max-width: 400px;">
+        <h1 style="font-family: var(--font-heading); color: var(--brand-green); font-size: 28px; margin-bottom: 8px; text-align: center;">Welcome Back</h1>
+        <p style="text-align: center; color: var(--text-light); margin-bottom: 30px; font-size: 14px;">Sign in to your account</p>
+
+        {% if messages %}
+            {% for message in messages %}
+                <div style="padding: 12px; margin-bottom: 20px; border-radius: 6px; font-size: 14px; {% if message.tags == 'error' %}background: #fee2e2; color: #991b1b;{% else %}background: #dcfce7; color: #166534;{% endif %}">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endif %}
+
+        <form method="POST" action="{% url 'public_login' %}">
+            {% csrf_token %}
+            {% if request.GET.next %}
+                <input type="hidden" name="next" value="{{ request.GET.next }}">
+            {% endif %}
+
+            <div style="margin-bottom: 20px;">
+                <label style="display: block; font-size: 13px; font-weight: bold; color: var(--text-primary); margin-bottom: 6px;">Email Address</label>
+                <input type="email" name="email" required style="width: 100%;" placeholder="you@example.com">
+            </div>
+
+            <div style="margin-bottom: 10px;">
+                <label style="display: block; font-size: 13px; font-weight: bold; color: var(--text-primary); margin-bottom: 6px;">Password</label>
+                <input type="password" name="password" required style="width: 100%;" placeholder="••••••••">
+            </div>
+
+            <div style="text-align: right; margin-bottom: 24px;">
+                <a href="{% url 'password_reset' %}" style="font-size: 13px; color: var(--brand-red); text-decoration: none; font-weight: 500;">Forgot Password?</a>
+            </div>
+
+            <button type="submit" class="btn btn-primary" style="width: 100%; padding: 14px; font-size: 16px;">Sign In</button>
+        </form>
+
+        <p style="text-align: center; margin-top: 24px; font-size: 14px; color: var(--text-light);">
+            Don't have an account? <a href="{% url 'public_register' %}{% if request.GET.next %}?next={{ request.GET.next }}{% endif %}" style="color: var(--brand-green); font-weight: bold; text-decoration: none;">Create one</a>
+        </p>
+    </div>
+</section>
+{% endblock %}

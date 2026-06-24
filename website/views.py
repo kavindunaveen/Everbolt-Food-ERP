@@ -6,9 +6,10 @@ from django.views.generic import ListView, CreateView, UpdateView, DeleteView, D
 from django.urls import reverse_lazy, reverse
 from django.http import JsonResponse
 from django.utils.decorators import method_decorator
-from django.db.models import Q
+from django.db.models import Q, Sum
 
 from inventory.models import Product
+from users.models import User
 from .models import (
     WebsiteSettings, WebsiteCategory, WebsiteProduct, WebsitePage, WebsiteEnquiry, WebsiteOrder, WebsiteHeroSlide, SEORedirect
 )
@@ -339,6 +340,39 @@ class WebsiteOrderDetailView(LoginRequiredMixin, DetailView):
             self.object.save()
             messages.success(request, f"Order status updated to {self.object.get_sync_status_display()}")
         return redirect('website_order_detail', pk=self.object.pk)
+
+# ─── Customers ─────────────────────────────────────────────────────────────────
+
+class WebsiteCustomerListView(LoginRequiredMixin, ListView):
+    model = User
+    template_name = 'website/customer_list.html'
+    context_object_name = 'customers'
+    paginate_by = 20
+
+    def get_queryset(self):
+        qs = User.objects.filter(role__name='Website Customer').order_by('-date_joined')
+        q = self.request.GET.get('q', '')
+        if q:
+            qs = qs.filter(Q(first_name__icontains=q) | Q(last_name__icontains=q) | Q(email__icontains=q))
+        return qs
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        ctx['q'] = self.request.GET.get('q', '')
+        return ctx
+
+class WebsiteCustomerDetailView(LoginRequiredMixin, DetailView):
+    model = User
+    template_name = 'website/customer_detail.html'
+    context_object_name = 'customer'
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        user = self.get_object()
+        orders = WebsiteOrder.objects.filter(user=user).order_by('-created_at')
+        ctx['orders'] = orders
+        ctx['lifetime_value'] = orders.filter(sync_status__in=['pending', 'converted']).aggregate(total=Sum('total_amount'))['total'] or 0
+        return ctx
 
 # ─── SEO Redirects ─────────────────────────────────────────────────────────────
 

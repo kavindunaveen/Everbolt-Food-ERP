@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>New Order Alert - Organic Foods Lanka</title>
+    <style>
+        body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background-color: #f3f4f6; color: #1f2937; margin: 0; padding: 0; }
+        .container { max-width: 600px; margin: 40px auto; background-color: #ffffff; border-radius: 8px; overflow: hidden; border: 1px solid #e5e7eb; }
+        .header { background-color: #D4AF37; color: #ffffff; padding: 20px 40px; text-align: center; }
+        .header h1 { margin: 0; font-size: 20px; font-weight: 700; }
+        .content { padding: 30px 40px; }
+        .meta-box { background-color: #fbfbfb; padding: 20px; border-radius: 6px; margin-bottom: 30px; border: 1px solid #e5e7eb; font-size: 14px; }
+        .meta-box p { margin: 5px 0; }
+        .table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+        .table th { background-color: #f9fafb; padding: 10px; text-align: left; font-size: 12px; color: #6b7280; border-bottom: 1px solid #e5e7eb; }
+        .table td { padding: 12px 10px; border-bottom: 1px solid #e5e7eb; font-size: 14px; }
+        .total-row td { font-weight: bold; border-top: 2px solid #e5e7eb; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>New Order Received! 🛒</h1>
+        </div>
+        <div class="content">
+            <div class="meta-box">
+                <p><strong>Order Number:</strong> {{ order.website_order_number }}</p>
+                <p><strong>Customer:</strong> {{ order.customer_name }}</p>
+                <p><strong>Phone:</strong> {{ order.phone }}</p>
+                <p><strong>Email:</strong> {{ order.email|default:"N/A" }}</p>
+                <p><strong>City/District:</strong> {{ order.city }}, {{ order.district }}</p>
+                <p><strong>Total Value:</strong> Rs. {{ order.total_amount }}</p>
+                <p><strong>Payment Method:</strong> {{ order.payment_method }}</p>
+            </div>
+
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Item</th>
+                        <th>Qty</th>
+                        <th>Total</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in items %}
+                    <tr>
+                        <td>{{ item.product_name }}</td>
+                        <td>{{ item.quantity|floatformat:0 }}</td>
+                        <td>Rs. {{ item.line_total }}</td>
+                    </tr>
+                    {% endfor %}
+                    <tr class="total-row">
+                        <td colspan="2" style="text-align: right;">Grand Total:</td>
+                        <td>Rs. {{ order.total_amount }}</td>
+                    </tr>
+                </tbody>
+            </table>
+            
+            <p style="font-size: 13px; color: #6b7280; margin-top: 30px;">This is an automated alert from the Everbolt ERP Website integration.</p>
+        </div>
+    </div>
+</body>
+</html>

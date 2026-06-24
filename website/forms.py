@@ -33,6 +33,7 @@ class WebsiteSettingsForm(forms.ModelForm):
             'facebook_url': forms.URLInput(attrs={'placeholder': 'https://facebook.com/...'}),
             'instagram_url': forms.URLInput(attrs={'placeholder': 'https://instagram.com/...'}),
             'whatsapp_number': forms.TextInput(attrs={'placeholder': '94771234567'}),
+            'order_notification_emails': forms.TextInput(attrs={'placeholder': 'info@organicfoodslanka.com, admin@domain.com'}),
             'maintenance_message': forms.Textarea(attrs={'rows': 3}),
         }
 

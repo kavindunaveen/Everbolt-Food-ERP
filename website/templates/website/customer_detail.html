@@ -1,0 +1,86 @@
+{% extends 'layouts/base.html' %}
+{% block title %}{{ customer.first_name }} {{ customer.last_name }} | Website Customer{% endblock %}
+{% block breadcrumbs %}
+<li class="flex items-center space-x-2">
+    <svg class="w-4 h-4 text-gray-300" fill="currentColor" viewBox="0 0 20 20"><path d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z"/></svg>
+    <a href="{% url 'website_dashboard' %}" class="text-gray-500 hover:text-gray-900 transition-colors font-medium">Website</a>
+</li>
+<li class="flex items-center space-x-2 border-l border-gray-100 pl-4 ml-2">
+    <a href="{% url 'website_customer_list' %}" class="text-gray-500 hover:text-gray-900 transition-colors font-medium">Customers</a>
+</li>
+<li class="flex items-center space-x-2 border-l border-gray-100 pl-4 ml-2">
+    <span class="text-gray-900 font-bold">{{ customer.first_name }} {{ customer.last_name }}</span>
+</li>
+{% endblock %}
+
+{% block content %}
+<div class="px-4 py-6 sm:px-0">
+    <!-- Header -->
+    <div class="flex justify-between items-start mb-8">
+        <div class="flex items-center space-x-4">
+            <div class="h-16 w-16 rounded-full bg-violet-100 text-violet-600 flex items-center justify-center text-2xl font-bold">
+                {{ customer.first_name|first|upper }}{{ customer.last_name|first|upper }}
+            </div>
+            <div>
+                <h1 class="text-3xl font-extrabold text-gray-900 tracking-tight">{{ customer.first_name }} {{ customer.last_name }}</h1>
+                <p class="text-sm text-gray-500 flex items-center mt-1">
+                    <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+                    {{ customer.email }}
+                </p>
+                <p class="text-xs text-gray-400 mt-1">Registered: {{ customer.date_joined|date:"F j, Y" }}</p>
+            </div>
+        </div>
+        <div class="bg-gray-50 border border-gray-100 rounded-xl p-4 text-right">
+            <p class="text-xs font-black text-gray-500 uppercase tracking-widest mb-1">Lifetime Value</p>
+            <p class="text-2xl font-extrabold text-emerald-600">රු{{ lifetime_value|floatformat:2 }}</p>
+            <p class="text-xs font-medium text-gray-500">{{ orders|length }} Total Orders</p>
+        </div>
+    </div>
+
+    <!-- Orders Table -->
+    <div class="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden mt-8">
+        <div class="px-6 py-4 border-b border-gray-100 bg-gray-50/50">
+            <h3 class="text-lg leading-6 font-bold text-gray-900">Order History</h3>
+        </div>
+        <table class="min-w-full divide-y divide-gray-100">
+            <thead class="bg-gray-50/50">
+                <tr>
+                    <th scope="col" class="px-6 py-4 text-left text-xs font-black text-gray-500 uppercase tracking-widest">Order #</th>
+                    <th scope="col" class="px-6 py-4 text-left text-xs font-black text-gray-500 uppercase tracking-widest">Date</th>
+                    <th scope="col" class="px-6 py-4 text-left text-xs font-black text-gray-500 uppercase tracking-widest">Total Amount</th>
+                    <th scope="col" class="px-6 py-4 text-left text-xs font-black text-gray-500 uppercase tracking-widest">Status</th>
+                    <th scope="col" class="relative px-6 py-4"><span class="sr-only">Actions</span></th>
+                </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-gray-100">
+                {% for order in orders %}
+                <tr class="hover:bg-gray-50 transition-colors">
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-900">{{ order.website_order_number }}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 font-medium">{{ order.created_at|date:"M d, Y, h:i A" }}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-bold text-red-600">රු{{ order.total_amount }}</td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        {% if order.sync_status == 'pending' %}
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-100 text-amber-800">Pending</span>
+                        {% elif order.sync_status == 'converted' %}
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800">Converted</span>
+                        {% elif order.sync_status == 'cancelled' %}
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-gray-100 text-gray-800">Cancelled</span>
+                        {% endif %}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                        <a href="{% url 'website_order_detail' order.pk %}" class="text-violet-600 hover:text-violet-900 font-bold bg-violet-50 hover:bg-violet-100 px-3 py-1.5 rounded-lg transition-colors">View Order</a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="5" class="px-6 py-12 text-center text-gray-500">
+                        <svg class="w-12 h-12 mx-auto text-gray-200 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/></svg>
+                        <p class="font-medium">No orders found for this customer.</p>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

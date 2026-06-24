@@ -1,4 +1,5 @@
 from django.db import models
+from django.conf import settings
 from django.utils.text import slugify
 from inventory.models import Product
 from decimal import Decimal
@@ -16,6 +17,7 @@ class WebsiteSettings(models.Model):
     facebook_url = models.URLField(blank=True)
     instagram_url = models.URLField(blank=True)
     whatsapp_number = models.CharField(max_length=20, blank=True)
+    order_notification_emails = models.CharField(max_length=255, default='info@organicfoodslanka.com, hashan@organicfoodslanka.com', help_text='Comma-separated emails to receive new order alerts')
     is_maintenance_mode = models.BooleanField(default=False)
     maintenance_message = models.TextField(blank=True, default='We are currently performing maintenance. We\'ll be back soon!')
     
@@ -226,6 +228,7 @@ class WebsiteOrder(models.Model):
     ]
 
     website_order_number = models.CharField(max_length=50, unique=True)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name='website_orders')
     customer_name = models.CharField(max_length=255)
     phone = models.CharField(max_length=50)
     email = models.EmailField(blank=True, null=True)

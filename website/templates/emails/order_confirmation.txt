@@ -1,0 +1,33 @@
+Thank you for your order!
+
+Hi {{ order.customer_name }},
+
+We've received your order and are getting it ready for dispatch. We will contact you shortly to confirm delivery details.
+
+ORDER DETAILS
+----------------------------------------
+Order Number: {{ order.website_order_number }}
+Date: {{ order.created_at|date:"F j, Y" }}
+Payment Method: {{ order.payment_method }}
+Contact Number: {{ order.phone }}
+
+SHIPPING ADDRESS:
+{{ order.shipping_address }}
+{{ order.city }}, {{ order.district }}
+
+ITEMS ORDERED:
+----------------------------------------
+{% for item in items %}
+* {{ item.product_name }} (x{{ item.quantity|floatformat:0 }}) - Rs. {{ item.line_total }}
+{% endfor %}
+
+----------------------------------------
+Subtotal: Rs. {{ order.subtotal }}
+Delivery Charge: Rs. {{ order.shipping_charge }}
+TOTAL AMOUNT: Rs. {{ order.total_amount }}
+----------------------------------------
+
+If you have any questions, please contact us at info@organicfoodslanka.com.
+
+Thank you,
+Organic Foods Lanka

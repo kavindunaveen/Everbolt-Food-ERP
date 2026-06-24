@@ -1,4 +1,5 @@
 from django.urls import path
+from django.contrib.auth import views as auth_views
 from . import public_views as views
 
 urlpatterns = [
@@ -31,6 +32,30 @@ urlpatterns = [
     path("privacy-policy/", views.privacy_policy, name="privacy_policy"),
     path("terms-and-conditions/", views.terms_conditions, name="terms_conditions"),
     path("delivery-charges/", views.delivery_charges, name="delivery_charges"),
+
+    # Authentication
+    path("login/", views.login_view, name="public_login"),
+    path("register/", views.register_view, name="public_register"),
+    path("logout/", views.logout_view, name="public_logout"),
+    path("my-account/", views.my_account, name="public_my_account"),
+
+    # Password Reset
+    path("password-reset/", auth_views.PasswordResetView.as_view(
+        template_name="public/password_reset.html", 
+        email_template_name="emails/password_reset_email.html", 
+        subject_template_name="emails/password_reset_subject.txt", 
+        success_url="/public/password-reset/done/"
+    ), name="password_reset"),
+    path("password-reset/done/", auth_views.PasswordResetDoneView.as_view(
+        template_name="public/password_reset_done.html"
+    ), name="password_reset_done"),
+    path("reset/<uidb64>/<token>/", auth_views.PasswordResetConfirmView.as_view(
+        template_name="public/password_reset_confirm.html", 
+        success_url="/public/reset/done/"
+    ), name="password_reset_confirm"),
+    path("reset/done/", auth_views.PasswordResetCompleteView.as_view(
+        template_name="public/password_reset_complete.html"
+    ), name="password_reset_complete"),
 
     # API
     path("api/delivery-charge/", views.website_delivery_charge_api, name="website_delivery_charge_api"),

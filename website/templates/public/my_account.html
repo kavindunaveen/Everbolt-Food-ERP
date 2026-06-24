@@ -1,0 +1,75 @@
+{% extends "public/base.html" %}
+{% load static %}
+
+{% block title %}My Account | {{ settings.site_name }}{% endblock %}
+
+{% block content %}
+<section style="padding: 120px 20px 60px 20px; background: #F9F6F0; min-height: 80vh;">
+    <div class="container" style="max-width: 1000px; margin: 0 auto;">
+        
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 40px; flex-wrap: wrap; gap: 20px;">
+            <div>
+                <h1 style="font-family: var(--font-heading); color: var(--brand-green); font-size: 32px; margin-bottom: 4px;">My Account</h1>
+                <p style="color: var(--text-light); font-size: 15px;">Welcome back, <strong>{{ request.user.first_name|default:request.user.username }}</strong></p>
+            </div>
+            <a href="{% url 'public_logout' %}" class="btn" style="background: white; border: 1px solid #e5e5ea; color: var(--text-primary); padding: 8px 16px; border-radius: 6px;"><i class="fa-solid fa-sign-out-alt"></i> Logout</a>
+        </div>
+
+        {% if messages %}
+            {% for message in messages %}
+                <div style="padding: 12px; margin-bottom: 20px; border-radius: 6px; font-size: 14px; {% if message.tags == 'error' %}background: #fee2e2; color: #991b1b;{% else %}background: #dcfce7; color: #166534;{% endif %}">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endif %}
+
+        <div style="display: grid; grid-template-columns: 1fr; gap: 30px;">
+            
+            <!-- Order History -->
+            <div style="background: white; padding: 30px; border-radius: var(--radius-lg); box-shadow: 0 4px 15px rgba(0,0,0,0.03);">
+                <h2 style="font-family: var(--font-heading); font-size: 20px; color: var(--text-primary); margin-bottom: 20px;"><i class="fa-solid fa-box" style="color: var(--brand-red); margin-right: 8px;"></i> Order History</h2>
+                
+                {% if orders %}
+                <div style="overflow-x: auto;">
+                    <table style="width: 100%; border-collapse: collapse; min-width: 600px;">
+                        <thead>
+                            <tr style="border-bottom: 2px solid #f2f2f7;">
+                                <th style="text-align: left; padding: 12px 8px; color: var(--text-light); font-size: 13px; text-transform: uppercase;">Order #</th>
+                                <th style="text-align: left; padding: 12px 8px; color: var(--text-light); font-size: 13px; text-transform: uppercase;">Date</th>
+                                <th style="text-align: left; padding: 12px 8px; color: var(--text-light); font-size: 13px; text-transform: uppercase;">Status</th>
+                                <th style="text-align: right; padding: 12px 8px; color: var(--text-light); font-size: 13px; text-transform: uppercase;">Total</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for order in orders %}
+                            <tr style="border-bottom: 1px solid #f2f2f7;">
+                                <td style="padding: 16px 8px; font-weight: 500;">{{ order.website_order_number }}</td>
+                                <td style="padding: 16px 8px; color: var(--text-secondary);">{{ order.created_at|date:"M d, Y" }}</td>
+                                <td style="padding: 16px 8px;">
+                                    {% if order.sync_status == 'pending' %}
+                                        <span style="background: #fef08a; color: #854d0e; padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: bold;">Processing</span>
+                                    {% elif order.sync_status == 'converted' %}
+                                        <span style="background: #dcfce7; color: #166534; padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: bold;">Confirmed</span>
+                                    {% elif order.sync_status == 'cancelled' %}
+                                        <span style="background: #fee2e2; color: #991b1b; padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: bold;">Cancelled</span>
+                                    {% endif %}
+                                </td>
+                                <td style="padding: 16px 8px; text-align: right; font-weight: bold;">Rs. {{ order.total_amount }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div style="text-align: center; padding: 40px 20px; background: #fafafa; border-radius: 8px;">
+                    <i class="fa-solid fa-shopping-bag" style="font-size: 32px; color: #d1d5db; margin-bottom: 16px;"></i>
+                    <p style="color: var(--text-secondary); margin-bottom: 16px;">You haven't placed any orders yet.</p>
+                    <a href="{% url 'products' %}" class="btn btn-primary" style="padding: 10px 20px; font-size: 14px;">Start Shopping</a>
+                </div>
+                {% endif %}
+            </div>
+
+        </div>
+    </div>
+</section>
+{% endblock %}

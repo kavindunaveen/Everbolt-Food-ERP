@@ -33,6 +33,10 @@ urlpatterns = [
     path('orders/', views.WebsiteOrderListView.as_view(), name='website_order_list'),
     path('orders/<int:pk>/', views.WebsiteOrderDetailView.as_view(), name='website_order_detail'),
 
+    # Customers
+    path('customers/', views.WebsiteCustomerListView.as_view(), name='website_customer_list'),
+    path('customers/<int:pk>/', views.WebsiteCustomerDetailView.as_view(), name='website_customer_detail'),
+
     # Enquiries
     path('enquiries/', views.WebsiteEnquiryListView.as_view(), name='website_enquiry_list'),
     path('enquiries/<int:pk>/', views.WebsiteEnquiryDetailView.as_view(), name='website_enquiry_detail'),

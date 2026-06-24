@@ -8,6 +8,9 @@ from django.utils import timezone
 from django.http import JsonResponse
 from django.db.models import Q
 import uuid
+import threading
+from django.core.mail import EmailMultiAlternatives
+from django.template.loader import render_to_string
 
 from .models import (
     WebsiteSettings, WebsiteCategory, WebsiteProduct,
@@ -405,6 +408,7 @@ def checkout(request):
 
         order = WebsiteOrder.objects.create(
             website_order_number=f"WEB-{uuid.uuid4().hex[:6].upper()}",
+            user=request.user if request.user.is_authenticated else None,
             customer_name=customer_name,
             phone=phone,
             email=email,
@@ -431,6 +435,48 @@ def checkout(request):
                 unit_price=item["price"],
                 line_total=item["line_total"],
             )
+
+        # Send Emails Async to avoid blocking
+        def send_order_emails(order_obj, order_items_list, settings_obj):
+            try:
+                # 1. Send to Customer
+                if order_obj.email:
+                    subject = f"Order Confirmation - {order_obj.website_order_number}"
+                    from_email = getattr(settings, 'DEFAULT_FROM_EMAIL', 'info@organicfoodslanka.com')
+                    context = {'order': order_obj, 'items': order_items_list}
+                    
+                    text_content = render_to_string('emails/order_confirmation.txt', context)
+                    html_content = render_to_string('emails/order_confirmation.html', context)
+                    
+                    msg = EmailMultiAlternatives(subject, text_content, from_email, [order_obj.email])
+                    msg.attach_alternative(html_content, "text/html")
+                    msg.send(fail_silently=True)
+
+                # 2. Send Admin Alerts
+                admin_emails_raw = getattr(settings_obj, 'order_notification_emails', '')
+                if admin_emails_raw:
+                    admin_emails = [e.strip() for e in admin_emails_raw.split(',') if e.strip()]
+                    if admin_emails:
+                        admin_subject = f"New Order Alert: {order_obj.website_order_number}"
+                        admin_context = {'order': order_obj, 'items': order_items_list}
+                        
+                        admin_text = render_to_string('emails/admin_order_alert.txt', admin_context)
+                        admin_html = render_to_string('emails/admin_order_alert.html', admin_context)
+                        
+                        admin_msg = EmailMultiAlternatives(admin_subject, admin_text, from_email, admin_emails)
+                        admin_msg.attach_alternative(admin_html, "text/html")
+                        admin_msg.send(fail_silently=True)
+            except Exception as e:
+                print(f"Error sending emails: {e}")
+
+        order_items_data = [
+            {
+                "product_name": i["name"], 
+                "quantity": i["quantity"], 
+                "line_total": i["line_total"]
+            } for i in items
+        ]
+        threading.Thread(target=send_order_emails, args=(order, order_items_data, settings_data)).start()
 
         # Clear cart
         request.session["cart"] = {}
@@ -549,3 +595,82 @@ def sitemap_xml(request):
         
     xml.append('</urlset>')
     return HttpResponse("\n".join(xml), content_type="application/xml")
+
+# ============================================================
+# CUSTOMER AUTHENTICATION & ACCOUNT
+# ============================================================
+from django.contrib.auth import authenticate, login, logout
+from users.models import User, Role
+from django.contrib.auth.decorators import login_required
+
+def register_view(request):
+    settings_data = WebsiteSettings.get_settings()
+    if request.user.is_authenticated:
+        return redirect('public_my_account')
+
+    if request.method == "POST":
+        first_name = request.POST.get('first_name', '').strip()
+        last_name = request.POST.get('last_name', '').strip()
+        email = request.POST.get('email', '').strip()
+        password = request.POST.get('password', '')
+
+        if User.objects.filter(email=email).exists() or User.objects.filter(username=email).exists():
+            messages.error(request, "An account with this email already exists.")
+            return redirect('public_register')
+
+        try:
+            role, created = Role.objects.get_or_create(
+                name="Website Customer",
+                defaults={'description': "Customers registered via the public website.", 'is_system': True}
+            )
+            user = User.objects.create_user(
+                username=email,
+                email=email,
+                password=password,
+                first_name=first_name,
+                last_name=last_name,
+                role=role
+            )
+            login(request, user)
+            messages.success(request, "Registration successful! Welcome to Organic Foods Lanka.")
+            next_url = request.POST.get('next') or request.GET.get('next') or 'public_my_account'
+            return redirect(next_url)
+        except Exception as e:
+            messages.error(request, f"Registration failed: {str(e)}")
+
+    return render(request, "public/register.html", {"settings": settings_data})
+
+def login_view(request):
+    settings_data = WebsiteSettings.get_settings()
+    if request.user.is_authenticated:
+        return redirect('public_my_account')
+
+    if request.method == "POST":
+        email = request.POST.get('email', '').strip()
+        password = request.POST.get('password', '')
+        
+        user = authenticate(request, username=email, password=password)
+        if user is not None:
+            login(request, user)
+            messages.success(request, "Login successful!")
+            next_url = request.POST.get('next') or request.GET.get('next') or 'public_my_account'
+            return redirect(next_url)
+        else:
+            messages.error(request, "Invalid email or password.")
+
+    return render(request, "public/login.html", {"settings": settings_data})
+
+def logout_view(request):
+    logout(request)
+    messages.success(request, "You have been logged out.")
+    return redirect('home')
+
+@login_required(login_url='/public/login/')
+def my_account(request):
+    settings_data = WebsiteSettings.get_settings()
+    orders = WebsiteOrder.objects.filter(user=request.user).order_by('-created_at')
+    
+    return render(request, "public/my_account.html", {
+        "settings": settings_data,
+        "orders": orders
+    })
