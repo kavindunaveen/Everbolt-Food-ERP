@@ -337,6 +337,10 @@ class WebsiteOrderDetailView(LoginRequiredMixin, DetailView):
         old_status = self.object.sync_status
         new_status = request.POST.get('sync_status')
         
+        if old_status in ['converted', 'cancelled']:
+            messages.error(request, f"This order is already {old_status} and its status cannot be changed.")
+            return redirect('website_order_list')
+        
         if new_status in dict(WebsiteOrder.SYNC_STATUS_CHOICES) and old_status != new_status:
             self.object.sync_status = new_status
             self.object.save()
@@ -445,7 +449,7 @@ class WebsiteOrderDetailView(LoginRequiredMixin, DetailView):
             if new_status != 'converted':
                 messages.success(request, f"Order status updated to {self.object.get_sync_status_display()}")
                 
-        return redirect('website_order_detail', pk=self.object.pk)
+        return redirect('website_order_list')
 
 # ─── Customers ─────────────────────────────────────────────────────────────────
 
