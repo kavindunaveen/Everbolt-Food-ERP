@@ -386,6 +386,24 @@ class WebsiteOrderDetailView(LoginRequiredMixin, DetailView):
                             line_total=w_item.line_total,
                         )
 
+                    if self.object.shipping_charge > 0:
+                        delivery_product, _ = Product.objects.get_or_create(
+                            name="Website Delivery Charge",
+                            defaults={
+                                'product_id': 'WEB-DELIVERY',
+                                'selling_price': self.object.shipping_charge,
+                                'inventory_class': 'CONSUMABLE',
+                                'track_stock': False,
+                            }
+                        )
+                        InvoiceItem.objects.create(
+                            invoice=invoice,
+                            product=delivery_product,
+                            quantity=1,
+                            unit_price=self.object.shipping_charge,
+                            line_total=self.object.shipping_charge,
+                        )
+
                     issue_invoice(invoice, request.user)
                     StockReserve.objects.filter(reference_type='WEB_ORDER', reference_id=self.object.pk).delete()
                     messages.success(request, f"Order successfully converted to Sales Invoice #{invoice.invoice_number}!")

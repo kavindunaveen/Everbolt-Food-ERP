@@ -410,7 +410,7 @@ def checkout(request):
         full_address = f"{address}\n{apartment}\n{city}\n{postal_code}".strip()
 
         # Simple delivery logic calculation from checkout POST
-        shipping_charge = Decimal(request.POST.get("calculated_shipping", "0"))
+        shipping_charge = Decimal(request.POST.get("delivery_charge", "0"))
         total_amount = subtotal + shipping_charge
 
         order = WebsiteOrder.objects.create(
