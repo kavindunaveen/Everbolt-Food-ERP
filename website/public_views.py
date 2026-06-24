@@ -519,6 +519,7 @@ def checkout(request):
         "settings": settings_data,
         "cart_items": items,
         "subtotal": subtotal,
+        "cart_weight_kg": sum(item["line_weight_kg"] for item in items),
     })
 
 def order_success(request, order_number=None):
