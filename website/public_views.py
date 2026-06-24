@@ -311,8 +311,13 @@ def add_to_cart(request, pk):
 
     if product_key in cart:
         existing_qty = int(cart[product_key].get("quantity", 0))
-        new_qty = min(existing_qty + quantity, 99)
-        cart[product_key]["quantity"] = new_qty
+        new_qty = existing_qty + quantity
+        
+        if product.inventory_product and new_qty > product.inventory_product.available_stock:
+            messages.error(request, f"Cannot add {quantity} more. Only {product.inventory_product.available_stock} available in stock.")
+            return redirect(request.META.get('HTTP_REFERER', reverse('products')))
+            
+        cart[product_key]["quantity"] = min(new_qty, 99)
         cart[product_key]["name"] = product_name
         cart[product_key]["price"] = str(product_price)
         cart[product_key]["image"] = product_image
@@ -320,6 +325,10 @@ def add_to_cart(request, pk):
         cart[product_key]["sku"] = product.inventory_product.product_id or ""
         cart[product_key]["estimated_weight_kg"] = str(estimated_weight_kg)
     else:
+        if product.inventory_product and quantity > product.inventory_product.available_stock:
+            messages.error(request, f"Cannot add {quantity}. Only {product.inventory_product.available_stock} available in stock.")
+            return redirect(request.META.get('HTTP_REFERER', reverse('products')))
+            
         cart[product_key] = {
             "product_id": pk,
             "website_product_id": pk,
@@ -359,7 +368,15 @@ def update_cart(request):
 
                 if product_id in cart:
                     if quantity > 0:
-                        cart[product_id]["quantity"] = quantity
+                        try:
+                            product = WebsiteProduct.objects.select_related('inventory_product').get(pk=product_id)
+                            if product.inventory_product and quantity > product.inventory_product.available_stock:
+                                messages.warning(request, f"Reduced '{product.get_display_name()}' to {product.inventory_product.available_stock} (maximum available stock).")
+                                cart[product_id]["quantity"] = int(product.inventory_product.available_stock)
+                            else:
+                                cart[product_id]["quantity"] = quantity
+                        except WebsiteProduct.DoesNotExist:
+                            del cart[product_id]
                     else:
                         del cart[product_id]
 
@@ -409,9 +426,17 @@ def checkout(request):
 
         full_address = f"{address}\n{apartment}\n{city}\n{postal_code}".strip()
 
-        # Simple delivery logic calculation from checkout POST
-        shipping_charge = Decimal(request.POST.get("delivery_charge", "0"))
+        # Secure delivery logic calculation from server side
+        cart_weight_kg = Decimal(request.session.get("cart_weight_kg", 0))
+        shipping_charge = calculate_delivery_cost(district, city, cart_weight_kg)
         total_amount = subtotal + shipping_charge
+        
+        # Final strict stock check before order creation
+        for item in items:
+            product = get_object_or_404(WebsiteProduct.objects.select_related('inventory_product'), pk=item["website_product_id"])
+            if product.inventory_product and item["quantity"] > product.inventory_product.available_stock:
+                messages.error(request, f"Checkout failed: Not enough stock for {product.get_display_name()}. Available: {product.inventory_product.available_stock}")
+                return redirect("cart")
 
         order = WebsiteOrder.objects.create(
             website_order_number=f"WEB-{uuid.uuid4().hex[:6].upper()}",
@@ -530,6 +555,49 @@ def order_success(request, order_number=None):
         "order_number": order_number,
     })
 
+def calculate_delivery_cost(district, city, weight_kg):
+    from decimal import Decimal
+    chargeable_weight = max(Decimal("1"), Decimal(round(weight_kg)))
+    
+    colombo_1_15 = [
+        "Colombo 01 – Fort", "Colombo 02 – Slave Island", "Colombo 03 – Kollupitiya", "Colombo 04 – Bambalapitiya",
+        "Colombo 05 – Havelock Town", "Colombo 06 – Wellawatte", "Colombo 07 – Cinnamon Gardens", "Colombo 08 – Borella",
+        "Colombo 09 – Dematagoda", "Colombo 10 – Maradana", "Colombo 11 – Pettah", "Colombo 12 – Hulftsdorp",
+        "Colombo 13 – Kotahena", "Colombo 14 – Grandpass", "Colombo 15 – Modara"
+    ]
+    
+    colombo_suburbs = [
+        "Dehiwala", "Mount Lavinia", "Ratmalana", "Moratuwa", "Maharagama", "Nugegoda", "Kohuwala", "Piliyandala",
+        "Kesbewa", "Kottawa", "Homagama", "Battaramulla", "Kotte (Sri Jayawardenepura Kotte)", "Rajagiriya",
+        "Malabe", "Talawatugoda", "Pelawatte", "Athurugiriya", "Pannipitiya", "Kaduwela", "Angoda", "Kolonnawa",
+        "Wellampitiya", "Kelaniya", "Wattala (bordering Colombo)"
+    ]
+    
+    far_districts = [
+        "Jaffna", "Kilinochchi", "Mannar", "Mullaitivu", "Vavuniya", "Trincomalee", "Batticaloa", "Ampara"
+    ]
+    
+    if district == "Colombo":
+        if city in colombo_1_15:
+            base = Decimal("350")
+            extra = Decimal("100")
+        elif city in colombo_suburbs:
+            base = Decimal("400")
+            extra = Decimal("100")
+        else:
+            base = Decimal("450")
+            extra = Decimal("100")
+    elif district in far_districts:
+        base = Decimal("500")
+        extra = Decimal("125")
+    else:
+        base = Decimal("450")
+        extra = Decimal("100")
+        
+    extra_weight = max(Decimal("0"), chargeable_weight - Decimal("1"))
+    charge = base + (extra_weight * extra)
+    return charge
+
 def website_delivery_charge_api(request):
     """
     Called by JS in checkout.html
@@ -548,45 +616,7 @@ def website_delivery_charge_api(request):
         city = data.get("city", "").strip()
         weight_kg = safe_decimal(data.get("weight_kg", "0"))
         
-        chargeable_weight = max(Decimal("1"), Decimal(round(weight_kg)))
-        
-        colombo_1_15 = [
-            "Colombo 01 – Fort", "Colombo 02 – Slave Island", "Colombo 03 – Kollupitiya", "Colombo 04 – Bambalapitiya",
-            "Colombo 05 – Havelock Town", "Colombo 06 – Wellawatte", "Colombo 07 – Cinnamon Gardens", "Colombo 08 – Borella",
-            "Colombo 09 – Dematagoda", "Colombo 10 – Maradana", "Colombo 11 – Pettah", "Colombo 12 – Hulftsdorp",
-            "Colombo 13 – Kotahena", "Colombo 14 – Grandpass", "Colombo 15 – Modara"
-        ]
-        
-        colombo_suburbs = [
-            "Dehiwala", "Mount Lavinia", "Ratmalana", "Moratuwa", "Maharagama", "Nugegoda", "Kohuwala", "Piliyandala",
-            "Kesbewa", "Kottawa", "Homagama", "Battaramulla", "Kotte (Sri Jayawardenepura Kotte)", "Rajagiriya",
-            "Malabe", "Talawatugoda", "Pelawatte", "Athurugiriya", "Pannipitiya", "Kaduwela", "Angoda", "Kolonnawa",
-            "Wellampitiya", "Kelaniya", "Wattala (bordering Colombo)"
-        ]
-        
-        far_districts = [
-            "Jaffna", "Kilinochchi", "Mannar", "Mullaitivu", "Vavuniya", "Trincomalee", "Batticaloa", "Ampara"
-        ]
-        
-        if district == "Colombo":
-            if city in colombo_1_15:
-                base = Decimal("350")
-                extra = Decimal("100")
-            elif city in colombo_suburbs:
-                base = Decimal("400")
-                extra = Decimal("100")
-            else:
-                base = Decimal("450")
-                extra = Decimal("100")
-        elif district in far_districts:
-            base = Decimal("500")
-            extra = Decimal("125")
-        else:
-            base = Decimal("450")
-            extra = Decimal("100")
-            
-        extra_weight = max(Decimal("0"), chargeable_weight - Decimal("1"))
-        charge = base + (extra_weight * extra)
+        charge = calculate_delivery_cost(district, city, weight_kg)
             
         return JsonResponse({
             "success": True,
