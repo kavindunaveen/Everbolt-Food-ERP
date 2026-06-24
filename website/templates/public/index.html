@@ -1663,12 +1663,18 @@
                     </div>
                     <div class="product-actions">
                         <a href="{% url 'product_detail' product.id %}" class="btn-view-detail"><i class="fa-solid fa-eye"></i></a>
+                        {% if product.inventory_product and product.inventory_product.available_stock > 0 %}
                         <form action="{% url 'add_to_cart' product.id %}" method="post" style="flex:1; display:flex;">
                             {% csrf_token %}
                             <button type="submit" class="btn-add-cart">
                                 <i class="fa-solid fa-cart-plus"></i> Add to Cart
                             </button>
                         </form>
+                        {% else %}
+                        <a href="{% url 'product_detail' product.id %}" class="btn-add-cart" style="flex:1; display:flex; justify-content:center; align-items:center; text-decoration:none; background-color: var(--color-gray-400);">
+                            Out of Stock
+                        </a>
+                        {% endif %}
                     </div>
                 </div>
             </div>

@@ -316,6 +316,34 @@
     box-shadow: 0 8px 24px rgba(192,57,43,0.25);
 }
 
+.pd-inquire-btn {
+    flex: 1;
+    min-width: 180px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    min-height: 52px;
+    padding: 0 28px;
+    border: none;
+    border-radius: 12px;
+    background: var(--color-tea-brown);
+    color: #ffffff;
+    font-family: var(--font-heading);
+    font-size: 1rem;
+    font-weight: 700;
+    cursor: pointer;
+    text-decoration: none;
+    width: 100%;
+    transition: background 0.25s ease, transform 0.2s ease, box-shadow 0.25s ease;
+}
+
+.pd-inquire-btn:hover {
+    background: var(--color-primary);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(30,63,32,0.25);
+}
+
 /* ── CONTACT ACTIONS ──────────────────────────── */
 .pd-actions {
     display: flex;

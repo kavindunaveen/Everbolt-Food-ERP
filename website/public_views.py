@@ -16,6 +16,9 @@ from .models import (
     WebsiteSettings, WebsiteCategory, WebsiteProduct,
     WebsitePage, WebsiteEnquiry, WebsiteOrder, WebsiteOrderItem, WebsiteHeroSlide
 )
+from crm.models import Customer
+from sales.models import Invoice, InvoiceItem
+from inventory.models import Product, StockReserve
 
 # ============================================================
 # HELPER FUNCTIONS
@@ -284,6 +287,10 @@ def build_cart_items(request):
 def add_to_cart(request, pk):
     product = get_object_or_404(WebsiteProduct.objects.select_related('inventory_product'), pk=pk)
 
+    if product.inventory_product and product.inventory_product.available_stock <= 0:
+        messages.error(request, f"{product.get_display_name()} is currently out of stock.")
+        return redirect(request.META.get('HTTP_REFERER', reverse('products')))
+
     try:
         quantity = int(request.POST.get("quantity", 1))
     except (ValueError, TypeError):
@@ -435,6 +442,22 @@ def checkout(request):
                 unit_price=item["price"],
                 line_total=item["line_total"],
             )
+            
+            # Create StockReserve for 7 days
+            try:
+                from django.utils import timezone
+                from datetime import timedelta
+                expiry = timezone.now() + timedelta(days=7)
+                inv_product = Product.objects.get(id=item["inventory_product_id"])
+                StockReserve.objects.create(
+                    product=inv_product,
+                    quantity=item["quantity"],
+                    reference_type='WEB_ORDER',
+                    reference_id=order.id,
+                    expiry_time=expiry
+                )
+            except Exception as e:
+                print(f"Failed to reserve stock: {e}")
 
         # Send Emails Async to avoid blocking
         def send_order_emails(order_obj, order_items_list, settings_obj):
@@ -513,9 +536,13 @@ def website_delivery_charge_api(request):
     if request.method != "POST":
         return JsonResponse({"success": False, "message": "Invalid request"})
         
-    import json
     try:
-        data = json.loads(request.body)
+        if request.content_type == 'application/json':
+            import json
+            data = json.loads(request.body)
+        else:
+            data = request.POST
+
         district = data.get("district", "").strip()
         weight_kg = safe_decimal(data.get("weight_kg", "0"))
         

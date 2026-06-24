@@ -1,0 +1,20 @@
+Update on your Order: {{ order.website_order_number }}
+
+Hi {{ order.customer_name }},
+
+We are writing to let you know that the status of your order has been updated.
+
+Current Status: {{ status|upper }}
+
+{% if status == 'dispatched' %}
+Your order has been dispatched from our facility and is on its way to you! You can expect delivery soon.
+{% elif status == 'delivered' %}
+Your order has been marked as delivered. We hope you enjoy your products!
+{% elif status == 'cancelled' %}
+Your order has unfortunately been cancelled. If you have already made a payment, someone from our team will contact you regarding a refund.
+{% endif %}
+
+If you have any questions, please contact us at info@organicfoodslanka.com.
+
+Thank you,
+Organic Foods Lanka

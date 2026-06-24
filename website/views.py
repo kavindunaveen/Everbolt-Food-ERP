@@ -334,11 +334,99 @@ class WebsiteOrderDetailView(LoginRequiredMixin, DetailView):
 
     def post(self, request, *args, **kwargs):
         self.object = self.get_object()
+        old_status = self.object.sync_status
         new_status = request.POST.get('sync_status')
-        if new_status in dict(WebsiteOrder.SYNC_STATUS_CHOICES):
+        
+        if new_status in dict(WebsiteOrder.SYNC_STATUS_CHOICES) and old_status != new_status:
             self.object.sync_status = new_status
             self.object.save()
-            messages.success(request, f"Order status updated to {self.object.get_sync_status_display()}")
+            
+            # 1. Conversion Logic
+            if new_status == 'converted':
+                from crm.models import Customer
+                from sales.models import Invoice, InvoiceItem
+                from sales.services import issue_invoice
+                from inventory.models import StockReserve
+
+                try:
+                    customer, created = Customer.objects.get_or_create(
+                        email=self.object.email,
+                        defaults={
+                            'customer_name': self.object.customer_name,
+                            'phone': self.object.phone,
+                            'billing_address': self.object.billing_address,
+                            'shipping_address': self.object.shipping_address,
+                        }
+                    )
+                    if not created and not customer.phone:
+                        customer.phone = self.object.phone
+                        customer.save(update_fields=['phone'])
+
+                    invoice = Invoice.objects.create(
+                        invoice_type='COD',
+                        customer=customer,
+                        created_by=request.user,
+                        salesperson=request.user,
+                        status='DRAFT',
+                        total_amount=self.object.total_amount,
+                        subtotal_amount=self.object.subtotal,
+                        tax_amount=self.object.tax,
+                        snap_delivery_line1=self.object.shipping_address,
+                        snap_delivery_city=self.object.city,
+                        snap_delivery_province=self.object.province,
+                        notes=self.object.internal_notes,
+                    )
+
+                    for w_item in self.object.items.all():
+                        InvoiceItem.objects.create(
+                            invoice=invoice,
+                            product_id=w_item.inventory_product_id,
+                            quantity=w_item.quantity,
+                            unit_price=w_item.unit_price,
+                            line_total=w_item.line_total,
+                        )
+
+                    issue_invoice(invoice, request.user)
+                    StockReserve.objects.filter(reference_type='WEB_ORDER', reference_id=self.object.pk).delete()
+                    messages.success(request, f"Order successfully converted to Sales Invoice #{invoice.invoice_number}!")
+                
+                except Exception as e:
+                    messages.error(request, f"Failed to convert to Sales Invoice: {e}")
+                    # Revert status if conversion fails
+                    self.object.sync_status = old_status
+                    self.object.save()
+                    return redirect('website_order_detail', pk=self.object.pk)
+
+            # 2. Cancellation Logic (Release Stock)
+            elif new_status == 'cancelled':
+                from inventory.models import StockReserve
+                StockReserve.objects.filter(reference_type='WEB_ORDER', reference_id=self.object.pk).delete()
+            
+            # 3. Email Notification Logic
+            if new_status in ['dispatched', 'delivered', 'cancelled']:
+                import threading
+                from django.template.loader import render_to_string
+                from django.core.mail import EmailMultiAlternatives
+                from django.conf import settings
+
+                def send_status_email(order, status):
+                    if not order.email: return
+                    subject = f"Order {status.title()} - {order.website_order_number}"
+                    from_email = getattr(settings, 'DEFAULT_FROM_EMAIL', 'info@organicfoodslanka.com')
+                    context = {'order': order, 'status': status}
+                    
+                    text_content = render_to_string('emails/order_status_update.txt', context)
+                    html_content = render_to_string('emails/order_status_update.html', context)
+                    
+                    msg = EmailMultiAlternatives(subject, text_content, from_email, [order.email])
+                    msg.attach_alternative(html_content, "text/html")
+                    msg.send(fail_silently=True)
+                
+                threading.Thread(target=send_status_email, args=(self.object, new_status)).start()
+            
+            if new_status != 'converted':
+                messages.success(request, f"Order status updated to {self.object.get_sync_status_display()}")
+                
         return redirect('website_order_detail', pk=self.object.pk)
 
 # ─── Customers ─────────────────────────────────────────────────────────────────

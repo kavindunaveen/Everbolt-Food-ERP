@@ -83,7 +83,11 @@
 
                 <!-- Availability -->
                 {% if product.status == "PUBLISHED" %}
-                    <div class="pd-badge-available"><i class="fa-solid fa-circle-check"></i> In Stock</div>
+                    {% if product.inventory_product and product.inventory_product.available_stock > 0 %}
+                        <div class="pd-badge-available"><i class="fa-solid fa-circle-check"></i> In Stock ({{ product.inventory_product.available_stock|floatformat:0 }} {{ product.inventory_product.get_stock_unit_display|default:'available' }})</div>
+                    {% else %}
+                        <div class="pd-badge-unavailable"><i class="fa-solid fa-circle-xmark"></i> Out of Stock</div>
+                    {% endif %}
                 {% else %}
                     <div class="pd-badge-unavailable"><i class="fa-solid fa-circle-xmark"></i> Not Available</div>
                 {% endif %}
@@ -127,17 +131,26 @@
                 </div>
 
                 <!-- Quantity + Add to Cart -->
+                {% if product.inventory_product and product.inventory_product.available_stock > 0 %}
                 <form method="post" action="{% url 'add_to_cart' product.id %}" class="pd-cart-form">
                     {% csrf_token %}
                     <div class="pd-qty">
                         <button type="button" class="pd-qty-btn" onclick="adjustQty(this,-1)" aria-label="Decrease">−</button>
-                        <input name="quantity" class="pd-qty-input" type="number" value="1" min="1" max="99" readonly>
+                        <input name="quantity" class="pd-qty-input" type="number" value="1" min="1" max="{{ product.inventory_product.available_stock|floatformat:0 }}" readonly>
                         <button type="button" class="pd-qty-btn" onclick="adjustQty(this,1)" aria-label="Increase">+</button>
                     </div>
                     <button class="pd-add-btn" type="submit">
                         <i class="fa-solid fa-cart-plus"></i> Add to Cart
                     </button>
                 </form>
+                {% else %}
+                <div class="pd-cart-form" style="display: block;">
+                    <a href="mailto:info@organicfoodslanka.com?subject=Inquiry about {{ product.get_display_name|urlencode }}"
+                       class="pd-inquire-btn">
+                        <i class="fa-solid fa-envelope"></i> Inquire Now
+                    </a>
+                </div>
+                {% endif %}
 
                 <!-- Contact Actions -->
                 <div class="pd-actions">
@@ -213,8 +226,8 @@
                     {% if product.min_order_qty %}
                         <tr><th>Min. Order Qty</th><td>{{ product.min_order_qty }}</td></tr>
                     {% endif %}
-                    {% if product.stock and product.show_stock %}
-                        <tr><th>Available Stock</th><td>{{ product.stock }}</td></tr>
+                    {% if product.inventory_product %}
+                        <tr><th>Available Stock</th><td>{{ product.inventory_product.available_stock|floatformat:0 }} {{ product.inventory_product.get_stock_unit_display|default:'' }}</td></tr>
                     {% endif %}
                     {% if product.free_delivery %}
                         <tr><th>Delivery</th><td>Free Delivery Available</td></tr>
@@ -282,9 +295,15 @@
                 <span class="pd-sticky-title">{{ product.get_display_name|truncatechars:30 }}</span>
                 <span class="pd-sticky-price">රු{{ product.get_price|floatformat:2 }}</span>
             </div>
+            {% if product.inventory_product and product.inventory_product.available_stock > 0 %}
             <button type="button" class="pd-sticky-btn" onclick="document.querySelector('.pd-cart-form').submit();">
                 Add to Cart
             </button>
+            {% else %}
+            <a href="mailto:info@organicfoodslanka.com?subject=Inquiry about {{ product.get_display_name|urlencode }}" class="pd-sticky-btn" style="background-color: var(--color-tea-brown); text-decoration: none; text-align: center; line-height: normal; display: flex; align-items: center; justify-content: center; transition: background 0.3s ease;" onmouseover="this.style.backgroundColor='var(--color-primary)'" onmouseout="this.style.backgroundColor='var(--color-tea-brown)'">
+                Inquire Now
+            </a>
+            {% endif %}
         </div>
 
     </div>

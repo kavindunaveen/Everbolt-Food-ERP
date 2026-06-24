@@ -3,51 +3,68 @@
 {% block title %}Register | {{ settings.site_name }}{% endblock %}
 
 {% block content %}
-<section style="padding: 120px 20px; background: #F9F6F0; min-height: 80vh; display: flex; align-items: center; justify-content: center;">
-    <div style="background: white; padding: 40px; border-radius: var(--radius-lg); box-shadow: 0 10px 30px rgba(0,0,0,0.05); width: 100%; max-width: 500px;">
-        <h1 style="font-family: var(--font-heading); color: var(--brand-green); font-size: 28px; margin-bottom: 8px; text-align: center;">Create Account</h1>
-        <p style="text-align: center; color: var(--text-light); margin-bottom: 30px; font-size: 14px;">Join {{ settings.site_name }} for faster checkout and order tracking.</p>
+<section
+    style="padding: 120px 20px; background: #F9F6F0; min-height: 80vh; display: flex; align-items: center; justify-content: center;">
+    <div
+        style="background: white; padding: 40px; border-radius: var(--radius-lg); box-shadow: 0 10px 30px rgba(0,0,0,0.05); width: 100%; max-width: 500px;">
+        <h1
+            style="font-family: var(--font-heading); color: var(--brand-green); font-size: 28px; margin-bottom: 8px; text-align: center;">
+            Create Account</h1>
+        <p style="text-align: center; color: var(--text-light); margin-bottom: 30px; font-size: 14px;">Join {{
+            settings.site_name }} for faster checkout and order tracking.</p>
 
         {% if messages %}
-            {% for message in messages %}
-                <div style="padding: 12px; margin-bottom: 20px; border-radius: 6px; font-size: 14px; {% if message.tags == 'error' %}background: #fee2e2; color: #991b1b;{% else %}background: #dcfce7; color: #166534;{% endif %}">
-                    {{ message }}
-                </div>
-            {% endfor %}
+        {% for message in messages %}
+        <div
+            style="padding: 12px; margin-bottom: 20px; border-radius: 6px; font-size: 14px; {% if message.tags == 'error' %}background: #fee2e2; color: #991b1b;{% else %}background: #dcfce7; color: #166534;{% endif %}">
+            {{ message }}
+        </div>
+        {% endfor %}
         {% endif %}
 
         <form method="POST" action="{% url 'public_register' %}">
             {% csrf_token %}
             {% if request.GET.next %}
-                <input type="hidden" name="next" value="{{ request.GET.next }}">
+            <input type="hidden" name="next" value="{{ request.GET.next }}">
             {% endif %}
 
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px;">
                 <div>
-                    <label style="display: block; font-size: 13px; font-weight: bold; color: var(--text-primary); margin-bottom: 6px;">First Name</label>
-                    <input type="text" name="first_name" required style="width: 100%;" placeholder="John">
+                    <label
+                        style="display: block; font-size: 13px; font-weight: bold; color: var(--text-primary); margin-bottom: 6px;">First
+                        Name</label>
+                    <input type="text" name="first_name" required style="width: 100%;" placeholder="Kavindu">
                 </div>
                 <div>
-                    <label style="display: block; font-size: 13px; font-weight: bold; color: var(--text-primary); margin-bottom: 6px;">Last Name</label>
-                    <input type="text" name="last_name" required style="width: 100%;" placeholder="Doe">
+                    <label
+                        style="display: block; font-size: 13px; font-weight: bold; color: var(--text-primary); margin-bottom: 6px;">Last
+                        Name</label>
+                    <input type="text" name="last_name" required style="width: 100%;" placeholder="Naveen">
                 </div>
             </div>
 
             <div style="margin-bottom: 20px;">
-                <label style="display: block; font-size: 13px; font-weight: bold; color: var(--text-primary); margin-bottom: 6px;">Email Address</label>
+                <label
+                    style="display: block; font-size: 13px; font-weight: bold; color: var(--text-primary); margin-bottom: 6px;">Email
+                    Address</label>
                 <input type="email" name="email" required style="width: 100%;" placeholder="you@example.com">
             </div>
 
             <div style="margin-bottom: 24px;">
-                <label style="display: block; font-size: 13px; font-weight: bold; color: var(--text-primary); margin-bottom: 6px;">Password</label>
-                <input type="password" name="password" required style="width: 100%;" placeholder="Create a secure password">
+                <label
+                    style="display: block; font-size: 13px; font-weight: bold; color: var(--text-primary); margin-bottom: 6px;">Password</label>
+                <input type="password" name="password" required style="width: 100%;"
+                    placeholder="Create a secure password">
             </div>
 
-            <button type="submit" class="btn btn-primary" style="width: 100%; padding: 14px; font-size: 16px;">Register</button>
+            <button type="submit" class="btn btn-primary"
+                style="width: 100%; padding: 14px; font-size: 16px;">Register</button>
         </form>
 
         <p style="text-align: center; margin-top: 24px; font-size: 14px; color: var(--text-light);">
-            Already have an account? <a href="{% url 'public_login' %}{% if request.GET.next %}?next={{ request.GET.next }}{% endif %}" style="color: var(--brand-green); font-weight: bold; text-decoration: none;">Sign In</a>
+            Already have an account? <a
+                href="{% url 'public_login' %}{% if request.GET.next %}?next={{ request.GET.next }}{% endif %}"
+                style="color: var(--brand-green); font-weight: bold; text-decoration: none;">Sign In</a>
         </p>
     </div>
 </section>

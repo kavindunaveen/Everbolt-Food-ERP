@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Order Status Update - Organic Foods Lanka</title>
+    <style>
+        body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background-color: #F9F6F0; color: #4b5563; margin: 0; padding: 0; }
+        .container { max-width: 600px; margin: 40px auto; background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
+        .header { background-color: #1E3F20; color: #ffffff; padding: 30px 40px; text-align: center; }
+        .header h1 { margin: 0; font-size: 24px; font-weight: 700; }
+        .content { padding: 40px; }
+        .content h2 { color: #2C1A12; margin-top: 0; font-size: 20px; }
+        .status-box { background-color: #fbfbfb; padding: 20px; border-radius: 6px; margin-bottom: 30px; border: 1px solid #e5e7eb; text-align: center; }
+        .status-text { font-size: 22px; font-weight: bold; color: #1E3F20; text-transform: uppercase; margin: 0; }
+        .footer { background-color: #f9fafb; padding: 20px 40px; text-align: center; font-size: 13px; color: #9ca3af; border-top: 1px solid #e5e7eb; }
+        .footer a { color: #1E3F20; text-decoration: none; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Update on your Order: {{ order.website_order_number }}</h1>
+        </div>
+        <div class="content">
+            <h2>Hi {{ order.customer_name }},</h2>
+            <p>We are writing to let you know that the status of your order has been updated.</p>
+            
+            <div class="status-box">
+                <p style="margin:0; font-size:14px; color:#6b7280; margin-bottom:5px;">Current Status:</p>
+                <p class="status-text">{{ status }}</p>
+            </div>
+
+            {% if status == 'dispatched' %}
+            <p>Your order has been dispatched from our facility and is on its way to you! You can expect delivery soon.</p>
+            {% elif status == 'delivered' %}
+            <p>Your order has been marked as delivered. We hope you enjoy your products!</p>
+            {% elif status == 'cancelled' %}
+            <p>Your order has unfortunately been cancelled. If you have already made a payment, someone from our team will contact you regarding a refund.</p>
+            {% endif %}
+
+            <p style="margin-top: 40px; font-size: 14px; color: #6b7280;">If you have any questions, please contact us at <a href="mailto:info@organicfoodslanka.com">info@organicfoodslanka.com</a>.</p>
+        </div>
+        <div class="footer">
+            <p>&copy; {% now "Y" %} Organic Foods Lanka. All rights reserved.</p>
+        </div>
+    </div>
+</body>
+</html>
