@@ -68,14 +68,14 @@
 
                     <div class="ck-group">
                         <label for="phone">Phone Number <span class="required">*</span></label>
-                        <input type="tel" id="phone" name="phone" class="ck-input" placeholder="+94 77 000 0000" required autocomplete="tel" inputmode="tel" pattern="^(\+94|0)[0-9]{9}$" {% if request.user.is_authenticated %}value="{{ request.user.contact_number }}"{% endif %}>
-                        <span class="ck-error-msg" data-error-for="phone">Enter a valid Sri Lankan phone number.</span>
+                        <input type="tel" id="phone" name="phone" class="ck-input" placeholder="0770000000" maxlength="10" required autocomplete="tel" inputmode="numeric" pattern="^0[0-9]{9}$" {% if request.user.is_authenticated %}value="{{ request.user.contact_number }}"{% endif %}>
+                        <span class="ck-error-msg" id="phone-error">Enter a valid 10-digit Sri Lankan phone number.</span>
                     </div>
 
                     <div class="ck-group">
                         <label for="email">Email <span class="optional">(optional)</span></label>
-                        <input type="email" id="email" name="email" class="ck-input" placeholder="you@example.com" autocomplete="email" pattern="[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$" {% if request.user.is_authenticated %}value="{{ request.user.email }}"{% endif %}>
-                        <span class="ck-error-msg" data-error-for="email">Enter a valid email address.</span>
+                        <input type="email" id="email" name="email" class="ck-input" placeholder="you@example.com" autocomplete="email" pattern="^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$" {% if request.user.is_authenticated %}value="{{ request.user.email }}"{% endif %}>
+                        <span class="ck-error-msg" id="email-error">Enter a valid email address with an @ symbol.</span>
                     </div>
 
                     <div class="ck-group">
@@ -458,20 +458,71 @@ document.addEventListener('DOMContentLoaded', function () {
 
     form.addEventListener('input', function (event) {
         const group = event.target.closest('.ck-group');
-        if (group) group.classList.remove('has-error');
+        if (group && event.target.id !== 'phone' && event.target.id !== 'email') {
+            group.classList.remove('has-error');
+        }
     });
+
+    const phoneInput = document.getElementById('phone');
+    const emailInput = document.getElementById('email');
+
+    function validatePhone() {
+        const phoneRegex = /^0[0-9]{9}$/;
+        const group = phoneInput.closest('.ck-group');
+        const errorMsg = document.getElementById('phone-error');
+        if (!phoneRegex.test(phoneInput.value)) {
+            phoneInput.setCustomValidity("Invalid");
+            group.classList.add('has-error');
+            return false;
+        } else {
+            phoneInput.setCustomValidity("");
+            group.classList.remove('has-error');
+            return true;
+        }
+    }
+
+    function validateEmail() {
+        const group = emailInput.closest('.ck-group');
+        if (!emailInput.value) {
+            emailInput.setCustomValidity("");
+            group.classList.remove('has-error');
+            return true;
+        }
+        const emailRegex = /^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$/;
+        if (!emailRegex.test(emailInput.value)) {
+            emailInput.setCustomValidity("Invalid");
+            group.classList.add('has-error');
+            return false;
+        } else {
+            emailInput.setCustomValidity("");
+            group.classList.remove('has-error');
+            return true;
+        }
+    }
+
+    phoneInput.addEventListener('input', function() {
+        this.value = this.value.replace(/[^0-9]/g, '');
+        if (this.value.length > 10) this.value = this.value.slice(0, 10);
+        if (this.value.length === 10) validatePhone();
+    });
+    phoneInput.addEventListener('blur', validatePhone);
+
+    emailInput.addEventListener('input', function() {
+        if (this.value.includes('@') && this.value.includes('.')) validateEmail();
+    });
+    emailInput.addEventListener('blur', validateEmail);
 
     form.addEventListener('submit', async function (event) {
         event.preventDefault();
         if (isSubmitting) return;
 
-        // Custom validation for Phone Number
-        const phoneInput = document.getElementById('phone');
-        const phoneRegex = /^(?:\+94|0)[0-9]{9}$/;
-        if (!phoneRegex.test(phoneInput.value)) {
-            phoneInput.setCustomValidity("Please enter a valid Sri Lankan phone number (e.g. 0770000000)");
-        } else {
-            phoneInput.setCustomValidity("");
+        const isPhoneValid = validatePhone();
+        const isEmailValid = validateEmail();
+
+        if (!isPhoneValid || !isEmailValid) {
+            if (!isPhoneValid) phoneInput.focus();
+            else emailInput.focus();
+            return;
         }
 
         const invalidFields = Array.prototype.filter.call(
