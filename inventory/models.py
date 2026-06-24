@@ -76,6 +76,9 @@ class Product(models.Model):
     # This is a cache field derived from StockLedger, it should not be manually maintained.
     current_stock = models.DecimalField(max_digits=12, decimal_places=3, default=0.000, help_text="Cached balance from StockLedger")
 
+    # Estimated weight per unit for delivery calculations
+    estimated_weight_kg = models.DecimalField(max_digits=10, decimal_places=3, default=0.000, help_text="Weight of 1 Unit/Pcs in kg (e.g., 100g = 0.1)")
+
     @property
     def available_stock(self):
         """Returns current stock minus active reserves."""

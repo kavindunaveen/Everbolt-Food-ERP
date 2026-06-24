@@ -74,52 +74,32 @@
 
                     <div class="ck-group">
                         <label for="email">Email <span class="optional">(optional)</span></label>
-                        <input type="email" id="email" name="email" class="ck-input" placeholder="you@example.com" autocomplete="email" {% if request.user.is_authenticated %}value="{{ request.user.email }}"{% endif %}>
+                        <input type="email" id="email" name="email" class="ck-input" placeholder="you@example.com" autocomplete="email" pattern="[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$" {% if request.user.is_authenticated %}value="{{ request.user.email }}"{% endif %}>
                         <span class="ck-error-msg" data-error-for="email">Enter a valid email address.</span>
                     </div>
 
                     <div class="ck-group">
-                        <label for="province">Province <span class="optional">(optional)</span></label>
-                        <input type="text" id="province" name="province" class="ck-input" placeholder="Western Province" autocomplete="address-level1">
+                        <label for="province">Province <span class="required">*</span></label>
+                        <select id="province" name="province" class="ck-select" required autocomplete="address-level1">
+                            <option value="">Select Province</option>
+                        </select>
+                        <span class="ck-error-msg" data-error-for="province">Please select your province.</span>
                     </div>
 
                     <div class="ck-group">
                         <label for="district">District <span class="required">*</span></label>
                         <select id="district" name="district" class="ck-select" required autocomplete="address-level2">
                             <option value="">Select District</option>
-                            <option value="Colombo">Colombo</option>
-                            <option value="Gampaha">Gampaha</option>
-                            <option value="Kalutara">Kalutara</option>
-                            <option value="Kandy">Kandy</option>
-                            <option value="Matale">Matale</option>
-                            <option value="Nuwara Eliya">Nuwara Eliya</option>
-                            <option value="Galle">Galle</option>
-                            <option value="Matara">Matara</option>
-                            <option value="Hambantota">Hambantota</option>
-                            <option value="Jaffna">Jaffna</option>
-                            <option value="Kilinochchi">Kilinochchi</option>
-                            <option value="Mannar">Mannar</option>
-                            <option value="Mullaitivu">Mullaitivu</option>
-                            <option value="Vavuniya">Vavuniya</option>
-                            <option value="Trincomalee">Trincomalee</option>
-                            <option value="Batticaloa">Batticaloa</option>
-                            <option value="Ampara">Ampara</option>
-                            <option value="Kurunegala">Kurunegala</option>
-                            <option value="Puttalam">Puttalam</option>
-                            <option value="Anuradhapura">Anuradhapura</option>
-                            <option value="Polonnaruwa">Polonnaruwa</option>
-                            <option value="Badulla">Badulla</option>
-                            <option value="Monaragala">Monaragala</option>
-                            <option value="Ratnapura">Ratnapura</option>
-                            <option value="Kegalle">Kegalle</option>
                         </select>
                         <span class="ck-error-msg" data-error-for="district">Please select your district.</span>
                     </div>
 
                     <div class="ck-group ck-col-full">
                         <label for="city">City / Area <span class="required">*</span></label>
-                        <input type="text" id="city" name="city" class="ck-input" placeholder="Example: Nugegoda, Colombo 01, Kandy" required autocomplete="address-level3">
-                        <span class="ck-error-msg" data-error-for="city">Please enter your city or area.</span>
+                        <select id="city" name="city" class="ck-select" required autocomplete="address-level3">
+                            <option value="">Select City/Area</option>
+                        </select>
+                        <span class="ck-error-msg" data-error-for="city">Please select your city or area.</span>
                     </div>
 
                     <div class="ck-group ck-col-full">
@@ -485,6 +465,15 @@ document.addEventListener('DOMContentLoaded', function () {
         event.preventDefault();
         if (isSubmitting) return;
 
+        // Custom validation for Phone Number
+        const phoneInput = document.getElementById('phone');
+        const phoneRegex = /^(?:\+94|0)[0-9]{9}$/;
+        if (!phoneRegex.test(phoneInput.value)) {
+            phoneInput.setCustomValidity("Please enter a valid Sri Lankan phone number (e.g. 0770000000)");
+        } else {
+            phoneInput.setCustomValidity("");
+        }
+
         const invalidFields = Array.prototype.filter.call(
             form.querySelectorAll('input, select, textarea'),
             function (field) { return !field.checkValidity(); }
@@ -539,4 +528,52 @@ document.addEventListener('DOMContentLoaded', function () {
 });
 </script>
 
+{% endblock %}
+
+{% block extra_js %}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/choices.js/public/assets/styles/choices.min.css" />
+<script src="https://cdn.jsdelivr.net/npm/choices.js/public/assets/scripts/choices.min.js"></script>
+<script src="{% static 'js/sri_lanka_locations.js' %}"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const provinceEl = document.getElementById('province');
+    const districtEl = document.getElementById('district');
+    const cityEl = document.getElementById('city');
+
+    const provinceChoices = new Choices(provinceEl, { searchEnabled: true, itemSelectText: '', placeholder: true, placeholderValue: 'Select Province' });
+    const districtChoices = new Choices(districtEl, { searchEnabled: true, itemSelectText: '', placeholder: true, placeholderValue: 'Select District' });
+    const cityChoices = new Choices(cityEl, { searchEnabled: true, itemSelectText: '', placeholder: true, placeholderValue: 'Select City/Area' });
+
+    // Populate Provinces
+    const provinces = Object.keys(sriLankaLocations);
+    const provinceItems = provinces.map(p => ({ value: p, label: p }));
+    provinceChoices.setChoices(provinceItems, 'value', 'label', true);
+
+    provinceEl.addEventListener('change', function() {
+        const selectedProv = this.value;
+        districtChoices.clearChoices();
+        districtChoices.clearStore();
+        cityChoices.clearChoices();
+        cityChoices.clearStore();
+        if(selectedProv && sriLankaLocations[selectedProv]) {
+            const districts = Object.keys(sriLankaLocations[selectedProv]);
+            const distItems = districts.map(d => ({ value: d, label: d }));
+            districtChoices.setChoices(distItems, 'value', 'label', true);
+        }
+        // Delivery calculation triggered by original event listeners on district/city
+    });
+
+    districtEl.addEventListener('change', function() {
+        const selectedProv = provinceEl.value;
+        const selectedDist = this.value;
+        cityChoices.clearChoices();
+        cityChoices.clearStore();
+        if(selectedProv && selectedDist && sriLankaLocations[selectedProv][selectedDist]) {
+            const cities = sriLankaLocations[selectedProv][selectedDist];
+            const cityItems = cities.map(c => ({ value: c, label: c }));
+            cityChoices.setChoices(cityItems, 'value', 'label', true);
+        }
+    });
+});
+</script>
 {% endblock %}

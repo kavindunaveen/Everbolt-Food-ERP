@@ -107,11 +107,16 @@
                             <label>Production Type *</label>
                             {{ form.product_type }}
                         </div>
-                        <div class="md:col-span-2 lg:grid lg:grid-cols-3 lg:gap-6 space-y-6 lg:space-y-0 border-t pt-6 mt-2">
+                        <div class="md:col-span-2 lg:grid lg:grid-cols-4 lg:gap-6 space-y-6 lg:space-y-0 border-t pt-6 mt-2">
                             <div>
                                 <label>Packet Size</label>
                                 {{ form.packet_size }}
                                 <p class="text-xs text-gray-400 mt-1">e.g. 100g, 500ml</p>
+                            </div>
+                            <div>
+                                <label>Estimated Weight (kg)</label>
+                                {{ form.estimated_weight_kg }}
+                                <p class="text-xs text-gray-400 mt-1">Weight for delivery charge</p>
                             </div>
                             <div>
                                 <label>Stock Unit *</label>

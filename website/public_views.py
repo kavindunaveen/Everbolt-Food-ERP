@@ -544,13 +544,48 @@ def website_delivery_charge_api(request):
             data = request.POST
 
         district = data.get("district", "").strip()
+        city = data.get("city", "").strip()
         weight_kg = safe_decimal(data.get("weight_kg", "0"))
         
-        # Super simple delivery logic fallback (can be replaced with full logic later)
-        if district.lower() in ["colombo", "gampaha", "kalutara"]:
-            charge = Decimal("350") + (weight_kg - 1) * Decimal("50") if weight_kg > 1 else Decimal("350")
+        chargeable_weight = max(Decimal("1"), Decimal(round(weight_kg)))
+        
+        colombo_1_15 = [
+            "Colombo 01 – Fort", "Colombo 02 – Slave Island", "Colombo 03 – Kollupitiya", "Colombo 04 – Bambalapitiya",
+            "Colombo 05 – Havelock Town", "Colombo 06 – Wellawatte", "Colombo 07 – Cinnamon Gardens", "Colombo 08 – Borella",
+            "Colombo 09 – Dematagoda", "Colombo 10 – Maradana", "Colombo 11 – Pettah", "Colombo 12 – Hulftsdorp",
+            "Colombo 13 – Kotahena", "Colombo 14 – Grandpass", "Colombo 15 – Modara"
+        ]
+        
+        colombo_suburbs = [
+            "Dehiwala", "Mount Lavinia", "Ratmalana", "Moratuwa", "Maharagama", "Nugegoda", "Kohuwala", "Piliyandala",
+            "Kesbewa", "Kottawa", "Homagama", "Battaramulla", "Kotte (Sri Jayawardenepura Kotte)", "Rajagiriya",
+            "Malabe", "Talawatugoda", "Pelawatte", "Athurugiriya", "Pannipitiya", "Kaduwela", "Angoda", "Kolonnawa",
+            "Wellampitiya", "Kelaniya", "Wattala (bordering Colombo)"
+        ]
+        
+        far_districts = [
+            "Jaffna", "Kilinochchi", "Mannar", "Mullaitivu", "Vavuniya", "Trincomalee", "Batticaloa", "Ampara"
+        ]
+        
+        if district == "Colombo":
+            if city in colombo_1_15:
+                base = Decimal("350")
+                extra = Decimal("100")
+            elif city in colombo_suburbs:
+                base = Decimal("400")
+                extra = Decimal("100")
+            else:
+                base = Decimal("450")
+                extra = Decimal("100")
+        elif district in far_districts:
+            base = Decimal("500")
+            extra = Decimal("125")
         else:
-            charge = Decimal("450") + (weight_kg - 1) * Decimal("80") if weight_kg > 1 else Decimal("450")
+            base = Decimal("450")
+            extra = Decimal("100")
+            
+        extra_weight = max(Decimal("0"), chargeable_weight - Decimal("1"))
+        charge = base + (extra_weight * extra)
             
         return JsonResponse({
             "success": True,
