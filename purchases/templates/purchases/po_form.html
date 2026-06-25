@@ -250,16 +250,14 @@
                                 <template x-if="po_type === 'raw'">
                                     <select x-model="item.category" @change="updateRawCode(index)" class="form-select-premium">
                                         <option value="">Select Material...</option>
-                                        <option value="suger-white">Sugar - White</option>
-                                        <option value="sugar-white">Sugar - White</option>
-                                        <option value="suger-brown">Sugar - Brown</option>
-                                        <option value="sugar-brown">Sugar - Brown</option>
-                                        <option value="salt">Salt</option>
-                                        <option value="paper">Paper</option>
-                                        <option value="creamer">Creamer</option>
-                                        <option value="herbs">Herbs (Manual Entry)</option>
-                                        <option value="flavours">Flavours (Manual Entry)</option>
-                                        <option value="other">Other (Manual Entry)</option>
+                                        <template x-for="rm in dbRawMaterials" :key="rm.val">
+                                            <option :value="rm.val" x-text="rm.label"></option>
+                                        </template>
+                                        <optgroup label="Manual Entries">
+                                            <option value="herbs">Herbs (Manual Entry)</option>
+                                            <option value="flavours">Flavours (Manual Entry)</option>
+                                            <option value="other">Other (Manual Entry)</option>
+                                        </optgroup>
                                     </select>
                                 </template>
 
@@ -422,15 +420,13 @@ function poForm(type) {
 
         // Data Definitions
         rawMaterials: [
-            {val: 'sugar-white', label: 'Sugar - White'},
-            {val: 'sugar-brown', label: 'Sugar - Brown'},
-            {val: 'salt', label: 'Salt'},
-            {val: 'paper', label: 'Paper'},
-            {val: 'creamer', label: 'Creamer'},
-            {val: 'herbs', label: 'Herbs (Manual Entry)'},
-            {val: 'flavours', label: 'Flavours (Manual Entry)'},
-            {val: 'other', label: 'Other (Manual Entry)'}
+            {val: 'sugar-white', label: 'Sugar - White', code: 'RM-sw'},
+            {val: 'sugar-brown', label: 'Sugar - Brown', code: 'RM-sb'},
+            {val: 'salt', label: 'Salt', code: 'RM-salt'},
+            {val: 'paper', label: 'Paper', code: 'RM-paper'},
+            {val: 'creamer', label: 'Creamer', code: 'RM-creamer'}
         ],
+        dbRawMaterials: [],
         rawCodes: {
             'sugar-white': 'RM-sw',
             'sugar-brown': 'RM-sb',
@@ -453,6 +449,21 @@ function poForm(type) {
         },
 
         init() {
+            // Merge hardcoded legacy with DB RM
+            let legacyRMs = [...this.rawMaterials];
+            let inventoryRMs = {{ raw_products|safe|default:"[]" }}.map(p => ({
+                val: p.name,
+                label: p.name,
+                code: p.product_id
+            }));
+            
+            let seen = new Set();
+            this.dbRawMaterials = [...inventoryRMs, ...legacyRMs].filter(rm => {
+                if(seen.has(rm.label.toLowerCase())) return false;
+                seen.add(rm.label.toLowerCase());
+                return true;
+            });
+
             // Select2 init
             $(() => {
                 $('#supplier_select').select2({ placeholder: 'Search for a supplier...' });
@@ -486,7 +497,12 @@ function poForm(type) {
             if (['herbs', 'flavours', 'other'].includes(item.category)) {
                 item.material_code = 'Auto-generated';
             } else {
-                item.material_code = this.rawCodes[item.category] || '';
+                let found = this.dbRawMaterials.find(r => r.val === item.category);
+                if (found && found.code) {
+                    item.material_code = found.code;
+                } else {
+                    item.material_code = this.rawCodes[item.category] || '';
+                }
                 item.sub_category = ''; // reset manual field
             }
         },

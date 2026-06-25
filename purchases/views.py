@@ -206,6 +206,8 @@ class PurchaseOrderListView(LoginRequiredMixin, ERPPermissionRequiredMixin, List
     paginate_by = 20
     ordering = ['-id']
 
+from inventory.models import Product
+
 @login_required
 def purchase_order_create(request, po_type='raw'):
     if po_type not in ['raw', 'packing']:
@@ -269,11 +271,14 @@ def purchase_order_create(request, po_type='raw'):
         next_seq = 1
     preview_po_number = f"EFPO-{next_seq:04d}"
 
+    raw_products = list(Product.objects.filter(inventory_class=Product.InventoryClasses.RAW).values('product_id', 'name', 'stock_unit'))
+
     return render(request, 'purchases/po_form.html', {
         'po_type': actual_type,
         'po_type_str': po_type,
         'suppliers': suppliers,
-        'preview_po_number': preview_po_number
+        'preview_po_number': preview_po_number,
+        'raw_products': json.dumps(raw_products),
     })
 
 @login_required
