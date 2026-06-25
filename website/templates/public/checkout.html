@@ -52,6 +52,11 @@
 
             <form method="post" id="checkoutForm" action="{% url 'checkout' %}" novalidate>
                 {% csrf_token %}
+                <!-- Honeypot -->
+                <div style="display:none;" aria-hidden="true">
+                    <label for="website_url">Website URL</label>
+                    <input type="text" name="website_url" id="website_url" autocomplete="off" tabindex="-1">
+                </div>
 
                 <!-- Hidden values for delivery charge API -->
                 <input type="hidden" id="checkoutSubtotal" value="{{ subtotal }}">

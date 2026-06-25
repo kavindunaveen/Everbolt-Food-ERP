@@ -196,6 +196,11 @@ def contact(request):
     settings_data = WebsiteSettings.get_settings()
 
     if request.method == "POST":
+        # Spam Protection (Honeypot)
+        if request.POST.get("website_url"):
+            messages.success(request, "Your message has been sent successfully. We will get back to you soon!")
+            return redirect("public_contact")
+
         name = request.POST.get("full_name") or request.POST.get("name", "")
         email = request.POST.get("email", "")
         phone = request.POST.get("phone", "")
@@ -469,6 +474,11 @@ def checkout(request):
         return redirect("cart")
 
     if request.method == "POST":
+        # Spam Protection (Honeypot)
+        if request.POST.get("website_url"):
+            messages.success(request, "Order placed successfully.")
+            return redirect("public_home")
+
         # Process order
         customer_name = request.POST.get("customer_name", "").strip()
         if not customer_name:
@@ -764,6 +774,11 @@ def register_view(request):
         return redirect('public_my_account')
 
     if request.method == "POST":
+        # Spam Protection (Honeypot)
+        if request.POST.get("website_url"):
+            messages.success(request, "Account created successfully!")
+            return redirect("public_login")
+
         first_name = request.POST.get('first_name', '').strip()
         last_name = request.POST.get('last_name', '').strip()
         email = request.POST.get('email', '').strip()

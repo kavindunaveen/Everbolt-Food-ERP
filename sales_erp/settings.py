@@ -56,6 +56,7 @@ INSTALLED_APPS = [
     'website.apps.WebsiteConfig',
     'visits.apps.VisitsConfig',
     'finance',
+    'axes',
 ]
 
 MIDDLEWARE = [
@@ -69,6 +70,7 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'sales_erp.middleware.ProtectedErrorMiddleware',
     'website.middleware.WebsiteRedirectMiddleware',
+    'axes.middleware.AxesMiddleware',
 ]
 
 ROOT_URLCONF = 'sales_erp.urls'
@@ -111,6 +113,7 @@ DATABASES = {
 AUTH_USER_MODEL = 'users.User'
 
 AUTHENTICATION_BACKENDS = [
+    'axes.backends.AxesBackend',
     'users.backends.RoleBackend',
     'django.contrib.auth.backends.ModelBackend',
 ]
@@ -168,3 +171,16 @@ EMAIL_USE_SSL = os.environ.get('EMAIL_USE_SSL', 'True').lower() == 'true'
 EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER', 'info@organicfoodslanka.com')
 EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD', '')
 DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', 'Organic Foods Lanka <info@organicfoodslanka.com>')
+
+# Security Hardening
+SECURE_BROWSER_XSS_FILTER = True
+SECURE_CONTENT_TYPE_NOSNIFF = True
+X_FRAME_OPTIONS = 'DENY'
+SECURE_REFERRER_POLICY = 'same-origin'
+SESSION_COOKIE_SECURE = True
+CSRF_COOKIE_SECURE = True
+
+# Django Axes (Brute Force Protection)
+AXES_FAILURE_LIMIT = 5
+AXES_COOLOFF_TIME = 1  # 1 hour lockout
+AXES_LOCKOUT_PARAMETERS = [["username", "ip_address"]]

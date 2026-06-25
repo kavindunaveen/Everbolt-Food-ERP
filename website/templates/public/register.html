@@ -24,6 +24,11 @@
 
         <form method="POST" action="{% url 'public_register' %}">
             {% csrf_token %}
+            <!-- Honeypot -->
+            <div style="display:none;" aria-hidden="true">
+                <label for="website_url">Website URL</label>
+                <input type="text" name="website_url" id="website_url" autocomplete="off" tabindex="-1">
+            </div>
             {% if request.GET.next %}
             <input type="hidden" name="next" value="{{ request.GET.next }}">
             {% endif %}
