@@ -87,10 +87,7 @@
                 <div class="w-32 font-bold uppercase text-gray-500 text-xs tracking-wider pt-0.5">Date</div>
                 <div>{{ po.date }}</div>
             </div>
-            <div class="flex mb-2">
-                <div class="w-32 font-bold uppercase text-gray-500 text-xs tracking-wider pt-0.5">Prepared By</div>
-                <div class="font-semibold uppercase">{{ po.created_by.first_name|default:po.created_by.username }}</div>
-            </div>
+
             <div class="flex mb-2">
                 <div class="w-32 font-bold uppercase text-gray-500 text-xs tracking-wider pt-0.5">Payment term</div>
                 <div class="uppercase">{{ po.get_payment_term_display }}</div>
@@ -154,11 +151,30 @@
     </div> <!-- End Main Content -->
 
     <!-- Authorized Signatures at Bottom -->
-    <div class="mt-auto pt-16 pb-8 text-sm leading-relaxed" style="page-break-inside: avoid;">
-        .........................................................<br>
-        <strong>Prabath Guruge</strong><br>
-        Director - Everbolt Food Products Pvt Ltd<br>
-        Approved by
+    <div class="mt-auto pt-16 pb-4 text-sm leading-relaxed flex justify-between" style="page-break-inside: avoid;">
+        <div class="w-1/2">
+            .........................................................<br>
+            <strong class="uppercase">{{ po.created_by.first_name|default:po.created_by.username }}</strong><br>
+            Prepared By
+        </div>
+        <div class="w-1/2 text-right">
+            .........................................................<br>
+            <strong>Prabath Guruge</strong><br>
+            Director - Everbolt Food Products Pvt Ltd<br>
+            Approved by
+        </div>
     </div>
+    <div class="text-center text-xs text-gray-500 italic pb-8" style="page-break-inside: avoid;">
+        This is an electronic generated report, hence does not require signature.
+    </div>
+    
+    <script>
+        window.onload = function() {
+            const urlParams = new URLSearchParams(window.location.search);
+            if(urlParams.get('download') === 'true') {
+                window.print();
+            }
+        };
+    </script>
 </body>
 </html>
