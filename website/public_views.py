@@ -161,7 +161,7 @@ def product_detail(request, pk):
             'name': 'Default / Standard',
             'price': float(product.get_price()),
             'stock': float(product.inventory_product.available_stock),
-            'sku': product.inventory_product.sku or '',
+            'sku': product.inventory_product.product_id or '',
             'unit': product.inventory_product.get_stock_unit_display() or ''
         })
         for v in product.variants.all():
@@ -171,7 +171,7 @@ def product_detail(request, pk):
                 'name': v.variant_name,
                 'price': float(price),
                 'stock': float(v.inventory_product.available_stock),
-                'sku': v.inventory_product.sku or '',
+                'sku': v.inventory_product.product_id or '',
                 'unit': v.inventory_product.get_stock_unit_display() or ''
             })
 
