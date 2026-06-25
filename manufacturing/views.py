@@ -376,6 +376,7 @@ def save_production_plan(request):
                     ).distinct()
                     from users.models import Notification
                     
+                    emails_to_send = []
                     for u in all_users:
                         Notification.objects.create(
                             recipient=u,
@@ -384,13 +385,14 @@ def save_production_plan(request):
                             link=notif_link
                         )
                         if u.email:
-                            send_mail(
-                                email_subject,
-                                email_body,
-                                settings.DEFAULT_FROM_EMAIL,
-                                [u.email],
-                                fail_silently=True,
-                            )
+                            emails_to_send.append(u.email)
+
+                    if emails_to_send:
+                        def send_alerts(subj, body, emails):
+                            for email in emails:
+                                send_mail(subj, body, settings.DEFAULT_FROM_EMAIL, [email], fail_silently=True)
+                        
+                        transaction.on_commit(lambda s=email_subject, b=email_body, e=emails_to_send: send_alerts(s, b, e))
 
             return JsonResponse({'status': 'ok', 'message': "Plan saved successfully.", 'id': plan.id})
             
