@@ -46,7 +46,7 @@
                 <label for="salespersonSelect" class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Select Salesperson</label>
                 <select id="salespersonSelect" class="block w-full rounded-lg border-gray-300 shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm font-semibold text-gray-900">
                     {% for sp in salespeople %}
-                    <option value="{{ sp.id }}" {% if request.user.id == sp.id %}selected{% endif %}>{{ sp.get_full_name|default:sp.username }}</option>
+                    <option value="{{ sp.id }}" {% if request.GET.salesperson_id == sp.id|stringformat:"s" %}selected{% elif not request.GET.salesperson_id and request.user.id == sp.id %}selected{% endif %}>{{ sp.get_full_name|default:sp.username }}</option>
                     {% endfor %}
                 </select>
             </div>
