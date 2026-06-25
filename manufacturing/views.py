@@ -261,6 +261,13 @@ class ProductionPlanUpdateView(LoginRequiredMixin, ERPPermissionRequiredMixin, D
     template_name = 'manufacturing/production_plan_form.html'
     context_object_name = 'plan'
 
+    def dispatch(self, request, *args, **kwargs):
+        obj = self.get_object()
+        if request.user != obj.created_by:
+            messages.error(request, "You do not have permission to edit this plan. Only the creator can edit it.")
+            return redirect('production_plan_detail', pk=obj.pk)
+        return super().dispatch(request, *args, **kwargs)
+
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         all_products = Product.objects.filter(status=True).values('id', 'name', 'product_id')
@@ -388,11 +395,13 @@ def save_production_plan(request):
                             emails_to_send.append(u.email)
 
                     if emails_to_send:
+                        import threading
                         def send_alerts(subj, body, emails):
                             for email in emails:
                                 send_mail(subj, body, settings.DEFAULT_FROM_EMAIL, [email], fail_silently=True)
                         
-                        transaction.on_commit(lambda s=email_subject, b=email_body, e=emails_to_send: send_alerts(s, b, e))
+                        thread = threading.Thread(target=send_alerts, args=(email_subject, email_body, emails_to_send))
+                        thread.start()
 
             return JsonResponse({'status': 'ok', 'message': "Plan saved successfully.", 'id': plan.id})
             
