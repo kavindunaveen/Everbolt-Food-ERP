@@ -55,16 +55,57 @@
         <p class="text-xs text-gray-400 mt-1">{{ form.meta_description.help_text }}</p>
       </div>
     </div>
+
+    <!-- Product Variants Formset -->
+    <div class="bg-gray-50 rounded-2xl border border-gray-200 shadow-sm p-6 space-y-5">
+      <div class="flex items-center gap-2 mb-2">
+        <svg class="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 002-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>
+        <h3 class="text-lg font-extrabold text-gray-900">Product Variants</h3>
+      </div>
+      <p class="text-xs text-gray-500 -mt-3 mb-4">Attach other inventory items as variants (e.g. 5g, 7g) to this product.</p>
+      
+      {{ variant_formset.management_form }}
+      <div class="overflow-hidden rounded-xl border border-gray-200 bg-white">
+        <table class="min-w-full divide-y divide-gray-200">
+          <thead class="bg-gray-50">
+            <tr>
+              <th class="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase">Inventory Product</th>
+              <th class="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase">Variant Name</th>
+              <th class="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase">Order</th>
+              <th class="px-4 py-3 text-right text-xs font-bold text-gray-500 uppercase">Delete</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-gray-100">
+            {% for variant_form in variant_formset %}
+            <tr class="hover:bg-gray-50">
+              <td class="px-4 py-3">
+                {% for hidden in variant_form.hidden_fields %}{{ hidden }}{% endfor %}
+                {{ variant_form.inventory_product }}
+                {% if variant_form.inventory_product.errors %}<div class="text-red-500 text-xs mt-1">{{ variant_form.inventory_product.errors }}</div>{% endif %}
+              </td>
+              <td class="px-4 py-3">
+                {{ variant_form.variant_name }}
+                {% if variant_form.variant_name.errors %}<div class="text-red-500 text-xs mt-1">{{ variant_form.variant_name.errors }}</div>{% endif %}
+              </td>
+              <td class="px-4 py-3 w-24">
+                {{ variant_form.display_order }}
+                {% if variant_form.display_order.errors %}<div class="text-red-500 text-xs mt-1">{{ variant_form.display_order.errors }}</div>{% endif %}
+              </td>
+              <td class="px-4 py-3 text-right">
+                {% if variant_form.instance.pk %}
+                  {{ variant_form.DELETE }}
+                {% endif %}
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
     <div class="flex gap-3">
       <button type="submit" class="px-6 py-2.5 bg-violet-600 text-white font-bold rounded-xl hover:bg-violet-700 transition-all shadow-lg shadow-violet-200">Save Product</button>
       <a href="{% url 'website_product_list' %}" class="px-6 py-2.5 bg-white border border-gray-200 text-gray-700 font-bold rounded-xl hover:bg-gray-50 transition-all">Cancel</a>
-      
-      {% if form.instance.pk %}
-      <a href="{% url 'website_product_variants' form.instance.pk %}" class="ml-auto px-6 py-2.5 bg-fuchsia-600 text-white font-bold rounded-xl hover:bg-fuchsia-700 transition-all shadow-lg shadow-fuchsia-200 flex items-center">
-        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 002-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>
-        Manage Variants
-      </a>
-      {% endif %}
     </div>
   </form>
 </div>
@@ -98,6 +139,11 @@
 <script>
     $(document).ready(function() {
         $('select[name="inventory_product"]').select2({
+            placeholder: "Search for a product...",
+            allowClear: true,
+            width: '100%'
+        });
+        $('select[id$="-inventory_product"]').select2({
             placeholder: "Search for a product...",
             allowClear: true,
             width: '100%'

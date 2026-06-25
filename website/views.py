@@ -97,6 +97,17 @@ class WebsiteProductListView(LoginRequiredMixin, ListView):
         return ctx
 
 
+from django.forms import inlineformset_factory
+from .models import WebsiteProductVariant
+from inventory.models import Product
+
+VariantFormSet = inlineformset_factory(
+    WebsiteProduct, WebsiteProductVariant,
+    fields=('inventory_product', 'variant_name', 'display_order'),
+    extra=1,
+    can_delete=True
+)
+
 class WebsiteProductCreateView(LoginRequiredMixin, CreateView):
     model = WebsiteProduct
     form_class = WebsiteProductForm
@@ -105,14 +116,25 @@ class WebsiteProductCreateView(LoginRequiredMixin, CreateView):
 
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
-        # Show only inventory products not yet listed
         listed_ids = WebsiteProduct.objects.values_list('inventory_product_id', flat=True)
         ctx['unlisted_products'] = Product.objects.exclude(pk__in=listed_ids).order_by('category', 'name')
+        if self.request.POST:
+            ctx['variant_formset'] = VariantFormSet(self.request.POST)
+        else:
+            ctx['variant_formset'] = VariantFormSet()
         return ctx
 
     def form_valid(self, form):
-        messages.success(self.request, f'Product "{form.instance.get_display_name()}" added to website.')
-        return super().form_valid(form)
+        context = self.get_context_data()
+        variant_formset = context['variant_formset']
+        if form.is_valid() and variant_formset.is_valid():
+            self.object = form.save()
+            variant_formset.instance = self.object
+            variant_formset.save()
+            messages.success(self.request, f'Product "{self.object.get_display_name()}" added to website.')
+            return super().form_valid(form)
+        else:
+            return self.form_invalid(form)
 
 
 class WebsiteProductEditView(LoginRequiredMixin, UpdateView):
@@ -121,39 +143,25 @@ class WebsiteProductEditView(LoginRequiredMixin, UpdateView):
     template_name = 'website/product_form.html'
     success_url = reverse_lazy('website_product_list')
 
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        if self.request.POST:
+            ctx['variant_formset'] = VariantFormSet(self.request.POST, instance=self.object)
+        else:
+            ctx['variant_formset'] = VariantFormSet(instance=self.object)
+        return ctx
+
     def form_valid(self, form):
-        messages.success(self.request, f'Product "{form.instance.get_display_name()}" updated.')
-        return super().form_valid(form)
-
-from django.forms import inlineformset_factory
-
-@login_required
-def manage_product_variants(request, pk):
-    from .models import WebsiteProductVariant
-    from inventory.models import Product
-    
-    website_product = get_object_or_404(WebsiteProduct, pk=pk)
-    
-    VariantFormSet = inlineformset_factory(
-        WebsiteProduct, WebsiteProductVariant,
-        fields=('inventory_product', 'variant_name', 'display_order'),
-        extra=1,
-        can_delete=True
-    )
-    
-    if request.method == 'POST':
-        formset = VariantFormSet(request.POST, instance=website_product)
-        if formset.is_valid():
-            formset.save()
-            messages.success(request, f'Variants updated for "{website_product.get_display_name()}"')
-            return redirect('website_product_list')
-    else:
-        formset = VariantFormSet(instance=website_product)
-        
-    return render(request, 'website/product_variants.html', {
-        'website_product': website_product,
-        'formset': formset
-    })
+        context = self.get_context_data()
+        variant_formset = context['variant_formset']
+        if form.is_valid() and variant_formset.is_valid():
+            self.object = form.save()
+            variant_formset.instance = self.object
+            variant_formset.save()
+            messages.success(self.request, f'Product "{self.object.get_display_name()}" updated.')
+            return super().form_valid(form)
+        else:
+            return self.form_invalid(form)
 
 @login_required
 def toggle_product_status(request, pk):

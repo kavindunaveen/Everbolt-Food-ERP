@@ -9,7 +9,6 @@ urlpatterns = [
     path('products/', views.WebsiteProductListView.as_view(), name='website_product_list'),
     path('products/add/', views.WebsiteProductCreateView.as_view(), name='website_product_add'),
     path('products/<int:pk>/edit/', views.WebsiteProductEditView.as_view(), name='website_product_edit'),
-    path('products/<int:pk>/variants/', views.manage_product_variants, name='website_product_variants'),
     path('products/<int:pk>/toggle/', views.toggle_product_status, name='website_product_toggle'),
 
     # Hero Slides
