@@ -1449,7 +1449,7 @@ class SalespersonDashboardView(LoginRequiredMixin, TemplateView):
         context['can_view_all'] = can_view_all
         
         if can_view_all:
-            context['salespeople'] = User.objects.filter(is_active=True, role__name__in=['Sales Officer', 'Administrator', 'Management']).order_by('first_name', 'username')
+            context['salespeople'] = User.objects.filter(is_active=True, role__name='Sales Officer').order_by('first_name', 'username')
         else:
             context['salespeople'] = [self.request.user]
             
