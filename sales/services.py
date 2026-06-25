@@ -251,12 +251,17 @@ def send_invoice_approval_email(invoice, request):
         ).filter(is_active=True).distinct()
     
     # Create In-App Notification for all designated approvers
+    from django.urls import reverse
+    
     for manager in approvers:
         Notification.objects.create(
             recipient=manager,
+            notification_type='approval_required',
             title=f"Approval Required: {invoice.invoice_number}",
-            message=f"Invoice for {invoice.customer.customer_name} (Rs {invoice.total_amount}). Needs approval because customer is {invoice.customer.get_customer_status_display()}.",
-            link="/sales/invoices/"
+            message=f"Invoice {invoice.invoice_number} for {invoice.customer.customer_name} (Rs {invoice.total_amount}). Needs approval because customer is {invoice.customer.get_customer_status_display()}.",
+            link="/sales/invoices/",
+            action_approve_url=reverse('invoice_approve', kwargs={'pk': invoice.pk}),
+            action_reject_url=reverse('invoice_reject', kwargs={'pk': invoice.pk})
         )
     
     recipient_list = [user.email for user in approvers if user.email]

@@ -1096,9 +1096,12 @@ def cancel_invoice_view(request, pk):
         from users.models import Notification
         Notification.objects.create(
             recipient=approver,
+            notification_type='approval_required',
             title="Cancellation Approval Required",
             message=f"Cancellation requested for Invoice {invoice.invoice_number} by {request.user.get_full_name()}.",
-            link=reverse('invoice_list')
+            link=reverse('invoice_list'),
+            action_approve_url=reverse('invoice_approve', kwargs={'pk': invoice.pk}),
+            action_reject_url=reverse('invoice_reject', kwargs={'pk': invoice.pk})
         )
             
         messages.success(request, f"Cancellation request for {invoice.invoice_number} has been sent to {approver.get_full_name()} for approval.")
