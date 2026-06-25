@@ -62,3 +62,39 @@
   </form>
 </div>
 {% endblock %}
+
+{% block extra_css %}
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<style>
+    .select2-container--default .select2-selection--single {
+        height: 42px;
+        border: 1px solid #e5e7eb;
+        border-radius: 0.5rem;
+        display: flex;
+        align-items: center;
+    }
+    .select2-container--default .select2-selection--single .select2-selection__rendered {
+        color: #374151;
+        line-height: normal;
+        padding-left: 1rem;
+    }
+    .select2-container--default .select2-selection--single .select2-selection__arrow {
+        height: 40px;
+        right: 10px;
+    }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+<script>
+    $(document).ready(function() {
+        $('select[id$="-inventory_product"]').select2({
+            placeholder: "Search for a product...",
+            allowClear: true,
+            width: '100%'
+        });
+    });
+</script>
+{% endblock %}

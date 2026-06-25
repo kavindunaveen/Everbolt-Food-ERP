@@ -58,7 +58,50 @@
     <div class="flex gap-3">
       <button type="submit" class="px-6 py-2.5 bg-violet-600 text-white font-bold rounded-xl hover:bg-violet-700 transition-all shadow-lg shadow-violet-200">Save Product</button>
       <a href="{% url 'website_product_list' %}" class="px-6 py-2.5 bg-white border border-gray-200 text-gray-700 font-bold rounded-xl hover:bg-gray-50 transition-all">Cancel</a>
+      
+      {% if form.instance.pk %}
+      <a href="{% url 'website_product_variants' form.instance.pk %}" class="ml-auto px-6 py-2.5 bg-fuchsia-600 text-white font-bold rounded-xl hover:bg-fuchsia-700 transition-all shadow-lg shadow-fuchsia-200 flex items-center">
+        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 002-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>
+        Manage Variants
+      </a>
+      {% endif %}
     </div>
   </form>
 </div>
+{% endblock %}
+
+{% block extra_css %}
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<style>
+    .select2-container--default .select2-selection--single {
+        height: 42px;
+        border: 1px solid #e5e7eb;
+        border-radius: 0.5rem;
+        display: flex;
+        align-items: center;
+    }
+    .select2-container--default .select2-selection--single .select2-selection__rendered {
+        color: #374151;
+        line-height: normal;
+        padding-left: 1rem;
+    }
+    .select2-container--default .select2-selection--single .select2-selection__arrow {
+        height: 40px;
+        right: 10px;
+    }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+<script>
+    $(document).ready(function() {
+        $('select[name="inventory_product"]').select2({
+            placeholder: "Search for a product...",
+            allowClear: true,
+            width: '100%'
+        });
+    });
+</script>
 {% endblock %}
