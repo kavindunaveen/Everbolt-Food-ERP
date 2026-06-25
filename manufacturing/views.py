@@ -368,14 +368,12 @@ def save_production_plan(request):
 
                 if email_subject:
                     User = get_user_model()
-                    notify_users = User.objects.filter(
-                        user_permissions__codename='receive_production_notifications'
+                    from django.db.models import Q
+                    all_users = User.objects.filter(
+                        Q(user_permissions__codename='receive_production_notifications') |
+                        Q(role__permissions__codename='receive_production_notifications') |
+                        Q(is_superuser=True)
                     ).distinct()
-                    notify_roles_users = User.objects.filter(
-                        role__permissions__codename='receive_production_notifications'
-                    ).distinct()
-                    
-                    all_users = (notify_users | notify_roles_users | User.objects.filter(is_superuser=True)).distinct()
                     from users.models import Notification
                     
                     for u in all_users:
