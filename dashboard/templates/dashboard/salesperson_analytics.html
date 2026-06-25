@@ -164,6 +164,87 @@
         </div>
     </div>
 
+    <!-- Charts Row 3: Extended Analytics -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+        <!-- Top Products -->
+        <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+            <h3 class="text-lg font-bold text-gray-800 mb-4">Top Selling Products</h3>
+            <p class="text-xs text-gray-400 mb-6">By units sold</p>
+            <div class="relative h-64">
+                <canvas id="topProductsChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Top Customers -->
+        <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+            <h3 class="text-lg font-bold text-gray-800 mb-4">Top Customers</h3>
+            <p class="text-xs text-gray-400 mb-6">By revenue generated</p>
+            <div class="relative h-64">
+                <canvas id="topCustomersChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts Row 4 -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+        <!-- Invoice Status -->
+        <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+            <h3 class="text-lg font-bold text-gray-800 mb-4">Invoice Payment Status</h3>
+            <p class="text-xs text-gray-400 mb-6">Current status breakdown</p>
+            <div class="relative h-64">
+                <canvas id="invoiceStatusChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Customer Acquisition -->
+        <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+            <h3 class="text-lg font-bold text-gray-800 mb-4">Customer Acquisition</h3>
+            <p class="text-xs text-gray-400 mb-6">New registrations (Last 6 Months)</p>
+            <div class="relative h-64">
+                <canvas id="customerAcqChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts Row 5 -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+        <!-- Visits -->
+        <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex flex-col">
+            <h3 class="text-lg font-bold text-gray-800 mb-4">Shop Visits Adherence</h3>
+            <div class="grid grid-cols-2 gap-4 mb-6">
+                <div class="text-center p-3 rounded-xl bg-gray-50">
+                    <p class="text-2xl font-black text-gray-900" id="visits-total">0</p>
+                    <p class="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Planned</p>
+                </div>
+                <div class="text-center p-3 rounded-xl bg-indigo-50">
+                    <p class="text-2xl font-black text-indigo-600" id="visits-completed">0</p>
+                    <p class="text-[10px] font-bold text-indigo-700 uppercase tracking-wider">Completed</p>
+                </div>
+            </div>
+            <div class="relative flex-grow h-40">
+                <canvas id="visitsChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Discounts -->
+        <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex flex-col">
+            <h3 class="text-lg font-bold text-gray-800 mb-4">Discount Analysis</h3>
+            <div class="grid grid-cols-2 gap-4 mb-6">
+                <div class="text-center p-3 rounded-xl bg-gray-50">
+                    <p class="text-2xl font-black text-gray-900" id="discount-total">0</p>
+                    <p class="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Total Value</p>
+                </div>
+                <div class="text-center p-3 rounded-xl bg-rose-50">
+                    <p class="text-2xl font-black text-rose-600" id="discount-pct">0%</p>
+                    <p class="text-[10px] font-bold text-rose-700 uppercase tracking-wider">Avg Given</p>
+                </div>
+            </div>
+            <div class="relative flex-grow h-40 flex items-center justify-center">
+                <canvas id="discountChart"></canvas>
+            </div>
+        </div>
+    </div>
+
 </div>
 
 <script>
@@ -173,6 +254,7 @@ const fmtFull = (v) => new Intl.NumberFormat('en-LK', { minimumFractionDigits:2,
 const fmtNum = (v) => new Intl.NumberFormat('en-US').format(v);
 
 let targetGaugeChart, trendChart, categoryChart, quotationChart;
+let topProductsChart, topCustomersChart, invoiceStatusChart, customerAcqChart, visitsChart, discountChart;
 let currentFrom = null;
 let currentTo = null;
 let currentAllTime = false;
@@ -244,6 +326,87 @@ function initCharts() {
                 x: { beginAtZero: true, grid: { display: false } },
                 y: { grid: { display: false }, ticks: { font: { weight: 'bold' } } }
             }
+        }
+    });
+
+    // Top Products (Bar)
+    const ctxTopProducts = document.getElementById('topProductsChart').getContext('2d');
+    topProductsChart = new Chart(ctxTopProducts, {
+        type: 'bar',
+        data: { labels: [], datasets: [] },
+        options: {
+            indexAxis: 'y', responsive: true, maintainAspectRatio: false,
+            plugins: { legend: { display: false }, tooltip: { callbacks: { label: ctx => ` Qty: ${fmtNum(ctx.parsed.x)}` } } },
+            scales: {
+                x: { beginAtZero: true, grid: { borderDash: [4,4] } },
+                y: { grid: { display: false }, ticks: { font: { weight: 'bold' }, autoSkip: false } }
+            }
+        }
+    });
+
+    // Top Customers (Bar)
+    const ctxTopCustomers = document.getElementById('topCustomersChart').getContext('2d');
+    topCustomersChart = new Chart(ctxTopCustomers, {
+        type: 'bar',
+        data: { labels: [], datasets: [] },
+        options: {
+            indexAxis: 'y', responsive: true, maintainAspectRatio: false,
+            plugins: { legend: { display: false }, tooltip: { callbacks: { label: ctx => ` Revenue: Rs ${fmtFull(ctx.parsed.x)}` } } },
+            scales: {
+                x: { beginAtZero: true, grid: { borderDash: [4,4] }, ticks: { callback: v => fmtCur(v) } },
+                y: { grid: { display: false }, ticks: { font: { weight: 'bold' }, autoSkip: false } }
+            }
+        }
+    });
+
+    // Invoice Status (Doughnut)
+    const ctxInvoiceStatus = document.getElementById('invoiceStatusChart').getContext('2d');
+    invoiceStatusChart = new Chart(ctxInvoiceStatus, {
+        type: 'doughnut',
+        data: { labels: [], datasets: [] },
+        options: {
+            responsive: true, maintainAspectRatio: false, cutout: '60%',
+            plugins: { legend: { position: 'right', labels: { boxWidth: 12, usePointStyle: true, font: { size: 11, weight: '600' } } } }
+        }
+    });
+
+    // Customer Acquisition (Line)
+    const ctxCustAcq = document.getElementById('customerAcqChart').getContext('2d');
+    customerAcqChart = new Chart(ctxCustAcq, {
+        type: 'line',
+        data: { labels: [], datasets: [] },
+        options: {
+            responsive: true, maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: {
+                y: { beginAtZero: true, grid: { borderDash: [4,4] }, ticks: { stepSize: 1 } },
+                x: { grid: { display: false } }
+            },
+            elements: { line: { tension: 0.4, borderWidth: 3 }, point: { radius: 4, hoverRadius: 6 } }
+        }
+    });
+
+    // Visits (Doughnut)
+    const ctxVisits = document.getElementById('visitsChart').getContext('2d');
+    visitsChart = new Chart(ctxVisits, {
+        type: 'doughnut',
+        data: { labels: ['Completed', 'Pending'], datasets: [{ data: [0,0], backgroundColor: ['#4f46e5', '#cbd5e1'], borderWidth: 0 }] },
+        options: {
+            responsive: true, maintainAspectRatio: false, cutout: '75%',
+            plugins: { legend: { display: false } }
+        }
+    });
+
+    // Discount (Doughnut as Gauge)
+    const ctxDiscount = document.getElementById('discountChart').getContext('2d');
+    discountChart = new Chart(ctxDiscount, {
+        type: 'doughnut',
+        data: { labels: ['Avg Discount %', 'Remainder'], datasets: [{ data:[0, 100], backgroundColor:['#f43f5e', '#f1f5f9'], borderWidth:0 }] },
+        options: {
+            responsive: true, maintainAspectRatio: false,
+            rotation: -90, circumference: 180, cutout: '80%',
+            plugins: { legend: { display: false }, tooltip: { enabled: false } },
+            animation: { duration: 1000 }
         }
     });
 }
@@ -342,6 +505,56 @@ async function loadData(dateFrom, dateTo, allTime, btnEl = null) {
 
         quotationChart.data.datasets[0].data = [data.quotations.total, data.quotations.won, data.quotations.lost];
         quotationChart.update();
+
+        // Extended Analytics
+        const ext = data.extended_analytics;
+        if (ext) {
+            // Top Products
+            topProductsChart.data.labels = ext.top_products.map(p => p.name.length > 20 ? p.name.substring(0,20)+'...' : p.name);
+            topProductsChart.data.datasets = [{
+                data: ext.top_products.map(p => p.qty),
+                backgroundColor: '#3b82f6', borderRadius: 4
+            }];
+            topProductsChart.update();
+
+            // Top Customers
+            topCustomersChart.data.labels = ext.top_customers.map(c => c.name.length > 20 ? c.name.substring(0,20)+'...' : c.name);
+            topCustomersChart.data.datasets = [{
+                data: ext.top_customers.map(c => c.val),
+                backgroundColor: '#10b981', borderRadius: 4
+            }];
+            topCustomersChart.update();
+
+            // Invoice Status
+            const statusColors = {'PAID': '#10b981', 'ISSUED': '#3b82f6', 'DRAFT': '#cbd5e1', 'CANCELLED': '#ef4444'};
+            invoiceStatusChart.data.labels = ext.invoice_status.map(s => s.status);
+            invoiceStatusChart.data.datasets = [{
+                data: ext.invoice_status.map(s => s.count),
+                backgroundColor: ext.invoice_status.map(s => statusColors[s.status.toUpperCase()] || '#8b5cf6')
+            }];
+            invoiceStatusChart.update();
+
+            // Customer Acquisition
+            customerAcqChart.data.labels = ext.customer_acquisition.labels;
+            customerAcqChart.data.datasets = [{
+                label: 'New Customers',
+                data: ext.customer_acquisition.data,
+                borderColor: '#8b5cf6', backgroundColor: 'rgba(139, 92, 246, 0.1)', fill: true
+            }];
+            customerAcqChart.update();
+
+            // Visits
+            document.getElementById('visits-total').innerText = ext.visits.total;
+            document.getElementById('visits-completed').innerText = ext.visits.completed;
+            visitsChart.data.datasets[0].data = [ext.visits.completed, ext.visits.pending];
+            visitsChart.update();
+
+            // Discounts
+            document.getElementById('discount-total').innerText = `Rs ${fmtCur(ext.discounts.total_value)}`;
+            document.getElementById('discount-pct').innerText = `${ext.discounts.avg_pct}%`;
+            discountChart.data.datasets[0].data = [ext.discounts.avg_pct, Math.max(100 - ext.discounts.avg_pct, 0)];
+            discountChart.update();
+        }
 
     } catch (err) {
         console.error("Error loading dashboard data:", err);

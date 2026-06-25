@@ -1606,6 +1606,82 @@ class SalespersonDataAPI(LoginRequiredMixin, View):
                 if ds['day']:
                     trend_labels.append(ds['day'].strftime('%d %b'))
                     trend_sales.append(float(ds['total']))
+        # --- NEW EXTENDED ANALYTICS ---
+        from django.db.models import Count
+        
+        # 1. Top 10 Products
+        top_products = list(InvoiceItem.objects.filter(invoice__in=inv_qs).values('product__name').annotate(
+            qty_sum=Sum('quantity'),
+            val_sum=Sum(F('quantity') * F('unit_price'))
+        ).order_by('-qty_sum')[:10])
+
+        # 2. Top 10 Customers
+        top_customers = list(inv_qs.values('customer__customer_name').annotate(
+            val_sum=Sum(F('total_amount') - F('tax_amount'))
+        ).order_by('-val_sum')[:10])
+
+        # 3. Invoice Status Breakdown
+        all_inv_qs = Invoice.objects.filter(salesperson=salesperson)
+        if using_custom_dates and request.GET.get('date_from') and request.GET.get('date_to') and request.GET.get('all_time') != 'true':
+            try:
+                d_from = timezone.datetime.strptime(request.GET.get('date_from'), '%Y-%m-%d').date()
+                d_to = timezone.datetime.strptime(request.GET.get('date_to'), '%Y-%m-%d').date()
+                all_inv_qs = all_inv_qs.filter(creation_date__date__gte=d_from, creation_date__date__lte=d_to)
+            except ValueError:
+                pass
+        elif not using_custom_dates:
+            all_inv_qs = all_inv_qs.filter(creation_date__year=target_year, creation_date__month=target_month)
+        
+        invoice_status_counts = list(all_inv_qs.values('status').annotate(count=Count('id')))
+        status_map = dict(Invoice.Status.choices)
+        invoice_status = [{'status': status_map.get(item['status'], item['status']), 'count': item['count']} for item in invoice_status_counts]
+
+        # 4. Customer Acquisition Trend (Last 6 Months)
+        from django.db.models.functions import TruncMonth
+        import datetime
+        now_date = timezone.now().date()
+        m_date = now_date
+        for _ in range(5):
+            m_date = (m_date.replace(day=1) - datetime.timedelta(days=1)).replace(day=1)
+        six_months_ago = m_date
+        
+        acq_qs = Customer.objects.filter(assigned_sales_officer=salesperson, registration_date__gte=six_months_ago)
+        acq_trend_raw = list(acq_qs.annotate(month=TruncMonth('registration_date')).values('month').annotate(count=Count('id')).order_by('month'))
+        
+        acq_labels = []
+        acq_data = []
+        for i in range(5, -1, -1):
+            m = now_date
+            for _ in range(i):
+                m = (m.replace(day=1) - datetime.timedelta(days=1)).replace(day=1)
+            acq_labels.append(m.strftime('%b %Y'))
+            count = next((item['count'] for item in acq_trend_raw if item['month'] and item['month'].month == m.month and item['month'].year == m.year), 0)
+            acq_data.append(count)
+
+        # 5. Shop Visits
+        from visits.models import VisitPlan
+        visits_qs = VisitPlan.objects.filter(sales_officer=salesperson)
+        if using_custom_dates and request.GET.get('date_from') and request.GET.get('date_to') and request.GET.get('all_time') != 'true':
+            try:
+                d_from = timezone.datetime.strptime(request.GET.get('date_from'), '%Y-%m-%d').date()
+                d_to = timezone.datetime.strptime(request.GET.get('date_to'), '%Y-%m-%d').date()
+                visits_qs = visits_qs.filter(date__gte=d_from, date__lte=d_to)
+            except ValueError:
+                pass
+        elif not using_custom_dates:
+            visits_qs = visits_qs.filter(date__year=target_year, date__month=target_month)
+        
+        total_visits = visits_qs.count()
+        completed_visits = visits_qs.filter(task__is_done=True).count()
+
+        # 6. Discount Analysis
+        line_discount = InvoiceItem.objects.filter(invoice__in=inv_qs).aggregate(Sum('discount'))['discount__sum'] or Decimal('0.00')
+        inv_discount = inv_qs.aggregate(Sum('custom_discount_value'))['custom_discount_value__sum'] or Decimal('0.00')
+        total_discount = float(line_discount) + float(inv_discount)
+        
+        avg_discount_pct = 0.0
+        if total_sales_val > 0:
+            avg_discount_pct = (total_discount / (total_sales_val + total_discount)) * 100
 
         return JsonResponse({
             'overview': {
@@ -1627,6 +1703,14 @@ class SalespersonDataAPI(LoginRequiredMixin, View):
             'trends': {
                 'labels': trend_labels,
                 'sales': trend_sales,
+            },
+            'extended_analytics': {
+                'top_products': [{'name': item['product__name'] or 'Unknown', 'qty': float(item['qty_sum'] or 0), 'val': float(item['val_sum'] or 0)} for item in top_products],
+                'top_customers': [{'name': item['customer__customer_name'] or 'Walk-in', 'val': float(item['val_sum'] or 0)} for item in top_customers],
+                'invoice_status': invoice_status,
+                'customer_acquisition': {'labels': acq_labels, 'data': acq_data},
+                'visits': {'total': total_visits, 'completed': completed_visits, 'pending': total_visits - completed_visits},
+                'discounts': {'total_value': total_discount, 'avg_pct': round(avg_discount_pct, 2)},
             }
         })
 
