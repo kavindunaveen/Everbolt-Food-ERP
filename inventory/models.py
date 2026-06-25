@@ -86,6 +86,14 @@ class Product(models.Model):
         active_reserves = self.reserves.filter(expiry_time__gt=timezone.now()).aggregate(models.Sum('quantity'))['quantity__sum'] or 0
         return self.current_stock - active_reserves
 
+    @property
+    def selling_price_with_vat(self):
+        """Returns selling price including 18% VAT."""
+        from decimal import Decimal
+        if self.selling_price:
+            return self.selling_price * Decimal('1.18')
+        return Decimal('0.00')
+
     def save(self, *args, **kwargs):
         from django.utils.text import slugify
         
