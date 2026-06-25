@@ -206,44 +206,7 @@
         </div>
     </div>
 
-    <!-- Charts Row 5 -->
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-        <!-- Visits -->
-        <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex flex-col">
-            <h3 class="text-lg font-bold text-gray-800 mb-4">Shop Visits Adherence</h3>
-            <div class="grid grid-cols-2 gap-4 mb-6">
-                <div class="text-center p-3 rounded-xl bg-gray-50">
-                    <p class="text-2xl font-black text-gray-900" id="visits-total">0</p>
-                    <p class="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Planned</p>
-                </div>
-                <div class="text-center p-3 rounded-xl bg-indigo-50">
-                    <p class="text-2xl font-black text-indigo-600" id="visits-completed">0</p>
-                    <p class="text-[10px] font-bold text-indigo-700 uppercase tracking-wider">Completed</p>
-                </div>
-            </div>
-            <div class="relative flex-grow h-40">
-                <canvas id="visitsChart"></canvas>
-            </div>
-        </div>
 
-        <!-- Discounts -->
-        <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex flex-col">
-            <h3 class="text-lg font-bold text-gray-800 mb-4">Discount Analysis</h3>
-            <div class="grid grid-cols-2 gap-4 mb-6">
-                <div class="text-center p-3 rounded-xl bg-gray-50">
-                    <p class="text-2xl font-black text-gray-900" id="discount-total">0</p>
-                    <p class="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Total Value</p>
-                </div>
-                <div class="text-center p-3 rounded-xl bg-rose-50">
-                    <p class="text-2xl font-black text-rose-600" id="discount-pct">0%</p>
-                    <p class="text-[10px] font-bold text-rose-700 uppercase tracking-wider">Avg Given</p>
-                </div>
-            </div>
-            <div class="relative flex-grow h-40 flex items-center justify-center">
-                <canvas id="discountChart"></canvas>
-            </div>
-        </div>
-    </div>
 
 </div>
 
@@ -254,7 +217,7 @@ const fmtFull = (v) => new Intl.NumberFormat('en-LK', { minimumFractionDigits:2,
 const fmtNum = (v) => new Intl.NumberFormat('en-US').format(v);
 
 let targetGaugeChart, trendChart, categoryChart, quotationChart;
-let topProductsChart, topCustomersChart, invoiceStatusChart, customerAcqChart, visitsChart, discountChart;
+let topProductsChart, topCustomersChart, invoiceStatusChart, customerAcqChart;
 let currentFrom = null;
 let currentTo = null;
 let currentAllTime = false;
@@ -386,29 +349,7 @@ function initCharts() {
         }
     });
 
-    // Visits (Doughnut)
-    const ctxVisits = document.getElementById('visitsChart').getContext('2d');
-    visitsChart = new Chart(ctxVisits, {
-        type: 'doughnut',
-        data: { labels: ['Completed', 'Pending'], datasets: [{ data: [0,0], backgroundColor: ['#4f46e5', '#cbd5e1'], borderWidth: 0 }] },
-        options: {
-            responsive: true, maintainAspectRatio: false, cutout: '75%',
-            plugins: { legend: { display: false } }
-        }
-    });
 
-    // Discount (Doughnut as Gauge)
-    const ctxDiscount = document.getElementById('discountChart').getContext('2d');
-    discountChart = new Chart(ctxDiscount, {
-        type: 'doughnut',
-        data: { labels: ['Avg Discount %', 'Remainder'], datasets: [{ data:[0, 100], backgroundColor:['#f43f5e', '#f1f5f9'], borderWidth:0 }] },
-        options: {
-            responsive: true, maintainAspectRatio: false,
-            rotation: -90, circumference: 180, cutout: '80%',
-            plugins: { legend: { display: false }, tooltip: { enabled: false } },
-            animation: { duration: 1000 }
-        }
-    });
 }
 
 async function loadData(dateFrom, dateTo, allTime, btnEl = null) {
@@ -543,17 +484,6 @@ async function loadData(dateFrom, dateTo, allTime, btnEl = null) {
             }];
             customerAcqChart.update();
 
-            // Visits
-            document.getElementById('visits-total').innerText = ext.visits.total;
-            document.getElementById('visits-completed').innerText = ext.visits.completed;
-            visitsChart.data.datasets[0].data = [ext.visits.completed, ext.visits.pending];
-            visitsChart.update();
-
-            // Discounts
-            document.getElementById('discount-total').innerText = `Rs ${fmtCur(ext.discounts.total_value)}`;
-            document.getElementById('discount-pct').innerText = `${ext.discounts.avg_pct}%`;
-            discountChart.data.datasets[0].data = [ext.discounts.avg_pct, Math.max(100 - ext.discounts.avg_pct, 0)];
-            discountChart.update();
         }
 
     } catch (err) {

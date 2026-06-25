@@ -1659,29 +1659,10 @@ class SalespersonDataAPI(LoginRequiredMixin, View):
             acq_data.append(count)
 
         # 5. Shop Visits
-        from visits.models import VisitPlan
-        visits_qs = VisitPlan.objects.filter(sales_officer=salesperson)
-        if using_custom_dates and request.GET.get('date_from') and request.GET.get('date_to') and request.GET.get('all_time') != 'true':
-            try:
-                d_from = timezone.datetime.strptime(request.GET.get('date_from'), '%Y-%m-%d').date()
-                d_to = timezone.datetime.strptime(request.GET.get('date_to'), '%Y-%m-%d').date()
-                visits_qs = visits_qs.filter(date__gte=d_from, date__lte=d_to)
-            except ValueError:
-                pass
-        elif not using_custom_dates:
-            visits_qs = visits_qs.filter(date__year=target_year, date__month=target_month)
-        
-        total_visits = visits_qs.count()
-        completed_visits = visits_qs.filter(task__is_done=True).count()
+        # Removed as per user request
 
         # 6. Discount Analysis
-        line_discount = InvoiceItem.objects.filter(invoice__in=inv_qs).aggregate(Sum('discount'))['discount__sum'] or Decimal('0.00')
-        inv_discount = inv_qs.aggregate(Sum('custom_discount_value'))['custom_discount_value__sum'] or Decimal('0.00')
-        total_discount = float(line_discount) + float(inv_discount)
-        
-        avg_discount_pct = 0.0
-        if total_sales_val > 0:
-            avg_discount_pct = (total_discount / (total_sales_val + total_discount)) * 100
+        # Removed as per user request
 
         return JsonResponse({
             'overview': {
@@ -1709,8 +1690,6 @@ class SalespersonDataAPI(LoginRequiredMixin, View):
                 'top_customers': [{'name': item['customer__customer_name'] or 'Walk-in', 'val': float(item['val_sum'] or 0)} for item in top_customers],
                 'invoice_status': invoice_status,
                 'customer_acquisition': {'labels': acq_labels, 'data': acq_data},
-                'visits': {'total': total_visits, 'completed': completed_visits, 'pending': total_visits - completed_visits},
-                'discounts': {'total_value': total_discount, 'avg_pct': round(avg_discount_pct, 2)},
             }
         })
 
