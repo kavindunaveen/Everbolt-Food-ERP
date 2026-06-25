@@ -233,7 +233,7 @@ class ProductionPlanCreateView(LoginRequiredMixin, ERPPermissionRequiredMixin, T
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        all_products = Product.objects.filter(status=True).values('id', 'name', 'product_id')
+        all_products = Product.objects.filter(status=True, inventory_class='FINISHED').values('id', 'name', 'product_id')
         raw_materials = Product.objects.filter(status=True, inventory_class='RAW').values('id', 'name', 'product_id')
         
         context['all_products_json'] = json.dumps(list(all_products))
@@ -270,7 +270,7 @@ class ProductionPlanUpdateView(LoginRequiredMixin, ERPPermissionRequiredMixin, D
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        all_products = Product.objects.filter(status=True).values('id', 'name', 'product_id')
+        all_products = Product.objects.filter(status=True, inventory_class='FINISHED').values('id', 'name', 'product_id')
         raw_materials = Product.objects.filter(status=True, inventory_class='RAW').values('id', 'name', 'product_id')
         
         context['all_products_json'] = json.dumps(list(all_products))
