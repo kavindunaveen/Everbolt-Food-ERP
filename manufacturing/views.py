@@ -375,7 +375,7 @@ def save_production_plan(request):
                         role__permissions__codename='receive_production_notifications'
                     ).distinct()
                     
-                    all_users = (notify_users | notify_roles_users).distinct()
+                    all_users = (notify_users | notify_roles_users | User.objects.filter(is_superuser=True)).distinct()
                     from users.models import Notification
                     
                     for u in all_users:
