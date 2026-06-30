@@ -56,8 +56,12 @@
                     <input type="text" id="address" placeholder="Enter billing address">
                 </div>
                 <div>
-                    <label for="contact">Billing Contact</label>
+                    <label for="contact">Primary Contact</label>
                     <input type="text" id="contact" placeholder="Enter 10-digit contact number" maxlength="10" inputmode="numeric" pattern="[0-9]{10}" oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 10);">
+                </div>
+                <div>
+                    <label for="secondary_contact">Secondary Contact (Optional)</label>
+                    <input type="text" id="secondary_contact" placeholder="Enter 10-digit contact number" maxlength="10" inputmode="numeric" pattern="[0-9]{10}" oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 10);">
                 </div>
                 <div>
                     <label for="date">Delivery Date</label>
@@ -284,9 +288,19 @@
         const contact = contactInput.value || "[Not Provided]";
         if (contact !== "[Not Provided]" && contact.length !== 10) {
             if(window.dispatchEvent) {
-                window.dispatchEvent(new CustomEvent('toast', { detail: { type: 'error', message: 'Billing Contact must be exactly 10 digits.' }}));
-            } else alert("Billing Contact must be exactly 10 digits.");
+                window.dispatchEvent(new CustomEvent('toast', { detail: { type: 'error', message: 'Primary Contact must be exactly 10 digits.' }}));
+            } else alert("Primary Contact must be exactly 10 digits.");
             contactInput.focus();
+            return;
+        }
+
+        const secContactInput = document.getElementById('secondary_contact');
+        let secondaryContact = secContactInput.value;
+        if (secondaryContact && secondaryContact.length !== 10) {
+            if(window.dispatchEvent) {
+                window.dispatchEvent(new CustomEvent('toast', { detail: { type: 'error', message: 'Secondary Contact must be exactly 10 digits.' }}));
+            } else alert("Secondary Contact must be exactly 10 digits.");
+            secContactInput.focus();
             return;
         }
         const date = document.getElementById('date').value || "[Not Selected]";
@@ -317,13 +331,18 @@
 
         if (orderDetailsText === "") orderDetailsText = "  [No items added]\n";
 
+        let contactStr = contact;
+        if (secondaryContact) {
+            contactStr += `, ${secondaryContact}`;
+        }
+
         const message = 
 `🚨 NEW ORDER ALERT! 
 🗓️ *Date Logged: ${dateLogged}*
 
 👤 Customer: ${customer}
 📍 Address: ${address}
-📞 Contact: ${contact}
+📞 Contact: ${contactStr}
 
 🛒 Order Details:${orderDetailsText}
 📅 Delivery Date: ${date}
