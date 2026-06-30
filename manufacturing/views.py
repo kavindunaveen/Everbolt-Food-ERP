@@ -116,18 +116,16 @@ class ProductionCreateView(LoginRequiredMixin, ERPPermissionRequiredMixin, Creat
         materials = context['materials']
         outputs = context['outputs']
         
+        if not (materials.is_valid() and outputs.is_valid()):
+            return self.form_invalid(form)
+            
         with transaction.atomic():
             form.instance.created_by = self.request.user
             self.object = form.save()
-            
-            if materials.is_valid() and outputs.is_valid():
-                materials.instance = self.object
-                materials.save()
-                outputs.instance = self.object
-                outputs.save()
-            else:
-                # If formsets are invalid, return form_invalid
-                return self.form_invalid(form)
+            materials.instance = self.object
+            materials.save()
+            outputs.instance = self.object
+            outputs.save()
                 
         messages.success(self.request, "Production order created as Draft.")
         return super().form_valid(form)
@@ -154,13 +152,17 @@ class ProductionUpdateView(LoginRequiredMixin, ERPPermissionRequiredMixin, Updat
         context = self.get_context_data()
         materials = context['materials']
         outputs = context['outputs']
+        
+        if not (materials.is_valid() and outputs.is_valid()):
+            return self.form_invalid(form)
+            
         with transaction.atomic():
             self.object = form.save()
-            if materials.is_valid() and outputs.is_valid():
-                materials.instance = self.object
-                materials.save()
-                outputs.instance = self.object
-                outputs.save()
+            materials.instance = self.object
+            materials.save()
+            outputs.instance = self.object
+            outputs.save()
+            
         return super().form_valid(form)
 
 class ProductionDetailView(LoginRequiredMixin, ERPPermissionRequiredMixin, DetailView):
