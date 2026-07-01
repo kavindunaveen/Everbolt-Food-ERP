@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 {% load static %}
+{% load humanize %}
 <html lang="en">
 <head>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
@@ -246,12 +247,12 @@
                     <td>{{ item.product.name }}</td>
                     <td class="text-center">{{ item.quantity }}</td>
                     <td class="text-center">{{ item.product.get_selling_unit_display }}</td>
-                    <td class="text-right">{{ item.unit_price|floatformat:2 }}</td>
+                    <td class="text-right">{{ item.unit_price|floatformat:2|intcomma }}</td>
                     <td class="text-right">
-                        {{ item.discount|default:0|floatformat:2 }}{% if item.discount_type == 'PERCENT' %}%{% endif %}
+                        {{ item.discount|default:0|floatformat:2|intcomma }}{% if item.discount_type == 'PERCENT' %}%{% endif %}
                     </td>
                     <td class="text-right">
-                        {{ item.amount_ex_vat|floatformat:2 }}
+                        {{ item.amount_ex_vat|floatformat:2|intcomma }}
                     </td>
                 </tr>
                 {% endfor %}
@@ -268,19 +269,19 @@
 
                 <tr>
                     <td colspan="6" class="text-right" style="font-weight: bold;">Total Discount:</td>
-                    <td class="text-right" style="font-weight: bold;">{{ invoice.total_discount|floatformat:2 }}</td>
+                    <td class="text-right" style="font-weight: bold;">{{ invoice.total_discount|floatformat:2|intcomma }}</td>
                 </tr>
                 <tr>
                     <td colspan="6" class="text-right" style="font-weight: bold;">Total Value of Supply:</td>
-                    <td class="text-right" style="font-weight: bold;">{{ total_value_supply|floatformat:2 }}</td>
+                    <td class="text-right" style="font-weight: bold;">{{ total_value_supply|floatformat:2|intcomma }}</td>
                 </tr>
                 <tr>
                     <td colspan="6" class="text-right" style="font-weight: bold;">VAT Amount (Total Value of Supply @ 18%):</td>
-                    <td class="text-right" style="font-weight: bold;">{{ tax_amount|floatformat:2 }}</td>
+                    <td class="text-right" style="font-weight: bold;">{{ tax_amount|floatformat:2|intcomma }}</td>
                 </tr>
                 <tr>
                     <td colspan="6" class="text-right" style="font-weight: bold; font-size: 1.1em;">Total Amount including VAT:</td>
-                    <td class="text-right" style="font-weight: bold; font-size: 1.1em;">{{ total_amount|floatformat:2 }}</td>
+                    <td class="text-right" style="font-weight: bold; font-size: 1.1em;">{{ total_amount|floatformat:0|intcomma }}</td>
                 </tr>
             </tbody>
         </table>

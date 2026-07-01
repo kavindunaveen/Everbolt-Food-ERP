@@ -1012,7 +1012,9 @@ class InvoicePrintView(LoginRequiredMixin, ERPPermissionRequiredMixin, DetailVie
         context['tax_amount'] = self.object.tax_amount
         context['total_amount'] = self.object.total_amount
         try:
-            context['amount_in_words'] = num2words(int(context['total_amount']), lang='en').title() + " Rupees Only"
+            from decimal import Decimal, ROUND_HALF_UP
+            rounded_total = context['total_amount'].quantize(Decimal('1.'), rounding=ROUND_HALF_UP)
+            context['amount_in_words'] = num2words(int(rounded_total), lang='en').title() + " Rupees Only"
         except:
             context['amount_in_words'] = ""
         return context

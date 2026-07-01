@@ -1043,7 +1043,7 @@
             if (subtotal < 0) subtotal = 0;
             
             const tax = subtotal * 0.18;
-            const total = Math.ceil(Math.round((subtotal + tax) * 100) / 100); // Round to 2 decimals then Ceiling
+            const total = Math.round(subtotal + tax); // Round to nearest integer (standard rounding)
             
             $('#summary-discount').text('Rs. ' + totalDiscount.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}));
             $('#summary-subtotal').text('Rs. ' + subtotal.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}));
