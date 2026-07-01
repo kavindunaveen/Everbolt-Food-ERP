@@ -78,9 +78,14 @@ class PendingPaymentsView(LoginRequiredMixin, PermissionRequiredMixin, View):
         if salesperson_id:
             pending_qs = pending_qs.filter(salesperson_id=salesperson_id)
 
+        from django.core.paginator import Paginator
+        paginator = Paginator(pending_qs, 20)
+        page_number = request.GET.get('page', 1)
+        page_obj = paginator.get_page(page_number)
+
         # Calculate remaining balances
         invoices = []
-        for inv in pending_qs:
+        for inv in page_obj.object_list:
             total_paid = sum(p.amount for p in inv.payments.all())
             balance = inv.total_amount - total_paid
             if balance > 0:
@@ -108,6 +113,9 @@ class PendingPaymentsView(LoginRequiredMixin, PermissionRequiredMixin, View):
                 
         context = {
             'invoices': invoices,
+            'page_obj': page_obj,
+            'paginator': paginator,
+            'is_paginated': paginator.num_pages > 1,
             'payment_methods': Payment.PaymentMethod.choices,
             'sales_officers': sales_officers,
             'total_invoices_all': total_invoices_all,
@@ -162,8 +170,13 @@ class CompletedPaymentsView(LoginRequiredMixin, PermissionRequiredMixin, View):
         if salesperson_id:
             completed_qs = completed_qs.filter(salesperson_id=salesperson_id)
 
+        from django.core.paginator import Paginator
+        paginator = Paginator(completed_qs, 20)
+        page_number = request.GET.get('page', 1)
+        page_obj = paginator.get_page(page_number)
+
         invoices = []
-        for inv in completed_qs:
+        for inv in page_obj.object_list:
             total_paid = sum(p.amount for p in inv.payments.all())
             invoices.append({
                 'id': inv.id,
@@ -188,6 +201,9 @@ class CompletedPaymentsView(LoginRequiredMixin, PermissionRequiredMixin, View):
                 
         context = {
             'invoices': invoices,
+            'page_obj': page_obj,
+            'paginator': paginator,
+            'is_paginated': paginator.num_pages > 1,
             'sales_officers': sales_officers,
             'total_invoices_all': total_invoices_all,
             'total_invoices_month': total_invoices_month,
