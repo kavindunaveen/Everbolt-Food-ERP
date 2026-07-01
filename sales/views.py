@@ -1887,6 +1887,7 @@ class ReturnListView(LoginRequiredMixin, ERPPermissionRequiredMixin, ListView):
             context['saved_filters'] = SavedFilter.objects.filter(user=self.request.user, model_name='Return')
         except ImportError:
             context['saved_filters'] = []
+        context['reasons'] = Return.ReturnReason.choices
         return context
 
     def get_queryset(self):
@@ -1904,6 +1905,11 @@ class ReturnListView(LoginRequiredMixin, ERPPermissionRequiredMixin, ListView):
             qs = qs.filter(stock_updated=True)
         elif status == 'pending':
             qs = qs.filter(stock_updated=False)
+            
+        reason = self.request.GET.get('reason')
+        if reason:
+            qs = qs.filter(items__reason=reason).distinct()
+            
         return qs
 
 
