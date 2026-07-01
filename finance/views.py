@@ -265,6 +265,12 @@ class RecordPaymentView(LoginRequiredMixin, PermissionRequiredMixin, View):
                     notes=notes,
                     recorded_by=request.user
                 )
+                
+                # Check if fully paid and update status
+                new_balance = balance - amount
+                if new_balance <= Decimal('0.01'):
+                    invoice.status = Invoice.Status.PAID
+                    invoice.save(update_fields=['status'])
 
             return JsonResponse({'status': 'ok', 'message': 'Payment recorded successfully.'})
 

@@ -193,7 +193,7 @@
     function openPaymentModal(invId, invNum, balance) {
         document.getElementById('invoice_id').value = invId;
         document.getElementById('invoice_number_display').innerText = invNum;
-        document.getElementById('payment_amount').value = '';
+        document.getElementById('payment_amount').value = parseFloat(balance).toFixed(2);
         document.getElementById('payment_amount').max = balance;
         document.getElementById('payment_amount').placeholder = 'Max: ' + parseFloat(balance).toFixed(2);
         document.getElementById('balance_display').innerText = parseFloat(balance).toFixed(2);
