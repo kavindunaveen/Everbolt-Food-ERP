@@ -2007,7 +2007,7 @@ def return_create_view(request, invoice_pk):
         from .forms import ReturnItemForm
         ReturnItemFormSetPrefilled = inlineformset_factory(
             Return, ReturnItem, form=ReturnItemForm,
-            extra=0, can_delete=True
+            extra=len(initial_data), can_delete=True
         )
         formset = ReturnItemFormSetPrefilled(initial=initial_data)
 
