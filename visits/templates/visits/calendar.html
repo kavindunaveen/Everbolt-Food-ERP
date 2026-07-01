@@ -49,7 +49,7 @@
                     <!-- Plans for the day -->
                     <div class="space-y-1 mt-2">
                         <template x-for="plan in getPlansForDate(d.date)" :key="plan.id">
-                            <div class="text-[10px] px-2 py-1 rounded-md font-semibold truncate transition-all"
+                            <div @click.stop="openModal(d, plan.id)" class="text-[10px] px-2 py-1 rounded-md font-semibold truncate transition-all cursor-pointer hover:opacity-80 hover:shadow-sm"
                                  :class="plan.is_done ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'"
                                  :title="plan.description">
                                 <template x-if="!globalSelectedSO">
@@ -250,7 +250,7 @@
             newPlanDesc: '',
             
             // User context injected
-            currentUserIsAdmin: {{ request.user.is_admin|yesno:"true,false" }},
+            currentUserIsAdmin: {{ request.user.is_superuser|yesno:"true,false" }} || {{ request.user.is_staff|yesno:"true,false" }},
             currentUserId: {{ request.user.id }},
             
             init() {
@@ -343,12 +343,20 @@
                 return plans.filter(p => p.date === dateStr);
             },
             
-            openModal(day) {
+            openModal(day, planId = null) {
                 this.selectedDate = day.date;
                 const d = new Date(day.date);
                 this.modalDateStr = d.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
                 
-                this.selectedDatePlans = this.getPlansForDate(day.date).map(p => ({
+                // Store the selected planId so we can keep it filtered when refreshing after a save
+                this.currentPlanId = planId;
+                
+                let plansForDay = this.getPlansForDate(day.date);
+                if (this.currentPlanId) {
+                    plansForDay = plansForDay.filter(p => p.id === this.currentPlanId);
+                }
+                
+                this.selectedDatePlans = plansForDay.map(p => ({
                     ...p,
                     _temp_tasks_done: p.tasks_done,
                     _temp_remarks: p.remarks,
@@ -414,7 +422,7 @@
                     if(data.status === 'success') {
                         window.dispatchEvent(new CustomEvent('toast', { detail: { type: 'success', message: 'Task updated successfully.' }}));
                         this.fetchPlans();
-                        setTimeout(() => this.openModal({date: this.selectedDate}), 500);
+                        setTimeout(() => this.openModal({date: this.selectedDate}, this.currentPlanId), 500);
                     } else {
                         window.dispatchEvent(new CustomEvent('toast', { detail: { type: 'error', message: 'Failed to update task.' }}));
                     }
