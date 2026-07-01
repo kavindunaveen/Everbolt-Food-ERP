@@ -2042,8 +2042,17 @@ class CreditNoteListView(LoginRequiredMixin, ERPPermissionRequiredMixin, ListVie
             qs = qs.filter(
                 Q(credit_note_number__icontains=q) |
                 Q(original_invoice__invoice_number__icontains=q) |
-                Q(customer__customer_name__icontains=q)
+                Q(customer__customer_name__icontains=q) |
+                Q(items__product__name__icontains=q)
             ).distinct()
+            
+        date_from = self.request.GET.get('date_from')
+        date_to = self.request.GET.get('date_to')
+        if date_from:
+            qs = qs.filter(issued_date__date__gte=date_from)
+        if date_to:
+            qs = qs.filter(issued_date__date__lte=date_to)
+            
         return qs
 
 
