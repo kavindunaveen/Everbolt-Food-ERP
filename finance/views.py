@@ -18,26 +18,23 @@ class FinanceDashboardView(LoginRequiredMixin, PermissionRequiredMixin, View):
     def get(self, request):
         today = timezone.now().date()
         
-        # Stats
-        total_invoices_all = Invoice.objects.exclude(status__in=[Invoice.Status.DRAFT, Invoice.Status.CANCELLED, Invoice.Status.CANCEL_PENDING]).count()
-        total_invoices_month = Invoice.objects.exclude(status__in=[Invoice.Status.DRAFT, Invoice.Status.CANCELLED, Invoice.Status.CANCEL_PENDING]).filter(creation_date__year=today.year, creation_date__month=today.month).count()
+        from finance.stats import get_invoice_stats
+        stats = get_invoice_stats(today)
         
         completed_qs = Invoice.objects.filter(status=Invoice.Status.PAID)
         pending_qs = Invoice.objects.filter(status=Invoice.Status.ISSUED)
-        
-        completed_count = completed_qs.count()
-        pending_count = pending_qs.count()
         
         completed_total = completed_qs.aggregate(t=Sum('total_amount'))['t'] or 0
         pending_total = pending_qs.aggregate(t=Sum('total_amount'))['t'] or 0
         
         context = {
-            'total_invoices_all': total_invoices_all,
-            'total_invoices_month': total_invoices_month,
-            'completed_count': completed_count,
+            'total_invoices_all': stats['total_invoices_all'],
+            'total_invoices_month': stats['total_invoices_month'],
+            'completed_count': stats['completed_count'],
             'completed_total': completed_total,
-            'pending_count': pending_count,
+            'pending_count': stats['pending_count'],
             'pending_total': pending_total,
+            'partial_count': stats['partial_count'],
         }
         return render(request, self.template_name, context)
 
@@ -50,20 +47,20 @@ class PendingPaymentsView(LoginRequiredMixin, PermissionRequiredMixin, View):
         
         pending_qs = Invoice.objects.filter(status=Invoice.Status.ISSUED).order_by('-creation_date')
         
-        # Filtering logic
+        # Filter on creation_date so date range matches when the invoice was created
         date_from = request.GET.get('date_from')
         if date_from:
-            pending_qs = pending_qs.filter(due_date__gte=date_from)
+            pending_qs = pending_qs.filter(creation_date__date__gte=date_from)
             
         date_to = request.GET.get('date_to')
         if date_to:
-            pending_qs = pending_qs.filter(due_date__lte=date_to)
+            pending_qs = pending_qs.filter(creation_date__date__lte=date_to)
             
         month = request.GET.get('month')
         if month:
             try:
                 year_str, month_str = month.split('-')
-                pending_qs = pending_qs.filter(due_date__year=int(year_str), due_date__month=int(month_str))
+                pending_qs = pending_qs.filter(creation_date__year=int(year_str), creation_date__month=int(month_str))
             except ValueError:
                 pass
             
@@ -78,18 +75,26 @@ class PendingPaymentsView(LoginRequiredMixin, PermissionRequiredMixin, View):
         if salesperson_id:
             pending_qs = pending_qs.filter(salesperson_id=salesperson_id)
 
+        from decimal import Decimal
+        from django.db.models import Sum
+        from django.db.models.functions import Coalesce
+        
+        # Annotate total paid at DB level, then filter — so pagination works correctly
+        pending_qs = pending_qs.annotate(
+            total_paid_sum=Coalesce(Sum('payments__amount'), Decimal('0.00'))
+        ).filter(total_paid_sum__lt=Decimal('0.01'))  # treat < 0.01 as zero (tolerance)
+
         from django.core.paginator import Paginator
         paginator = Paginator(pending_qs, 20)
         page_number = request.GET.get('page', 1)
         page_obj = paginator.get_page(page_number)
 
-        # Calculate remaining balances
+        # Build display list (no Python-level filtering needed now)
         invoices = []
         for inv in page_obj.object_list:
-            total_paid = sum(p.amount for p in inv.payments.all())
+            total_paid = inv.total_paid_sum
             balance = inv.total_amount - total_paid
-            if balance > 0:
-                invoices.append({
+            invoices.append({
                     'id': inv.id,
                     'invoice_number': inv.invoice_number,
                     'invoice_type': inv.invoice_type,
@@ -105,11 +110,8 @@ class PendingPaymentsView(LoginRequiredMixin, PermissionRequiredMixin, View):
         from users.models import User
         sales_officers = User.objects.filter(role__name='Sales Officer', is_active=True).distinct()
         
-        # Stats
-        total_invoices_all = Invoice.objects.exclude(status__in=[Invoice.Status.DRAFT, Invoice.Status.CANCELLED, Invoice.Status.CANCEL_PENDING]).count()
-        total_invoices_month = Invoice.objects.exclude(status__in=[Invoice.Status.DRAFT, Invoice.Status.CANCELLED, Invoice.Status.CANCEL_PENDING]).filter(creation_date__year=today.year, creation_date__month=today.month).count()
-        completed_count = Invoice.objects.filter(status=Invoice.Status.PAID).count()
-        pending_count = Invoice.objects.filter(status=Invoice.Status.ISSUED).count()
+        from finance.stats import get_invoice_stats
+        stats = get_invoice_stats(today)
                 
         context = {
             'invoices': invoices,
@@ -118,16 +120,118 @@ class PendingPaymentsView(LoginRequiredMixin, PermissionRequiredMixin, View):
             'is_paginated': paginator.num_pages > 1,
             'payment_methods': Payment.PaymentMethod.choices,
             'sales_officers': sales_officers,
-            'total_invoices_all': total_invoices_all,
-            'total_invoices_month': total_invoices_month,
-            'completed_count': completed_count,
-            'pending_count': pending_count,
+            'total_invoices_all': stats['total_invoices_all'],
+            'total_invoices_month': stats['total_invoices_month'],
+            'completed_count': stats['completed_count'],
+            'pending_count': stats['pending_count'],
+            'partial_count': stats['partial_count'],
         }
         
         # Provide Saved Filters
         try:
             from users.models import SavedFilter
             context['saved_filters'] = SavedFilter.objects.filter(user=request.user, model_name='PendingPayments')
+        except ImportError:
+            context['saved_filters'] = []
+            
+        return render(request, self.template_name, context)
+
+class PartialPaymentsView(LoginRequiredMixin, PermissionRequiredMixin, View):
+    permission_required = 'finance.manage_finance'
+    template_name = 'finance/partial_payments.html'
+
+    def get(self, request):
+        today = timezone.now().date()
+        
+        pending_qs = Invoice.objects.filter(status=Invoice.Status.ISSUED).order_by('due_date')
+        
+        # Filter on creation_date so date range matches when the invoice was created
+        date_from = request.GET.get('date_from')
+        if date_from:
+            pending_qs = pending_qs.filter(creation_date__date__gte=date_from)
+            
+        date_to = request.GET.get('date_to')
+        if date_to:
+            pending_qs = pending_qs.filter(creation_date__date__lte=date_to)
+            
+        month = request.GET.get('month')
+        if month:
+            try:
+                year_str, month_str = month.split('-')
+                pending_qs = pending_qs.filter(creation_date__year=int(year_str), creation_date__month=int(month_str))
+            except ValueError:
+                pass
+            
+        q = request.GET.get('q')
+        if q:
+            pending_qs = pending_qs.filter(
+                Q(invoice_number__icontains=q) |
+                Q(customer__customer_name__icontains=q)
+            )
+
+        salesperson_id = request.GET.get('salesperson')
+        if salesperson_id:
+            pending_qs = pending_qs.filter(salesperson_id=salesperson_id)
+
+        from decimal import Decimal
+        from django.db.models import Sum, F
+        from django.db.models.functions import Coalesce
+
+        # Annotate total paid at DB level, then filter — so pagination works correctly
+        # Use a 0.01 tolerance to match the same rounding used when recording payments
+        pending_qs = pending_qs.annotate(
+            total_paid_sum=Coalesce(Sum('payments__amount'), Decimal('0.00'))
+        ).filter(total_paid_sum__gte=Decimal('0.01'), total_paid_sum__lt=F('total_amount') - Decimal('0.009'))
+
+        from django.core.paginator import Paginator
+        paginator = Paginator(pending_qs, 20)
+        page_number = request.GET.get('page', 1)
+        page_obj = paginator.get_page(page_number)
+
+        # Build display list - prefetch payments to avoid N+1
+        invoices = []
+        for inv in page_obj.object_list.select_related('customer', 'salesperson').prefetch_related('payments'):
+            total_paid = inv.total_paid_sum
+            balance = inv.total_amount - total_paid
+            payments = list(inv.payments.all().order_by('payment_date'))
+            invoices.append({
+                    'id': inv.id,
+                    'invoice_number': inv.invoice_number,
+                    'invoice_type': inv.invoice_type,
+                    'customer': inv.customer,
+                    'salesperson': inv.salesperson,
+                    'due_date': inv.due_date,
+                    'total_amount': inv.total_amount,
+                    'total_paid': total_paid,
+                    'balance': balance,
+                    'days_overdue': (today - inv.due_date).days if inv.due_date else 0,
+                    'payment_history': payments,
+                })
+                
+        from users.models import User
+        sales_officers = User.objects.filter(role__name='Sales Officer', is_active=True).distinct()
+        
+        from finance.stats import get_invoice_stats
+        stats = get_invoice_stats(today)
+                
+        context = {
+            'invoices': invoices,
+            'page_obj': page_obj,
+            'paginator': paginator,
+            'is_paginated': paginator.num_pages > 1,
+            'payment_methods': Payment.PaymentMethod.choices,
+            'sales_officers': sales_officers,
+            'total_invoices_all': stats['total_invoices_all'],
+            'total_invoices_month': stats['total_invoices_month'],
+            'completed_count': stats['completed_count'],
+            'pending_count': stats['pending_count'],
+            'partial_count': stats['partial_count'],
+        }
+        
+        # Provide Saved Filters
+        try:
+            from users.models import SavedFilter
+            context['saved_filters'] = SavedFilter.objects.filter(user=request.user, model_name='PartialPayments')
         except ImportError:
             context['saved_filters'] = []
             
@@ -142,20 +246,20 @@ class CompletedPaymentsView(LoginRequiredMixin, PermissionRequiredMixin, View):
         
         completed_qs = Invoice.objects.filter(status=Invoice.Status.PAID).order_by('-creation_date')
         
-        # Filtering logic
+        # Filter on creation_date so date range matches when the invoice was created
         date_from = request.GET.get('date_from')
         if date_from:
-            completed_qs = completed_qs.filter(due_date__gte=date_from)
+            completed_qs = completed_qs.filter(creation_date__date__gte=date_from)
             
         date_to = request.GET.get('date_to')
         if date_to:
-            completed_qs = completed_qs.filter(due_date__lte=date_to)
+            completed_qs = completed_qs.filter(creation_date__date__lte=date_to)
             
         month = request.GET.get('month')
         if month:
             try:
                 year_str, month_str = month.split('-')
-                completed_qs = completed_qs.filter(due_date__year=int(year_str), due_date__month=int(month_str))
+                completed_qs = completed_qs.filter(creation_date__year=int(year_str), creation_date__month=int(month_str))
             except ValueError:
                 pass
             
@@ -175,9 +279,14 @@ class CompletedPaymentsView(LoginRequiredMixin, PermissionRequiredMixin, View):
         page_number = request.GET.get('page', 1)
         page_obj = paginator.get_page(page_number)
 
+        # For completed invoices, total_paid = total_amount (they are PAID status)
+        # Avoid N+1 by not querying payments per invoice here
+        # Add prefetch for payment detail in history view instead
         invoices = []
-        for inv in page_obj.object_list:
-            total_paid = sum(p.amount for p in inv.payments.all())
+        for inv in page_obj.object_list.select_related('customer', 'salesperson').prefetch_related('payments'):
+            payments = list(inv.payments.all())
+            total_paid = sum(p.amount for p in payments)
+            last_payment = payments[-1] if payments else None
             invoices.append({
                 'id': inv.id,
                 'invoice_number': inv.invoice_number,
@@ -188,16 +297,15 @@ class CompletedPaymentsView(LoginRequiredMixin, PermissionRequiredMixin, View):
                 'total_amount': inv.total_amount,
                 'total_paid': total_paid,
                 'balance': 0,
+                'last_payment': last_payment,
+                'payment_count': len(payments),
             })
                 
         from users.models import User
         sales_officers = User.objects.filter(role__name='Sales Officer', is_active=True).distinct()
         
-        # Stats
-        total_invoices_all = Invoice.objects.exclude(status__in=[Invoice.Status.DRAFT, Invoice.Status.CANCELLED, Invoice.Status.CANCEL_PENDING]).count()
-        total_invoices_month = Invoice.objects.exclude(status__in=[Invoice.Status.DRAFT, Invoice.Status.CANCELLED, Invoice.Status.CANCEL_PENDING]).filter(creation_date__year=today.year, creation_date__month=today.month).count()
-        completed_count = Invoice.objects.filter(status=Invoice.Status.PAID).count()
-        pending_count = Invoice.objects.filter(status=Invoice.Status.ISSUED).count()
+        from finance.stats import get_invoice_stats
+        stats = get_invoice_stats(today)
                 
         context = {
             'invoices': invoices,
@@ -205,10 +313,11 @@ class CompletedPaymentsView(LoginRequiredMixin, PermissionRequiredMixin, View):
             'paginator': paginator,
             'is_paginated': paginator.num_pages > 1,
             'sales_officers': sales_officers,
-            'total_invoices_all': total_invoices_all,
-            'total_invoices_month': total_invoices_month,
-            'completed_count': completed_count,
-            'pending_count': pending_count,
+            'total_invoices_all': stats['total_invoices_all'],
+            'total_invoices_month': stats['total_invoices_month'],
+            'completed_count': stats['completed_count'],
+            'pending_count': stats['pending_count'],
+            'partial_count': stats['partial_count'],
         }
         
         # Provide Saved Filters
@@ -225,13 +334,15 @@ class RecordPaymentView(LoginRequiredMixin, PermissionRequiredMixin, View):
 
     def post(self, request):
         try:
-            data = json.loads(request.body)
+            # Using request.POST and request.FILES since the frontend now sends FormData
+            data = request.POST
             invoice_id = data.get('invoice_id')
             amount_str = data.get('amount')
             payment_date_str = data.get('payment_date')
             payment_method = data.get('payment_method')
             reference = data.get('reference', '').strip()
             notes = data.get('notes', '').strip()
+            slip = request.FILES.get('slip_attachment')
 
             if not amount_str:
                 raise ValueError("Payment amount is required.")
@@ -250,8 +361,8 @@ class RecordPaymentView(LoginRequiredMixin, PermissionRequiredMixin, View):
             if amount > balance + Decimal('0.01'):
                 raise ValueError(f"Payment amount cannot exceed the current balance (Rs {balance:.2f}).")
                 
-            if payment_method in ['CHEQUE', 'BANK_TRANSFER'] and not reference:
-                raise ValueError("Reference number is required for Cheque and Bank Transfer payments.")
+            if not reference and not slip:
+                raise ValueError("You must provide either a reference number or upload a payment slip.")
 
             payment_date = datetime.strptime(payment_date_str, '%Y-%m-%d').date()
 
@@ -262,15 +373,13 @@ class RecordPaymentView(LoginRequiredMixin, PermissionRequiredMixin, View):
                     payment_date=payment_date,
                     payment_method=payment_method,
                     reference_number=reference,
+                    slip_attachment=slip,
                     notes=notes,
                     recorded_by=request.user
                 )
                 
-                # Check if fully paid and update status
-                new_balance = balance - amount
-                if new_balance <= Decimal('0.01'):
-                    invoice.status = Invoice.Status.PAID
-                    invoice.save(update_fields=['status'])
+                # The Payment model's save() method already handles the status update.
+                # No need to do it here — single source of truth in the model.
 
             return JsonResponse({'status': 'ok', 'message': 'Payment recorded successfully.'})
 

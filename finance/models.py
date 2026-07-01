@@ -11,25 +11,30 @@ class Payment(models.Model):
         OTHER = 'OTHER', 'Other'
 
     invoice = models.ForeignKey(Invoice, on_delete=models.CASCADE, related_name='payments')
-    amount = models.DecimalField(max_digits=12, decimal_places=5)
+    amount = models.DecimalField(max_digits=12, decimal_places=2)
     payment_date = models.DateField()
     payment_method = models.CharField(max_length=20, choices=PaymentMethod.choices, default=PaymentMethod.BANK_TRANSFER)
     reference_number = models.CharField(max_length=100, blank=True, null=True, help_text="e.g. Cheque number, Bank transfer ID")
+    slip_attachment = models.FileField(upload_to='payment_slips/', blank=True, null=True, help_text="Image or PDF of the payment slip")
     notes = models.TextField(blank=True, null=True)
     
     recorded_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, related_name='recorded_payments')
     created_at = models.DateTimeField(auto_now_add=True)
 
     def save(self, *args, **kwargs):
-        is_new = self.pk is None
         with transaction.atomic():
             super().save(*args, **kwargs)
             
-            # Check if invoice is fully paid
+            # Re-fetch total paid from DB (including this new payment) to avoid stale reads
+            from django.db.models import Sum
+            from django.db.models.functions import Coalesce
+            from decimal import Decimal
             invoice = self.invoice
-            total_paid = sum(p.amount for p in invoice.payments.all())
+            total_paid = invoice.payments.aggregate(
+                t=Coalesce(Sum('amount'), Decimal('0.00'))
+            )['t']
             
-            if total_paid >= invoice.total_amount and invoice.status != Invoice.Status.PAID:
+            if total_paid >= invoice.total_amount - Decimal('0.01') and invoice.status != Invoice.Status.PAID:
                 invoice.status = Invoice.Status.PAID
                 invoice.save(update_fields=['status'])
 
