@@ -31,16 +31,28 @@
             {% csrf_token %}
             {{ formset.management_form }}
 
+            <style>
+                /* Remove up and down arrows from number inputs */
+                input[type=number]::-webkit-inner-spin-button, 
+                input[type=number]::-webkit-outer-spin-button { 
+                    -webkit-appearance: none; 
+                    margin: 0; 
+                }
+                input[type=number] {
+                    -moz-appearance: textfield;
+                }
+            </style>
+
             <div class="mb-6 overflow-x-auto">
                 <h3 class="text-lg font-bold text-gray-800 mb-3 border-b pb-2">Return Items</h3>
                 <table class="min-w-full divide-y divide-gray-200" id="items-table">
                     <thead class="bg-gray-50">
                         <tr>
-                            <th scope="col" class="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider w-1/4">Product <span class="text-red-500">*</span></th>
-                            <th scope="col" class="px-4 py-3 text-center text-xs font-bold text-gray-500 uppercase tracking-wider w-32">Qty <span class="text-red-500">*</span></th>
+                            <th scope="col" class="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider w-1/3 min-w-[250px]">Product <span class="text-red-500">*</span></th>
+                            <th scope="col" class="px-4 py-3 text-center text-xs font-bold text-gray-500 uppercase tracking-wider w-24">Qty <span class="text-red-500">*</span></th>
                             <th scope="col" class="px-4 py-3 text-right text-xs font-bold text-gray-500 uppercase tracking-wider w-32">Unit Price <span class="text-red-500">*</span></th>
-                            <th scope="col" class="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider w-1/4">Reason <span class="text-red-500">*</span></th>
-                            <th scope="col" class="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider w-1/4">Condition <span class="text-red-500">*</span></th>
+                            <th scope="col" class="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider w-1/5 min-w-[150px]">Reason <span class="text-red-500">*</span></th>
+                            <th scope="col" class="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider w-1/5 min-w-[150px]">Condition <span class="text-red-500">*</span></th>
                             <th scope="col" class="px-4 py-3 text-center text-xs font-bold text-gray-500 uppercase tracking-wider w-16">Action</th>
                         </tr>
                     </thead>
