@@ -2101,8 +2101,22 @@ class CreditNoteUpdateView(LoginRequiredMixin, ERPPermissionRequiredMixin, Updat
 @login_required
 def credit_note_print_view(request, pk):
     """Printable Credit Note view."""
+    from decimal import Decimal
     cn = get_object_or_404(CreditNote, pk=pk)
-    return render(request, 'sales/credit_note_print.html', {'cn': cn})
+    
+    total_credit = cn.total_credit_amount
+    tax_amount = Decimal('0.00')
+    if cn.original_invoice.tax_amount > 0:
+        tax_amount = total_credit * Decimal('0.18')
+        
+    total_with_tax = total_credit + tax_amount
+    
+    context = {
+        'cn': cn,
+        'tax_amount': tax_amount,
+        'total_with_tax': total_with_tax,
+    }
+    return render(request, 'sales/credit_note_print.html', context)
 
 
 class DeliveryNotePrintView(LoginRequiredMixin, ERPPermissionRequiredMixin, DetailView):

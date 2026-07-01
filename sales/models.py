@@ -347,6 +347,14 @@ class CreditNote(models.Model):
     def total_credit_amount(self):
         return sum(item.credit_amount for item in self.items.all())
 
+    @property
+    def total_credit_with_tax(self):
+        from decimal import Decimal
+        total = self.total_credit_amount
+        if self.original_invoice and self.original_invoice.tax_amount > 0:
+            return total + (total * Decimal('0.18'))
+        return total
+
     def save(self, *args, **kwargs):
         if not self.credit_note_number:
             all_nums = CreditNote.objects.values_list('credit_note_number', flat=True)

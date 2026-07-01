@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-{% load static %}
+{% load static humanize %}
 <html lang="en">
 <head>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
@@ -259,8 +259,18 @@
             </tbody>
             <tfoot style="display: table-footer-group;">
                 <tr>
-                    <td colspan="4" class="text-right" style="font-size: 13pt;"><strong>Total Credit Value</strong></td>
-                    <td class="text-right" style="font-size: 13pt;"><strong>{{ cn.total_credit_amount|floatformat:2 }}</strong></td>
+                    <td colspan="4" class="text-right" style="font-size: 13pt;"><strong>Total Value of Supply (Rs.)</strong></td>
+                    <td class="text-right" style="font-size: 13pt;"><strong>{{ cn.total_credit_amount|floatformat:2|intcomma }}</strong></td>
+                </tr>
+                {% if tax_amount > 0 %}
+                <tr>
+                    <td colspan="4" class="text-right" style="font-size: 13pt;"><strong>VAT Amount (Total Value of Supply @ 18%)</strong></td>
+                    <td class="text-right" style="font-size: 13pt;"><strong>{{ tax_amount|floatformat:2|intcomma }}</strong></td>
+                </tr>
+                {% endif %}
+                <tr>
+                    <td colspan="4" class="text-right" style="font-size: 15pt;"><strong>Total Credit Amount (Incl. VAT)</strong></td>
+                    <td class="text-right" style="font-size: 15pt;"><strong>{{ total_with_tax|floatformat:0|intcomma }}</strong></td>
                 </tr>
             </tfoot>
             </table>
