@@ -159,13 +159,22 @@
                 <div class="border-t border-gray-200 pt-6 mt-6">
                     <div class="flex items-center justify-between mb-4">
                         <h3 class="text-sm font-bold text-gray-900">Assign New Plan</h3>
-                        <template x-if="globalSelectedSO && !isAddingPlan">
+                        <template x-if="!isAddingPlan">
                             <button @click="isAddingPlan = true" class="text-xs px-3 py-1.5 bg-gray-900 text-white rounded font-bold hover:bg-gray-800 transition">+ Add Another Visit</button>
                         </template>
                     </div>
                     
-                    <template x-if="globalSelectedSO && isAddingPlan">
+                    <template x-if="isAddingPlan">
                         <div class="space-y-4">
+                            <div>
+                                <label class="block text-xs font-bold text-gray-700 mb-1">Sales Officer</label>
+                                <select x-model="newPlanSO" class="block w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none">
+                                    <option value="">-- Select Sales Officer --</option>
+                                    {% for so in sales_officers %}
+                                    <option value="{{ so.id }}">{{ so.get_full_name|default:so.username }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
                             <div>
                                 <label class="block text-xs font-bold text-gray-700 mb-1">Instructions / Visit Details</label>
                                 <textarea x-model="newPlanDesc" class="block w-full px-3 py-2 border border-gray-200 rounded-lg text-sm" rows="3" placeholder="Enter the visit plan..."></textarea>
@@ -173,16 +182,6 @@
                             <div class="flex gap-2">
                                 <button @click="savePlan()" class="btn-premium btn-primary flex-1 text-sm py-2">Create Assignment</button>
                                 <button @click="isAddingPlan = false; newPlanDesc='';" class="px-4 py-2 bg-gray-100 text-gray-700 font-bold rounded-lg text-sm hover:bg-gray-200 transition">Cancel</button>
-                            </div>
-                        </div>
-                    </template>
-                    
-                    <template x-if="!globalSelectedSO">
-                        <div class="p-4 bg-amber-50 rounded-xl border border-amber-100 flex items-start gap-3">
-                            <svg class="w-5 h-5 text-amber-500 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
-                            <div>
-                                <p class="text-sm font-bold text-amber-800">Select a Sales Officer</p>
-                                <p class="text-xs text-amber-700 mt-1">To assign a new plan, please select a specific Sales Officer from the dropdown menu at the top of the calendar.</p>
                             </div>
                         </div>
                     </template>
@@ -229,6 +228,7 @@
             globalSelectedSO: '',
             
             // New Plan form state
+            newPlanSO: '',
             newPlanDesc: '',
             
             // User context injected
@@ -339,6 +339,7 @@
                     _temp_description: p.description
                 }));
                 
+                this.newPlanSO = this.globalSelectedSO;
                 this.newPlanDesc = '';
                 this.isAddingPlan = this.selectedDatePlans.length === 0;
                 this.isModalOpen = true;
@@ -353,7 +354,7 @@
             },
             
             savePlan() {
-                if(!this.globalSelectedSO || !this.newPlanDesc) {
+                if(!this.newPlanSO || !this.newPlanDesc) {
                     window.dispatchEvent(new CustomEvent('toast', { detail: { type: 'error', message: 'Please select an officer and enter instructions.' }}));
                     return;
                 }
@@ -363,7 +364,7 @@
                     headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
                     body: JSON.stringify({
                         date: this.selectedDate,
-                        sales_officer_id: this.globalSelectedSO,
+                        sales_officer_id: this.newPlanSO,
                         description: this.newPlanDesc
                     })
                 }).then(res => res.json())
@@ -394,7 +395,7 @@
                     if(data.status === 'success') {
                         window.dispatchEvent(new CustomEvent('toast', { detail: { type: 'success', message: 'Task updated successfully.' }}));
                         this.fetchPlans();
-                        setTimeout(() => this.openModal({date: this.selectedDate}), 500);
+                        this.closeModal();
                     } else {
                         window.dispatchEvent(new CustomEvent('toast', { detail: { type: 'error', message: 'Failed to update task.' }}));
                     }
