@@ -1991,7 +1991,25 @@ def return_create_view(request, invoice_pk):
             messages.error(request, "Please correct the errors in the form.")
     else:
         form = ReturnForm()
-        formset = ReturnItemFormSet()
+        initial_data = []
+        for item in invoice.items.select_related('product').all():
+            already_returned = returned_quantities.get(item.product_id, 0)
+            max_qty = item.quantity - already_returned
+            if max_qty > 0:
+                initial_data.append({
+                    'product': item.product.id,
+                    'quantity': max_qty,
+                    'unit_price': item.unit_price,
+                })
+        
+        from django.forms import inlineformset_factory
+        from .models import Return, ReturnItem
+        from .forms import ReturnItemForm
+        ReturnItemFormSetPrefilled = inlineformset_factory(
+            Return, ReturnItem, form=ReturnItemForm,
+            extra=0, can_delete=True
+        )
+        formset = ReturnItemFormSetPrefilled(initial=initial_data)
 
     # Pass invoice items to the template so JS can fetch unit prices easily
     items_data = []

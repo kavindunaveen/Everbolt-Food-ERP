@@ -75,12 +75,6 @@
                         {% endfor %}
                     </tbody>
                 </table>
-                <div class="mt-4">
-                    <button type="button" id="add-row" class="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none">
-                        <svg class="-ml-1 mr-2 h-5 w-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
-                        Add Another Product
-                    </button>
-                </div>
             </div>
 
             <div class="mb-6">
@@ -107,27 +101,10 @@
     </div>
 </div>
 
-<!-- Template for new dynamic row -->
-<template id="empty-row-template">
-    <tr class="item-row hover:bg-gray-50">
-        <td class="px-2 py-2">{{ formset.empty_form.product }}</td>
-        <td class="px-2 py-2">{{ formset.empty_form.quantity }}</td>
-        <td class="px-2 py-2">{{ formset.empty_form.unit_price }}</td>
-        <td class="px-2 py-2">{{ formset.empty_form.reason }}</td>
-        <td class="px-2 py-2">{{ formset.empty_form.condition }}</td>
-        <td class="px-2 py-2 text-center align-middle">
-            <button type="button" class="remove-row text-red-500 hover:text-red-700 focus:outline-none" title="Remove Line">
-                <svg class="h-5 w-5 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
-            </button>
-        </td>
-    </tr>
-</template>
-
 <script>
     const itemsData = {{ items_data_json|safe }};
     const productPrices = {};
     const productMaxQtys = {};
-    const productOptions = '<option value="">-- Select Product --</option>' + itemsData.map(item => `<option value="${item.product_id}">[${item.code}] ${item.name} (Inv: ${item.max_quantity} @ Rs ${item.unit_price})</option>`).join('');
 
     itemsData.forEach(item => {
         productPrices[item.product_id] = item.unit_price;
@@ -135,40 +112,24 @@
     });
 
     document.addEventListener('DOMContentLoaded', function() {
-        const addBtn = document.getElementById('add-row');
         const container = document.getElementById('formset-container');
-        const template = document.getElementById('empty-row-template').innerHTML;
         const totalForms = document.getElementById('id_items-TOTAL_FORMS');
-        let formCount = parseInt(totalForms.value);
-
-        function updateSelectOptions(row) {
-            const select = row.querySelector('.product-select');
-            const currentVal = select.value;
-            select.innerHTML = productOptions;
-            if (currentVal) {
-                select.value = currentVal;
-            }
-        }
 
         function attachEvents(row) {
-            updateSelectOptions(row);
-
             const select = row.querySelector('.product-select');
             const priceInput = row.querySelector('input[name$="-unit_price"]');
             const qtyInput = row.querySelector('input[name$="-quantity"]');
             const removeBtn = row.querySelector('.remove-row');
 
             if(select) {
-                select.addEventListener('change', function() {
-                    const pid = this.value;
-                    if(pid && productPrices[pid]) {
-                        priceInput.value = parseFloat(productPrices[pid]).toFixed(2);
-                        qtyInput.max = productMaxQtys[pid];
-                    } else {
-                        priceInput.value = '';
-                        qtyInput.max = '';
-                    }
-                });
+                // Make product select read-only so they can't change pre-filled products
+                select.style.pointerEvents = 'none';
+                select.classList.add('bg-gray-100');
+                
+                const pid = select.value;
+                if(pid && productPrices[pid]) {
+                    qtyInput.max = productMaxQtys[pid];
+                }
             }
 
             if(removeBtn) {
@@ -203,15 +164,6 @@
         // Initialize existing rows
         document.querySelectorAll('.item-row').forEach(row => {
             attachEvents(row);
-        });
-
-        addBtn.addEventListener('click', function() {
-            const newRowHtml = template.replace(/__prefix__/g, formCount);
-            container.insertAdjacentHTML('beforeend', newRowHtml);
-            const newRow = container.lastElementChild;
-            attachEvents(newRow);
-            formCount++;
-            totalForms.value = formCount;
         });
     });
 </script>
