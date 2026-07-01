@@ -294,6 +294,11 @@ class Return(models.Model):
     def total_credit_value(self):
         return sum(item.credit_value for item in self.items.all())
 
+    @property
+    def reasons_display(self):
+        reasons = {item.get_reason_display() for item in self.items.all() if item.reason}
+        return ", ".join(reasons) if reasons else "N/A"
+
     def save(self, *args, **kwargs):
         if not self.return_number:
             all_nums = Return.objects.values_list('return_number', flat=True)
