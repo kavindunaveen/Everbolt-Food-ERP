@@ -18,94 +18,187 @@ class FinanceDashboardView(LoginRequiredMixin, PermissionRequiredMixin, View):
     def get(self, request):
         today = timezone.now().date()
         
-        # We consider overdue: ISSUED status, not CASH/COD, due_date < today
-        overdue_invoices = Invoice.objects.filter(
-            status=Invoice.Status.ISSUED,
-            due_date__lt=today
-        ).exclude(invoice_type__in=['CASH', 'COD'])
+        # Stats
+        total_invoices_all = Invoice.objects.exclude(status__in=[Invoice.Status.DRAFT, Invoice.Status.CANCELLED, Invoice.Status.CANCEL_PENDING]).count()
+        total_invoices_month = Invoice.objects.exclude(status__in=[Invoice.Status.DRAFT, Invoice.Status.CANCELLED, Invoice.Status.CANCEL_PENDING]).filter(creation_date__year=today.year, creation_date__month=today.month).count()
         
-        overdue_count = overdue_invoices.count()
-        overdue_total = sum(inv.total_amount for inv in overdue_invoices)
+        completed_qs = Invoice.objects.filter(status=Invoice.Status.PAID)
+        pending_qs = Invoice.objects.filter(status=Invoice.Status.ISSUED)
+        
+        completed_count = completed_qs.count()
+        pending_count = pending_qs.count()
+        
+        completed_total = completed_qs.aggregate(t=Sum('total_amount'))['t'] or 0
+        pending_total = pending_qs.aggregate(t=Sum('total_amount'))['t'] or 0
         
         context = {
-            'overdue_count': overdue_count,
-            'overdue_total': overdue_total,
+            'total_invoices_all': total_invoices_all,
+            'total_invoices_month': total_invoices_month,
+            'completed_count': completed_count,
+            'completed_total': completed_total,
+            'pending_count': pending_count,
+            'pending_total': pending_total,
         }
         return render(request, self.template_name, context)
 
-class OverdueInvoicesView(LoginRequiredMixin, PermissionRequiredMixin, View):
+class PendingPaymentsView(LoginRequiredMixin, PermissionRequiredMixin, View):
     permission_required = 'finance.manage_finance'
-    template_name = 'finance/overdue_invoices.html'
+    template_name = 'finance/pending_payments.html'
 
     def get(self, request):
         today = timezone.now().date()
         
-        overdue_qs = Invoice.objects.filter(
-            status=Invoice.Status.ISSUED,
-            due_date__lt=today
-        ).exclude(invoice_type__in=['CASH', 'COD']).order_by('due_date', '-total_amount')
+        pending_qs = Invoice.objects.filter(status=Invoice.Status.ISSUED).order_by('-creation_date')
         
         # Filtering logic
         date_from = request.GET.get('date_from')
         if date_from:
-            overdue_qs = overdue_qs.filter(due_date__gte=date_from)
+            pending_qs = pending_qs.filter(due_date__gte=date_from)
             
         date_to = request.GET.get('date_to')
         if date_to:
-            overdue_qs = overdue_qs.filter(due_date__lte=date_to)
+            pending_qs = pending_qs.filter(due_date__lte=date_to)
             
         month = request.GET.get('month')
         if month:
             try:
                 year_str, month_str = month.split('-')
-                overdue_qs = overdue_qs.filter(due_date__year=int(year_str), due_date__month=int(month_str))
+                pending_qs = pending_qs.filter(due_date__year=int(year_str), due_date__month=int(month_str))
             except ValueError:
                 pass
             
         q = request.GET.get('q')
         if q:
-            overdue_qs = overdue_qs.filter(
+            pending_qs = pending_qs.filter(
                 Q(invoice_number__icontains=q) |
                 Q(customer__customer_name__icontains=q)
             )
 
         salesperson_id = request.GET.get('salesperson')
         if salesperson_id:
-            overdue_qs = overdue_qs.filter(salesperson_id=salesperson_id)
+            pending_qs = pending_qs.filter(salesperson_id=salesperson_id)
 
         # Calculate remaining balances
         invoices = []
-        for inv in overdue_qs:
+        for inv in pending_qs:
             total_paid = sum(p.amount for p in inv.payments.all())
             balance = inv.total_amount - total_paid
             if balance > 0:
                 invoices.append({
                     'id': inv.id,
                     'invoice_number': inv.invoice_number,
+                    'invoice_type': inv.invoice_type,
                     'customer': inv.customer,
                     'salesperson': inv.salesperson,
                     'due_date': inv.due_date,
                     'total_amount': inv.total_amount,
                     'total_paid': total_paid,
                     'balance': balance,
-                    'days_overdue': (today - inv.due_date).days
+                    'days_overdue': (today - inv.due_date).days if inv.due_date else 0
                 })
                 
-        # Optional: Pagination could be added here if needed, but standard python lists might be small enough for overdue invoices.
-        
         from users.models import User
         sales_officers = User.objects.filter(role__name='Sales Officer', is_active=True).distinct()
+        
+        # Stats
+        total_invoices_all = Invoice.objects.exclude(status__in=[Invoice.Status.DRAFT, Invoice.Status.CANCELLED, Invoice.Status.CANCEL_PENDING]).count()
+        total_invoices_month = Invoice.objects.exclude(status__in=[Invoice.Status.DRAFT, Invoice.Status.CANCELLED, Invoice.Status.CANCEL_PENDING]).filter(creation_date__year=today.year, creation_date__month=today.month).count()
+        completed_count = Invoice.objects.filter(status=Invoice.Status.PAID).count()
+        pending_count = Invoice.objects.filter(status=Invoice.Status.ISSUED).count()
                 
         context = {
             'invoices': invoices,
             'payment_methods': Payment.PaymentMethod.choices,
-            'sales_officers': sales_officers
+            'sales_officers': sales_officers,
+            'total_invoices_all': total_invoices_all,
+            'total_invoices_month': total_invoices_month,
+            'completed_count': completed_count,
+            'pending_count': pending_count,
         }
         
         # Provide Saved Filters
         try:
             from users.models import SavedFilter
-            context['saved_filters'] = SavedFilter.objects.filter(user=request.user, model_name='OverdueInvoices')
+            context['saved_filters'] = SavedFilter.objects.filter(user=request.user, model_name='PendingPayments')
+        except ImportError:
+            context['saved_filters'] = []
+            
+        return render(request, self.template_name, context)
+
+class CompletedPaymentsView(LoginRequiredMixin, PermissionRequiredMixin, View):
+    permission_required = 'finance.manage_finance'
+    template_name = 'finance/completed_payments.html'
+
+    def get(self, request):
+        today = timezone.now().date()
+        
+        completed_qs = Invoice.objects.filter(status=Invoice.Status.PAID).order_by('-creation_date')
+        
+        # Filtering logic
+        date_from = request.GET.get('date_from')
+        if date_from:
+            completed_qs = completed_qs.filter(due_date__gte=date_from)
+            
+        date_to = request.GET.get('date_to')
+        if date_to:
+            completed_qs = completed_qs.filter(due_date__lte=date_to)
+            
+        month = request.GET.get('month')
+        if month:
+            try:
+                year_str, month_str = month.split('-')
+                completed_qs = completed_qs.filter(due_date__year=int(year_str), due_date__month=int(month_str))
+            except ValueError:
+                pass
+            
+        q = request.GET.get('q')
+        if q:
+            completed_qs = completed_qs.filter(
+                Q(invoice_number__icontains=q) |
+                Q(customer__customer_name__icontains=q)
+            )
+
+        salesperson_id = request.GET.get('salesperson')
+        if salesperson_id:
+            completed_qs = completed_qs.filter(salesperson_id=salesperson_id)
+
+        invoices = []
+        for inv in completed_qs:
+            total_paid = sum(p.amount for p in inv.payments.all())
+            invoices.append({
+                'id': inv.id,
+                'invoice_number': inv.invoice_number,
+                'invoice_type': inv.invoice_type,
+                'customer': inv.customer,
+                'salesperson': inv.salesperson,
+                'due_date': inv.due_date,
+                'total_amount': inv.total_amount,
+                'total_paid': total_paid,
+                'balance': 0,
+            })
+                
+        from users.models import User
+        sales_officers = User.objects.filter(role__name='Sales Officer', is_active=True).distinct()
+        
+        # Stats
+        total_invoices_all = Invoice.objects.exclude(status__in=[Invoice.Status.DRAFT, Invoice.Status.CANCELLED, Invoice.Status.CANCEL_PENDING]).count()
+        total_invoices_month = Invoice.objects.exclude(status__in=[Invoice.Status.DRAFT, Invoice.Status.CANCELLED, Invoice.Status.CANCEL_PENDING]).filter(creation_date__year=today.year, creation_date__month=today.month).count()
+        completed_count = Invoice.objects.filter(status=Invoice.Status.PAID).count()
+        pending_count = Invoice.objects.filter(status=Invoice.Status.ISSUED).count()
+                
+        context = {
+            'invoices': invoices,
+            'sales_officers': sales_officers,
+            'total_invoices_all': total_invoices_all,
+            'total_invoices_month': total_invoices_month,
+            'completed_count': completed_count,
+            'pending_count': pending_count,
+        }
+        
+        # Provide Saved Filters
+        try:
+            from users.models import SavedFilter
+            context['saved_filters'] = SavedFilter.objects.filter(user=request.user, model_name='CompletedPayments')
         except ImportError:
             context['saved_filters'] = []
             

@@ -1,26 +1,45 @@
 {% extends 'layouts/base.html' %}
 {% load humanize %}
 
-{% block title %}Overdue Invoices | Finance{% endblock %}
+{% block title %}Pending Payments | Finance{% endblock %}
 
 {% block breadcrumbs %}
 <li class="flex items-center space-x-2 border-l border-gray-100 pl-4 ml-2">
     <a href="{% url 'finance_dashboard' %}" class="hover:text-blue-600 transition-colors">Finance</a>
 </li>
 <li class="flex items-center space-x-2 border-l border-gray-100 pl-4 ml-2">
-    <span class="text-gray-900 font-semibold">Overdue Invoices</span>
+    <span class="text-gray-900 font-semibold">Pending Payments</span>
 </li>
 {% endblock %}
 
 {% block content %}
 <div class="px-4 py-6 sm:px-0">
+    <div class="mb-6 grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
+            <div class="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Total Invoices (System)</div>
+            <div class="text-2xl font-black text-gray-900">{{ total_invoices_all }}</div>
+        </div>
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
+            <div class="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Invoices (This Month)</div>
+            <div class="text-2xl font-black text-gray-900">{{ total_invoices_month }}</div>
+        </div>
+        <div class="bg-white rounded-xl shadow-sm border border-emerald-100 p-4">
+            <div class="text-xs font-bold text-emerald-600 uppercase tracking-wider mb-1">Completed Invoices</div>
+            <div class="text-2xl font-black text-emerald-700">{{ completed_count }}</div>
+        </div>
+        <div class="bg-white rounded-xl shadow-sm border border-amber-100 p-4">
+            <div class="text-xs font-bold text-amber-600 uppercase tracking-wider mb-1">Pending Invoices</div>
+            <div class="text-2xl font-black text-amber-700">{{ pending_count }}</div>
+        </div>
+    </div>
+
     <div class="mb-8 flex flex-col md:flex-row md:items-end md:justify-between gap-4">
         <div>
-            <h1 class="text-3xl font-extrabold text-gray-900 tracking-tight">Overdue Invoices</h1>
-            <p class="mt-2 text-sm text-gray-600 font-medium">Record payments against overdue invoices to clear them from the ledger.</p>
+            <h1 class="text-3xl font-extrabold text-gray-900 tracking-tight">Pending Payments</h1>
+            <p class="mt-2 text-sm text-gray-600 font-medium">Record payments against pending invoices to clear them from the ledger.</p>
         </div>
         <div class="flex items-center space-x-3 w-full md:w-auto">
-            {% include 'partials/filter_bar.html' with search_placeholder="Search invoices..." model_name="OverdueInvoices" %}
+            {% include 'partials/filter_bar.html' with search_placeholder="Search invoices..." model_name="PendingPayments" %}
         </div>
     </div>
 
@@ -31,8 +50,9 @@
                 <thead class="bg-gray-50">
                     <tr>
                         <th class="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Invoice #</th>
+                        <th class="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Type</th>
                         <th class="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Customer</th>
-                        <th class="px-6 py-4 text-center text-xs font-bold text-gray-500 uppercase tracking-wider">Due Date</th>
+                        <th class="px-6 py-4 text-center text-xs font-bold text-gray-500 uppercase tracking-wider">Date/Due Date</th>
                         <th class="px-6 py-4 text-right text-xs font-bold text-gray-500 uppercase tracking-wider">Total (Rs)</th>
                         <th class="px-6 py-4 text-right text-xs font-bold text-gray-500 uppercase tracking-wider">Balance (Rs)</th>
                         <th class="px-6 py-4 text-center text-xs font-bold text-gray-500 uppercase tracking-wider">Action</th>
@@ -45,15 +65,26 @@
                             <a href="{% url 'invoice_edit' inv.id %}" class="font-bold text-blue-600 hover:underline">{{ inv.invoice_number }}</a>
                             <div class="text-[10px] text-gray-500 uppercase mt-0.5">{{ inv.salesperson.get_full_name|default:inv.salesperson.username }}</div>
                         </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-gray-100 text-gray-800">
+                                {{ inv.invoice_type }}
+                            </span>
+                        </td>
                         <td class="px-6 py-4">
                             <div class="text-sm font-semibold text-gray-900">{{ inv.customer.customer_name }}</div>
                             <div class="text-xs text-gray-500 truncate max-w-[200px]">{{ inv.customer.address_line1 }}</div>
                         </td>
                         <td class="px-6 py-4 text-center whitespace-nowrap">
-                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-red-100 text-red-800">
-                                {{ inv.due_date|date:"Y-m-d" }}
-                            </span>
-                            <div class="text-[10px] text-red-600 font-bold mt-1 uppercase">{{ inv.days_overdue }} days late</div>
+                            {% if inv.due_date %}
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold {% if inv.days_overdue > 0 %}bg-red-100 text-red-800{% else %}bg-gray-100 text-gray-800{% endif %}">
+                                    {{ inv.due_date|date:"Y-m-d" }}
+                                </span>
+                                {% if inv.days_overdue > 0 %}
+                                    <div class="text-[10px] text-red-600 font-bold mt-1 uppercase">{{ inv.days_overdue }} days late</div>
+                                {% endif %}
+                            {% else %}
+                                <span class="text-xs text-gray-400">N/A</span>
+                            {% endif %}
                         </td>
                         <td class="px-6 py-4 text-right whitespace-nowrap text-sm font-medium text-gray-900">
                             {{ inv.total_amount|floatformat:"2"|intcomma }}
@@ -72,7 +103,7 @@
                         <td colspan="6" class="px-6 py-12 text-center text-gray-500">
                             <div class="flex flex-col items-center">
                                 <svg class="w-12 h-12 text-gray-300 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
-                                <span class="text-base font-semibold">No overdue invoices found!</span>
+                                <span class="text-base font-semibold">No pending invoices found!</span>
                             </div>
                         </td>
                     </tr>

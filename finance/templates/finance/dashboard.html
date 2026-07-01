@@ -18,22 +18,21 @@
         </div>
     </div>
 
-    <!-- Main Actions -->
     <div class="mt-8">
         <h3 class="text-lg leading-6 font-medium text-gray-900 mb-4">Core Financials</h3>
         <div class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
-            <!-- Overdue Invoices -->
-            <a href="{% url 'finance_overdue_invoices' %}" class="bg-white overflow-hidden shadow rounded-lg hover:shadow-md transition-shadow group border border-gray-100">
+            <!-- Pending Payments -->
+            <a href="{% url 'finance_pending_payments' %}" class="bg-white overflow-hidden shadow rounded-lg hover:shadow-md transition-shadow group border border-gray-100">
                 <div class="p-5">
                     <div class="flex items-center">
-                        <div class="flex-shrink-0 bg-red-50 rounded-md p-3 group-hover:bg-red-100 transition-colors">
-                            <svg class="h-6 w-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                        <div class="flex-shrink-0 bg-amber-50 rounded-md p-3 group-hover:bg-amber-100 transition-colors">
+                            <svg class="h-6 w-6 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
                         </div>
                         <div class="ml-5 w-0 flex-1">
                             <dl>
-                                <dt class="text-sm font-medium text-gray-500 truncate">Overdue Invoices</dt>
+                                <dt class="text-sm font-medium text-gray-500 truncate">Pending Payments</dt>
                                 <dd class="flex items-baseline">
-                                    <div class="text-2xl font-semibold text-gray-900">{{ overdue_count }}</div>
+                                    <div class="text-2xl font-semibold text-gray-900">{{ pending_count }}</div>
                                 </dd>
                             </dl>
                         </div>
@@ -41,10 +40,35 @@
                 </div>
                 <div class="bg-gray-50 px-5 py-3 border-t border-gray-100">
                     <div class="text-sm">
-                        <span class="font-medium text-red-600 hover:text-red-500">View detailed list &rarr;</span>
+                        <span class="font-medium text-amber-600 hover:text-amber-500">View detailed list &rarr;</span>
                     </div>
                 </div>
             </a>
+
+            <!-- Completed Payments -->
+            <a href="{% url 'finance_completed_payments' %}" class="bg-white overflow-hidden shadow rounded-lg hover:shadow-md transition-shadow group border border-gray-100">
+                <div class="p-5">
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0 bg-emerald-50 rounded-md p-3 group-hover:bg-emerald-100 transition-colors">
+                            <svg class="h-6 w-6 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                        </div>
+                        <div class="ml-5 w-0 flex-1">
+                            <dl>
+                                <dt class="text-sm font-medium text-gray-500 truncate">Completed Payments</dt>
+                                <dd class="flex items-baseline">
+                                    <div class="text-2xl font-semibold text-gray-900">{{ completed_count }}</div>
+                                </dd>
+                            </dl>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-gray-50 px-5 py-3 border-t border-gray-100">
+                    <div class="text-sm">
+                        <span class="font-medium text-emerald-600 hover:text-emerald-500">View detailed list &rarr;</span>
+                    </div>
+                </div>
+            </a>
+
 
             <!-- Aged Receivables -->
             <a href="{% url 'finance_aged_receivables' %}" class="bg-white overflow-hidden shadow rounded-lg hover:shadow-md transition-shadow group border border-gray-100">

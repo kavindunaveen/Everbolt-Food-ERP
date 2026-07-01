@@ -1,12 +1,13 @@
 from django.urls import path
 from .views import (
-    FinanceDashboardView, OverdueInvoicesView, RecordPaymentView, AgedReceivablesView,
+    FinanceDashboardView, PendingPaymentsView, CompletedPaymentsView, RecordPaymentView, AgedReceivablesView,
     ChartOfAccountsView, AccountCreateView, JournalEntryListView, JournalEntryCreateView, GeneralLedgerView
 )
 
 urlpatterns = [
     path('', FinanceDashboardView.as_view(), name='finance_dashboard'),
-    path('overdue/', OverdueInvoicesView.as_view(), name='finance_overdue_invoices'),
+    path('pending-payments/', PendingPaymentsView.as_view(), name='finance_pending_payments'),
+    path('completed-payments/', CompletedPaymentsView.as_view(), name='finance_completed_payments'),
     path('api/record-payment/', RecordPaymentView.as_view(), name='finance_record_payment'),
     path('aged-receivables/', AgedReceivablesView.as_view(), name='finance_aged_receivables'),
     path('chart-of-accounts/', ChartOfAccountsView.as_view(), name='finance_chart_of_accounts'),
