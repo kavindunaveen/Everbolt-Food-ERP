@@ -49,8 +49,8 @@
                             <option value="Wholesale" {% if request.GET.customer_type == 'Wholesale' %}selected{% endif %}>Wholesale</option>
                         </select>
                     </div>
-                    {% elif model_name == 'Invoice' or model_name == 'Quotation' or model_name == 'SalesDashboard' or model_name == 'SalespersonDashboard' or model_name == 'OverdueInvoices' %}
-                    {% if model_name != 'OverdueInvoices' %}
+                    {% elif model_name == 'Invoice' or model_name == 'Quotation' or model_name == 'SalesDashboard' or model_name == 'SalespersonDashboard' or model_name == 'PendingPayments' or model_name == 'CompletedPayments' %}
+                    {% if model_name != 'PendingPayments' and model_name != 'CompletedPayments' %}
                     <div>
                         <label class="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2">Record Status</label>
                         <select name="status" class="w-full border-gray-200 rounded-lg text-sm font-medium focus:ring-indigo-500 focus:border-indigo-500">
@@ -88,7 +88,7 @@
                             <input type="date" name="date_to" class="text-xs border-gray-200 rounded-lg focus:ring-indigo-500 focus:border-indigo-500 p-2" value="{% if active_date_to %}{{ active_date_to }}{% else %}{{ request.GET.date_to }}{% endif %}" placeholder="To">
                         </div>
                     </div>
-                    {% if model_name == 'OverdueInvoices' %}
+                    {% if model_name == 'PendingPayments' or model_name == 'CompletedPayments' %}
                     <div>
                         <label class="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2">Month Wise</label>
                         <input type="month" name="month" class="w-full border-gray-200 rounded-lg text-sm font-medium focus:ring-indigo-500 focus:border-indigo-500" value="{{ request.GET.month }}">
