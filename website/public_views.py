@@ -5,7 +5,7 @@ from django.contrib import messages
 from django.shortcuts import render, redirect, get_object_or_404
 from django.urls import reverse
 from django.utils import timezone
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponse, HttpResponseGone
 from django.db.models import Q
 import uuid
 import threading
@@ -703,6 +703,9 @@ def website_delivery_charge_api(request):
 from django.http import HttpResponse
 from datetime import datetime
 
+# ============================================================
+# SEO: ROBOTS.TXT & SITEMAP.XML
+# ============================================================
 def robots_txt(request):
     host = request.get_host().lower()
     erp_hosts = ['erp.organicfoodslanka.com', 'staging.organicfoodslanka.com']
@@ -714,52 +717,161 @@ def robots_txt(request):
             "Disallow: /"
         ]
     else:
-        # Main site allows all, but disallows cart, checkout etc.
         lines = [
             "User-agent: *",
+            "Allow: /",
+            "",
+            "# Disallow transactional / private pages",
             "Disallow: /cart/",
             "Disallow: /checkout/",
+            "Disallow: /order-success/",
+            "Disallow: /login/",
+            "Disallow: /register/",
+            "Disallow: /my-account/",
+            "Disallow: /password-reset/",
             "Disallow: /search/",
             "",
-            f"Sitemap: {request.scheme}://{request.get_host()}/sitemap.xml"
+            "# Block WordPress paths that no longer exist",
+            "Disallow: /wp-admin/",
+            "Disallow: /wp-login.php",
+            "Disallow: /wp-content/",
+            "Disallow: /wp-includes/",
+            "",
+            f"Sitemap: {request.scheme}://organicfoodslanka.com/sitemap.xml"
         ]
     return HttpResponse("\n".join(lines), content_type="text/plain")
 
+
 def sitemap_xml(request):
-    # Only expose public items
+    """Clean sitemap containing only new website URLs."""
     products = WebsiteProduct.objects.filter(status=WebsiteProduct.Status.PUBLISHED)
     categories = WebsiteCategory.objects.filter(is_visible=True)
     pages = WebsitePage.objects.filter(status=WebsitePage.Status.PUBLISHED)
-    
-    host_url = f"{request.scheme}://{request.get_host()}"
+
+    # Always use canonical domain for sitemap
+    host_url = "https://organicfoodslanka.com"
     today = datetime.now().strftime("%Y-%m-%d")
-    
+
     xml = ['<?xml version="1.0" encoding="UTF-8"?>']
     xml.append('<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">')
-    
-    # Home
-    xml.append(f"<url><loc>{host_url}/</loc><lastmod>{today}</lastmod><changefreq>daily</changefreq><priority>1.0</priority></url>")
-    xml.append(f"<url><loc>{host_url}/about/</loc><lastmod>{today}</lastmod><changefreq>weekly</changefreq><priority>0.8</priority></url>")
-    xml.append(f"<url><loc>{host_url}/products/</loc><lastmod>{today}</lastmod><changefreq>daily</changefreq><priority>0.9</priority></url>")
-    xml.append(f"<url><loc>{host_url}/contact/</loc><lastmod>{today}</lastmod><changefreq>monthly</changefreq><priority>0.7</priority></url>")
-    
-    # Products
+
+    # ---- Static core pages ----
+    static_pages = [
+        ("/",                     "daily",   "1.0"),
+        ("/about/",               "monthly", "0.8"),
+        ("/products/",            "daily",   "0.9"),
+        ("/contact/",             "monthly", "0.7"),
+        ("/blog/",                "weekly",  "0.7"),
+        ("/privacy-policy/",      "yearly",  "0.4"),
+        ("/terms-and-conditions/","yearly",  "0.4"),
+        ("/delivery-charges/",    "monthly", "0.5"),
+    ]
+    for path, freq, prio in static_pages:
+        xml.append(f"<url><loc>{host_url}{path}</loc><lastmod>{today}</lastmod><changefreq>{freq}</changefreq><priority>{prio}</priority></url>")
+
+    # ---- Product detail pages ----
     for p in products:
-        loc = f"{host_url}{reverse('product_detail', args=[p.id])}"
-        xml.append(f"<url><loc>{loc}</loc><lastmod>{p.updated_at.strftime('%Y-%m-%d') if hasattr(p, 'updated_at') else today}</lastmod><changefreq>weekly</changefreq><priority>0.8</priority></url>")
-        
-    # Categories
+        loc = f"{host_url}/products/{p.id}/"
+        lastmod = p.updated_at.strftime('%Y-%m-%d') if hasattr(p, 'updated_at') and p.updated_at else today
+        xml.append(f"<url><loc>{loc}</loc><lastmod>{lastmod}</lastmod><changefreq>weekly</changefreq><priority>0.8</priority></url>")
+
+    # ---- Category filter pages ----
     for c in categories:
-        loc = f"{host_url}{reverse('products')}?category={c.id}"
+        loc = f"{host_url}/products/?category={c.id}"
         xml.append(f"<url><loc>{loc}</loc><lastmod>{today}</lastmod><changefreq>weekly</changefreq><priority>0.7</priority></url>")
-        
-    # Pages
+
+    # ---- CMS custom pages ----
     for pg in pages:
-        loc = f"{host_url}{reverse('custom_page_detail', args=[pg.slug])}"
-        xml.append(f"<url><loc>{loc}</loc><lastmod>{pg.updated_at.strftime('%Y-%m-%d') if hasattr(pg, 'updated_at') else today}</lastmod><changefreq>monthly</changefreq><priority>0.6</priority></url>")
-        
+        loc = f"{host_url}/{pg.slug}/"
+        lastmod = pg.updated_at.strftime('%Y-%m-%d') if hasattr(pg, 'updated_at') and pg.updated_at else today
+        xml.append(f"<url><loc>{loc}</loc><lastmod>{lastmod}</lastmod><changefreq>monthly</changefreq><priority>0.6</priority></url>")
+
     xml.append('</urlset>')
     return HttpResponse("\n".join(xml), content_type="application/xml")
+
+
+# ============================================================
+# SEO: LEGACY WORDPRESS 301 REDIRECTS
+# ============================================================
+def wp_legacy_redirect(request):
+    """
+    301 Permanent Redirects for old WordPress URLs.
+    Maps old /product/, /product-category/ and other WP slugs
+    to their closest matching new page.
+    """
+    path = request.path.rstrip('/')
+
+    # ---- Exact page redirects ----
+    exact_redirects = {
+        '/about-us':                                   '/about/',
+        '/contact-us':                                 '/contact/',
+        '/shop':                                       '/products/',
+        '/organic-products':                           '/products/',
+        '/hotel-supplies':                             '/products/?category=6',
+        '/tea-blended-products':                       '/products/?category=1',
+        '/privacy-policy':                             '/privacy-policy/',
+        '/terms-conditions':                           '/terms-and-conditions/',
+        '/delivery-returns':                           '/delivery-charges/',
+
+        # Blog post
+        '/how-to-make-sri-lankan-milk-tea-kiri-tea-authentic-easy-recipe': '/blog/',
+
+        # WP sitemaps — point to new sitemap
+        '/sitemap_index.xml':   '/sitemap.xml',
+        '/wp-sitemap.xml':      '/sitemap.xml',
+        '/page-sitemap.xml':    '/sitemap.xml',
+        '/product-sitemap.xml': '/sitemap.xml',
+        '/category-sitemap.xml':'/sitemap.xml',
+    }
+
+    if path in exact_redirects:
+        return redirect(exact_redirects[path], permanent=True)
+
+    # ---- Product category redirects ----
+    category_map = {
+        '/product-category/flavoured-tea':    '/products/?category=1',
+        '/product-category/herbal-teas':      '/products/?category=2',
+        '/product-category/kithul-products':  '/products/?category=5',
+        '/product-category/everleaf-tea-range': '/products/?category=4',
+        '/product-category/powder-packets':   '/products/?category=3',
+        '/product-category/sachet-packets':   '/products/',
+    }
+    if path in category_map:
+        return redirect(category_map[path], permanent=True)
+
+    # ---- Individual product redirects (old slug → best matching new product page) ----
+    # We send them to the main products listing since product IDs differ
+    product_map = {
+        '/product/dehydrated-papaya':          '/products/',
+        '/product/dehydrated-mixed-fruit':     '/products/',
+        '/product/curry-leaves-powder':        '/products/?category=3',
+        '/product/dehydrated-bitter-gourd':    '/products/',
+        '/product/beetroot-powder':            '/products/?category=3',
+        '/product/creamer-sachet':             '/products/',
+        '/product/dehydrated-banana':          '/products/',
+        '/product/dehydrated-breadfruit':      '/products/',
+        '/product/tomato-powder':              '/products/?category=3',
+        '/product/curry-powder':               '/products/?category=3',
+        '/product/pumpkin-powder':             '/products/?category=3',
+        '/product/carrot-powder':              '/products/?category=3',
+        '/product/dehydrated-curry-leaves':    '/products/',
+        '/product/everleaf-pure-ceylon-tea':   '/products/?category=4',
+        '/product/dehydrated-jackfruit':       '/products/',
+        '/product/dried-moringa-powder':       '/products/?category=3',
+        '/product/ushma':                      '/products/',
+        '/product/brown-sugar-sachet':         '/products/',
+        '/product/slim-herb-tea':              '/products/?category=2',
+    }
+    if path in product_map:
+        return redirect(product_map[path], permanent=True)
+
+    # ---- wp-content uploads: PDF catalogue — 410 Gone ----
+    if path.startswith('/wp-content/'):
+        return HttpResponseGone()
+
+    # ---- Everything else: 404 ----
+    from django.http import Http404
+    raise Http404
 
 # ============================================================
 # CUSTOMER AUTHENTICATION & ACCOUNT

@@ -27,7 +27,7 @@
     {% endif %}
 
     <!-- Canonical URL -->
-    <link rel="canonical" href="{{ request.build_absolute_uri }}">
+    <link rel="canonical" href="{% if canonical_url %}{{ canonical_url }}{% else %}{{ request.scheme }}://{{ request.get_host }}{{ request.path }}{% endif %}">
     
     {% block json_ld %}{% endblock %}
     {% endblock seo_meta %}

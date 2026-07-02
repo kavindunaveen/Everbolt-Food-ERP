@@ -60,6 +60,30 @@ urlpatterns = [
     # API
     path("api/delivery-charge/", views.website_delivery_charge_api, name="website_delivery_charge_api"),
 
+    # ---- SEO: Legacy WordPress 301 Redirects ----
+    # These catch old WP URLs and send them to the correct new pages.
+    # Must be defined before the catch-all slug pattern below.
+    path('about-us/', views.wp_legacy_redirect),
+    path('contact-us/', views.wp_legacy_redirect),
+    path('shop/', views.wp_legacy_redirect),
+    path('organic-products/', views.wp_legacy_redirect),
+    path('hotel-supplies/', views.wp_legacy_redirect),
+    path('tea-blended-products/', views.wp_legacy_redirect),
+    path('terms-conditions/', views.wp_legacy_redirect),
+    path('delivery-returns/', views.wp_legacy_redirect),
+    path('how-to-make-sri-lankan-milk-tea-kiri-tea-authentic-easy-recipe/', views.wp_legacy_redirect),
+    # WP product & category pages
+    path('product/<slug:slug>/', views.wp_legacy_redirect),
+    path('product-category/<slug:slug>/', views.wp_legacy_redirect),
+    # WP sitemap files
+    path('sitemap_index.xml', views.wp_legacy_redirect),
+    path('wp-sitemap.xml', views.wp_legacy_redirect),
+    path('page-sitemap.xml', views.wp_legacy_redirect),
+    path('product-sitemap.xml', views.wp_legacy_redirect),
+    path('category-sitemap.xml', views.wp_legacy_redirect),
+    # WP uploads (PDF catalogue etc) — 410 Gone
+    path('wp-content/<path:subpath>', views.wp_legacy_redirect),
+
     # Custom Pages (Catch-all must be at the bottom)
     path('<slug:slug>/', views.custom_page_detail, name='custom_page_detail'),
 ]
