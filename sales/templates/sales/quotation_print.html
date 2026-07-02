@@ -197,7 +197,7 @@
                 </tr>
                 <tr>
                     <td colspan="5" class="text-right" style="font-weight: bold; font-size: 1.1em;">Total Amount including VAT:</td>
-                    <td class="text-right" style="font-weight: bold; font-size: 1.1em;">{{ total_amount|floatformat:2 }}</td>
+                    <td class="text-right" style="font-weight: bold; font-size: 1.1em;">{{ rounded_total|floatformat:2|intcomma }}</td>
                 </tr>
             </tbody>
         </table>

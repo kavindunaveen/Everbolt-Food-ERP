@@ -1011,9 +1011,12 @@ class InvoicePrintView(LoginRequiredMixin, ERPPermissionRequiredMixin, DetailVie
         context['total_value_supply'] = subtotal
         context['tax_amount'] = self.object.tax_amount
         context['total_amount'] = self.object.total_amount
+        
+        from decimal import Decimal, ROUND_HALF_UP
+        rounded_total = self.object.total_amount.quantize(Decimal('1.'), rounding=ROUND_HALF_UP)
+        context['rounded_total'] = rounded_total
+        
         try:
-            from decimal import Decimal, ROUND_HALF_UP
-            rounded_total = context['total_amount'].quantize(Decimal('1.'), rounding=ROUND_HALF_UP)
             context['amount_in_words'] = num2words(int(rounded_total), lang='en').title() + " Rupees Only"
         except:
             context['amount_in_words'] = ""
@@ -1032,8 +1035,13 @@ class QuotationPrintView(LoginRequiredMixin, ERPPermissionRequiredMixin, DetailV
         context['total_value_supply'] = subtotal
         context['tax_amount'] = self.object.tax_amount
         context['total_amount'] = self.object.total_amount
+        
+        from decimal import Decimal, ROUND_HALF_UP
+        rounded_total = self.object.total_amount.quantize(Decimal('1.'), rounding=ROUND_HALF_UP)
+        context['rounded_total'] = rounded_total
+        
         try:
-            context['amount_in_words'] = num2words(int(context['total_amount']), lang='en').title() + " Rupees Only"
+            context['amount_in_words'] = num2words(int(rounded_total), lang='en').title() + " Rupees Only"
         except:
             context['amount_in_words'] = ""
         return context
