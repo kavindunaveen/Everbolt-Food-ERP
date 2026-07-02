@@ -39,7 +39,7 @@
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 uppercase">{{ product.get_stock_unit_display }}</td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-right">{{ product.reorder_level }}</td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm font-bold text-right {% if product.current_stock <= product.reorder_level %}text-red-600{% else %}text-green-600{% endif %}">
-                            {{ product.current_stock }}
+                            {{ product.display_stock }}
                         </td>
                     </tr>
                     {% empty %}

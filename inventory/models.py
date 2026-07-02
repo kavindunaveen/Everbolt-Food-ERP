@@ -93,6 +93,13 @@ class Product(models.Model):
         if self.selling_price:
             return self.selling_price * Decimal('1.18')
         return Decimal('0.00')
+        
+    @property
+    def display_stock(self):
+        """Returns stock without trailing zeros for display"""
+        if self.current_stock == self.current_stock.to_integral_value():
+            return int(self.current_stock)
+        return self.current_stock.normalize()
 
     def save(self, *args, **kwargs):
         from django.utils.text import slugify
@@ -161,6 +168,18 @@ class StockLedger(models.Model):
     reference_number = models.CharField(max_length=100)
     remarks = models.CharField(max_length=255, blank=True, null=True)
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True)
+
+    def clean(self):
+        super().clean()
+        from django.core.exceptions import ValidationError
+        discrete_uoms = ['pcs', 'box', 'pack']
+        if self.product and self.product.selling_unit in discrete_uoms:
+            if self.qty_in % 1 != 0 or self.qty_out % 1 != 0:
+                raise ValidationError(f"{self.product.name} is measured in {self.product.selling_unit}. Fractional quantities are not allowed.")
+
+    def save(self, *args, **kwargs):
+        self.clean()
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return f"{self.product.name} | {self.tx_type} | IN: {self.qty_in} | OUT: {self.qty_out}"

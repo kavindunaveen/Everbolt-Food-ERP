@@ -141,7 +141,7 @@
                                 {% if product.current_stock > 0 %}In Stock{% else %}Out of Stock{% endif %}
                             </span>
                             {% endif %}
-                            <div class="mt-1 text-xs text-gray-500 font-mono">{{ product.current_stock }} available</div>
+                            <div class="mt-1 text-xs text-gray-500 font-mono">{{ product.display_stock }} available</div>
                         </td>
                     </tr>
                     {% empty %}
