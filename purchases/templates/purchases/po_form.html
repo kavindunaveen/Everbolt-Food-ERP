@@ -345,8 +345,9 @@ function poForm(type) {
             if (this.supplier_id) {
                 let supplier = this.suppliersJson.find(s => String(s.id) === String(this.supplier_id));
                 if (supplier) {
-                    let invClass = this.po_type === 'raw' ? 'RAW' : 'PACKAGING';
-                    products = this.productsJson.filter(p => supplier.products.includes(p.id) && p.inventory_class === invClass);
+                    // Show all products the supplier provides, regardless of PO Type.
+                    // This prevents confusion if a product's inventory_class was set incorrectly.
+                    products = this.productsJson.filter(p => supplier.products.includes(p.id));
                 }
             }
             
