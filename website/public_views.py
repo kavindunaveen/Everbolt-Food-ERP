@@ -11,6 +11,7 @@ import uuid
 import threading
 from django.core.mail import EmailMultiAlternatives
 from django.template.loader import render_to_string
+import requests
 
 from .models import (
     WebsiteSettings, WebsiteCategory, WebsiteProduct,
@@ -207,6 +208,29 @@ def contact(request):
         subject = request.POST.get("subject", "")
         message = request.POST.get("message", "")
 
+        # reCAPTCHA Validation
+        recaptcha_response = request.POST.get('g-recaptcha-response')
+        recaptcha_secret_key = getattr(settings, 'RECAPTCHA_PRIVATE_KEY', None)
+        
+        if recaptcha_secret_key:
+            if not recaptcha_response:
+                messages.error(request, "Please tick the reCAPTCHA box to prove you are human.")
+                return redirect("contact")
+            
+            data = {
+                'secret': recaptcha_secret_key,
+                'response': recaptcha_response
+            }
+            try:
+                r = requests.post('https://www.google.com/recaptcha/api/siteverify', data=data)
+                result = r.json()
+                if not result.get('success'):
+                    messages.error(request, "reCAPTCHA validation failed. Please try again.")
+                    return redirect("contact")
+            except Exception as e:
+                messages.error(request, "Error connecting to reCAPTCHA service. Please try again.")
+                return redirect("contact")
+
         if name and email and message:
             WebsiteEnquiry.objects.create(
                 name=name,
@@ -223,6 +247,7 @@ def contact(request):
 
     return render(request, "public/contact.html", {
         "settings": settings_data,
+        "recaptcha_site_key": getattr(settings, 'RECAPTCHA_PUBLIC_KEY', None),
     })
 
 # ============================================================

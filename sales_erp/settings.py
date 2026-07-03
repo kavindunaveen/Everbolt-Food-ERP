@@ -184,3 +184,7 @@ CSRF_COOKIE_SECURE = True
 AXES_FAILURE_LIMIT = 5
 AXES_COOLOFF_TIME = 1  # 1 hour lockout
 AXES_LOCKOUT_PARAMETERS = [["username", "ip_address"]]
+
+# Google reCAPTCHA
+RECAPTCHA_PUBLIC_KEY = os.environ.get('RECAPTCHA_PUBLIC_KEY', '')
+RECAPTCHA_PRIVATE_KEY = os.environ.get('RECAPTCHA_PRIVATE_KEY', '')

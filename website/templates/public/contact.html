@@ -113,6 +113,12 @@ customer support.
                             required></textarea>
                     </div>
 
+                    {% if recaptcha_site_key %}
+                    <div class="ct-input-group" style="margin-bottom: 24px;">
+                        <div class="g-recaptcha" data-sitekey="{{ recaptcha_site_key }}"></div>
+                    </div>
+                    {% endif %}
+
                     <button type="submit" class="ct-submit">
                         Send Message <i class="fa-solid fa-paper-plane"></i>
                     </button>
@@ -123,4 +129,22 @@ customer support.
     </div>
 </section>
 
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://www.google.com/recaptcha/api.js" async defer></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        var form = document.querySelector('.ct-form');
+        if (form && document.querySelector('.g-recaptcha')) {
+            form.addEventListener('submit', function(e) {
+                var recaptchaResponse = document.querySelector('.g-recaptcha-response');
+                if (recaptchaResponse && recaptchaResponse.value === "") {
+                    e.preventDefault();
+                    alert("Please tick the 'I am not a robot' box before sending.");
+                }
+            });
+        }
+    });
+</script>
 {% endblock %}
