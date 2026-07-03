@@ -6,7 +6,15 @@
 <div class="px-4 py-6 sm:px-0">
     <div class="flex justify-between items-center mb-6">
         <h1 class="text-2xl font-bold text-gray-900 border-b-4 border-emerald-500 inline-block pb-1">Purchase Orders</h1>
-        <div class="flex space-x-3">
+        <div class="flex space-x-3 items-center">
+            <form method="GET" class="flex items-center space-x-2">
+                <label for="po_type" class="text-sm font-medium text-gray-700">Filter:</label>
+                <select name="po_type" id="po_type" onchange="this.form.submit()" class="border-gray-300 rounded-lg shadow-sm focus:border-indigo-500 focus:ring-indigo-500 h-[38px] text-sm">
+                    <option value="">All Types</option>
+                    <option value="RAW_MATERIAL" {% if po_type_filter == 'RAW_MATERIAL' %}selected{% endif %}>Raw Material</option>
+                    <option value="PACKING_MATERIAL" {% if po_type_filter == 'PACKING_MATERIAL' %}selected{% endif %}>Packing Material</option>
+                </select>
+            </form>
             <a href="{% url 'po_create_default' %}" class="btn-premium btn-primary bg-emerald-600 hover:bg-emerald-700 shadow-emerald-600/20">
                 + New Purchase Order
             </a>

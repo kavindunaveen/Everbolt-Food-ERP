@@ -8,7 +8,7 @@ class SupplierForm(forms.ModelForm):
             'supplier_name', 'supplier_type', 'custom_supplier_type',
             'address_line1', 'address_line2', 'city', 'province', 'zip_code',
             'contact_number', 'alternate_contact_number', 'email', 
-            'bank_name', 'bank_branch', 'bank_account_no', 'vat_reg_num'
+            'bank_name', 'bank_branch', 'bank_account_no', 'vat_reg_num', 'products'
         ]
         widgets = {
             'supplier_name': forms.TextInput(attrs={'placeholder': 'Enter supplier name'}),
@@ -26,6 +26,7 @@ class SupplierForm(forms.ModelForm):
             'bank_branch': forms.Select(attrs={'class': 'select2-tags', 'data-placeholder': 'Type or select a branch...'}),
             'bank_account_no': forms.TextInput(attrs={'placeholder': 'Enter account number'}),
             'vat_reg_num': forms.TextInput(attrs={'placeholder': 'Enter VAT registration number'}),
+            'products': forms.SelectMultiple(attrs={'class': 'select2-multiple', 'data-placeholder': 'Search and select products...', 'style': 'width: 100%'}),
         }
 
     def __init__(self, *args, **kwargs):

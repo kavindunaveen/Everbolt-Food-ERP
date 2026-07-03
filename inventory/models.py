@@ -96,7 +96,11 @@ class Product(models.Model):
         
     @property
     def display_stock(self):
-        """Returns stock without trailing zeros for display"""
+        """Returns stock formatted based on its unit"""
+        int_units = ['pcs', 'packets', 'bottles', 'schachets/sticks', 'box']
+        if self.stock_unit and self.stock_unit.lower().strip() in int_units:
+            return int(self.current_stock)
+            
         if self.current_stock == self.current_stock.to_integral_value():
             return int(self.current_stock)
         return self.current_stock.normalize()

@@ -4,15 +4,17 @@ from decimal import Decimal
 from sales.models import Invoice
 
 def get_invoice_stats(today):
-    total_invoices_all = Invoice.objects.exclude(status__in=[Invoice.Status.DRAFT, Invoice.Status.CANCELLED, Invoice.Status.CANCEL_PENDING]).count()
-    total_invoices_month = Invoice.objects.exclude(status__in=[Invoice.Status.DRAFT, Invoice.Status.CANCELLED, Invoice.Status.CANCEL_PENDING]).filter(creation_date__year=today.year, creation_date__month=today.month).count()
-    completed_count = Invoice.objects.filter(status=Invoice.Status.PAID).count()
+    total_invoices_all = Invoice.objects.exclude(status__in=[Invoice.Status.DRAFT, Invoice.Status.CANCELLED, Invoice.Status.APPROVAL_PENDING]).count()
+    total_invoices_month = Invoice.objects.exclude(status__in=[Invoice.Status.DRAFT, Invoice.Status.CANCELLED, Invoice.Status.APPROVAL_PENDING]).filter(creation_date__year=today.year, creation_date__month=today.month).count()
     
-    issued_qs = Invoice.objects.filter(status=Invoice.Status.ISSUED).annotate(
+    valid_statuses = [Invoice.Status.ISSUED, Invoice.Status.PAID, Invoice.Status.EDIT_PENDING, Invoice.Status.CANCEL_PENDING]
+    issued_qs = Invoice.objects.filter(status__in=valid_statuses).annotate(
         total_paid_agg=Coalesce(Sum('payments__amount'), Decimal('0.00'))
     )
-    pending_count = issued_qs.filter(total_paid_agg=0).count()
-    partial_count = issued_qs.filter(total_paid_agg__gt=0).count()
+    
+    completed_count = issued_qs.filter(total_paid_agg__gte=F('total_amount') - Decimal('0.009')).count()
+    pending_count = issued_qs.filter(total_paid_agg__lt=Decimal('0.01')).count()
+    partial_count = issued_qs.filter(total_paid_agg__gte=Decimal('0.01'), total_paid_agg__lt=F('total_amount') - Decimal('0.009')).count()
     
     return {
         'total_invoices_all': total_invoices_all,

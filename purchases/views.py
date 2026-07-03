@@ -130,29 +130,33 @@ def grn_receive_po(request, po_id):
                     unit_price = Decimal(str(r_item.get('unit_price', po_item.unit_price)))
                     
                     # 1. Product Synchronization Check
-                    # If this material doesn't exist in the master Inventory table, silently create it.
-                    prod_name = po_item.category
-                    if po_item.sub_category:
-                        prod_name += f" - {po_item.sub_category}"
+                    if po_item.product:
+                        product = po_item.product
+                        if product.custom_load_price != unit_price:
+                            product.custom_load_price = unit_price
+                            product.save(update_fields=['custom_load_price'])
+                    else:
+                        # Legacy fallback
+                        prod_name = po_item.category
+                        if po_item.sub_category:
+                            prod_name += f" - {po_item.sub_category}"
+                            
+                        inv_class = Product.InventoryClasses.PACKAGING if po.po_type == POType.PACKING_MATERIAL else Product.InventoryClasses.RAW
                         
-                    inv_class = Product.InventoryClasses.PACKAGING if po.po_type == POType.PACKING_MATERIAL else Product.InventoryClasses.RAW
-                    
-                    product, created = Product.objects.get_or_create(
-                        product_id=po_item.material_code,
-                        defaults={
-                            'name': prod_name,
-                            'inventory_class': inv_class,
-                            'stock_unit': Product.UnitTypes.PCS if po_item.unit.lower() == 'pcs' else Product.UnitTypes.KG, # simplistic fallback
-                            'selling_unit': Product.UnitTypes.PCS,
-                            'selling_price': Decimal('0.00'), # Raw/Packaging materials have no selling price
-                            'custom_load_price': unit_price
-                        }
-                    )
-                    
-                    # If product already existed, we still want to update its cost price with the latest incoming price
-                    if not created and product.custom_load_price != unit_price:
-                        product.custom_load_price = unit_price
-                        product.save(update_fields=['custom_load_price'])
+                        product, created = Product.objects.get_or_create(
+                            product_id=po_item.material_code,
+                            defaults={
+                                'name': prod_name,
+                                'inventory_class': inv_class,
+                                'stock_unit': Product.UnitTypes.PCS if po_item.unit.lower() == 'pcs' else Product.UnitTypes.KG,
+                                'selling_unit': Product.UnitTypes.PCS,
+                                'selling_price': Decimal('0.00'),
+                                'custom_load_price': unit_price
+                            }
+                        )
+                        if not created and product.custom_load_price != unit_price:
+                            product.custom_load_price = unit_price
+                            product.save(update_fields=['custom_load_price'])
 
                     # 2. Create GRNItem
                     # Expiry handled manually later if needed
@@ -182,9 +186,9 @@ def grn_receive_po(request, po_id):
         if item.remaining_qty > 0:
             items_to_receive.append({
                 'id': item.id,
-                'category': item.category,
-                'sub_category': item.sub_category,
-                'material_code': item.material_code,
+                'category': item.product.name if item.product else item.category,
+                'sub_category': item.sub_category if not item.product else '',
+                'material_code': item.product.product_id if item.product else item.material_code,
                 'unit': item.unit,
                 'remaining_qty': float(item.remaining_qty),
                 'unit_price': float(item.unit_price)
@@ -205,6 +209,18 @@ class PurchaseOrderListView(LoginRequiredMixin, ERPPermissionRequiredMixin, List
     context_object_name = 'pos'
     paginate_by = 20
     ordering = ['-id']
+
+    def get_queryset(self):
+        qs = super().get_queryset()
+        po_type = self.request.GET.get('po_type')
+        if po_type:
+            qs = qs.filter(po_type=po_type)
+        return qs
+        
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['po_type_filter'] = self.request.GET.get('po_type', '')
+        return context
 
 from inventory.models import Product
 
@@ -242,14 +258,23 @@ def purchase_order_create(request, po_type='raw'):
                 )
                 
                 for item in items:
+                    product_id = item.get('product_id')
+                    product = None
+                    if product_id:
+                        try:
+                            product = Product.objects.get(id=product_id)
+                        except Product.DoesNotExist:
+                            pass
+                            
                     PurchaseOrderItem.objects.create(
                         po=po,
+                        product=product,
                         category=item.get('category'),
                         sub_category=item.get('sub_category'),
                         material_code=item.get('material_code', ''),
                         unit=item.get('unit'),
                         qty=item.get('qty'),
-                        unit_price=item.get('unit_price', 0.00)
+                        unit_price=item.get('unit_price', 0)
                     )
             
             # Send back redirect URL so JS can redirect
@@ -271,14 +296,22 @@ def purchase_order_create(request, po_type='raw'):
         next_seq = 1
     preview_po_number = f"EFPO-{next_seq:04d}"
 
-    raw_products = list(Product.objects.filter(inventory_class=Product.InventoryClasses.RAW).values('product_id', 'name', 'stock_unit'))
+    suppliers_data = []
+    for sup in suppliers:
+        suppliers_data.append({
+            'id': sup.id,
+            'products': list(sup.products.values_list('id', flat=True))
+        })
+        
+    all_products = list(Product.objects.all().values('id', 'product_id', 'name', 'stock_unit', 'inventory_class'))
 
     return render(request, 'purchases/po_form.html', {
         'po_type': actual_type,
         'po_type_str': po_type,
         'suppliers': suppliers,
+        'suppliers_json': json.dumps(suppliers_data),
+        'products_json': json.dumps(all_products),
         'preview_po_number': preview_po_number,
-        'raw_products': json.dumps(raw_products),
     })
 
 @login_required
@@ -322,14 +355,23 @@ def purchase_order_edit(request, pk):
                 # Recreate items
                 po.items.all().delete()
                 for item in items_data:
+                    product_id = item.get('product_id')
+                    product = None
+                    if product_id:
+                        try:
+                            product = Product.objects.get(id=product_id)
+                        except Product.DoesNotExist:
+                            pass
+                            
                     PurchaseOrderItem.objects.create(
                         po=po,
+                        product=product,
                         category=item.get('category'),
                         sub_category=item.get('sub_category'),
                         material_code=item.get('material_code', ''),
                         unit=item.get('unit'),
                         qty=item.get('qty'),
-                        unit_price=item.get('unit_price', 0.00)
+                        unit_price=item.get('unit_price', 0)
                     )
 
             return JsonResponse({'success': True, 'redirect_url': reverse('po_detail', args=[po.id])})
@@ -341,19 +383,30 @@ def purchase_order_edit(request, pk):
     items_list = []
     for item in po.items.all():
         items_list.append({
-            'category': item.category,
-            'sub_category': item.sub_category,
-            'material_code': item.material_code,
+            'product_id': item.product.id if item.product else None,
+            'category': item.product.name if item.product else item.category,
+            'sub_category': item.sub_category if not item.product else '',
+            'material_code': item.product.product_id if item.product else item.material_code,
             'unit': item.unit,
             'qty': float(item.qty),
             'unit_price': float(item.unit_price)
         })
 
+    suppliers_data = []
+    for sup in suppliers:
+        suppliers_data.append({
+            'id': sup.id,
+            'products': list(sup.products.values_list('id', flat=True))
+        })
+        
+    all_products = list(Product.objects.all().values('id', 'product_id', 'name', 'stock_unit', 'inventory_class'))
+
     context = {
         'po': po,
-        'po_type': po.po_type,
-        'po_type_str': 'raw' if po.po_type == POType.RAW_MATERIAL else 'packing',
+        'po_type_str': po.po_type.lower().replace('_material', ''),
         'suppliers': suppliers,
+        'suppliers_json': json.dumps(suppliers_data),
+        'products_json': json.dumps(all_products),
         'preview_po_number': po.po_number,
         'existing_items_json': json.dumps(items_list)
     }

@@ -137,9 +137,12 @@ from decimal import Decimal
 
 class PurchaseOrderItem(models.Model):
     po = models.ForeignKey(PurchaseOrder, on_delete=models.CASCADE, related_name='items')
-    category = models.CharField(max_length=150)
+    product = models.ForeignKey(Product, on_delete=models.PROTECT, null=True, blank=True, related_name='po_items')
+    
+    # Legacy text fields for older POs
+    category = models.CharField(max_length=150, blank=True, null=True)
     sub_category = models.CharField(max_length=150, blank=True, null=True)
-    material_code = models.CharField(max_length=100)
+    material_code = models.CharField(max_length=100, blank=True, null=True)
     unit = models.CharField(max_length=50)
     qty = models.DecimalField(max_digits=12, decimal_places=3)
     received_qty = models.DecimalField(max_digits=12, decimal_places=3, default=0.000)

@@ -77,6 +77,9 @@ class Supplier(models.Model):
     bank_account_no = models.CharField(max_length=100, blank=True, null=True)
     
     vat_reg_num = models.CharField(max_length=50, blank=True, null=True, verbose_name="VAT Registration Number", help_text="Enter valid VAT number")
+    
+    # Track which products this supplier can provide
+    products = models.ManyToManyField('inventory.Product', blank=True, related_name='suppliers', help_text="Select the products this supplier can provide")
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

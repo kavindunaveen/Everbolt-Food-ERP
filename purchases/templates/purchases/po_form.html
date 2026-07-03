@@ -91,26 +91,13 @@
             <p class="text-sm text-gray-500 mt-1">{% if po %}Modify the existing procurement request.{% else %}Generate a procurement request for materials.{% endif %}</p>
         </div>
 
-        <!-- Odoo Style Toggle -->
-        <div class="bg-gray-100 p-1 rounded-xl flex items-center shadow-inner border border-gray-200">
-            <button type="button" 
-                @click="if(po_type !== 'raw') { showSwitchModal = true; nextType = 'raw'; }"
-                :class="po_type === 'raw' ? 'bg-white text-emerald-700 shadow-sm' : 'text-gray-500 hover:text-gray-700'"
-                class="px-4 py-2 rounded-lg text-sm font-bold transition-all flex items-center space-x-2">
-                <div class="w-4 h-4 rounded-full border-2 flex items-center justify-center" :class="po_type === 'raw' ? 'border-emerald-500' : 'border-gray-300'">
-                    <div class="w-2 h-2 rounded-full bg-emerald-500" x-show="po_type === 'raw'"></div>
-                </div>
-                <span>Raw Material</span>
-            </button>
-            <button type="button" 
-                @click="if(po_type !== 'packing') { showSwitchModal = true; nextType = 'packing'; }"
-                :class="po_type === 'packing' ? 'bg-white text-blue-700 shadow-sm' : 'text-gray-500 hover:text-gray-700'"
-                class="px-4 py-2 rounded-lg text-sm font-bold transition-all flex items-center space-x-2">
-                <div class="w-4 h-4 rounded-full border-2 flex items-center justify-center" :class="po_type === 'packing' ? 'border-blue-500' : 'border-gray-300'">
-                    <div class="w-2 h-2 rounded-full bg-blue-500" x-show="po_type === 'packing'"></div>
-                </div>
-                <span>Packing Material</span>
-            </button>
+        <!-- PO Type Dropdown -->
+        <div class="w-64">
+            <label class="block text-sm font-semibold text-gray-700 mb-1">PO Type (Filter)</label>
+            <select x-model="po_type" @change="showSwitchModal = true; nextType = $event.target.value; $event.target.value = po_type" class="form-select-premium">
+                <option value="raw">Raw Material</option>
+                <option value="packing">Packing Material</option>
+            </select>
         </div>
     </div>
 
@@ -232,8 +219,7 @@
             <table class="min-w-full divide-y divide-gray-300">
                 <thead class="bg-gray-50">
                     <tr>
-                        <th class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900 min-w-[200px]">Item / Material *</th>
-                        <th class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900 min-w-[200px]" x-show="po_type === 'packing'">Sub-Category</th>
+                        <th class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900 min-w-[200px]">Product *</th>
                         <th class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Code</th>
                         <th class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900 w-24">Unit *</th>
                         <th class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900 w-24">Qty *</th>
@@ -246,96 +232,28 @@
                     <template x-for="(item, index) in items" :key="index">
                         <tr>
                             <td class="px-3 py-4 text-sm">
-                                <!-- RAW MATERIAL CATEGORY DROPDOWN -->
-                                <template x-if="po_type === 'raw'">
-                                    <select x-model="item.category" @change="updateRawCode(index)" class="form-select-premium">
-                                        <option value="">Select Material...</option>
-                                        <template x-for="rm in dbRawMaterials" :key="rm.val">
-                                            <option :value="rm.val" x-text="rm.label"></option>
-                                        </template>
-                                        <optgroup label="Manual Entries">
-                                            <option value="herbs">Herbs (Manual Entry)</option>
-                                            <option value="flavours">Flavours (Manual Entry)</option>
-                                            <option value="other">Other (Manual Entry)</option>
-                                        </optgroup>
-                                    </select>
-                                </template>
-
-                                <!-- PACKING MATERIAL CATEGORY DROPDOWN -->
-                                <template x-if="po_type === 'packing'">
-                                    <select x-model="item.category" @change="handlePackingCategoryChange(index)" class="form-select-premium">
-                                        <option value="">Select Category...</option>
-                                        <option value="stick reels">stick reels</option>
-                                        <option value="sachet reel">sachet reel</option>
-                                        <option value="envelop reel">envelop reel</option>
-                                        <option value="transparent zipperlock pouch">transparent zipperlock pouch</option>
-                                        <option value="cannister">cannister</option>
-                                        <option value="box">box</option>
-                                        <option value="standalone zipperlock pouch">standalone zipperlock pouch</option>
-                                        <option value="glass bottle">glass bottle</option>
-                                        <option value="plastic bottle">plastic bottle</option>
-                                    </select>
-                                </template>
-
-                                <!-- MANUAL ENTRY FOR "OTHER/HERBS/FLAVOURS" in RAW -->
-                                <template x-if="po_type === 'raw' && ['herbs', 'flavours', 'other'].includes(item.category)">
-                                    <input type="text" x-model="item.sub_category" @input="updateRawCode(index)" placeholder="Type manual name..." class="mt-2 form-input-premium text-sm">
-                                </template>
-                            </td>
-
-                            <!-- PACKING SUB-CATEGORY -->
-                            <td class="px-3 py-4 text-sm" x-show="po_type === 'packing'">
-                                <template x-if="item.category && packingMatrix[item.category]">
-                                    <div x-data="{ opts: packingMatrix[item.category] }">
-                                        <template x-if="opts === 'manual'">
-                                            <input type="text" x-model="item.sub_category" placeholder="Enter manual description..." class="form-input-premium">
-                                        </template>
-                                        <template x-if="Array.isArray(opts)">
-                                            <select x-model="item.sub_category" class="form-select-premium">
-                                                <option value="">Select variant...</option>
-                                                <template x-for="opt in opts" :key="opt">
-                                                    <option :value="opt" x-text="opt"></option>
-                                                </template>
-                                            </select>
-                                        </template>
-                                    </div>
-                                </template>
-                            </td>
-
-                            <td class="px-3 py-4 text-sm text-gray-500 font-mono">
-                                <span x-text="item.material_code || (po_type === 'packing' ? 'Auto-generated' : '')"></span>
-                            </td>
-
-                             <td class="px-3 py-4 text-sm">
-                                <select x-model="item.unit" class="form-select-premium">
-                                    <option value="">Select Unit...</option>
-                                    <optgroup label="Volume / Mass">
-                                        <option value="kg">kg</option>
-                                        <option value="g">g</option>
-                                        <option value="l">l</option>
-                                        <option value="ml">ml</option>
-                                    </optgroup>
-                                    <optgroup label="Packaging">
-                                        <option value="pcs">pcs</option>
-                                        <option value="packets">packets</option>
-                                        <option value="bottles">bottles</option>
-                                        <option value="schachets/sticks">schachets/sticks</option>
-                                    </optgroup>
+                                <select x-model="item.product_id" @change="updateProduct(index)" class="form-select-premium">
+                                    <option value="">Select Product...</option>
+                                    <template x-for="p in availableProducts" :key="p.id">
+                                        <option :value="p.id" x-text="p.name" :selected="item.product_id == p.id"></option>
+                                    </template>
                                 </select>
                             </td>
-
                             <td class="px-3 py-4 text-sm">
-                                <input type="number" step="0.001" x-model="item.qty" class="form-input-premium text-center font-bold" placeholder="0.000">
+                                <input type="text" x-model="item.material_code" class="w-full bg-transparent border-0 focus:ring-0 p-0 text-sm text-gray-500" readonly>
                             </td>
-
+                            <td class="px-3 py-4 text-sm">
+                                <input type="text" x-model="item.unit" class="w-full bg-transparent border-0 focus:ring-0 p-0 text-sm text-gray-900 font-medium" readonly>
+                            </td>
+                            <td class="px-3 py-4 text-sm">
+                                <input type="number" :step="getStepForUnit(item.unit)" x-model="item.qty" class="form-input-premium text-center font-bold" placeholder="0.000">
+                            </td>
                             <td class="px-3 py-4 text-sm">
                                 <input type="number" step="0.01" x-model="item.unit_price" class="form-input-premium text-right font-bold" placeholder="0.00">
                             </td>
-
                             <td class="px-3 py-4 text-sm text-right font-bold text-gray-900">
                                 <span x-text="((parseFloat(item.qty) || 0) * (parseFloat(item.unit_price) || 0)).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})"></span>
                             </td>
-
                             <td class="px-3 py-4 text-sm text-center">
                                 <button type="button" @click="removeItem(index)" class="text-red-500 hover:text-red-700">
                                     <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -419,51 +337,39 @@ function poForm(type) {
         },
 
         // Data Definitions
-        rawMaterials: [
-            {val: 'sugar-white', label: 'Sugar - White', code: 'RM-sw'},
-            {val: 'sugar-brown', label: 'Sugar - Brown', code: 'RM-sb'},
-            {val: 'salt', label: 'Salt', code: 'RM-salt'},
-            {val: 'paper', label: 'Paper', code: 'RM-paper'},
-            {val: 'creamer', label: 'Creamer', code: 'RM-creamer'}
-        ],
-        dbRawMaterials: [],
-        rawCodes: {
-            'sugar-white': 'RM-sw',
-            'sugar-brown': 'RM-sb',
-            'suger-white': 'RM-sw',
-            'suger-brown': 'RM-sb',
-            'salt': 'RM-salt',
-            'paper': 'RM-paper',
-            'creamer': 'RM-creamer'
-        },
-        packingMatrix: {
-            'stick reels': ['brown sugar stick reel', 'white sugar stick reel', 'tesla white sugar reel', 'tesla brown sugar stick reel'],
-            'sachet reel': ['brown sugar sachet reel', 'white sugar sachet reel', 'creamer sachet reel', 'thurya white sugar sachet reel', 'thurya brown sugar sachet reel'],
-            'envelop reel': ['black tea envelop reel', 'green tea envelop reel'],
-            'transparent zipperlock pouch': ['6 × 8 cm', '7 × 10 cm', '10 × 14 cm', '14 × 18 cm', '6 × 9 cm', '12 × 15 cm', '4 × 6 cm', '9 × 12 cm'],
-            'cannister': ['50g', '100g'],
-            'box': ['Slim Herb Tea', 'Ushma', 'Island Spicy Fusion', 'Special Hibiscus Blend', 'Herbal Soothe', 'Harmany Broow', 'Fat Burn Tea', 'Detox Blend', 'Citrus and Spice Energy', 'Calm Mind Blend', 'Balance Blend', 'Moringa Morning Dew', 'Immuno Up', 'Glyco Guard', 'Green Guard Balance', 'Vita Cure', 'Jasmine Green Tea', 'Mango Tea', 'Ginger Tea', 'Caramel Tea', 'Lemon Green Tea', 'Pineapple Tea', 'Strawberry Tea', 'Passion Fruit Tea', 'Green Tea', 'Cinnoman Tea', 'Black Tea'],
-            'standalone zipperlock pouch': 'manual',
-            'glass bottle': ['Kithul treacle'],
-            'plastic bottle': ['Kithul Powder', 'Kithul Flour', 'Kithul Pieces']
+        suppliersJson: {{ suppliers_json|safe|default:"[]" }},
+        productsJson: {{ products_json|safe|default:"[]" }},
+
+        get availableProducts() {
+            let products = [];
+            if (this.supplier_id) {
+                let supplier = this.suppliersJson.find(s => String(s.id) === String(this.supplier_id));
+                if (supplier) {
+                    let invClass = this.po_type === 'raw' ? 'RAW' : 'PACKAGING';
+                    products = this.productsJson.filter(p => supplier.products.includes(p.id) && p.inventory_class === invClass);
+                }
+            }
+            
+            // Add legacy items to the list so they render correctly in the dropdown
+            this.items.forEach(item => {
+                if (!item.product_id && item.category) {
+                    let fakeId = 'legacy_' + item.category;
+                    item.product_id = fakeId; // sync model
+                    if (!products.find(p => p.id === fakeId)) {
+                        products.push({
+                            id: fakeId,
+                            name: item.category + (item.sub_category ? ' - ' + item.sub_category : '') + ' (Legacy)',
+                            product_id: item.material_code,
+                            stock_unit: item.unit
+                        });
+                    }
+                }
+            });
+            
+            return products;
         },
 
         init() {
-            // Merge hardcoded legacy with DB RM
-            let legacyRMs = [...this.rawMaterials];
-            let inventoryRMs = {{ raw_products|safe|default:"[]" }}.map(p => ({
-                val: p.name,
-                label: p.name,
-                code: p.product_id
-            }));
-            
-            let seen = new Set();
-            this.dbRawMaterials = [...inventoryRMs, ...legacyRMs].filter(rm => {
-                if(seen.has(rm.label.toLowerCase())) return false;
-                seen.add(rm.label.toLowerCase());
-                return true;
-            });
-
             // Select2 init
             $(() => {
                 $('#supplier_select').select2({ placeholder: 'Search for a supplier...' });
@@ -479,8 +385,7 @@ function poForm(type) {
 
         addItem() {
             this.items.push({
-                category: '',
-                sub_category: '',
+                product_id: '',
                 material_code: '',
                 unit: '',
                 qty: '',
@@ -492,26 +397,27 @@ function poForm(type) {
             this.items.splice(index, 1);
         },
 
-        updateRawCode(index) {
+        updateProduct(index) {
             let item = this.items[index];
-            if (['herbs', 'flavours', 'other'].includes(item.category)) {
-                item.material_code = 'Auto-generated';
-            } else {
-                let found = this.dbRawMaterials.find(r => r.val === item.category);
-                if (found && found.code) {
-                    item.material_code = found.code;
-                } else {
-                    item.material_code = this.rawCodes[item.category] || '';
+            if (item.product_id) {
+                let product = this.availableProducts.find(p => String(p.id) === String(item.product_id));
+                if (product) {
+                    item.material_code = product.product_id;
+                    item.unit = product.stock_unit || 'pcs';
                 }
-                item.sub_category = ''; // reset manual field
+            } else {
+                item.material_code = '';
+                item.unit = '';
             }
         },
 
-        handlePackingCategoryChange(index) {
-            let item = this.items[index];
-            item.sub_category = ''; 
-            // The PM material code is auto-generated by the backend upon save!
-            item.material_code = 'Auto-generated';
+        getStepForUnit(unit) {
+            if (!unit) return '0.001';
+            let u = unit.toLowerCase().trim();
+            if (['pcs', 'packets', 'bottles', 'schachets/sticks', 'box'].includes(u)) {
+                return '1';
+            }
+            return '0.001';
         },
 
         async submitPO() {
@@ -524,14 +430,26 @@ function poForm(type) {
             // Validate lines
             for (let i=0; i<this.items.length; i++) {
                 let item = this.items[i];
-                if (!item.category) { this.errorMessage = `Item ${i+1} is missing a category/material.`; return; }
+                if (!item.product_id && !item.category) { this.errorMessage = `Item ${i+1} is missing a product.`; return; }
                 if (!item.unit) { this.errorMessage = `Item ${i+1} is missing a unit.`; return; }
-                if (!item.qty || isNaN(parseFloat(item.qty))) { this.errorMessage = `Item ${i+1} has an invalid quantity.`; return; }
+                
+                let qty = parseFloat(item.qty);
+                if (!item.qty || isNaN(qty) || qty <= 0) { this.errorMessage = `Item ${i+1} has an invalid quantity.`; return; }
+                if (this.getStepForUnit(item.unit) === '1' && !Number.isInteger(qty)) {
+                    this.errorMessage = `Item ${i+1} has an invalid quantity. Must be a whole number for ${item.unit}.`; return;
+                }
             }
 
             this.submitting = true;
 
             try {
+                let submitItems = this.items.map(item => {
+                    if (String(item.product_id).startsWith('legacy_')) {
+                        return { ...item, product_id: null };
+                    }
+                    return item;
+                });
+
                 const response = await fetch(window.location.href, {
                     method: 'POST',
                     headers: {
@@ -543,7 +461,7 @@ function poForm(type) {
                         date: this.date,
                         payment_term: this.payment_term,
                         apply_vat: this.apply_vat,
-                        items: this.items
+                        items: submitItems
                     })
                 });
 

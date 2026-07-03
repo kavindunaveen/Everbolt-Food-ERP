@@ -45,7 +45,8 @@ class PendingPaymentsView(LoginRequiredMixin, PermissionRequiredMixin, View):
     def get(self, request):
         today = timezone.now().date()
         
-        pending_qs = Invoice.objects.filter(status=Invoice.Status.ISSUED).order_by('-creation_date')
+        valid_statuses = [Invoice.Status.ISSUED, Invoice.Status.PAID, Invoice.Status.EDIT_PENDING, Invoice.Status.CANCEL_PENDING]
+        pending_qs = Invoice.objects.filter(status__in=valid_statuses).order_by('-creation_date')
         
         # Filter on creation_date so date range matches when the invoice was created
         date_from = request.GET.get('date_from')
@@ -143,7 +144,8 @@ class PartialPaymentsView(LoginRequiredMixin, PermissionRequiredMixin, View):
     def get(self, request):
         today = timezone.now().date()
         
-        pending_qs = Invoice.objects.filter(status=Invoice.Status.ISSUED).order_by('due_date')
+        valid_statuses = [Invoice.Status.ISSUED, Invoice.Status.PAID, Invoice.Status.EDIT_PENDING, Invoice.Status.CANCEL_PENDING]
+        pending_qs = Invoice.objects.filter(status__in=valid_statuses).order_by('due_date')
         
         # Filter on creation_date so date range matches when the invoice was created
         date_from = request.GET.get('date_from')
@@ -244,7 +246,13 @@ class CompletedPaymentsView(LoginRequiredMixin, PermissionRequiredMixin, View):
     def get(self, request):
         today = timezone.now().date()
         
-        completed_qs = Invoice.objects.filter(status=Invoice.Status.PAID).order_by('-creation_date')
+        valid_statuses = [Invoice.Status.ISSUED, Invoice.Status.PAID, Invoice.Status.EDIT_PENDING, Invoice.Status.CANCEL_PENDING]
+        from django.db.models import Sum, F
+        from django.db.models.functions import Coalesce
+        from decimal import Decimal
+        completed_qs = Invoice.objects.filter(status__in=valid_statuses).annotate(
+            total_paid_sum=Coalesce(Sum('payments__amount'), Decimal('0.00'))
+        ).filter(total_paid_sum__gte=F('total_amount') - Decimal('0.009')).order_by('-creation_date')
         
         # Filter on creation_date so date range matches when the invoice was created
         date_from = request.GET.get('date_from')
