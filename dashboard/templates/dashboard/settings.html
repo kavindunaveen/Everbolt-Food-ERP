@@ -8,12 +8,10 @@
 {% endblock %}
 
 {% block content %}
-<div class="px-4 py-6 sm:px-0 max-w-4xl mx-auto">
-    <div class="mb-6 flex justify-between items-end">
-        <div>
-            <h1 class="text-3xl font-extrabold tracking-tight text-gray-900">Company Settings</h1>
-            <p class="mt-1 text-sm text-gray-500">Manage the company profile used on invoices and credit notes.</p>
-        </div>
+<div class="px-4 py-6 sm:px-0 max-w-5xl mx-auto">
+    <div class="mb-6">
+        <h1 class="text-3xl font-extrabold tracking-tight text-gray-900">Company Settings</h1>
+        <p class="mt-1 text-sm text-gray-500">Manage your company profile, banking details, and document terms — these appear on all printed invoices and quotations.</p>
     </div>
 
     {% if messages %}
@@ -26,57 +24,137 @@
     </div>
     {% endif %}
 
-    <div class="bg-white rounded-xl shadow-md border border-gray-200 p-8">
-        <form method="post" enctype="multipart/form-data">
-            {% csrf_token %}
-            
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+    <form method="post" enctype="multipart/form-data" class="space-y-8">
+        {% csrf_token %}
+
+        <!-- Company Profile -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+            <div class="px-6 py-4 bg-gray-50 border-b border-gray-200">
+                <h2 class="text-sm font-bold text-gray-800 uppercase tracking-wider flex items-center gap-2">
+                    <svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path></svg>
+                    Company Profile
+                </h2>
+            </div>
+            <div class="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                    <label class="block text-sm font-bold text-gray-700 mb-1">Company Name</label>
+                    <label class="block text-sm font-semibold text-gray-700 mb-1">Company Name <span class="text-red-500">*</span></label>
                     {{ form.company_name }}
-                    {% if form.company_name.errors %}
-                        <p class="text-xs text-red-500 mt-1">{{ form.company_name.errors.0 }}</p>
-                    {% endif %}
+                    {% if form.company_name.errors %}<p class="text-xs text-red-500 mt-1">{{ form.company_name.errors.0 }}</p>{% endif %}
                 </div>
                 <div>
-                    <label class="block text-sm font-bold text-gray-700 mb-1">TIN Number</label>
+                    <label class="block text-sm font-semibold text-gray-700 mb-1">TIN Number</label>
                     {{ form.tin_number }}
-                    {% if form.tin_number.errors %}
-                        <p class="text-xs text-red-500 mt-1">{{ form.tin_number.errors.0 }}</p>
-                    {% endif %}
+                    {% if form.tin_number.errors %}<p class="text-xs text-red-500 mt-1">{{ form.tin_number.errors.0 }}</p>{% endif %}
                 </div>
                 <div class="md:col-span-2">
-                    <label class="block text-sm font-bold text-gray-700 mb-1">Company Address</label>
+                    <label class="block text-sm font-semibold text-gray-700 mb-1">Company Address</label>
                     {{ form.company_address }}
-                    {% if form.company_address.errors %}
-                        <p class="text-xs text-red-500 mt-1">{{ form.company_address.errors.0 }}</p>
-                    {% endif %}
+                    {% if form.company_address.errors %}<p class="text-xs text-red-500 mt-1">{{ form.company_address.errors.0 }}</p>{% endif %}
                 </div>
                 <div>
-                    <label class="block text-sm font-bold text-gray-700 mb-1">Telephone Number</label>
+                    <label class="block text-sm font-semibold text-gray-700 mb-1">Telephone Number</label>
                     {{ form.telephone_number }}
-                    {% if form.telephone_number.errors %}
-                        <p class="text-xs text-red-500 mt-1">{{ form.telephone_number.errors.0 }}</p>
-                    {% endif %}
+                    {% if form.telephone_number.errors %}<p class="text-xs text-red-500 mt-1">{{ form.telephone_number.errors.0 }}</p>{% endif %}
                 </div>
                 <div>
-                    <label class="block text-sm font-bold text-gray-700 mb-1">Company Logo</label>
+                    <label class="block text-sm font-semibold text-gray-700 mb-1">Email Address</label>
+                    {{ form.email_address }}
+                    <p class="text-xs text-gray-400 mt-1">Shown on purchase order printouts.</p>
+                    {% if form.email_address.errors %}<p class="text-xs text-red-500 mt-1">{{ form.email_address.errors.0 }}</p>{% endif %}
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-1">Website URL</label>
+                    {{ form.website_url }}
+                    {% if form.website_url.errors %}<p class="text-xs text-red-500 mt-1">{{ form.website_url.errors.0 }}</p>{% endif %}
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-1">Company Logo</label>
                     {% if settings.logo %}
-                    <div class="mb-3">
-                        <img src="{{ settings.logo.url }}" alt="Logo" class="h-16 w-auto object-contain border border-gray-200 rounded p-1 bg-white">
+                    <div class="mb-3 flex items-center gap-3">
+                        <img src="{{ settings.logo.url }}" alt="Logo" class="h-16 w-auto object-contain border border-gray-200 rounded-lg p-2 bg-white shadow-sm">
+                        <span class="text-xs text-gray-500">Current logo</span>
                     </div>
                     {% endif %}
                     {{ form.logo }}
-                    <p class="text-xs text-gray-500 mt-1">Leave blank to keep existing logo.</p>
+                    <p class="text-xs text-gray-400 mt-1">Leave blank to keep existing logo. Recommended: PNG with transparent background.</p>
                 </div>
             </div>
+        </div>
 
-            <div class="flex justify-end mt-8 border-t border-gray-100 pt-6">
-                <button type="submit" class="px-6 py-2.5 text-sm font-bold text-white bg-emerald-600 rounded-lg hover:bg-emerald-700 shadow-md">
-                    Save Settings
-                </button>
+        <!-- Banking Details -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+            <div class="px-6 py-4 bg-gray-50 border-b border-gray-200">
+                <h2 class="text-sm font-bold text-gray-800 uppercase tracking-wider flex items-center gap-2">
+                    <svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"></path></svg>
+                    Banking Details
+                </h2>
+                <p class="text-xs text-gray-500 mt-1">These appear in the Terms & Conditions section of printed invoices if you haven't set custom T&C text below.</p>
             </div>
-        </form>
-    </div>
+            <div class="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="md:col-span-2">
+                    <label class="block text-sm font-semibold text-gray-700 mb-1">Account Holder Name</label>
+                    {{ form.bank_account_name }}
+                    <p class="text-xs text-gray-400 mt-1">Full name as it appears on the bank account.</p>
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-1">Bank Name</label>
+                    {{ form.bank_name }}
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-1">Account Number</label>
+                    {{ form.bank_account_number }}
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-1">Branch</label>
+                    {{ form.bank_branch }}
+                </div>
+            </div>
+        </div>
+
+        <!-- Invoice & Quotation Document Settings -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+            <div class="px-6 py-4 bg-gray-50 border-b border-gray-200">
+                <h2 class="text-sm font-bold text-gray-800 uppercase tracking-wider flex items-center gap-2">
+                    <svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                    Invoice & Quotation Print Settings
+                </h2>
+            </div>
+            <div class="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-1">Mode of Payment</label>
+                    {{ form.invoice_payment_modes }}
+                    <p class="text-xs text-gray-400 mt-1">Shown after "Mode of Payment:" on both invoices and quotations.</p>
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-1">Return Policy Window (days)</label>
+                    {{ form.return_policy_days }}
+                    <p class="text-xs text-gray-400 mt-1">Used in auto-generated T&C if no custom T&C text is set.</p>
+                </div>
+                <div class="md:col-span-2">
+                    <label class="block text-sm font-semibold text-gray-700 mb-1">Invoice Terms & Conditions</label>
+                    {{ form.invoice_terms_and_conditions }}
+                    <p class="text-xs text-gray-400 mt-1">
+                        <strong>If filled in:</strong> this text will replace the auto-generated T&C on invoice printouts. Each new line will be displayed as a separate line.
+                        <strong>If left blank:</strong> the system will auto-generate T&C using the bank details and return policy days above.
+                    </p>
+                </div>
+                <div class="md:col-span-2">
+                    <label class="block text-sm font-semibold text-gray-700 mb-1">Quotation Terms & Conditions</label>
+                    {{ form.quotation_terms_and_conditions }}
+                    <p class="text-xs text-gray-400 mt-1">
+                        <strong>If filled in:</strong> this text replaces the T&C on quotation printouts.
+                        <strong>If left blank:</strong> the Invoice T&C above will be used as a fallback, and if that's also empty, auto-generated T&C will be used.
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <div class="flex justify-end pt-2">
+            <button type="submit" class="px-8 py-3 text-sm font-bold text-white bg-emerald-600 rounded-xl hover:bg-emerald-700 shadow-md hover:shadow-lg transition-all flex items-center gap-2">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                Save Settings
+            </button>
+        </div>
+    </form>
 </div>
 {% endblock %}

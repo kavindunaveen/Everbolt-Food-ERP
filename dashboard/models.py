@@ -95,8 +95,35 @@ class CompanySettings(models.Model):
     company_name = models.CharField(max_length=200, default="Everbolt Food Products (Pvt) Ltd")
     company_address = models.TextField(default="No.548/B Nawala Rd,\nSri Jayawardenepura Kotte 10100.")
     telephone_number = models.CharField(max_length=50, default="076 540 0084")
+    email_address = models.EmailField(max_length=200, blank=True, null=True, help_text="Company email shown on printouts and emails.")
+    website_url = models.URLField(max_length=200, blank=True, null=True, help_text="e.g. https://www.yourcompany.com")
     tin_number = models.CharField(max_length=50, default="108438134")
     logo = models.ImageField(upload_to='company_logos/', null=True, blank=True)
+
+    # --- Banking Details ---
+    bank_account_name = models.CharField(max_length=200, blank=True, null=True, help_text="e.g. Everbolt Food Products (Pvt) Ltd")
+    bank_name = models.CharField(max_length=100, blank=True, null=True, help_text="e.g. Bank of Ceylon (BOC)")
+    bank_account_number = models.CharField(max_length=50, blank=True, null=True, help_text="e.g. 92497445")
+    bank_branch = models.CharField(max_length=100, blank=True, null=True, help_text="e.g. Rajagiriya 746")
+
+    # --- Invoice / Quotation Print Settings ---
+    invoice_payment_modes = models.CharField(
+        max_length=200, blank=True, null=True,
+        default="Cash / Online / Direct Deposit / Cheque",
+        help_text="Text shown after 'Mode of Payment:' on invoices and quotations."
+    )
+    return_policy_days = models.PositiveIntegerField(
+        default=5,
+        help_text="Number of days within which returns are accepted."
+    )
+    invoice_terms_and_conditions = models.TextField(
+        blank=True, null=True,
+        help_text="Custom Terms & Conditions for Invoice printouts. Each line will appear as a separate line."
+    )
+    quotation_terms_and_conditions = models.TextField(
+        blank=True, null=True,
+        help_text="Custom Terms & Conditions for Quotation printouts. Each line will appear as a separate line."
+    )
 
     class Meta:
         verbose_name = "Company Settings"

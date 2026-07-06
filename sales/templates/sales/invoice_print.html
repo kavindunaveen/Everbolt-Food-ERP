@@ -289,15 +289,21 @@
 
         <div class="full-box" style="margin-bottom: 5px; padding: 5px; margin-top: 10px;">
             <strong>Total Amount in words:</strong> {{ amount_in_words }}<br>
-            <strong>Mode of Payment:</strong> Cash / Online / Direct Deposit / Cheque
+            <strong>Mode of Payment:</strong> {{ company_settings.invoice_payment_modes|default:"Cash / Online / Direct Deposit / Cheque" }}
         </div>
         
         <!-- Terms and Conditions -->
         <div style="margin-top: 10px; margin-bottom: 10px; font-size: 0.85em; line-height: 1.2;">
             <strong>Terms and Conditions</strong><br>
-            Everbolt Food Products will accept returns only within five (5) days of order receipt, and solely for items that remain unused and in their original packaging.<br>
-            Cheque is in favor of Everbolt Food Products (Pvt) Ltd and crossed A/C PAYEE ONLY with invoice numbers written overleaf.<br>
-            Use the account details for the direct deposit: Account Name – Everbolt Food Products (Pvt) Ltd, Number - 92497445 (BOC) Branch - Rajagiriya 746.
+            {% if company_settings.invoice_terms_and_conditions %}
+                {{ company_settings.invoice_terms_and_conditions|linebreaksbr }}
+            {% else %}
+                {{ company_settings.company_name|default:"The Company" }} will accept returns only within {{ company_settings.return_policy_days|default:5 }} days of order receipt, and solely for items that remain unused and in their original packaging.<br>
+                {% if company_settings.bank_account_name %}
+                Cheque is in favor of {{ company_settings.bank_account_name }} and crossed A/C PAYEE ONLY with invoice numbers written overleaf.<br>
+                Use the account details for the direct deposit: Account Name – {{ company_settings.bank_account_name }}{% if company_settings.bank_account_number %}, Number - {{ company_settings.bank_account_number }}{% endif %}{% if company_settings.bank_name %} ({{ company_settings.bank_name }}){% endif %}{% if company_settings.bank_branch %} Branch - {{ company_settings.bank_branch }}{% endif %}.
+                {% endif %}
+            {% endif %}
         </div>
 
         <!-- Standard signatures footers -->
