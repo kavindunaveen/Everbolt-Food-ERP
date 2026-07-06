@@ -44,7 +44,7 @@
         </div>
         <div>
             <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Plan Date</label>
-            <input type="date" x-model="planDate" :disabled="status !== 'DRAFT'" class="text-sm border-gray-300 rounded-lg shadow-sm font-semibold disabled:bg-gray-100 disabled:text-gray-500">
+            <input type="date" x-model="planDate" :disabled="status === 'COMPLETED'" class="text-sm border-gray-300 rounded-lg shadow-sm font-semibold disabled:bg-gray-100 disabled:text-gray-500">
         </div>
     </div>
 
@@ -71,7 +71,7 @@
                         <tr class="hover:bg-gray-50 transition-colors group">
                             <!-- Morning Fields -->
                             <td class="px-2 py-2 whitespace-nowrap w-64">
-                                <select x-model="row.target_product_id" :disabled="status !== 'DRAFT'"
+                                <select x-model="row.target_product_id" :disabled="status === 'COMPLETED'"
                                         x-init="$nextTick(() => { 
                                             let ts = new TomSelect($el, {
                                                 options: allProducts.map(p => ({value: String(p.id), text: p.name})),
@@ -84,20 +84,20 @@
                                                 sortField: {field: 'text', direction: 'asc'},
                                                 onChange: function(val) { row.target_product_id = val; }
                                             });
-                                            if(status !== 'DRAFT') ts.disable();
+                                            if(status === 'COMPLETED') ts.disable();
                                         })"
                                         class="text-sm w-full border-gray-200 rounded-md font-medium text-gray-700 focus:ring-indigo-500 focus:border-indigo-500 disabled:bg-gray-50 disabled:text-gray-500">
                                     <option value="">Select Product...</option>
                                 </select>
                             </td>
                             <td class="px-2 py-2 whitespace-nowrap">
-                                <input type="number" step="0.01" x-model="row.unit_weight" :disabled="status !== 'DRAFT'" class="text-sm w-full border-gray-200 rounded-md text-right focus:ring-indigo-500 focus:border-indigo-500 disabled:bg-gray-50 disabled:text-gray-500">
+                                <input type="number" step="0.01" x-model="row.unit_weight" :disabled="status === 'COMPLETED'" class="text-sm w-full border-gray-200 rounded-md text-right focus:ring-indigo-500 focus:border-indigo-500 disabled:bg-gray-50 disabled:text-gray-500">
                             </td>
                             <td class="px-2 py-2 whitespace-nowrap bg-gray-50/50">
-                                <input type="number" x-model="row.target_qty" :disabled="status !== 'DRAFT'" class="text-sm w-full border-gray-200 rounded-md text-right font-bold focus:ring-indigo-500 focus:border-indigo-500 disabled:bg-gray-100 disabled:text-gray-500">
+                                <input type="number" x-model="row.target_qty" :disabled="status === 'COMPLETED'" class="text-sm w-full border-gray-200 rounded-md text-right font-bold focus:ring-indigo-500 focus:border-indigo-500 disabled:bg-gray-100 disabled:text-gray-500">
                             </td>
                             <td class="px-2 py-2 whitespace-nowrap w-64">
-                                <select x-model="row.raw_material_id" :disabled="status !== 'DRAFT'"
+                                <select x-model="row.raw_material_id" :disabled="status === 'COMPLETED'"
                                         x-init="$nextTick(() => { 
                                             let ts = new TomSelect($el, {
                                                 options: rawMaterials.map(p => ({value: String(p.id), text: p.name})),
@@ -110,14 +110,14 @@
                                                 sortField: {field: 'text', direction: 'asc'},
                                                 onChange: function(val) { row.raw_material_id = val; }
                                             });
-                                            if(status !== 'DRAFT') ts.disable();
+                                            if(status === 'COMPLETED') ts.disable();
                                         })"
                                         class="text-sm w-full border-gray-200 rounded-md font-medium text-gray-700 focus:ring-indigo-500 focus:border-indigo-500 disabled:bg-gray-50 disabled:text-gray-500">
                                     <option value="">Select Material...</option>
                                 </select>
                             </td>
                             <td class="px-2 py-2 whitespace-nowrap">
-                                <input type="number" step="0.01" x-model="row.raw_material_qty" :disabled="status !== 'DRAFT'" class="text-sm w-full border-gray-200 rounded-md text-right focus:ring-indigo-500 focus:border-indigo-500 disabled:bg-gray-50 disabled:text-gray-500">
+                                <input type="number" step="0.01" x-model="row.raw_material_qty" :disabled="status === 'COMPLETED'" class="text-sm w-full border-gray-200 rounded-md text-right focus:ring-indigo-500 focus:border-indigo-500 disabled:bg-gray-50 disabled:text-gray-500">
                             </td>
                             
                             <!-- Evening Fields -->
@@ -139,7 +139,7 @@
                             
                             <!-- Actions -->
                             <td class="px-2 py-2 whitespace-nowrap text-right opacity-0 group-hover:opacity-100 transition-opacity">
-                                <button type="button" @click="removeRow(index)" x-show="status === 'DRAFT'" class="text-gray-400 hover:text-red-500 hover:bg-red-50 p-1.5 rounded-full transition-colors">
+                                <button type="button" @click="removeRow(index)" x-show="status !== 'COMPLETED'" class="text-gray-400 hover:text-red-500 hover:bg-red-50 p-1.5 rounded-full transition-colors">
                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
                                 </button>
                             </td>
@@ -151,7 +151,7 @@
         
         <div class="p-5 bg-gray-50 border-t border-gray-200 flex justify-between items-center" x-show="status !== 'COMPLETED'">
             <div>
-                <button type="button" @click="addRow()" x-show="status === 'DRAFT'" class="bg-white border border-gray-300 text-gray-700 font-semibold px-4 py-2 rounded-lg text-sm hover:bg-gray-50 hover:shadow-sm transition-all flex items-center gap-2">
+                <button type="button" @click="addRow()" x-show="status !== 'COMPLETED'" class="bg-white border border-gray-300 text-gray-700 font-semibold px-4 py-2 rounded-lg text-sm hover:bg-gray-50 hover:shadow-sm transition-all flex items-center gap-2">
                     <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
                     Add Row
                 </button>
@@ -165,7 +165,12 @@
                     Submit Morning Plan
                 </button>
 
-                <button type="button" @click="savePlan('save_draft')" x-show="status === 'MORNING_SUBMITTED'" class="text-gray-600 font-semibold px-5 py-2 hover:bg-gray-100 rounded-lg transition-colors">Save Actuals Draft</button>
+                <button type="button" @click="savePlan('save_draft')" x-show="status === 'MORNING_SUBMITTED'" class="text-gray-600 font-semibold px-5 py-2 hover:bg-gray-100 rounded-lg transition-colors">Save Draft</button>
+                
+                <button type="button" @click="savePlan('update_morning')" x-show="status === 'MORNING_SUBMITTED'" class="bg-amber-500 hover:bg-amber-600 text-white font-bold px-6 py-2 rounded-lg shadow-lg shadow-amber-200 transition-all transform active:scale-95 flex items-center gap-2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+                    Update Morning Plan
+                </button>
                 
                 <button type="button" @click="savePlan('submit_evening')" x-show="status === 'MORNING_SUBMITTED'" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-6 py-2 rounded-lg shadow-lg shadow-emerald-200 transition-all transform active:scale-95 flex items-center gap-2">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>

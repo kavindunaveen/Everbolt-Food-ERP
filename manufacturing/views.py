@@ -326,31 +326,21 @@ def save_production_plan(request):
                 if plan.status == 'COMPLETED':
                     return JsonResponse({'status': 'error', 'message': 'This plan is already completed.'}, status=400)
                 
-                if plan.status == 'MORNING_SUBMITTED':
-                    existing_lines = list(plan.lines.all())
-                    for i, line in enumerate(existing_lines):
-                        if i < len(lines):
-                            fe_line = lines[i]
-                            line.actual_used_qty = fe_line.get('actual_used_qty') or 0
-                            line.wastage_qty = fe_line.get('wastage_qty') or 0
-                            line.actual_completed_qty = fe_line.get('actual_completed_qty') or 0
-                            line.save()
-                else:
-                    plan.lines.all().delete()
-                    for line in lines:
-                        target_prod = Product.objects.get(id=line['target_product_id'])
-                        raw_mat = Product.objects.get(id=line['raw_material_id'])
-                        ProductionPlanLine.objects.create(
-                            plan=plan,
-                            target_product=target_prod,
-                            unit_weight=line.get('unit_weight') or 0,
-                            target_qty=line.get('target_qty') or 0,
-                            raw_material=raw_mat,
-                            raw_material_qty=line.get('raw_material_qty') or 0,
-                            actual_used_qty=line.get('actual_used_qty') or 0,
-                            wastage_qty=line.get('wastage_qty') or 0,
-                            actual_completed_qty=line.get('actual_completed_qty') or 0
-                        )
+                plan.lines.all().delete()
+                for line in lines:
+                    target_prod = Product.objects.get(id=line['target_product_id'])
+                    raw_mat = Product.objects.get(id=line['raw_material_id'])
+                    ProductionPlanLine.objects.create(
+                        plan=plan,
+                        target_product=target_prod,
+                        unit_weight=line.get('unit_weight') or 0,
+                        target_qty=line.get('target_qty') or 0,
+                        raw_material=raw_mat,
+                        raw_material_qty=line.get('raw_material_qty') or 0,
+                        actual_used_qty=line.get('actual_used_qty') or 0,
+                        wastage_qty=line.get('wastage_qty') or 0,
+                        actual_completed_qty=line.get('actual_completed_qty') or 0
+                    )
                     
                 email_subject = None
                 email_body = None
@@ -374,6 +364,13 @@ def save_production_plan(request):
                     email_subject = f"End-of-Day Production Plan Completed: {plan.date}"
                     email_body = f"The end-of-day production actuals for {plan.date} have been submitted by {request.user.get_full_name() or request.user.username}.\n\nTotal Items Produced: {sum(l.actual_completed_qty for l in plan.lines.all())}\n\nPlease log in to the ERP to view the variance details.\nhttps://erp.organicfoodslanka.com/manufacturing/planning/{plan.id}/"
                     notif_link = reverse('production_plan_detail', args=[plan.id])
+                    
+                elif action == 'update_morning':
+                    if not request.user.has_perm('manufacturing.submit_production_plans'):
+                        return JsonResponse({'status': 'error', 'message': 'You do not have permission to update.'}, status=403)
+                    email_subject = f"Morning Production Plan Updated: {plan.date}"
+                    email_body = f"The morning production targets for {plan.date} have been updated by {request.user.get_full_name() or request.user.username}.\n\nPlease log in to the ERP to view the details.\nhttps://erp.organicfoodslanka.com/manufacturing/planning/{plan.id}/edit/"
+                    notif_link = reverse('production_plan_edit', args=[plan.id])
 
                 if email_subject:
                     User = get_user_model()
@@ -393,7 +390,7 @@ def save_production_plan(request):
                             message=email_body.split('\n')[0],
                             link=notif_link
                         )
-                        if u.email:
+                        if u.email and action != 'update_morning':
                             emails_to_send.append(u.email)
 
                     if emails_to_send:
