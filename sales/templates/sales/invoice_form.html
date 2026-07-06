@@ -1053,12 +1053,6 @@
 
         // Run calculations on load for existing items
         $('.formset-row').each(function() {
-            ['quantity', 'unit_price', 'discount'].forEach(field => {
-                const input = $(this).find(`input[name$="-${field}"]`);
-                if (input.val()) {
-                    input.val(parseFloat(input.val()).toFixed(2));
-                }
-            });
             calculateRowTotal(this);
         });
         
@@ -1132,11 +1126,11 @@
             if (!row.data('auto_pricing_enabled')) return;
             const priceInput = row.find('input[name$="-unit_price"]');
             if (qty >= 500 && p500) {
-                priceInput.val(parseFloat(p500).toFixed(2));
+                priceInput.val(p500);
             } else if (qty >= 250 && p250) {
-                priceInput.val(parseFloat(p250).toFixed(2));
+                priceInput.val(p250);
             } else if (basePrice) {
-                priceInput.val(parseFloat(basePrice).toFixed(2));
+                priceInput.val(basePrice);
             }
         }
 
