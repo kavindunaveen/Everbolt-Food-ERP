@@ -111,7 +111,9 @@
             <tr>
                 <td>{{ item.material_code }}</td>
                 <td>
-                    {% if item.category|lower == 'other' and item.sub_category %}
+                    {% if item.product %}
+                        {{ item.product.product_name }}
+                    {% elif item.category|lower == 'other' and item.sub_category %}
                         {{ item.sub_category }}
                     {% else %}
                         {{ item.category|title }}

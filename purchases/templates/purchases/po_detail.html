@@ -120,14 +120,18 @@
                     {% for item in po.items.all %}
                     <tr>
                         <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                            {% if item.category|lower == 'other' and item.sub_category %}
+                            {% if item.product %}
+                                {{ item.product.product_name }}
+                            {% elif item.category|lower == 'other' and item.sub_category %}
                                 {{ item.sub_category }}
                             {% else %}
                                 {{ item.category|title }}
                             {% endif %}
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                            {% if item.category|lower == 'other' and item.sub_category %}
+                            {% if item.product %}
+                                -
+                            {% elif item.category|lower == 'other' and item.sub_category %}
                                 -
                             {% else %}
                                 {{ item.sub_category|default:"-" }}
