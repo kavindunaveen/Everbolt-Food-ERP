@@ -85,6 +85,46 @@ class PendingPaymentsView(LoginRequiredMixin, PermissionRequiredMixin, View):
             total_paid_sum=Coalesce(Sum('payments__amount'), Decimal('0.00'))
         ).filter(total_paid_sum__lt=Decimal('0.01'))  # treat < 0.01 as zero (tolerance)
 
+        if request.GET.get('export') == 'xlsx':
+            import openpyxl
+            from openpyxl.styles import Font, PatternFill
+            from django.http import HttpResponse
+            
+            wb = openpyxl.Workbook()
+            ws = wb.active
+            ws.title = "Pending Payments"
+            
+            ws.append([f"Pending Payments Report (Generated {timezone.now().strftime('%Y-%m-%d %H:%M')})"])
+            ws.append([])
+            
+            headers = ["Invoice #", "Type", "Customer", "Salesperson", "Creation Date", "Due Date", "Total (Rs)", "Total Paid (Rs)", "Balance (Rs)"]
+            ws.append(headers)
+            
+            header_font = Font(bold=True)
+            header_fill = PatternFill(start_color="EEEEEE", end_color="EEEEEE", fill_type="solid")
+            for col in range(1, len(headers) + 1):
+                cell = ws.cell(row=3, column=col)
+                cell.font = header_font
+                cell.fill = header_fill
+                
+            for inv in pending_qs:
+                ws.append([
+                    inv.invoice_number,
+                    inv.get_invoice_type_display(),
+                    inv.customer.customer_name if inv.customer else "-",
+                    inv.salesperson.get_full_name() if inv.salesperson else "-",
+                    inv.creation_date.strftime('%Y-%m-%d') if inv.creation_date else "-",
+                    inv.due_date.strftime('%Y-%m-%d') if inv.due_date else "-",
+                    float(inv.total_amount),
+                    float(inv.total_paid_sum),
+                    float(inv.total_amount - inv.total_paid_sum)
+                ])
+                
+            response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+            response['Content-Disposition'] = 'attachment; filename="Pending_Payments.xlsx"'
+            wb.save(response)
+            return response
+
         from django.core.paginator import Paginator
         paginator = Paginator(pending_qs, 20)
         page_number = request.GET.get('page', 1)
@@ -185,6 +225,46 @@ class PartialPaymentsView(LoginRequiredMixin, PermissionRequiredMixin, View):
             total_paid_sum=Coalesce(Sum('payments__amount'), Decimal('0.00'))
         ).filter(total_paid_sum__gte=Decimal('0.01'), total_paid_sum__lt=F('total_amount') - Decimal('0.009'))
 
+        if request.GET.get('export') == 'xlsx':
+            import openpyxl
+            from openpyxl.styles import Font, PatternFill
+            from django.http import HttpResponse
+            
+            wb = openpyxl.Workbook()
+            ws = wb.active
+            ws.title = "Partial Payments"
+            
+            ws.append([f"Partial Payments Report (Generated {timezone.now().strftime('%Y-%m-%d %H:%M')})"])
+            ws.append([])
+            
+            headers = ["Invoice #", "Type", "Customer", "Salesperson", "Creation Date", "Due Date", "Total (Rs)", "Total Paid (Rs)", "Balance (Rs)"]
+            ws.append(headers)
+            
+            header_font = Font(bold=True)
+            header_fill = PatternFill(start_color="EEEEEE", end_color="EEEEEE", fill_type="solid")
+            for col in range(1, len(headers) + 1):
+                cell = ws.cell(row=3, column=col)
+                cell.font = header_font
+                cell.fill = header_fill
+                
+            for inv in pending_qs:
+                ws.append([
+                    inv.invoice_number,
+                    inv.get_invoice_type_display(),
+                    inv.customer.customer_name if inv.customer else "-",
+                    inv.salesperson.get_full_name() if inv.salesperson else "-",
+                    inv.creation_date.strftime('%Y-%m-%d') if inv.creation_date else "-",
+                    inv.due_date.strftime('%Y-%m-%d') if inv.due_date else "-",
+                    float(inv.total_amount),
+                    float(inv.total_paid_sum),
+                    float(inv.total_amount - inv.total_paid_sum)
+                ])
+                
+            response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+            response['Content-Disposition'] = 'attachment; filename="Partial_Payments.xlsx"'
+            wb.save(response)
+            return response
+
         from django.core.paginator import Paginator
         paginator = Paginator(pending_qs, 20)
         page_number = request.GET.get('page', 1)
@@ -281,6 +361,46 @@ class CompletedPaymentsView(LoginRequiredMixin, PermissionRequiredMixin, View):
         salesperson_id = request.GET.get('salesperson')
         if salesperson_id:
             completed_qs = completed_qs.filter(salesperson_id=salesperson_id)
+
+        if request.GET.get('export') == 'xlsx':
+            import openpyxl
+            from openpyxl.styles import Font, PatternFill
+            from django.http import HttpResponse
+            
+            wb = openpyxl.Workbook()
+            ws = wb.active
+            ws.title = "Completed Payments"
+            
+            ws.append([f"Completed Payments Report (Generated {timezone.now().strftime('%Y-%m-%d %H:%M')})"])
+            ws.append([])
+            
+            headers = ["Invoice #", "Type", "Customer", "Salesperson", "Creation Date", "Due Date", "Total (Rs)", "Total Paid (Rs)", "Balance (Rs)"]
+            ws.append(headers)
+            
+            header_font = Font(bold=True)
+            header_fill = PatternFill(start_color="EEEEEE", end_color="EEEEEE", fill_type="solid")
+            for col in range(1, len(headers) + 1):
+                cell = ws.cell(row=3, column=col)
+                cell.font = header_font
+                cell.fill = header_fill
+                
+            for inv in completed_qs:
+                ws.append([
+                    inv.invoice_number,
+                    inv.get_invoice_type_display(),
+                    inv.customer.customer_name if inv.customer else "-",
+                    inv.salesperson.get_full_name() if inv.salesperson else "-",
+                    inv.creation_date.strftime('%Y-%m-%d') if inv.creation_date else "-",
+                    inv.due_date.strftime('%Y-%m-%d') if inv.due_date else "-",
+                    float(inv.total_amount),
+                    float(inv.total_paid_sum),
+                    float(inv.total_amount - inv.total_paid_sum)
+                ])
+                
+            response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+            response['Content-Disposition'] = 'attachment; filename="Completed_Payments.xlsx"'
+            wb.save(response)
+            return response
 
         from django.core.paginator import Paginator
         paginator = Paginator(completed_qs, 20)
@@ -609,6 +729,46 @@ class ChartOfAccountsView(LoginRequiredMixin, PermissionRequiredMixin, ListView)
     model = Account
     context_object_name = 'accounts'
 
+    def get(self, request, *args, **kwargs):
+        if request.GET.get('export') == 'xlsx':
+            import openpyxl
+            from openpyxl.styles import Font, PatternFill
+            from django.http import HttpResponse
+            from django.utils import timezone
+            
+            wb = openpyxl.Workbook()
+            ws = wb.active
+            ws.title = "Chart of Accounts"
+            ws.append([f"Chart of Accounts Report (Generated {timezone.now().strftime('%Y-%m-%d %H:%M')})"])
+            ws.append([])
+            
+            headers = ["Code", "Account Name", "Type", "Sub Type", "Balance (Rs)", "Status"]
+            ws.append(headers)
+            
+            header_font = Font(bold=True)
+            header_fill = PatternFill(start_color="EEEEEE", end_color="EEEEEE", fill_type="solid")
+            for col in range(1, len(headers) + 1):
+                cell = ws.cell(row=3, column=col)
+                cell.font = header_font
+                cell.fill = header_fill
+                
+            for acc in self.model.objects.all().order_by('code'):
+                ws.append([
+                    acc.code,
+                    acc.name,
+                    acc.get_account_type_display(),
+                    acc.get_sub_type_display(),
+                    float(acc.balance),
+                    "Active" if acc.is_active else "Inactive"
+                ])
+                
+            response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+            response['Content-Disposition'] = 'attachment; filename="Chart_Of_Accounts.xlsx"'
+            wb.save(response)
+            return response
+            
+        return super().get(request, *args, **kwargs)
+
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         # Group accounts by type for the view
@@ -630,6 +790,50 @@ class JournalEntryListView(LoginRequiredMixin, PermissionRequiredMixin, ListView
     model = JournalEntry
     context_object_name = 'entries'
     paginate_by = 50
+    
+    def get(self, request, *args, **kwargs):
+        if request.GET.get('export') == 'xlsx':
+            import openpyxl
+            from openpyxl.styles import Font, PatternFill
+            from django.http import HttpResponse
+            from django.utils import timezone
+            
+            wb = openpyxl.Workbook()
+            ws = wb.active
+            ws.title = "Journal Entries"
+            ws.append([f"Journal Entries Report (Generated {timezone.now().strftime('%Y-%m-%d %H:%M')})"])
+            ws.append([])
+            
+            headers = ["JE #", "Date", "Reference", "Status", "Account", "Description", "Debit (Rs)", "Credit (Rs)"]
+            ws.append(headers)
+            
+            header_font = Font(bold=True)
+            header_fill = PatternFill(start_color="EEEEEE", end_color="EEEEEE", fill_type="solid")
+            for col in range(1, len(headers) + 1):
+                cell = ws.cell(row=3, column=col)
+                cell.font = header_font
+                cell.fill = header_fill
+                
+            entries = self.model.objects.all().prefetch_related('lines__account').order_by('-date', '-id')
+            for entry in entries:
+                for line in entry.lines.all():
+                    ws.append([
+                        f"JE-{entry.id}",
+                        entry.date.strftime('%Y-%m-%d') if entry.date else "",
+                        entry.reference or "-",
+                        entry.get_status_display(),
+                        line.account.name if line.account else "-",
+                        line.description or "-",
+                        float(line.debit) if line.debit else 0.0,
+                        float(line.credit) if line.credit else 0.0
+                    ])
+                
+            response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+            response['Content-Disposition'] = 'attachment; filename="Journal_Entries.xlsx"'
+            wb.save(response)
+            return response
+            
+        return super().get(request, *args, **kwargs)
 
 class JournalEntryCreateView(LoginRequiredMixin, PermissionRequiredMixin, View):
     permission_required = 'finance.manage_finance'
@@ -729,6 +933,45 @@ class GeneralLedgerView(LoginRequiredMixin, PermissionRequiredMixin, View):
                     'credit': line.credit,
                     'balance': running_balance
                 })
+
+        if request.GET.get('export') == 'xlsx':
+            import openpyxl
+            from openpyxl.styles import Font, PatternFill
+            from django.http import HttpResponse
+            from django.utils import timezone
+            
+            wb = openpyxl.Workbook()
+            ws = wb.active
+            ws.title = "General Ledger"
+            
+            acc_name = selected_account.name if selected_account else 'All Accounts'
+            ws.append([f"General Ledger Report - {acc_name} (Generated {timezone.now().strftime('%Y-%m-%d %H:%M')})"])
+            ws.append([])
+            
+            headers = ["Date", "Reference", "Description", "Debit (Rs)", "Credit (Rs)", "Balance (Rs)"]
+            ws.append(headers)
+            
+            header_font = Font(bold=True)
+            header_fill = PatternFill(start_color="EEEEEE", end_color="EEEEEE", fill_type="solid")
+            for col in range(1, len(headers) + 1):
+                cell = ws.cell(row=3, column=col)
+                cell.font = header_font
+                cell.fill = header_fill
+                
+            for line in lines:
+                ws.append([
+                    line['date'].strftime('%Y-%m-%d') if line['date'] else "",
+                    line['reference'] or "-",
+                    line['description'] or "-",
+                    float(line['debit']),
+                    float(line['credit']),
+                    float(line['balance'])
+                ])
+                
+            response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+            response['Content-Disposition'] = 'attachment; filename="General_Ledger.xlsx"'
+            wb.save(response)
+            return response
                 
         context = {
             'accounts': accounts,
