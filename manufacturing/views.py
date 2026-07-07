@@ -323,7 +323,7 @@ def save_production_plan(request):
                     defaults={'created_by': request.user}
                 )
                 
-                if plan.status == 'COMPLETED':
+                if plan.status == 'COMPLETED' and action != 'update_evening':
                     return JsonResponse({'status': 'error', 'message': 'This plan is already completed.'}, status=400)
                 
                 plan.lines.all().delete()
@@ -372,6 +372,13 @@ def save_production_plan(request):
                     email_body = f"The morning production targets for {plan.date} have been updated by {request.user.get_full_name() or request.user.username}.\n\nPlease log in to the ERP to view the details.\nhttps://erp.organicfoodslanka.com/manufacturing/planning/{plan.id}/edit/"
                     notif_link = reverse('production_plan_edit', args=[plan.id])
 
+                elif action == 'update_evening':
+                    if not request.user.has_perm('manufacturing.submit_production_plans'):
+                        return JsonResponse({'status': 'error', 'message': 'You do not have permission to update.'}, status=403)
+                    email_subject = f"Completed Production Plan Updated: {plan.date}"
+                    email_body = f"The completed production actuals for {plan.date} have been updated by {request.user.get_full_name() or request.user.username}.\n\nTotal Items Produced: {sum(l.actual_completed_qty for l in plan.lines.all())}\n\nPlease log in to the ERP to view the variance details.\nhttps://erp.organicfoodslanka.com/manufacturing/planning/{plan.id}/"
+                    notif_link = reverse('production_plan_detail', args=[plan.id])
+
                 if email_subject:
                     User = get_user_model()
                     from django.db.models import Q
@@ -390,7 +397,7 @@ def save_production_plan(request):
                             message=email_body.split('\n')[0],
                             link=notif_link
                         )
-                        if u.email and action != 'update_morning':
+                        if u.email and action not in ['update_morning', 'update_evening']:
                             emails_to_send.append(u.email)
 
                     if emails_to_send:
