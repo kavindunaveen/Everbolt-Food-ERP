@@ -265,8 +265,8 @@ class ProductionPlanUpdateView(LoginRequiredMixin, ERPPermissionRequiredMixin, D
 
     def dispatch(self, request, *args, **kwargs):
         obj = self.get_object()
-        if request.user != obj.created_by:
-            messages.error(request, "You do not have permission to edit this plan. Only the creator can edit it.")
+        if request.user != obj.created_by and request.user != obj.submitted_by and not request.user.is_superuser:
+            messages.error(request, "You do not have permission to edit this plan. Only the creator or submitter can edit it.")
             return redirect('production_plan_detail', pk=obj.pk)
         return super().dispatch(request, *args, **kwargs)
 
