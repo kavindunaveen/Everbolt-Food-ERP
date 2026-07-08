@@ -60,9 +60,11 @@
                         <th class="px-3 py-4 text-left text-xs font-bold uppercase tracking-wider min-w-[250px]">Raw Material</th>
                         <th class="px-3 py-4 text-left text-xs font-bold uppercase tracking-wider min-w-[120px]">RM Qty Planned</th>
                         <th class="px-3 py-4 text-left text-xs font-bold uppercase tracking-wider text-indigo-200 border-l border-gray-700 min-w-[140px]">Actual Used RM</th>
-                        <th class="px-3 py-4 text-left text-xs font-bold uppercase tracking-wider text-red-200 min-w-[120px]">Wastage</th>
+                        <th class="px-3 py-4 text-left text-xs font-bold uppercase tracking-wider text-red-200 min-w-[180px]">RM Wastage</th>
+                        <th class="px-3 py-4 text-left text-xs font-bold uppercase tracking-wider text-red-200 min-w-[180px]">PM Wastage</th>
                         <th class="px-3 py-4 text-left text-xs font-bold uppercase tracking-wider text-emerald-300 bg-gray-900 min-w-[160px]">Actual Completed Qty</th>
                         <th class="px-3 py-4 text-left text-xs font-bold uppercase tracking-wider min-w-[100px]">Variance</th>
+                        <th class="px-3 py-4 text-left text-xs font-bold uppercase tracking-wider min-w-[200px]">Note</th>
                         <th class="px-3 py-4 w-12"></th>
                     </tr>
                 </thead>
@@ -123,16 +125,68 @@
                                 <input type="number" step="0.01" x-model="row.actual_used_qty" class="text-sm w-full border-indigo-200 rounded-md text-right font-semibold text-indigo-700 focus:ring-indigo-500 focus:border-indigo-500">
                             </td>
                             <td class="px-2 py-2 whitespace-nowrap bg-red-50/30">
-                                <input type="number" step="0.01" x-model="row.wastage_qty" class="text-sm w-full border-red-200 rounded-md text-right font-bold text-red-600 focus:ring-red-500 focus:border-red-500">
+                                <div class="flex gap-2 w-full">
+                                    <template x-if="status === 'COMPLETED'">
+                                        <div class="text-sm w-full font-bold text-red-600 text-right py-2">
+                                            <span x-text="row.wastage_qty"></span> <span x-text="row.rm_wastage_unit" class="text-xs"></span>
+                                        </div>
+                                    </template>
+                                    <template x-if="status !== 'COMPLETED'">
+                                        <div class="flex gap-2 w-full">
+                                            <input type="number" step="0.01" x-model="row.wastage_qty" class="text-sm w-full border-red-200 rounded-md text-right font-bold text-red-600 focus:ring-red-500 focus:border-red-500" placeholder="0.00">
+                                            <select x-model="row.rm_wastage_unit" class="text-sm w-20 border-red-200 rounded-md text-red-600 focus:ring-red-500 focus:border-red-500 font-bold bg-white">
+                                                <option value="g">g</option>
+                                                <option value="kg">kg</option>
+                                                <option value="qty">qty</option>
+                                            </select>
+                                        </div>
+                                    </template>
+                                </div>
+                            </td>
+                            <td class="px-2 py-2 whitespace-nowrap bg-red-50/30">
+                                <div class="flex gap-2 w-full">
+                                    <template x-if="status === 'COMPLETED'">
+                                        <div class="text-sm w-full font-bold text-red-600 text-right py-2">
+                                            <span x-text="row.pm_wastage_qty"></span> <span x-text="row.pm_wastage_unit" class="text-xs"></span>
+                                        </div>
+                                    </template>
+                                    <template x-if="status !== 'COMPLETED'">
+                                        <div class="flex gap-2 w-full">
+                                            <input type="number" step="0.01" x-model="row.pm_wastage_qty" class="text-sm w-full border-red-200 rounded-md text-right font-bold text-red-600 focus:ring-red-500 focus:border-red-500" placeholder="0.00">
+                                            <select x-model="row.pm_wastage_unit" class="text-sm w-20 border-red-200 rounded-md text-red-600 focus:ring-red-500 focus:border-red-500 font-bold bg-white">
+                                                <option value="g">g</option>
+                                                <option value="kg">kg</option>
+                                                <option value="qty">qty</option>
+                                            </select>
+                                        </div>
+                                    </template>
+                                </div>
                             </td>
                             <td class="px-2 py-2 whitespace-nowrap bg-emerald-50/50 border-x border-emerald-100">
-                                <input type="number" x-model="row.actual_completed_qty" class="text-sm w-full border-emerald-300 rounded-md text-right font-extrabold text-emerald-800 shadow-inner focus:ring-emerald-500 focus:border-emerald-500">
+                                <template x-if="status === 'COMPLETED'">
+                                    <div class="text-sm w-full font-extrabold text-emerald-800 text-right py-2 pr-3" x-text="row.actual_completed_qty"></div>
+                                </template>
+                                <template x-if="status !== 'COMPLETED'">
+                                    <input type="number" x-model="row.actual_completed_qty" class="text-sm w-full border-emerald-300 rounded-md text-right font-extrabold text-emerald-800 shadow-inner focus:ring-emerald-500 focus:border-emerald-500">
+                                </template>
                             </td>
                             
                             <!-- Variance -->
                             <td class="px-3 py-2 whitespace-nowrap text-right font-extrabold" 
                                 :class="{'text-red-500': (row.actual_completed_qty - row.target_qty) < 0, 'text-emerald-500': (row.actual_completed_qty - row.target_qty) > 0, 'text-gray-400': (row.actual_completed_qty - row.target_qty) === 0}"
                                 x-text="(row.actual_completed_qty - row.target_qty) > 0 ? '+' + (row.actual_completed_qty - row.target_qty) : (row.actual_completed_qty - row.target_qty)">
+                            </td>
+                            
+                            <!-- Note -->
+                            <td class="px-2 py-2 whitespace-nowrap">
+                                <template x-if="status === 'COMPLETED'">
+                                    <div class="text-sm w-full text-gray-700 py-2 whitespace-normal break-words max-w-[200px]" x-text="row.note || '-'"></div>
+                                </template>
+                                <template x-if="status !== 'COMPLETED'">
+                                    <input type="text" x-model="row.note" placeholder="Note (Req. if var != 0)"
+                                        :class="{'border-red-500 ring-1 ring-red-500 placeholder-red-400': (status === 'COMPLETED' || status === 'MORNING_SUBMITTED') && (row.actual_completed_qty - row.target_qty) != 0 && !row.note}" 
+                                        class="text-sm w-full border-gray-200 rounded-md focus:ring-indigo-500 focus:border-indigo-500 transition-colors">
+                                </template>
                             </td>
                             
                             <!-- Actions -->
@@ -205,7 +259,11 @@ function productionPlanForm() {
                 raw_material_qty: 0,
                 actual_used_qty: 0,
                 wastage_qty: 0,
-                actual_completed_qty: 0
+                rm_wastage_unit: 'g',
+                pm_wastage_qty: 0,
+                pm_wastage_unit: 'g',
+                actual_completed_qty: 0,
+                note: ''
             });
             setTimeout(() => {
                 const inputs = document.querySelectorAll('select');
@@ -231,9 +289,22 @@ function productionPlanForm() {
                     raw_material_qty: parseFloat(line.raw_material_qty) || 0,
                     actual_used_qty: parseFloat(line.actual_used_qty) || 0,
                     wastage_qty: parseFloat(line.wastage_qty) || 0,
-                    actual_completed_qty: parseInt(line.actual_completed_qty) || 0
+                    rm_wastage_unit: line.rm_wastage_unit || 'g',
+                    pm_wastage_qty: parseFloat(line.pm_wastage_qty) || 0,
+                    pm_wastage_unit: line.pm_wastage_unit || 'g',
+                    actual_completed_qty: parseInt(line.actual_completed_qty) || 0,
+                    note: line.note || ''
                 })).filter(l => l.target_product_id && l.raw_material_id)
             };
+            
+            if (action === 'submit_evening' || action === 'update_evening' || this.status === 'COMPLETED') {
+                for (let line of data.lines) {
+                    if (line.actual_completed_qty !== line.target_qty && (!line.note || line.note.trim() === '')) {
+                        if(window.dispatchEvent) window.dispatchEvent(new CustomEvent('toast', { detail: { type: 'error', message: 'A note is required for any row with a variance.' }}));
+                        return;
+                    }
+                }
+            }
             
             if(data.lines.length === 0) {
                 if(window.dispatchEvent) window.dispatchEvent(new CustomEvent('toast', { detail: { type: 'error', message: 'Please complete at least one row (select target product and raw material).' }}));

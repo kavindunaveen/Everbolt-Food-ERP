@@ -252,7 +252,11 @@ class ProductionPlanCreateView(LoginRequiredMixin, ERPPermissionRequiredMixin, T
                 'raw_material_qty': 0,
                 'actual_used_qty': 0,
                 'wastage_qty': 0,
-                'actual_completed_qty': 0
+                'rm_wastage_unit': 'g',
+                'pm_wastage_qty': 0,
+                'pm_wastage_unit': 'g',
+                'actual_completed_qty': 0,
+                'note': ''
             }]
         })
         return context
@@ -289,7 +293,11 @@ class ProductionPlanUpdateView(LoginRequiredMixin, ERPPermissionRequiredMixin, D
                 'raw_material_qty': float(l.raw_material_qty),
                 'actual_used_qty': float(l.actual_used_qty),
                 'wastage_qty': float(l.wastage_qty),
-                'actual_completed_qty': l.actual_completed_qty
+                'rm_wastage_unit': l.rm_wastage_unit,
+                'pm_wastage_qty': float(l.pm_wastage_qty),
+                'pm_wastage_unit': l.pm_wastage_unit,
+                'actual_completed_qty': l.actual_completed_qty,
+                'note': l.note or ''
             })
             
         context['plan_data_json'] = json.dumps({
@@ -330,16 +338,28 @@ def save_production_plan(request):
                 for line in lines:
                     target_prod = Product.objects.get(id=line['target_product_id'])
                     raw_mat = Product.objects.get(id=line['raw_material_id'])
+                    target_qty = line.get('target_qty') or 0
+                    actual_completed_qty = line.get('actual_completed_qty') or 0
+                    note = line.get('note') or ''
+                    
+                    if (action in ['submit_evening', 'update_evening'] or plan.status == 'COMPLETED') and (int(actual_completed_qty) != int(target_qty)):
+                        if not note.strip():
+                            return JsonResponse({'status': 'error', 'message': f"A note is required for '{target_prod.name}' because the Actual Qty ({actual_completed_qty}) does not match Target Qty ({target_qty})."}, status=400)
+                            
                     ProductionPlanLine.objects.create(
                         plan=plan,
                         target_product=target_prod,
                         unit_weight=line.get('unit_weight') or 0,
-                        target_qty=line.get('target_qty') or 0,
+                        target_qty=target_qty,
                         raw_material=raw_mat,
                         raw_material_qty=line.get('raw_material_qty') or 0,
                         actual_used_qty=line.get('actual_used_qty') or 0,
                         wastage_qty=line.get('wastage_qty') or 0,
-                        actual_completed_qty=line.get('actual_completed_qty') or 0
+                        rm_wastage_unit=line.get('rm_wastage_unit') or 'g',
+                        pm_wastage_qty=line.get('pm_wastage_qty') or 0,
+                        pm_wastage_unit=line.get('pm_wastage_unit') or 'g',
+                        actual_completed_qty=actual_completed_qty,
+                        note=note
                     )
                     
                 email_subject = None
