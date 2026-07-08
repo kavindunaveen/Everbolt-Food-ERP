@@ -127,6 +127,7 @@ class ProductionPlanLine(models.Model):
     rm_wastage_unit = models.CharField(max_length=20, default='g')
     pm_wastage_qty = models.DecimalField(max_digits=12, decimal_places=3, default=0.000)
     pm_wastage_unit = models.CharField(max_length=20, default='g')
+    wastage_remark = models.TextField(blank=True, null=True)
     
     actual_completed_qty = models.IntegerField(default=0)
     note = models.TextField(blank=True, null=True)

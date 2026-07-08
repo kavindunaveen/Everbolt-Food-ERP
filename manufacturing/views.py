@@ -255,6 +255,7 @@ class ProductionPlanCreateView(LoginRequiredMixin, ERPPermissionRequiredMixin, T
                 'rm_wastage_unit': 'g',
                 'pm_wastage_qty': 0,
                 'pm_wastage_unit': 'g',
+                'wastage_remark': '',
                 'actual_completed_qty': 0,
                 'note': ''
             }]
@@ -296,6 +297,7 @@ class ProductionPlanUpdateView(LoginRequiredMixin, ERPPermissionRequiredMixin, D
                 'rm_wastage_unit': l.rm_wastage_unit,
                 'pm_wastage_qty': float(l.pm_wastage_qty),
                 'pm_wastage_unit': l.pm_wastage_unit,
+                'wastage_remark': l.wastage_remark or '',
                 'actual_completed_qty': l.actual_completed_qty,
                 'note': l.note or ''
             })
@@ -358,6 +360,7 @@ def save_production_plan(request):
                         rm_wastage_unit=line.get('rm_wastage_unit') or 'g',
                         pm_wastage_qty=line.get('pm_wastage_qty') or 0,
                         pm_wastage_unit=line.get('pm_wastage_unit') or 'g',
+                        wastage_remark=line.get('wastage_remark') or '',
                         actual_completed_qty=actual_completed_qty,
                         note=note
                     )
