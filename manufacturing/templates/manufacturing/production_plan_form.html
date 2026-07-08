@@ -183,7 +183,7 @@
                                     <div class="text-sm w-full text-gray-700 py-2 whitespace-normal break-words max-w-[200px]" x-text="row.note || '-'"></div>
                                 </template>
                                 <template x-if="status !== 'COMPLETED'">
-                                    <input type="text" x-model="row.note" placeholder="Note (Req. if var != 0)"
+                                    <input type="text" x-model="row.note" placeholder="Reason for variance (Required)"
                                         :class="{'border-red-500 ring-1 ring-red-500 placeholder-red-400': (status === 'COMPLETED' || status === 'MORNING_SUBMITTED') && (row.actual_completed_qty - row.target_qty) != 0 && !row.note}" 
                                         class="text-sm w-full border-gray-200 rounded-md focus:ring-indigo-500 focus:border-indigo-500 transition-colors">
                                 </template>
