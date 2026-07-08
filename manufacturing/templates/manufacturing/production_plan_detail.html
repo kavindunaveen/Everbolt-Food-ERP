@@ -35,9 +35,12 @@
                         <th class="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider">Raw Material</th>
                         <th class="px-4 py-3 text-right text-xs font-bold uppercase tracking-wider">RM Planned</th>
                         <th class="px-4 py-3 text-right text-xs font-bold uppercase tracking-wider text-indigo-200">Actual RM Used</th>
-                        <th class="px-4 py-3 text-right text-xs font-bold uppercase tracking-wider text-red-200">Wastage</th>
+                        <th class="px-4 py-3 text-right text-xs font-bold uppercase tracking-wider text-red-200">RM Wastage</th>
+                        <th class="px-4 py-3 text-right text-xs font-bold uppercase tracking-wider text-red-200">PM Wastage</th>
+                        <th class="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-red-200">Wastage Remark</th>
                         <th class="px-4 py-3 text-right text-xs font-bold uppercase tracking-wider text-emerald-300 bg-gray-900">Actual Qty</th>
                         <th class="px-4 py-3 text-right text-xs font-bold uppercase tracking-wider">Variance</th>
+                        <th class="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider">Note</th>
                     </tr>
                 </thead>
                 <tbody class="bg-white divide-y divide-gray-200">
@@ -49,16 +52,19 @@
                         <td class="px-4 py-3 whitespace-nowrap text-sm font-bold text-gray-900">{{ line.raw_material.name }}</td>
                         <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-600 text-right">{{ line.raw_material_qty|floatformat:2 }}</td>
                         <td class="px-4 py-3 whitespace-nowrap text-sm font-bold text-indigo-700 bg-indigo-50/30 text-right">{{ line.actual_used_qty|floatformat:2 }}</td>
-                        <td class="px-4 py-3 whitespace-nowrap text-sm font-bold text-red-600 bg-red-50/30 text-right">{{ line.wastage_qty|floatformat:2 }}</td>
+                        <td class="px-4 py-3 whitespace-nowrap text-sm font-bold text-red-600 bg-red-50/30 text-right">{{ line.wastage_qty|floatformat:2 }} <span class="text-xs">{{ line.rm_wastage_unit }}</span></td>
+                        <td class="px-4 py-3 whitespace-nowrap text-sm font-bold text-red-600 bg-red-50/30 text-right">{{ line.pm_wastage_qty|floatformat:2 }} <span class="text-xs">{{ line.pm_wastage_unit }}</span></td>
+                        <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-700 bg-red-50/10 text-left truncate max-w-[150px]" title="{{ line.wastage_remark|default:'' }}">{{ line.wastage_remark|default:"-" }}</td>
                         <td class="px-4 py-3 whitespace-nowrap text-sm font-extrabold text-emerald-800 bg-emerald-50/50 border-x border-emerald-100 text-right">{{ line.actual_completed_qty }}</td>
                         <td class="px-4 py-3 whitespace-nowrap text-sm font-extrabold text-right
                             {% if line.variance < 0 %}text-red-500{% elif line.variance > 0 %}text-emerald-500{% else %}text-gray-400{% endif %}">
                             {% if line.variance > 0 %}+{% endif %}{{ line.variance }}
                         </td>
+                        <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-700 text-left truncate max-w-[150px]" title="{{ line.note|default:'' }}">{{ line.note|default:"-" }}</td>
                     </tr>
                     {% empty %}
                     <tr>
-                        <td colspan="9" class="px-6 py-8 text-center text-gray-500 text-sm">No items in this production plan.</td>
+                        <td colspan="12" class="px-6 py-8 text-center text-gray-500 text-sm">No items in this production plan.</td>
                     </tr>
                     {% endfor %}
                 </tbody>
