@@ -17,10 +17,16 @@
                 {% endfor %}
             </select>
             {% if perms.visits.view_weekly_summary %}
-            <a href="{% url 'visit_summary' %}" class="btn-premium btn-secondary">
+            <a href="{% url 'visit_summary' %}" class="btn-premium btn-secondary flex items-center whitespace-nowrap">
                 <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
                 Weekly Report
             </a>
+            {% endif %}
+            {% if request.user.is_superuser %}
+            <button onclick="downloadCalendarPDF()" class="btn-premium btn-secondary flex items-center whitespace-nowrap" title="Download Calendar as PDF">
+                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                Download PDF
+            </button>
             {% endif %}
             <div class="flex bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
                 <button @click="changeMonth(-1)" class="px-4 py-2 text-gray-600 hover:bg-gray-50 transition-colors border-r border-gray-200">
@@ -35,7 +41,7 @@
     </div>
 
     <!-- Calendar Grid -->
-    <div class="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+    <div id="calendar-grid-container" class="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
         <div class="grid grid-cols-7 border-b border-gray-200 bg-gray-50">
             <template x-for="day in ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']">
                 <div class="py-3 text-center text-xs font-black text-gray-500 uppercase tracking-widest border-r border-gray-100 last:border-r-0" x-text="day"></div>
@@ -482,5 +488,43 @@
             }
         };
     }
+
+    function downloadCalendarPDF() {
+        const element = document.getElementById('calendar-grid-container');
+        
+        // Temporarily add a class to disable truncation
+        element.classList.add('pdf-export-mode');
+        
+        // Force Alpine updates if needed, though standard CSS handles the visual changes
+        const style = document.createElement('style');
+        style.id = 'pdf-export-style';
+        style.innerHTML = `
+            .pdf-export-mode .truncate {
+                white-space: normal !important;
+                overflow: visible !important;
+                text-overflow: clip !important;
+                word-wrap: break-word !important;
+            }
+            .pdf-export-mode .min-h-\\[120px\\] {
+                min-height: 150px !important;
+            }
+        `;
+        document.head.appendChild(style);
+
+        const opt = {
+            margin:       0.5,
+            filename:     'Visit_Calendar.pdf',
+            image:        { type: 'jpeg', quality: 0.98 },
+            html2canvas:  { scale: 2, useCORS: true },
+            jsPDF:        { unit: 'in', format: 'letter', orientation: 'landscape' }
+        };
+
+        html2pdf().set(opt).from(element).save().then(function() {
+            // Clean up
+            element.classList.remove('pdf-export-mode');
+            document.getElementById('pdf-export-style').remove();
+        });
+    }
 </script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 {% endblock %}
