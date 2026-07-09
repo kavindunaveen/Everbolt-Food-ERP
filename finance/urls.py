@@ -1,7 +1,8 @@
 from django.urls import path
 from .views import (
     FinanceDashboardView, PendingPaymentsView, PartialPaymentsView, CompletedPaymentsView, RecordPaymentView, AgedReceivablesView,
-    ChartOfAccountsView, AccountCreateView, JournalEntryListView, JournalEntryCreateView, GeneralLedgerView
+    ChartOfAccountsView, AccountCreateView, JournalEntryListView, JournalEntryCreateView, GeneralLedgerView,
+    CustomerCreditListView, apply_customer_credit
 )
 
 urlpatterns = [
@@ -16,4 +17,6 @@ urlpatterns = [
     path('journal-entries/', JournalEntryListView.as_view(), name='finance_journal_entries'),
     path('journal-entries/add/', JournalEntryCreateView.as_view(), name='finance_journal_entry_create'),
     path('general-ledger/', GeneralLedgerView.as_view(), name='finance_general_ledger'),
+    path('customer-credits/', CustomerCreditListView.as_view(), name='finance_customer_credits'),
+    path('api/apply-customer-credit/', apply_customer_credit, name='finance_apply_customer_credit'),
 ]

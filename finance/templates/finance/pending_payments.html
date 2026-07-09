@@ -100,7 +100,12 @@
                         <td class="px-6 py-4 text-right whitespace-nowrap">
                             <span class="text-sm font-bold text-red-600">{{ inv.balance|floatformat:"2"|intcomma }}</span>
                         </td>
-                        <td class="px-6 py-4 text-center whitespace-nowrap">
+                        <td class="px-6 py-4 text-center whitespace-nowrap space-x-1">
+                            {% if inv.available_credit > 0 %}
+                            <button onclick="applyCustomerCredit({{ inv.id }}, '{{ inv.invoice_number }}', {{ inv.available_credit }}, {{ inv.balance }})" class="btn-premium bg-indigo-600 text-white hover:bg-indigo-700 text-xs px-3 py-1.5 rounded" title="Apply Customer Credit">
+                                Apply Credit (Rs {{ inv.available_credit|floatformat:"0"|intcomma }})
+                            </button>
+                            {% endif %}
                             <button onclick="openPaymentModal({{ inv.id }}, '{{ inv.invoice_number }}', {{ inv.balance }})" class="btn-premium bg-blue-600 text-white hover:bg-blue-700 text-xs px-3 py-1.5 rounded">
                                 Record Payment
                             </button>
@@ -257,8 +262,8 @@
         document.getElementById('invoice_id').value = invId;
         document.getElementById('invoice_number_display').innerText = invNum;
         document.getElementById('payment_amount').value = parseFloat(balance).toFixed(2);
-        document.getElementById('payment_amount').max = balance;
-        document.getElementById('payment_amount').placeholder = 'Max: ' + parseFloat(balance).toFixed(2);
+        document.getElementById('payment_amount').removeAttribute('max');
+        document.getElementById('payment_amount').placeholder = 'Amount to pay...';
         document.getElementById('balance_display').innerText = parseFloat(balance).toFixed(2);
         
         modal.classList.remove('hidden');
@@ -278,6 +283,45 @@
             document.getElementById('payment_date').value = new Date().toISOString().split('T')[0];
             clearSlip();
         }, 300);
+    }
+    
+    function applyCustomerCredit(invId, invNum, availCredit, balance) {
+        let amount = prompt(`Apply available credit to Invoice ${invNum}?\n\nAvailable Credit: Rs ${availCredit.toFixed(2)}\nInvoice Balance: Rs ${balance.toFixed(2)}\n\nEnter amount to apply:`, Math.min(availCredit, balance).toFixed(2));
+        
+        if (amount !== null) {
+            amount = parseFloat(amount);
+            if (isNaN(amount) || amount <= 0) {
+                alert("Invalid amount.");
+                return;
+            }
+            if (amount > availCredit) {
+                alert("Cannot apply more than the available credit.");
+                return;
+            }
+            if (amount > balance) {
+                alert("Cannot apply more than the invoice balance.");
+                return;
+            }
+            
+            const formData = new FormData();
+            formData.append('invoice_id', invId);
+            formData.append('amount', amount);
+            formData.append('csrfmiddlewaretoken', '{{ csrf_token }}');
+            
+            fetch("{% url 'finance_apply_customer_credit' %}", {
+                method: 'POST',
+                body: formData
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.status === 'ok') {
+                    window.location.reload();
+                } else {
+                    alert(data.message || "Failed to apply credit.");
+                }
+            })
+            .catch(err => alert("An error occurred."));
+        }
     }
 
     function submitPayment(e) {

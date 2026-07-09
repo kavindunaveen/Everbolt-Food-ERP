@@ -102,3 +102,30 @@ class JournalEntryLine(models.Model):
 
     def __str__(self):
         return f"Line for {self.account.code} - {self.debit or self.credit}"
+
+class CustomerCredit(models.Model):
+    customer = models.ForeignKey('crm.Customer', on_delete=models.CASCADE, related_name='credits')
+    original_amount = models.DecimalField(max_digits=12, decimal_places=2)
+    remaining_amount = models.DecimalField(max_digits=12, decimal_places=2)
+    notes = models.TextField(blank=True, null=True, help_text="Reason for credit (e.g. Overpayment on Invoice #1023)")
+    created_at = models.DateTimeField(auto_now_add=True)
+    is_active = models.BooleanField(default=True)
+
+    def __str__(self):
+        return f"Credit for {self.customer.customer_name} - Rs {self.remaining_amount}"
+
+    class Meta:
+        ordering = ['-created_at']
+
+class CreditApplication(models.Model):
+    customer_credit = models.ForeignKey(CustomerCredit, on_delete=models.CASCADE, related_name='applications')
+    invoice = models.ForeignKey('sales.Invoice', on_delete=models.CASCADE, related_name='credit_applications')
+    amount_applied = models.DecimalField(max_digits=12, decimal_places=2)
+    applied_at = models.DateTimeField(auto_now_add=True)
+    applied_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True)
+
+    def __str__(self):
+        return f"Applied Rs {self.amount_applied} to {self.invoice.invoice_number}"
+
+    class Meta:
+        ordering = ['-applied_at']

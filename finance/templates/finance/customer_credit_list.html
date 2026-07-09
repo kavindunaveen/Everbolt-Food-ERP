@@ -1,0 +1,72 @@
+{% extends 'layouts/base.html' %}
+{% load humanize %}
+
+{% block title %}Customer Credits | Finance{% endblock %}
+
+{% block breadcrumbs %}
+<li class="flex items-center space-x-2 border-l border-gray-100 pl-4 ml-2">
+    <a href="{% url 'finance_dashboard' %}" class="hover:text-blue-600 transition-colors">Finance</a>
+</li>
+<li class="flex items-center space-x-2 border-l border-gray-100 pl-4 ml-2">
+    <span class="text-gray-900 font-semibold">Customer Credits</span>
+</li>
+{% endblock %}
+
+{% block content %}
+<div class="px-4 py-6 sm:px-0">
+    <div class="mb-8 flex flex-col md:flex-row md:items-end md:justify-between gap-4">
+        <div>
+            <h1 class="text-3xl font-extrabold text-gray-900 tracking-tight">Customer Credits</h1>
+            <p class="mt-2 text-sm text-gray-600 font-medium">Overpayments and advances available to be applied to future invoices.</p>
+        </div>
+    </div>
+
+    <!-- Summary Grid -->
+    <div class="mb-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        {% for summary in customer_totals %}
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4 hover:shadow-md transition-all">
+            <div class="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">{{ summary.customer__customer_name }}</div>
+            <div class="text-2xl font-black text-indigo-700">Rs {{ summary.total|floatformat:2|intcomma }}</div>
+            <div class="text-xs text-gray-400 mt-2 font-medium">Available Credit</div>
+        </div>
+        {% empty %}
+        <div class="col-span-4 bg-gray-50 rounded-xl border border-dashed border-gray-300 p-6 text-center">
+            <p class="text-sm text-gray-500">No active customer credits available.</p>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Detailed List Table -->
+    {% if credits %}
+    <div class="bg-white shadow-sm border border-gray-200 rounded-2xl overflow-hidden mt-8">
+        <div class="px-6 py-4 border-b border-gray-200 bg-gray-50">
+            <h2 class="text-lg font-bold text-gray-900">Individual Credit Records</h2>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Date</th>
+                        <th class="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Customer</th>
+                        <th class="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Source Note</th>
+                        <th class="px-6 py-4 text-right text-xs font-bold text-gray-500 uppercase tracking-wider">Original Amount</th>
+                        <th class="px-6 py-4 text-right text-xs font-bold text-gray-500 uppercase tracking-wider">Available Balance</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    {% for credit in credits %}
+                    <tr class="hover:bg-indigo-50/30 transition-colors">
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{{ credit.created_at|date:"Y-m-d" }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-900">{{ credit.customer.customer_name }}</td>
+                        <td class="px-6 py-4 text-sm text-gray-600 max-w-xs truncate">{{ credit.notes|default:"-" }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-right">Rs {{ credit.original_amount|floatformat:2|intcomma }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-extrabold text-indigo-700 text-right">Rs {{ credit.remaining_amount|floatformat:2|intcomma }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

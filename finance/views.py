@@ -130,11 +130,22 @@ class PendingPaymentsView(LoginRequiredMixin, PermissionRequiredMixin, View):
         page_number = request.GET.get('page', 1)
         page_obj = paginator.get_page(page_number)
 
+        from .models import CustomerCredit
+        from django.db.models import Sum
+
+        customer_ids = [inv.customer.id for inv in page_obj.object_list if inv.customer]
+        credits_qs = CustomerCredit.objects.filter(
+            customer_id__in=customer_ids, remaining_amount__gt=0, is_active=True
+        ).values('customer_id').annotate(total_credit=Sum('remaining_amount'))
+        
+        credit_map = {item['customer_id']: item['total_credit'] for item in credits_qs}
+
         # Build display list (no Python-level filtering needed now)
         invoices = []
         for inv in page_obj.object_list:
             total_paid = inv.total_paid_sum
             balance = inv.total_amount - total_paid
+            avail_credit = credit_map.get(inv.customer.id if inv.customer else 0, Decimal('0.00'))
             invoices.append({
                     'id': inv.id,
                     'invoice_number': inv.invoice_number,
@@ -145,7 +156,8 @@ class PendingPaymentsView(LoginRequiredMixin, PermissionRequiredMixin, View):
                     'total_amount': inv.total_amount,
                     'total_paid': total_paid,
                     'balance': balance,
-                    'days_overdue': (today - inv.due_date).days if inv.due_date else 0
+                    'days_overdue': (today - inv.due_date).days if inv.due_date else 0,
+                    'available_credit': avail_credit
                 })
                 
         from users.models import User
@@ -269,6 +281,16 @@ class PartialPaymentsView(LoginRequiredMixin, PermissionRequiredMixin, View):
         paginator = Paginator(pending_qs, 20)
         page_number = request.GET.get('page', 1)
         page_obj = paginator.get_page(page_number)
+        
+        from .models import CustomerCredit
+        from django.db.models import Sum
+
+        customer_ids = [inv.customer.id for inv in page_obj.object_list if inv.customer]
+        credits_qs = CustomerCredit.objects.filter(
+            customer_id__in=customer_ids, remaining_amount__gt=0, is_active=True
+        ).values('customer_id').annotate(total_credit=Sum('remaining_amount'))
+        
+        credit_map = {item['customer_id']: item['total_credit'] for item in credits_qs}
 
         # Build display list - prefetch payments to avoid N+1
         invoices = []
@@ -276,6 +298,8 @@ class PartialPaymentsView(LoginRequiredMixin, PermissionRequiredMixin, View):
             total_paid = inv.total_paid_sum
             balance = inv.total_amount - total_paid
             payments = list(inv.payments.all().order_by('payment_date'))
+            avail_credit = credit_map.get(inv.customer.id if inv.customer else 0, Decimal('0.00'))
+            
             invoices.append({
                     'id': inv.id,
                     'invoice_number': inv.invoice_number,
@@ -287,7 +311,8 @@ class PartialPaymentsView(LoginRequiredMixin, PermissionRequiredMixin, View):
                     'total_paid': total_paid,
                     'balance': balance,
                     'days_overdue': (today - inv.due_date).days if inv.due_date else 0,
-                    'payment_history': payments,
+                    'payments': payments,
+                    'available_credit': avail_credit
                 })
                 
         from users.models import User
@@ -485,9 +510,15 @@ class RecordPaymentView(LoginRequiredMixin, PermissionRequiredMixin, View):
             total_paid = sum(p.amount for p in invoice.payments.all())
             balance = invoice.total_amount - total_paid
             
-            # Allow tiny differences
+            payment_amount_to_invoice = amount
+            credit_amount = Decimal('0.00')
+
             if amount > balance + Decimal('0.01'):
-                raise ValueError(f"Payment amount cannot exceed the current balance (Rs {balance:.2f}).")
+                if balance > Decimal('0.00'):
+                    payment_amount_to_invoice = balance
+                else:
+                    payment_amount_to_invoice = Decimal('0.00')
+                credit_amount = amount - payment_amount_to_invoice
                 
             if not reference and not slip:
                 raise ValueError("You must provide either a reference number or upload a payment slip.")
@@ -495,16 +526,28 @@ class RecordPaymentView(LoginRequiredMixin, PermissionRequiredMixin, View):
             payment_date = datetime.strptime(payment_date_str, '%Y-%m-%d').date()
 
             with transaction.atomic():
-                Payment.objects.create(
-                    invoice=invoice,
-                    amount=amount,
-                    payment_date=payment_date,
-                    payment_method=payment_method,
-                    reference_number=reference,
-                    slip_attachment=slip,
-                    notes=notes,
-                    recorded_by=request.user
-                )
+                if payment_amount_to_invoice > 0:
+                    Payment.objects.create(
+                        invoice=invoice,
+                        amount=payment_amount_to_invoice,
+                        payment_date=payment_date,
+                        payment_method=payment_method,
+                        reference_number=reference,
+                        slip_attachment=slip,
+                        notes=notes,
+                        recorded_by=request.user
+                    )
+                
+                if credit_amount > 0:
+                    from .models import CustomerCredit
+                    if not invoice.customer:
+                        raise ValueError("Cannot create an overpayment credit because this invoice has no linked customer.")
+                    CustomerCredit.objects.create(
+                        customer=invoice.customer,
+                        original_amount=credit_amount,
+                        remaining_amount=credit_amount,
+                        notes=f"Overpayment on Invoice {invoice.invoice_number} (Ref: {reference})"
+                    )
                 
                 # The Payment model's save() method already handles the status update.
                 # No need to do it here — single source of truth in the model.
@@ -979,3 +1022,87 @@ class GeneralLedgerView(LoginRequiredMixin, PermissionRequiredMixin, View):
             'lines': lines
         }
         return render(request, self.template_name, context)
+
+class CustomerCreditListView(LoginRequiredMixin, PermissionRequiredMixin, View):
+    permission_required = 'finance.manage_finance'
+    template_name = 'finance/customer_credit_list.html'
+
+    def get(self, request):
+        from .models import CustomerCredit
+        credits = CustomerCredit.objects.filter(remaining_amount__gt=0, is_active=True).select_related('customer').order_by('-created_at')
+        
+        from django.db.models import Sum
+        customer_totals = credits.values('customer__customer_name', 'customer_id').annotate(total=Sum('remaining_amount')).order_by('-total')
+        
+        context = {
+            'credits': credits,
+            'customer_totals': customer_totals
+        }
+        return render(request, self.template_name, context)
+
+@login_required
+@permission_required('finance.manage_finance', raise_exception=True)
+def apply_customer_credit(request):
+    if request.method == 'POST':
+        from .models import CustomerCredit, CreditApplication, Payment
+        from sales.models import Invoice
+        from decimal import Decimal
+        
+        invoice_id = request.POST.get('invoice_id')
+        amount_str = request.POST.get('amount')
+        
+        try:
+            invoice = Invoice.objects.get(id=invoice_id)
+            amount = Decimal(amount_str)
+            
+            if amount <= 0:
+                raise ValueError("Amount must be greater than 0.")
+            
+            from django.db.models import Sum
+            credits = CustomerCredit.objects.filter(customer=invoice.customer, remaining_amount__gt=0, is_active=True).order_by('created_at')
+            total_available = credits.aggregate(t=Sum('remaining_amount'))['t'] or Decimal('0.00')
+            
+            if amount > total_available:
+                raise ValueError(f"Cannot apply more than the available credit balance (Rs {total_available:.2f}).")
+                
+            total_paid = sum(p.amount for p in invoice.payments.all())
+            balance = invoice.total_amount - total_paid
+            
+            if amount > balance + Decimal('0.01'):
+                raise ValueError("Cannot apply more than the invoice balance.")
+                
+            with transaction.atomic():
+                remaining_to_apply = amount
+                for credit in credits:
+                    if remaining_to_apply <= 0:
+                        break
+                    
+                    apply_amt = min(credit.remaining_amount, remaining_to_apply)
+                    credit.remaining_amount -= apply_amt
+                    credit.save()
+                    
+                    CreditApplication.objects.create(
+                        customer_credit=credit,
+                        invoice=invoice,
+                        amount_applied=apply_amt,
+                        applied_by=request.user
+                    )
+                    
+                    remaining_to_apply -= apply_amt
+                
+                Payment.objects.create(
+                    invoice=invoice,
+                    amount=amount,
+                    payment_date=timezone.now().date(),
+                    payment_method=Payment.PaymentMethod.OTHER,
+                    reference_number=f"Credit Application",
+                    notes=f"Applied from Customer Credit",
+                    recorded_by=request.user
+                )
+            
+            return JsonResponse({'status': 'ok', 'message': 'Credit applied successfully.'})
+            
+        except Exception as e:
+            return JsonResponse({'status': 'error', 'message': str(e)}, status=400)
+    
+    return JsonResponse({'status': 'error', 'message': 'Invalid request method.'}, status=405)
