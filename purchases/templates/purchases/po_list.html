@@ -7,18 +7,31 @@
     <div class="flex justify-between items-center mb-6">
         <h1 class="text-2xl font-bold text-gray-900 border-b-4 border-emerald-500 inline-block pb-1">Purchase Orders</h1>
         <div class="flex space-x-3 items-center">
-            <form method="GET" class="flex items-center space-x-2">
-                <label for="po_type" class="text-sm font-medium text-gray-700">Filter:</label>
-                <select name="po_type" id="po_type" onchange="this.form.submit()" class="border-gray-300 rounded-lg shadow-sm focus:border-indigo-500 focus:ring-indigo-500 h-[38px] text-sm">
-                    <option value="">All Types</option>
-                    <option value="RAW_MATERIAL" {% if po_type_filter == 'RAW_MATERIAL' %}selected{% endif %}>Raw Material</option>
-                    <option value="PACKING_MATERIAL" {% if po_type_filter == 'PACKING_MATERIAL' %}selected{% endif %}>Packing Material</option>
-                </select>
-            </form>
             <a href="{% url 'po_create_default' %}" class="btn-premium btn-primary bg-emerald-600 hover:bg-emerald-700 shadow-emerald-600/20">
                 + New Purchase Order
             </a>
         </div>
+    </div>
+
+    <div class="bg-white shadow-sm rounded-lg border border-gray-200 p-4 mb-6">
+        <form method="GET" class="flex flex-col md:flex-row items-center gap-4">
+            <div class="flex-1 w-full">
+                <input type="text" name="q" value="{{ request.GET.q }}" placeholder="Search by PO #, Supplier, Remarks..." class="w-full rounded-lg border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm">
+            </div>
+            <div class="w-full md:w-48">
+                <select name="po_type" id="po_type" class="w-full border-gray-300 rounded-lg shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm">
+                    <option value="">All Types</option>
+                    <option value="RAW_MATERIAL" {% if request.GET.po_type == 'RAW_MATERIAL' %}selected{% endif %}>Raw Material</option>
+                    <option value="PACKING_MATERIAL" {% if request.GET.po_type == 'PACKING_MATERIAL' %}selected{% endif %}>Packing Material</option>
+                </select>
+            </div>
+            <div class="flex items-center gap-2 w-full md:w-auto">
+                <button type="submit" class="w-full md:w-auto bg-gray-800 text-white px-5 py-2 rounded-lg hover:bg-gray-700 transition font-medium text-sm">Search</button>
+                {% if request.GET.q or request.GET.po_type %}
+                <a href="?" class="text-sm text-gray-500 hover:text-gray-700 font-medium px-3 py-2">Clear</a>
+                {% endif %}
+            </div>
+        </form>
     </div>
 
     <div class="bg-white shadow-sm rounded-lg border border-gray-200 overflow-hidden">

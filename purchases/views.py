@@ -23,6 +23,19 @@ class GRNListView(LoginRequiredMixin, ERPPermissionRequiredMixin, ListView):
     paginate_by = 20
     ordering = ['-id']
 
+    def get_queryset(self):
+        qs = super().get_queryset()
+        q = self.request.GET.get('q')
+        if q:
+            from django.db.models import Q
+            qs = qs.filter(
+                Q(grn_number__icontains=q) |
+                Q(supplier__name__icontains=q) |
+                Q(purchase_order__po_number__icontains=q) |
+                Q(invoice_number__icontains=q)
+            )
+        return qs
+
 class GRNDetailView(LoginRequiredMixin, ERPPermissionRequiredMixin, DetailView):
     permission_required = 'purchases.view_grn'
     model = GRN
@@ -215,6 +228,15 @@ class PurchaseOrderListView(LoginRequiredMixin, ERPPermissionRequiredMixin, List
         po_type = self.request.GET.get('po_type')
         if po_type:
             qs = qs.filter(po_type=po_type)
+            
+        q = self.request.GET.get('q')
+        if q:
+            from django.db.models import Q
+            qs = qs.filter(
+                Q(po_number__icontains=q) |
+                Q(supplier__name__icontains=q) |
+                Q(remarks__icontains=q)
+            )
         return qs
         
     def get_context_data(self, **kwargs):

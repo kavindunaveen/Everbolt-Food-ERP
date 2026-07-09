@@ -30,7 +30,7 @@
                         <th class="px-6 py-4 text-right text-[11px] font-bold text-gray-400 uppercase tracking-widest">Credit Amount</th>
                         <th class="px-6 py-4 text-left text-[11px] font-bold text-gray-400 uppercase tracking-widest">Issued By</th>
                         <th class="px-6 py-4 text-left text-[11px] font-bold text-gray-400 uppercase tracking-widest">Date</th>
-                        <th class="px-6 py-4 text-center text-[11px] font-bold text-gray-400 uppercase tracking-widest">Print</th>
+                        <th class="px-6 py-4 text-center text-[11px] font-bold text-gray-400 uppercase tracking-widest">Documents</th>
                         <th class="px-6 py-4 text-center text-[11px] font-bold text-gray-400 uppercase tracking-widest">Actions</th>
                     </tr>
                 </thead>
@@ -55,9 +55,11 @@
                         </td>
                         <td class="px-6 py-4 text-sm text-gray-600">{{ cn.issued_by.get_full_name|default:cn.issued_by.username }}</td>
                         <td class="px-6 py-4 text-sm text-gray-500">{{ cn.issued_date|date:"M d, Y" }}</td>
-                        <td class="px-6 py-4 text-center">
+                        <td class="px-6 py-4 text-center space-x-2">
                             <a href="{% url 'credit_note_print' cn.pk %}" target="_blank"
                                class="text-xs font-bold text-blue-600 hover:underline">Print</a>
+                            <a href="{% url 'credit_note_print' cn.pk %}?download=true" target="_blank"
+                               class="text-xs font-bold text-gray-600 hover:underline">Download</a>
                         </td>
                         <td class="px-6 py-4 text-center space-x-2">
                             {% if perms.sales.change_creditnote %}
