@@ -51,16 +51,16 @@
                         <td class="px-4 py-3 whitespace-nowrap text-sm font-bold text-gray-700 bg-gray-50/50 text-right">{{ line.target_qty }}</td>
                         <td class="px-4 py-3 whitespace-nowrap text-sm font-bold text-gray-900">{{ line.raw_material.name }}</td>
                         <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-600 text-right">{{ line.raw_material_qty|floatformat:2 }}</td>
-                        <td class="px-4 py-3 whitespace-nowrap text-sm font-bold text-indigo-700 bg-indigo-50/30 text-right">{{ line.actual_used_qty|floatformat:2 }}</td>
+                        <td class="px-4 py-3 text-sm font-bold text-indigo-700 bg-indigo-50/30 text-right">{{ line.actual_used_qty|floatformat:2 }}</td>
                         <td class="px-4 py-3 whitespace-nowrap text-sm font-bold text-red-600 bg-red-50/30 text-right">{{ line.wastage_qty|floatformat:2 }} <span class="text-xs">{{ line.rm_wastage_unit }}</span></td>
                         <td class="px-4 py-3 whitespace-nowrap text-sm font-bold text-red-600 bg-red-50/30 text-right">{{ line.pm_wastage_qty|floatformat:2 }} <span class="text-xs">{{ line.pm_wastage_unit }}</span></td>
-                        <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-700 bg-red-50/10 text-left truncate max-w-[150px]" title="{{ line.wastage_remark|default:'' }}">{{ line.wastage_remark|default:"-" }}</td>
+                        <td class="px-4 py-3 text-sm text-gray-700 bg-red-50/10 text-left whitespace-normal break-words min-w-[200px]">{{ line.wastage_remark|default:"-" }}</td>
                         <td class="px-4 py-3 whitespace-nowrap text-sm font-extrabold text-emerald-800 bg-emerald-50/50 border-x border-emerald-100 text-right">{{ line.actual_completed_qty }}</td>
                         <td class="px-4 py-3 whitespace-nowrap text-sm font-extrabold text-right
                             {% if line.variance < 0 %}text-red-500{% elif line.variance > 0 %}text-emerald-500{% else %}text-gray-400{% endif %}">
                             {% if line.variance > 0 %}+{% endif %}{{ line.variance }}
                         </td>
-                        <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-700 text-left truncate max-w-[150px]" title="{{ line.note|default:'' }}">{{ line.note|default:"-" }}</td>
+                        <td class="px-4 py-3 text-sm text-gray-700 text-left whitespace-normal break-words min-w-[200px]">{{ line.note|default:"-" }}</td>
                     </tr>
                     {% empty %}
                     <tr>
