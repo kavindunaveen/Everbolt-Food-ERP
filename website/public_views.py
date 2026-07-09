@@ -581,6 +581,22 @@ def checkout(request):
             except Exception as e:
                 print(f"Failed to reserve stock: {e}")
 
+        # System Notifications for Admins
+        from users.models import Notification, User
+        from django.db.models import Q
+        admins = User.objects.filter(
+            Q(is_superuser=True) | Q(role__name='Administrator')
+        ).filter(is_active=True).distinct()
+        
+        for admin in admins:
+            Notification.objects.create(
+                recipient=admin,
+                notification_type='info',
+                title=f"New Website Order: {order.website_order_number}",
+                message=f"A new order for Rs {order.total_amount} was placed by {order.customer_name}.",
+                link=reverse("website_order_detail", kwargs={'pk': order.pk})
+            )
+
         # Send Emails Async to avoid blocking
         def send_order_emails(order_obj, order_items_list, settings_obj):
             try:
