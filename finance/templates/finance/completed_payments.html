@@ -69,9 +69,10 @@
                 </thead>
                 <tbody class="bg-white divide-y divide-gray-200">
                     {% for inv in invoices %}
-                    <tr class="hover:bg-gray-50 transition-colors">
+                    <!-- Main invoice row -->
+                    <tr class="hover:bg-emerald-50/30 transition-colors cursor-pointer" onclick="toggleHistory('hist-{{ inv.id }}', this)">
                         <td class="px-6 py-4 whitespace-nowrap">
-                            <a href="{% url 'invoice_edit' inv.id %}" class="font-bold text-blue-600 hover:underline">{{ inv.invoice_number }}</a>
+                            <a href="{% url 'invoice_edit' inv.id %}" class="font-bold text-emerald-700 hover:underline" onclick="event.stopPropagation()">{{ inv.invoice_number }}</a>
                             <div class="text-[10px] text-gray-500 uppercase mt-0.5">{{ inv.salesperson.get_full_name|default:inv.salesperson.username }}</div>
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap">
@@ -123,6 +124,28 @@
                             {% endif %}
                         </td>
                     </tr>
+                    <!-- Collapsible payment history row -->
+                    <tr id="hist-{{ inv.id }}" class="hidden bg-emerald-50/40">
+                        <td colspan="6" class="px-8 py-3">
+                            <div class="text-xs font-bold text-emerald-700 uppercase tracking-wider mb-2">Payment History</div>
+                            <div class="space-y-1">
+                                {% for p in inv.payment_history %}
+                                <div class="flex items-center gap-4 text-xs text-gray-700 bg-white rounded-lg px-3 py-2 border border-emerald-100">
+                                    <span class="font-bold text-emerald-700">Rs {{ p.amount|floatformat:"2"|intcomma }}</span>
+                                    <span class="text-gray-500">{{ p.payment_date|date:"Y-m-d" }}</span>
+                                    <span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-gray-100 text-gray-700">{{ p.get_payment_method_display }}</span>
+                                    {% if p.reference_number %}
+                                    <span class="text-gray-500">Ref: <span class="font-semibold text-gray-800">{{ p.reference_number }}</span></span>
+                                    {% endif %}
+                                    {% if p.slip_attachment %}
+                                    <a href="{{ p.slip_attachment.url }}" target="_blank" class="font-bold text-blue-600 hover:underline" onclick="event.stopPropagation()">📎 View Slip</a>
+                                    {% endif %}
+                                    <span class="ml-auto text-gray-400">by {{ p.recorded_by.get_full_name|default:p.recorded_by.username }}</span>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </td>
+                    </tr>
                     {% empty %}
                     <tr>
                         <td colspan="8" class="px-6 py-12 text-center text-gray-500">
@@ -141,4 +164,16 @@
         {% include 'partials/pagination.html' %}
     </div>
 </div>
+<script>
+    function toggleHistory(histId, rowEl) {
+        const histRow = document.getElementById(histId);
+        if (histRow && histRow.classList.contains('hidden')) {
+            histRow.classList.remove('hidden');
+            rowEl.classList.add('bg-emerald-50/50');
+        } else if (histRow) {
+            histRow.classList.add('hidden');
+            rowEl.classList.remove('bg-emerald-50/50');
+        }
+    }
+</script>
 {% endblock %}

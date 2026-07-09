@@ -3,6 +3,7 @@ from datetime import datetime
 from django.shortcuts import render, redirect, get_object_or_404
 from django.views import View
 from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
+from django.contrib.auth.decorators import login_required, permission_required
 from django.http import JsonResponse
 from django.utils import timezone
 from django.db.models import Sum, Q, F
@@ -27,6 +28,9 @@ class FinanceDashboardView(LoginRequiredMixin, PermissionRequiredMixin, View):
         completed_total = completed_qs.aggregate(t=Sum('total_amount'))['t'] or 0
         pending_total = pending_qs.aggregate(t=Sum('total_amount'))['t'] or 0
         
+        from .models import CustomerCredit
+        total_credits = CustomerCredit.objects.filter(remaining_amount__gt=0, is_active=True).aggregate(t=Sum('remaining_amount'))['t'] or 0
+        
         context = {
             'total_invoices_all': stats['total_invoices_all'],
             'total_invoices_month': stats['total_invoices_month'],
@@ -35,6 +39,7 @@ class FinanceDashboardView(LoginRequiredMixin, PermissionRequiredMixin, View):
             'pending_count': stats['pending_count'],
             'pending_total': pending_total,
             'partial_count': stats['partial_count'],
+            'total_credits': total_credits,
         }
         return render(request, self.template_name, context)
 
@@ -452,6 +457,7 @@ class CompletedPaymentsView(LoginRequiredMixin, PermissionRequiredMixin, View):
                 'balance': 0,
                 'last_payment': last_payment,
                 'payment_count': len(payments),
+                'payment_history': payments,
             })
                 
         from users.models import User
