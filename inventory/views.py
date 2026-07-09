@@ -84,6 +84,16 @@ class ProductDeleteView(LoginRequiredMixin, ERPPermissionRequiredMixin, DeleteVi
     success_url = reverse_lazy('product_list')
     permission_required = 'inventory.delete_product'
 
+    def post(self, request, *args, **kwargs):
+        from django.db.models import ProtectedError
+        from django.contrib import messages
+        from django.shortcuts import redirect
+        try:
+            return super().post(request, *args, **kwargs)
+        except ProtectedError:
+            messages.error(request, "This product cannot be deleted because it is linked to existing records (e.g. invoices, quotations, or stock entries). Please deactivate it instead by changing its status.")
+            return redirect('product_list')
+
 def generate_products_excel(products=None, is_template=False):
     import openpyxl
     from openpyxl.worksheet.datavalidation import DataValidation

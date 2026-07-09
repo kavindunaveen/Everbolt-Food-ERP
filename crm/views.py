@@ -98,6 +98,16 @@ class CustomerDeleteView(LoginRequiredMixin, ERPPermissionRequiredMixin, DeleteV
     success_url = reverse_lazy('customer_list')
     permission_required = 'crm.delete_customer'
 
+    def post(self, request, *args, **kwargs):
+        from django.db.models import ProtectedError
+        from django.contrib import messages
+        from django.shortcuts import redirect
+        try:
+            return super().post(request, *args, **kwargs)
+        except ProtectedError:
+            messages.error(request, "This customer cannot be deleted because they are linked to existing records (e.g. invoices or quotations). Please deactivate them instead.")
+            return redirect('customer_list')
+
 class CustomerDetailView(LoginRequiredMixin, ERPPermissionRequiredMixin, DetailView):
     model = Customer
     template_name = 'crm/customer_detail.html'
