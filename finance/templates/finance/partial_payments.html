@@ -133,7 +133,10 @@
                                     {% if p.slip_attachment %}
                                     <a href="{{ p.slip_attachment.url }}" target="_blank" class="font-bold text-blue-600 hover:underline">📎 View Slip</a>
                                     {% endif %}
-                                    <span class="ml-auto text-gray-400">by {{ p.recorded_by.get_full_name|default:p.recorded_by.username }}</span>
+                                    <div class="ml-auto flex flex-col items-end">
+                                        <span class="text-gray-400">by {{ p.recorded_by.get_full_name|default:p.recorded_by.username }}</span>
+                                        <span class="text-[9px] text-gray-400 font-medium">Logged: {{ p.created_at|date:"Y-m-d h:i A" }}</span>
+                                    </div>
                                 </div>
                                 {% endfor %}
                             </div>
