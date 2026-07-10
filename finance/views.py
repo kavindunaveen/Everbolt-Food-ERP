@@ -316,7 +316,7 @@ class PartialPaymentsView(LoginRequiredMixin, PermissionRequiredMixin, View):
                     'total_paid': total_paid,
                     'balance': balance,
                     'days_overdue': (today - inv.due_date).days if inv.due_date else 0,
-                    'payments': payments,
+                    'payment_history': payments,
                     'available_credit': avail_credit
                 })
                 
