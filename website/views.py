@@ -11,11 +11,11 @@ from django.db.models import Q, Sum
 from inventory.models import Product
 from users.models import User
 from .models import (
-    WebsiteSettings, WebsiteCategory, WebsiteProduct, WebsitePage, WebsiteEnquiry, WebsiteOrder, WebsiteHeroSlide, SEORedirect
+    WebsiteSettings, WebsiteCategory, WebsiteProduct, WebsitePage, WebsiteEnquiry, WebsiteOrder, WebsiteHeroSlide, SEORedirect, WebsiteBlogPost
 )
 from .forms import (
     WebsiteSettingsForm, WebsiteCategoryForm, WebsiteProductForm,
-    WebsitePageForm, WebsiteEnquiryNotesForm, WebsiteHeroSlideForm, SEORedirectForm
+    WebsitePageForm, WebsiteEnquiryNotesForm, WebsiteHeroSlideForm, SEORedirectForm, WebsiteBlogPostForm
 )
 
 
@@ -291,6 +291,57 @@ class WebsitePageDeleteView(LoginRequiredMixin, DeleteView):
         messages.success(request, f'Page "{obj.title}" deleted.')
         return super().post(request, *args, **kwargs)
 
+
+# ─── Blog Posts ─────────────────────────────────────────────────────────────────
+
+class WebsiteBlogListView(LoginRequiredMixin, ListView):
+    model = WebsiteBlogPost
+    template_name = 'website/blog_list.html'
+    context_object_name = 'posts'
+    paginate_by = 20
+
+    def get_queryset(self):
+        qs = super().get_queryset()
+        q = self.request.GET.get('q')
+        if q:
+            qs = qs.filter(Q(title__icontains=q) | Q(author__icontains=q))
+        status = self.request.GET.get('status')
+        if status:
+            qs = qs.filter(status=status)
+        return qs.order_by('-created_at')
+
+
+class WebsiteBlogCreateView(LoginRequiredMixin, CreateView):
+    model = WebsiteBlogPost
+    form_class = WebsiteBlogPostForm
+    template_name = 'website/blog_form.html'
+    success_url = reverse_lazy('website_blog_list')
+
+    def form_valid(self, form):
+        messages.success(self.request, f'Blog post "{form.instance.title}" created.')
+        return super().form_valid(form)
+
+
+class WebsiteBlogEditView(LoginRequiredMixin, UpdateView):
+    model = WebsiteBlogPost
+    form_class = WebsiteBlogPostForm
+    template_name = 'website/blog_form.html'
+    success_url = reverse_lazy('website_blog_list')
+
+    def form_valid(self, form):
+        messages.success(self.request, f'Blog post "{form.instance.title}" updated.')
+        return super().form_valid(form)
+
+
+class WebsiteBlogDeleteView(LoginRequiredMixin, DeleteView):
+    model = WebsiteBlogPost
+    template_name = 'website/blog_confirm_delete.html'
+    success_url = reverse_lazy('website_blog_list')
+
+    def post(self, request, *args, **kwargs):
+        obj = self.get_object()
+        messages.success(request, f'Blog post "{obj.title}" deleted.')
+        return super().post(request, *args, **kwargs)
 
 # ─── Enquiries ────────────────────────────────────────────────────────────────
 

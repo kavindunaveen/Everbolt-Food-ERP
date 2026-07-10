@@ -29,6 +29,13 @@ urlpatterns = [
     path('pages/<int:pk>/edit/', views.WebsitePageEditView.as_view(), name='website_page_edit'),
     path('pages/<int:pk>/delete/', views.WebsitePageDeleteView.as_view(), name='website_page_delete'),
 
+    # Blog Posts
+    path('blog/', views.WebsiteBlogListView.as_view(), name='website_blog_list'),
+    path('blog/add/', views.WebsiteBlogCreateView.as_view(), name='website_blog_add'),
+    path('blog/<int:pk>/edit/', views.WebsiteBlogEditView.as_view(), name='website_blog_edit'),
+    path('blog/<int:pk>/delete/', views.WebsiteBlogDeleteView.as_view(), name='website_blog_delete'),
+
+
     # Orders
     path('orders/', views.WebsiteOrderListView.as_view(), name='website_order_list'),
     path('orders/<int:pk>/', views.WebsiteOrderDetailView.as_view(), name='website_order_detail'),

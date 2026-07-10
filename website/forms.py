@@ -1,5 +1,5 @@
 from django import forms
-from .models import WebsiteSettings, WebsiteCategory, WebsiteProduct, WebsitePage, WebsiteEnquiry, WebsiteHeroSlide, SEORedirect
+from .models import WebsiteSettings, WebsiteCategory, WebsiteProduct, WebsitePage, WebsiteEnquiry, WebsiteHeroSlide, SEORedirect, WebsiteBlogPost
 from inventory.models import Product
 
 
@@ -105,8 +105,24 @@ class WebsiteEnquiryNotesForm(forms.ModelForm):
 class SEORedirectForm(forms.ModelForm):
     class Meta:
         model = SEORedirect
-        fields = ['old_path', 'new_path', 'is_active']
+        fields = ['old_path', 'new_url', 'is_active', 'notes']
         widgets = {
-            'old_path': forms.TextInput(attrs={'placeholder': 'e.g. /category/tea/'}),
-            'new_path': forms.TextInput(attrs={'placeholder': 'e.g. /shop/category/tea/'}),
+            'old_path': forms.TextInput(attrs={'placeholder': 'e.g. /old-products/'}),
+            'new_url': forms.TextInput(attrs={'placeholder': 'e.g. /products/new-category/'}),
+            'notes': forms.Textarea(attrs={'rows': 2, 'placeholder': 'Internal notes...'}),
+        }
+
+class WebsiteBlogPostForm(forms.ModelForm):
+    class Meta:
+        model = WebsiteBlogPost
+        fields = ['title', 'slug', 'author', 'main_image', 'excerpt', 'content', 'status', 'meta_title', 'meta_description', 'focus_keyword']
+        widgets = {
+            'title': forms.TextInput(attrs={'placeholder': 'Blog post title'}),
+            'slug': forms.TextInput(attrs={'placeholder': 'auto-generated if blank'}),
+            'author': forms.TextInput(attrs={'placeholder': 'e.g. Admin'}),
+            'excerpt': forms.Textarea(attrs={'rows': 3, 'placeholder': 'Short summary...'}),
+            'content': forms.Textarea(attrs={'rows': 15, 'placeholder': 'Full blog content (HTML supported)...'}),
+            'main_image': forms.FileInput(attrs={
+                'class': 'block w-full text-sm text-gray-500 file:mr-4 file:py-2.5 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-bold file:bg-violet-50 file:text-violet-700 hover:file:bg-violet-100 cursor-pointer border border-gray-200 rounded-xl bg-gray-50'
+            }),
         }
