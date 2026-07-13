@@ -65,9 +65,6 @@ class Product(models.Model):
     minimum_stock = models.DecimalField(max_digits=12, decimal_places=3, default=0.000)
     
     selling_price = models.DecimalField(max_digits=12, decimal_places=5)
-    price_tier_100 = models.DecimalField(max_digits=12, decimal_places=5, null=True, blank=True, help_text="Price for <= 100 pcs")
-    price_tier_250 = models.DecimalField(max_digits=12, decimal_places=5, null=True, blank=True, help_text="Price for <= 250 pcs")
-    price_tier_500 = models.DecimalField(max_digits=12, decimal_places=5, null=True, blank=True, help_text="Price for >= 500 pcs")
     custom_load_price = models.DecimalField(max_digits=12, decimal_places=5, null=True, blank=True)
     tax_rate = models.DecimalField(max_digits=5, decimal_places=2, default=18.00) # Fixed 18% generic tax
     
@@ -149,6 +146,17 @@ class Product(models.Model):
 
     def get_product_type_display(self):
         return dict(self.ProductTypes.choices).get(self.product_type, self.product_type)
+
+class ProductPriceTier(models.Model):
+    product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='price_tiers')
+    min_quantity = models.PositiveIntegerField()
+    price = models.DecimalField(max_digits=12, decimal_places=5)
+
+    class Meta:
+        ordering = ['min_quantity']
+
+    def __str__(self):
+        return f"{self.product.name} (>= {self.min_quantity}): Rs {self.price}"
 
 class StockLedger(models.Model):
     class TransactionTypes(models.TextChoices):

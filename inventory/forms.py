@@ -1,5 +1,17 @@
 from django import forms
-from .models import Product, StockAdjustment
+from .models import Product, StockAdjustment, ProductPriceTier
+
+ProductPriceTierFormSet = forms.inlineformset_factory(
+    Product, 
+    ProductPriceTier, 
+    fields=['min_quantity', 'price'],
+    extra=1,
+    can_delete=True,
+    widgets={
+        'min_quantity': forms.NumberInput(attrs={'class': 'tier-input', 'placeholder': 'e.g. 100'}),
+        'price': forms.NumberInput(attrs={'class': 'tier-input', 'placeholder': '0.00'}),
+    }
+)
 
 class ProductForm(forms.ModelForm):
     class Meta:
@@ -12,8 +24,7 @@ class ProductForm(forms.ModelForm):
             'packet_size', 'stock_unit', 'selling_unit',
             'inventory_class', 'product_type', 'estimated_weight_kg',
             'track_stock', 'allow_negative_stock', 'reorder_level', 'minimum_stock',
-            'selling_price', 'price_tier_100', 'price_tier_250', 'price_tier_500',
-            'custom_load_price', 'tax_rate',
+            'selling_price', 'custom_load_price', 'tax_rate',
             'status',
         ]
         widgets = {

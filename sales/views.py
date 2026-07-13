@@ -2182,21 +2182,16 @@ class OrderGeneratorView(LoginRequiredMixin, ERPPermissionRequiredMixin, Templat
                 categories.append(cat)
                 product_data[cat] = {}
                 
-            if p.price_tier_100 or p.price_tier_250 or p.price_tier_500:
+            tiers_qs = p.price_tiers.order_by('min_quantity')
+            if tiers_qs.exists():
                 tiers = []
-                if p.price_tier_100:
-                    tiers.append({"min": 1, "max": 100, "price": float(p.price_tier_100)})
-                if p.price_tier_250:
-                    prev_max = 100 if p.price_tier_100 else 0
-                    tiers.append({"min": prev_max + 1, "max": 250, "price": float(p.price_tier_250)})
-                if p.price_tier_500:
-                    prev_max = 250 if p.price_tier_250 else (100 if p.price_tier_100 else 0)
-                    tiers.append({"min": prev_max + 1, "price": float(p.price_tier_500)})
-                
-                if not tiers:
-                    product_data[cat][p.name] = float(p.selling_price)
-                else:
-                    product_data[cat][p.name] = tiers
+                tier_list = list(tiers_qs)
+                for i, tier in enumerate(tier_list):
+                    tier_dict = {"min": tier.min_quantity, "price": float(tier.price)}
+                    if i + 1 < len(tier_list):
+                        tier_dict["max"] = tier_list[i+1].min_quantity - 1
+                    tiers.append(tier_dict)
+                product_data[cat][p.name] = tiers
             else:
                 product_data[cat][p.name] = float(p.selling_price)
                 

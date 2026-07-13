@@ -21,9 +21,10 @@ class ProductDetailAPIView(LoginRequiredMixin, View):
             return JsonResponse({
                 'id': product.id,
                 'selling_price': str(product.selling_price),
-                'price_tier_100': str(product.price_tier_100) if product.price_tier_100 else None,
-                'price_tier_250': str(product.price_tier_250) if product.price_tier_250 else None,
-                'price_tier_500': str(product.price_tier_500) if product.price_tier_500 else None,
+                'price_tiers': [
+                    {'min_quantity': tier.min_quantity, 'price': str(tier.price)}
+                    for tier in product.price_tiers.order_by('-min_quantity')
+                ],
                 'current_stock': str(product.current_stock),
                 'available_stock': str(product.available_stock),
                 'reorder_level': str(product.reorder_level),
@@ -71,12 +72,52 @@ class ProductCreateView(LoginRequiredMixin, ERPPermissionRequiredMixin, CreateVi
     success_url = reverse_lazy('product_list')
     permission_required = 'inventory.add_product'
 
+    def get_context_data(self, **kwargs):
+        data = super().get_context_data(**kwargs)
+        from .forms import ProductPriceTierFormSet
+        if self.request.POST:
+            data['tiers_formset'] = ProductPriceTierFormSet(self.request.POST)
+        else:
+            data['tiers_formset'] = ProductPriceTierFormSet()
+        return data
+
+    def form_valid(self, form):
+        context = self.get_context_data()
+        tiers_formset = context['tiers_formset']
+        if tiers_formset.is_valid():
+            self.object = form.save()
+            tiers_formset.instance = self.object
+            tiers_formset.save()
+            return super().form_valid(form)
+        else:
+            return self.render_to_response(self.get_context_data(form=form))
+
 class ProductUpdateView(LoginRequiredMixin, ERPPermissionRequiredMixin, UpdateView):
     model = Product
     form_class = ProductForm
     template_name = 'inventory/product_form.html'
     success_url = reverse_lazy('product_list')
     permission_required = 'inventory.change_product'
+
+    def get_context_data(self, **kwargs):
+        data = super().get_context_data(**kwargs)
+        from .forms import ProductPriceTierFormSet
+        if self.request.POST:
+            data['tiers_formset'] = ProductPriceTierFormSet(self.request.POST, instance=self.object)
+        else:
+            data['tiers_formset'] = ProductPriceTierFormSet(instance=self.object)
+        return data
+
+    def form_valid(self, form):
+        context = self.get_context_data()
+        tiers_formset = context['tiers_formset']
+        if tiers_formset.is_valid():
+            self.object = form.save()
+            tiers_formset.instance = self.object
+            tiers_formset.save()
+            return super().form_valid(form)
+        else:
+            return self.render_to_response(self.get_context_data(form=form))
 
 class ProductDeleteView(LoginRequiredMixin, ERPPermissionRequiredMixin, DeleteView):
     model = Product

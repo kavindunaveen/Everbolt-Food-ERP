@@ -319,7 +319,6 @@ class PartialPaymentsView(LoginRequiredMixin, PermissionRequiredMixin, View):
                     'payment_history': payments,
                     'available_credit': avail_credit
                 })
-                0
         from users.models import User
         sales_officers = User.objects.filter(role__name='Sales Officer', is_active=True).distinct()
         

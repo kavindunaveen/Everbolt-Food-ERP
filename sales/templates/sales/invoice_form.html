@@ -1123,17 +1123,21 @@
         // Helper: apply tier price based on qty and stored tiers on a row
         function applyTierPrice(row, qty) {
             const basePrice = row.data('selling_price');
-            const p250 = row.data('price_tier_250');
-            const p500 = row.data('price_tier_500');
+            const tiers = row.data('price_tiers') || [];
             // Only apply if we have tier data stored (product was selected this session)
             if (!row.data('auto_pricing_enabled')) return;
             const priceInput = row.find('input[name$="-unit_price"]');
-            if (qty >= 500 && p500) {
-                priceInput.val(p500);
-            } else if (qty >= 250 && p250) {
-                priceInput.val(p250);
-            } else if (basePrice) {
-                priceInput.val(basePrice);
+            
+            let matchedPrice = basePrice;
+            // Tiers are sorted descending by min_quantity
+            for (let tier of tiers) {
+                if (qty >= tier.min_quantity) {
+                    matchedPrice = tier.price;
+                    break;
+                }
+            }
+            if (matchedPrice !== undefined) {
+                priceInput.val(matchedPrice);
             }
         }
 
@@ -1144,7 +1148,7 @@
 
             // If product cleared, reset the row
             if (!value) {
-                row.removeData('selling_price price_tier_250 price_tier_500 auto_pricing_enabled');
+                row.removeData('selling_price price_tiers auto_pricing_enabled');
                 row.find('input[name$="-unit_price"]').val('');
                 row.find('input[name$="-quantity"]').val('');
                 row.find('.line-total').val('0.00');
@@ -1159,8 +1163,7 @@
 
                     // Store ALL pricing tiers and stock info on the row element
                     row.data('selling_price', data.selling_price);
-                    row.data('price_tier_250', data.price_tier_250 || data.selling_price);
-                    row.data('price_tier_500', data.price_tier_500 || data.selling_price);
+                    row.data('price_tiers', data.price_tiers || []);
                     row.data('current_stock', parseFloat(data.current_stock) || 0);
                     row.data('available_stock', parseFloat(data.available_stock) || 0);
                     row.data('reorder_level', parseFloat(data.reorder_level) || 0);

@@ -105,17 +105,16 @@ class WebsiteEnquiryNotesForm(forms.ModelForm):
 class SEORedirectForm(forms.ModelForm):
     class Meta:
         model = SEORedirect
-        fields = ['old_path', 'new_url', 'is_active', 'notes']
+        fields = ['old_path', 'new_path', 'is_active']
         widgets = {
             'old_path': forms.TextInput(attrs={'placeholder': 'e.g. /old-products/'}),
-            'new_url': forms.TextInput(attrs={'placeholder': 'e.g. /products/new-category/'}),
-            'notes': forms.Textarea(attrs={'rows': 2, 'placeholder': 'Internal notes...'}),
+            'new_path': forms.TextInput(attrs={'placeholder': 'e.g. /products/new-category/'}),
         }
 
 class WebsiteBlogPostForm(forms.ModelForm):
     class Meta:
         model = WebsiteBlogPost
-        fields = ['title', 'slug', 'author', 'main_image', 'excerpt', 'content', 'status', 'meta_title', 'meta_description', 'focus_keyword']
+        fields = ['title', 'slug', 'author', 'main_image', 'excerpt', 'content', 'status', 'meta_title', 'meta_description']
         widgets = {
             'title': forms.TextInput(attrs={'placeholder': 'Blog post title'}),
             'slug': forms.TextInput(attrs={'placeholder': 'auto-generated if blank'}),

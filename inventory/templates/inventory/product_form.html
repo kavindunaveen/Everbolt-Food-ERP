@@ -4,6 +4,45 @@
     {% if form.instance.pk %}Edit Product{% else %}Add Product{% endif %} | ERP System
 {% endblock %}
 
+{% block extra_head %}
+<style>
+    /* Forceful override for dynamic tier inputs to beat Tailwind global base styles */
+    #tiers-formset-container input[type="number"],
+    #empty-tier-form input[type="number"] {
+        flex: 1 1 0% !important;
+        min-width: 0 !important;
+        width: 100% !important;
+        border: none !important;
+        background-color: transparent !important;
+        border-radius: 0 !important;
+        padding: 0.5rem 0.75rem !important;
+        margin: 0 !important;
+        box-shadow: none !important;
+        outline: none !important;
+        font-size: 0.875rem !important;
+        color: #374151 !important;
+    }
+    #tiers-formset-container input[type="number"]:focus,
+    #empty-tier-form input[type="number"]:focus {
+        border-color: transparent !important;
+        box-shadow: none !important;
+        outline: none !important;
+        --tw-ring-shadow: 0 0 transparent !important;
+        --tw-ring-color: transparent !important;
+    }
+
+    /* Hide up/down arrows on number inputs */
+    input[type=number]::-webkit-inner-spin-button, 
+    input[type=number]::-webkit-outer-spin-button { 
+        -webkit-appearance: none; 
+        margin: 0; 
+    }
+    input[type=number] {
+        -moz-appearance: textfield;
+    }
+</style>
+{% endblock %}
+
 {% block breadcrumbs %}
     <li class="flex items-center space-x-2">
         <svg class="w-4 h-4 text-gray-300" fill="currentColor" viewBox="0 0 20 20">
@@ -143,6 +182,105 @@
                             <label>Selling Price - Ex-VAT (Rs.) *</label>
                             {{ form.selling_price }}
                             <p class="text-xs text-blue-600 mt-1">Enter the price WITHOUT VAT. VAT (18%) is added automatically on invoices.</p>
+                        </div>
+
+                        <!-- Dynamic Price Tiers Formset -->
+                        <div class="mt-6 border-t pt-4">
+                            <label class="font-bold text-gray-900 mb-2 block">Dynamic Price Tiers (Optional)</label>
+                            <p class="text-xs text-gray-500 mb-4">Add custom quantity-based pricing (e.g. Qty >= 100). The price applied will be the highest matching tier.</p>
+                            
+                            {{ tiers_formset.management_form }}
+                            <div id="tiers-formset-container" class="space-y-3">
+                                {% for tier_form in tiers_formset %}
+                                    <div class="tier-form-row flex items-center gap-2 relative group">
+                                        {{ tier_form.id }}
+                                        
+                                        <!-- Box 1: Min Qty Input Group -->
+                                        <div class="flex-1 relative">
+                                            <div class="flex items-center shadow-sm border border-gray-300 rounded-md bg-white focus-within:ring-1 focus-within:ring-red-500 focus-within:border-red-500 transition-shadow">
+                                                <span class="bg-gray-100 px-2 py-1.5 text-gray-600 font-medium text-xs border-r border-gray-300 rounded-l-md">Qty</span>
+                                                {{ tier_form.min_quantity }}
+                                            </div>
+                                            {% if tier_form.min_quantity.errors %}
+                                                <p class="text-xs text-red-500 mt-1 absolute -bottom-4 left-0">{{ tier_form.min_quantity.errors|striptags }}</p>
+                                            {% endif %}
+                                        </div>
+                                        
+                                        <!-- Separator Sign -->
+                                        <div class="text-gray-400 font-bold text-sm px-1">
+                                            &ge;
+                                        </div>
+                                        
+                                        <!-- Box 3: Price Input Group -->
+                                        <div class="flex-1 relative">
+                                            <div class="flex items-center shadow-sm border border-gray-300 rounded-md bg-white focus-within:ring-1 focus-within:ring-red-500 focus-within:border-red-500 transition-shadow">
+                                                <span class="bg-gray-100 px-2 py-1.5 text-gray-600 font-medium text-xs border-r border-gray-300 rounded-l-md">Rs.</span>
+                                                {{ tier_form.price }}
+                                            </div>
+                                            {% if tier_form.price.errors %}
+                                                <p class="text-xs text-red-500 mt-1 absolute -bottom-4 left-0">{{ tier_form.price.errors|striptags }}</p>
+                                            {% endif %}
+                                        </div>
+                                        
+                                        <!-- Delete Action -->
+                                        {% if tiers_formset.can_delete %}
+                                            <div class="flex items-center justify-center">
+                                                <div class="hidden delete-checkbox-wrapper">
+                                                    {{ tier_form.DELETE }}
+                                                </div>
+                                                <button type="button" class="delete-tier-btn p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors focus:outline-none" title="Remove Tier">
+                                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                                    </svg>
+                                                </button>
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                {% endfor %}
+                            </div>
+                            
+                            <button type="button" id="add-tier-btn" class="mt-4 inline-flex items-center px-3 py-1.5 bg-white border border-gray-300 text-gray-700 text-sm font-medium rounded-md hover:bg-gray-50 hover:text-red-600 transition-colors shadow-sm">
+                                <svg class="w-4 h-4 mr-1.5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                                Add Price Bracket
+                            </button>
+                            
+                            <!-- Hidden empty form for Javascript to clone -->
+                            <div id="empty-tier-form" class="hidden">
+                                <div class="tier-form-row flex items-center gap-2 relative group mt-3">
+                                    {{ tiers_formset.empty_form.id }}
+                                    
+                                    <div class="flex-1 relative">
+                                        <div class="flex items-center shadow-sm border border-gray-300 rounded-md bg-white focus-within:ring-1 focus-within:ring-red-500 focus-within:border-red-500 transition-shadow">
+                                            <span class="bg-gray-100 px-2 py-1.5 text-gray-600 font-medium text-xs border-r border-gray-300 rounded-l-md">Qty</span>
+                                            {{ tiers_formset.empty_form.min_quantity }}
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="text-gray-400 font-bold text-sm px-1">
+                                        &ge;
+                                    </div>
+                                    
+                                    <div class="flex-1 relative">
+                                        <div class="flex items-center shadow-sm border border-gray-300 rounded-md bg-white focus-within:ring-1 focus-within:ring-red-500 focus-within:border-red-500 transition-shadow">
+                                            <span class="bg-gray-100 px-2 py-1.5 text-gray-600 font-medium text-xs border-r border-gray-300 rounded-l-md">Rs.</span>
+                                            {{ tiers_formset.empty_form.price }}
+                                        </div>
+                                    </div>
+                                    
+                                    {% if tiers_formset.can_delete %}
+                                        <div class="flex items-center justify-center">
+                                            <div class="hidden delete-checkbox-wrapper">
+                                                {{ tiers_formset.empty_form.DELETE }}
+                                            </div>
+                                            <button type="button" class="delete-tier-btn p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors focus:outline-none" title="Remove Tier">
+                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                                </svg>
+                                            </button>
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
                         </div>
 
                         <div>
@@ -325,6 +463,43 @@
         if (categoryField) {
             categoryField.addEventListener('change', toggleTeaType);
             toggleTeaType(); // Run once on load
+        }
+
+        // Price Tiers Formset Logic
+        const addTierBtn = document.getElementById('add-tier-btn');
+        const tiersContainer = document.getElementById('tiers-formset-container');
+        const emptyTierForm = document.getElementById('empty-tier-form');
+        const totalFormsInput = document.getElementById('id_price_tiers-TOTAL_FORMS');
+
+        if (addTierBtn && tiersContainer && emptyTierForm && totalFormsInput) {
+            addTierBtn.addEventListener('click', function() {
+                const formCount = parseInt(totalFormsInput.value);
+                const newFormHtml = emptyTierForm.innerHTML.replace(/__prefix__/g, formCount);
+                
+                const div = document.createElement('div');
+                div.innerHTML = newFormHtml;
+                tiersContainer.appendChild(div.firstElementChild);
+                
+                totalFormsInput.value = formCount + 1;
+            });
+            
+            // Delete tier logic using event delegation
+            tiersContainer.addEventListener('click', function(e) {
+                const deleteBtn = e.target.closest('.delete-tier-btn');
+                if (deleteBtn) {
+                    const row = deleteBtn.closest('.tier-form-row');
+                    const checkbox = row.querySelector('.delete-checkbox-wrapper input[type="checkbox"]');
+                    
+                    if (checkbox) {
+                        // Mark as deleted and hide
+                        checkbox.checked = true;
+                        row.style.display = 'none';
+                    } else {
+                        // If it's a newly added form without a delete checkbox (though inline formsets usually have them if can_delete=True), just remove the DOM node.
+                        row.remove();
+                    }
+                }
+            });
         }
     });
 </script>
