@@ -223,7 +223,7 @@ class WebsiteEnquiry(models.Model):
 class WebsiteOrder(models.Model):
     SYNC_STATUS_CHOICES = [
         ("pending", "Pending"),
-        ("converted", "Converted to Sales Invoice"),
+        ("completed", "Completed"),
         ("dispatched", "Dispatched"),
         ("delivered", "Delivered"),
         ("cancelled", "Cancelled"),
