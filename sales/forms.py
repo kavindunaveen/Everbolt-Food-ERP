@@ -103,10 +103,10 @@ class DeliveryNoteForm(forms.ModelForm):
         if self.instance and self.instance.pk:
             from django.db.models import Q
             self.fields['invoice'].queryset = Invoice.objects.filter(
-                Q(status='ISSUED', delivery_notes__isnull=True) | Q(pk=self.instance.invoice.pk)
+                Q(status__in=['ISSUED', 'PAID'], delivery_notes__isnull=True) | Q(pk=self.instance.invoice.pk)
             ).distinct()
         else:
-            self.fields['invoice'].queryset = Invoice.objects.filter(status='ISSUED', delivery_notes__isnull=True)
+            self.fields['invoice'].queryset = Invoice.objects.filter(status__in=['ISSUED', 'PAID'], delivery_notes__isnull=True)
         
         # Delivery fields might be empty if the customer lacks an address, or JS hasn't filled them.
         self.fields['customer_name'].required = False

@@ -2186,6 +2186,15 @@ class OrderGeneratorView(LoginRequiredMixin, ERPPermissionRequiredMixin, Templat
             if tiers_qs.exists():
                 tiers = []
                 tier_list = list(tiers_qs)
+                
+                # If first tier starts > 1, add a base tier
+                if tier_list[0].min_quantity > 1:
+                    tiers.append({
+                        "min": 1, 
+                        "max": tier_list[0].min_quantity - 1, 
+                        "price": float(p.selling_price)
+                    })
+                    
                 for i, tier in enumerate(tier_list):
                     tier_dict = {"min": tier.min_quantity, "price": float(tier.price)}
                     if i + 1 < len(tier_list):

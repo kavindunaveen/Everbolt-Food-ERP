@@ -84,7 +84,7 @@
                 <!-- Availability -->
                 {% if product.status == "PUBLISHED" %}
                     {% if product.inventory_product and product.inventory_product.available_stock > 0 %}
-                        <div class="pd-badge-available"><i class="fa-solid fa-circle-check"></i> In Stock ({{ product.inventory_product.available_stock|floatformat:0 }} {{ product.inventory_product.get_stock_unit_display|default:'available' }})</div>
+                        <div class="pd-badge-available"><i class="fa-solid fa-circle-check"></i> In Stock</div>
                     {% else %}
                         <div class="pd-badge-unavailable"><i class="fa-solid fa-circle-xmark"></i> Out of Stock</div>
                     {% endif %}
@@ -148,7 +148,7 @@
                     
                     <div class="pd-qty">
                         <button type="button" class="pd-qty-btn" onclick="adjustQty(this,-1)" aria-label="Decrease">−</button>
-                        <input name="quantity" class="pd-qty-input" type="number" value="1" min="1" max="{{ product.inventory_product.available_stock|floatformat:0 }}" readonly>
+                        <input name="quantity" class="pd-qty-input" type="number" value="{{ product.min_order_qty|default:1 }}" min="{{ product.min_order_qty|default:1 }}" max="{{ product.inventory_product.available_stock|floatformat:0 }}" readonly>
                         <button type="button" class="pd-qty-btn" onclick="adjustQty(this,1)" aria-label="Increase">+</button>
                     </div>
                     <button class="pd-add-btn" type="submit">
@@ -239,10 +239,22 @@
                         <tr><th>Min. Order Qty</th><td>{{ product.min_order_qty }}</td></tr>
                     {% endif %}
                     {% if product.inventory_product %}
-                        <tr><th>Available Stock</th><td>{{ product.inventory_product.available_stock|floatformat:0 }} {{ product.inventory_product.get_stock_unit_display|default:'' }}</td></tr>
+                        <tr><th>Availability</th><td>In Stock</td></tr>
                     {% endif %}
                     {% if product.free_delivery %}
                         <tr><th>Delivery</th><td>Free Delivery Available</td></tr>
+                    {% endif %}
+                    {% if price_tiers %}
+                        <tr>
+                            <th>Volume Discounts</th>
+                            <td>
+                                <ul style="margin: 0; padding-left: 20px; list-style-type: disc;">
+                                    {% for tier in price_tiers %}
+                                        <li>Buy {{ tier.min_quantity }}+ for රු{{ tier.price|floatformat:2 }} each</li>
+                                    {% endfor %}
+                                </ul>
+                            </td>
+                        </tr>
                     {% endif %}
                 </table>
             </div>

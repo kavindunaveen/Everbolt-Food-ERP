@@ -176,11 +176,20 @@ def product_detail(request, pk):
                 'unit': v.inventory_product.get_stock_unit_display() or ''
             })
 
+    price_tiers = []
+    if product.inventory_product:
+        for t in product.inventory_product.price_tiers.order_by('min_quantity'):
+            price_tiers.append({
+                'min_quantity': t.min_quantity,
+                'price': round(t.price * Decimal('1.18'), 2)
+            })
+
     return render(request, "public/product_detail.html", {
         "settings": settings_data,
         "product": product,
         "variants_json": variants_json,
         "variants_json_str": json.dumps(variants_json),
+        "price_tiers": price_tiers,
         "related_products": related_products,
         "seo_title": product.meta_title or product.get_display_name(),
         "meta_description": product.meta_description or product.short_description or product.description[:155],
@@ -308,6 +317,21 @@ def build_cart_items(request):
     for product_id, item in cart.items():
         quantity = safe_decimal(item.get("quantity", "1"), "1")
         price = safe_decimal(item.get("price", "0.00"), "0.00")
+        
+        inv_id = item.get("inventory_product_id")
+        if inv_id:
+            from inventory.models import Product
+            try:
+                inv_product = Product.objects.prefetch_related('price_tiers').get(id=inv_id)
+                best_price = inv_product.selling_price
+                for tier in inv_product.price_tiers.order_by('-min_quantity'):
+                    if quantity >= tier.min_quantity:
+                        best_price = tier.price
+                        break
+                price = round(best_price * Decimal('1.18'), 2)
+            except Product.DoesNotExist:
+                pass
+
         line_total = price * quantity
 
         estimated_weight_kg = safe_decimal(
@@ -351,7 +375,8 @@ def add_to_cart(request, pk):
     except (ValueError, TypeError):
         quantity = 1
 
-    if quantity < 1: quantity = 1
+    min_qty = getattr(product, 'min_order_qty', 1)
+    if quantity < min_qty: quantity = min_qty
     if quantity > 99: quantity = 99
 
     inventory_product_id_post = request.POST.get('inventory_product_id')
@@ -389,7 +414,7 @@ def add_to_cart(request, pk):
         new_qty = existing_qty + quantity
         
         if inv_product and new_qty > stock_to_check:
-            messages.error(request, f"Cannot add {quantity} more. Only {stock_to_check} available in stock.")
+            messages.error(request, f"Cannot add {quantity} more. Insufficient stock available.")
             return redirect(request.META.get('HTTP_REFERER', reverse('products')))
             
         cart[product_key]["quantity"] = min(new_qty, 99)
@@ -401,7 +426,7 @@ def add_to_cart(request, pk):
         cart[product_key]["estimated_weight_kg"] = str(estimated_weight_kg)
     else:
         if inv_product and quantity > stock_to_check:
-            messages.error(request, f"Cannot add {quantity}. Only {stock_to_check} available in stock.")
+            messages.error(request, f"Cannot add {quantity}. Insufficient stock available.")
             return redirect(request.META.get('HTTP_REFERER', reverse('products')))
             
         cart[product_key] = {
@@ -461,8 +486,13 @@ def update_cart(request):
                             else:
                                 inv_product = product.inventory_product
                                 
+                            min_qty = getattr(product, 'min_order_qty', 1)
+                            if quantity < min_qty:
+                                quantity = min_qty
+                                messages.warning(request, f"Increased '{cart[product_id]['name']}' to minimum order quantity of {min_qty}.")
+
                             if inv_product and quantity > inv_product.available_stock:
-                                messages.warning(request, f"Reduced '{cart[product_id]['name']}' to {inv_product.available_stock} (maximum available stock).")
+                                messages.warning(request, f"Reduced '{cart[product_id]['name']}' due to insufficient stock.")
                                 cart[product_id]["quantity"] = int(inv_product.available_stock)
                             else:
                                 cart[product_id]["quantity"] = quantity
@@ -495,6 +525,8 @@ def checkout(request):
     items, subtotal = build_cart_items(request)
 
     if not items:
+        if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+            return JsonResponse({"success": False, "message": "Your cart is empty."})
         messages.warning(request, "Your cart is empty.")
         return redirect("cart")
 
@@ -532,7 +564,10 @@ def checkout(request):
         for item in items:
             product = get_object_or_404(WebsiteProduct.objects.select_related('inventory_product'), pk=item["website_product_id"])
             if product.inventory_product and item["quantity"] > product.inventory_product.available_stock:
-                messages.error(request, f"Checkout failed: Not enough stock for {product.get_display_name()}. Available: {product.inventory_product.available_stock}")
+                msg = f"Checkout failed: Not enough stock for {product.get_display_name()}. Available: {product.inventory_product.available_stock}"
+                if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+                    return JsonResponse({"success": False, "message": msg})
+                messages.error(request, msg)
                 return redirect("cart")
 
         order = WebsiteOrder.objects.create(
