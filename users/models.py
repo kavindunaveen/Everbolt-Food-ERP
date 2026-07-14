@@ -37,12 +37,17 @@ class User(AbstractUser):
 
     @property
     def unread_notifications(self):
-        # We handle notifications from the related name 'notifications'
-        return getattr(self, 'notifications', None) and self.notifications.filter(is_read=False).order_by('-created_at') or []
+        try:
+            return self.notifications.filter(is_read=False).order_by('-created_at')
+        except Exception:
+            return []
 
     @property
     def recent_notifications(self):
-        return getattr(self, 'notifications', None) and self.notifications.order_by('-created_at')[:20] or []
+        try:
+            return self.notifications.order_by('-created_at')[:20]
+        except Exception:
+            return []
 
     def has_perm(self, perm, obj=None):
         if self.is_admin():

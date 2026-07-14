@@ -662,20 +662,33 @@ def checkout(request):
                 print(f"Failed to reserve stock: {e}")
 
         # System Notifications for Admins
-        from users.models import Notification, User
-        from django.db.models import Q
-        admins = User.objects.filter(
-            Q(is_superuser=True) | Q(role__name='Administrator')
-        ).filter(is_active=True).distinct()
-        
-        for admin in admins:
-            Notification.objects.create(
-                recipient=admin,
-                notification_type='info',
-                title=f"New Website Order: {order.website_order_number}",
-                message=f"A new order for Rs {order.total_amount} was placed by {order.customer_name}.",
-                link=reverse("website_order_detail", kwargs={'pk': order.pk})
-            )
+        try:
+            from users.models import Notification as ErbNotification, User as ErbUser
+            admin_recipients = ErbUser.objects.filter(
+                Q(is_superuser=True) | Q(role__name='Administrator')
+            ).filter(is_active=True).distinct()
+
+            if not admin_recipients.exists():
+                print(f"[WEBSITE ORDER] WARNING: No admin recipients found for notification! Order: {order.website_order_number}")
+            
+            notif_count = 0
+            for admin in admin_recipients:
+                ErbNotification.objects.create(
+                    recipient=admin,
+                    notification_type='info',
+                    title=f"🛒 New Website Order: {order.website_order_number}",
+                    message=f"Rs {order.total_amount} order by {order.customer_name} ({order.phone}). District: {order.district}.",
+                    link=reverse("website_order_detail", kwargs={'pk': order.pk})
+                )
+                notif_count += 1
+                print(f"[WEBSITE ORDER] Notification sent to admin: {admin.username}")
+            
+            print(f"[WEBSITE ORDER] {notif_count} notification(s) created for order {order.website_order_number}")
+        except Exception as notif_error:
+            # Never let notification failure break the order confirmation
+            import traceback
+            print(f"[WEBSITE ORDER] ERROR creating notifications for {order.website_order_number}: {notif_error}")
+            print(traceback.format_exc())
 
         # Send Emails Async to avoid blocking
         def send_order_emails(order_obj, order_items_list, settings_obj):
