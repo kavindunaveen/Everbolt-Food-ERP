@@ -1587,18 +1587,38 @@ def product_search_ajax(request):
         Q(name__icontains=q) | 
         Q(product_id__icontains=q)
     )[:20]
-    
-    results = [
-        {
+    results = []
+    for p in products:
+        tiers_data = []
+        tiers_qs = p.price_tiers.order_by('min_quantity')
+        
+        if tiers_qs.exists():
+            tier_list = list(tiers_qs)
+            # Base fallback tier if lowest tier starts > 1
+            if tier_list[0].min_quantity > 1:
+                tiers_data.append({
+                    'min_quantity': 1,
+                    'price': float(p.selling_price)
+                })
+            
+            for t in tier_list:
+                tiers_data.append({
+                    'min_quantity': t.min_quantity,
+                    'price': float(t.price)
+                })
+                
+        # Sort descending for the frontend logic
+        tiers_data.sort(key=lambda x: x['min_quantity'], reverse=True)
+            
+        results.append({
             'id': p.id, 
             'text': f"[{p.product_id}] {p.name}",
             'price': float(p.selling_price),
-            'stock': float(p.available_stock)
-        } 
-        for p in products
-    ]
+            'stock': float(p.available_stock),
+            'price_tiers': tiers_data
+        })
+        
     return JsonResponse({'results': results})
-
 class DeliveryNoteListView(LoginRequiredMixin, ERPPermissionRequiredMixin, ListView):
     model = DeliveryNote
     template_name = 'sales/delivery_note_list.html'
