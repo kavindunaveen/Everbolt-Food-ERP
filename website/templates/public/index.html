@@ -1831,6 +1831,7 @@ and trusted globally.{% endblock %}
                         {% if product.inventory_product and product.inventory_product.available_stock > 0 %}
                         <form action="{% url 'add_to_cart' product.id %}" method="post" style="flex:1; display:flex;">
                             {% csrf_token %}
+                            <input type="hidden" name="quantity" value="{{ product.min_order_qty|default:1 }}">
                             <button type="submit" class="btn-add-cart">
                                 <i class="fa-solid fa-cart-plus"></i> Add to Cart
                             </button>

@@ -317,8 +317,11 @@ def build_cart_items(request):
     for product_id, item in cart.items():
         quantity = safe_decimal(item.get("quantity", "1"), "1")
         price = safe_decimal(item.get("price", "0.00"), "0.00")
+        min_order_qty = 1
         
         inv_id = item.get("inventory_product_id")
+        website_product_id = item.get("website_product_id") or product_id.split('_')[0]
+        
         if inv_id:
             from inventory.models import Product
             try:
@@ -332,6 +335,13 @@ def build_cart_items(request):
             except Product.DoesNotExist:
                 pass
 
+        # Fetch min_order_qty from the website product
+        try:
+            wp = WebsiteProduct.objects.get(pk=website_product_id)
+            min_order_qty = wp.min_order_qty or 1
+        except (WebsiteProduct.DoesNotExist, ValueError):
+            pass
+
         line_total = price * quantity
 
         estimated_weight_kg = safe_decimal(
@@ -343,9 +353,9 @@ def build_cart_items(request):
         subtotal += line_total
 
         items.append({
-            "id": item.get("id") or product_id,
+            "id": product_id,
             "product_id": product_id,
-            "website_product_id": item.get("website_product_id") or product_id,
+            "website_product_id": website_product_id,
             "inventory_product_id": item.get("inventory_product_id"),
             "name": item.get("name", "Product"),
             "sku": item.get("sku", ""),
@@ -355,6 +365,7 @@ def build_cart_items(request):
             "line_total": line_total,
             "estimated_weight_kg": estimated_weight_kg,
             "line_weight_kg": line_weight_kg,
+            "min_order_qty": min_order_qty,
         })
 
     return items, subtotal.quantize(Decimal("0.01"))
@@ -375,9 +386,21 @@ def add_to_cart(request, pk):
     except (ValueError, TypeError):
         quantity = 1
 
-    min_qty = getattr(product, 'min_order_qty', 1)
-    if quantity < min_qty: quantity = min_qty
-    if quantity > 99: quantity = 99
+    min_qty = getattr(product, 'min_order_qty', 1) or 1
+
+    # Strict MOQ enforcement — block, do NOT silently bump
+    if quantity < min_qty:
+        if min_qty == 1:
+            messages.error(request, f"Please enter a valid quantity to add {product.get_display_name()} to your cart.")
+        else:
+            messages.error(
+                request,
+                f"\u26a0\ufe0f Minimum order quantity for '{product.get_display_name()}' is {min_qty} unit{'s' if min_qty > 1 else ''}. "
+                f"Please add at least {min_qty} to proceed."
+            )
+        return redirect(request.META.get('HTTP_REFERER', reverse('products')))
+
+    if quantity > 9999: quantity = 9999
 
     inventory_product_id_post = request.POST.get('inventory_product_id')
     inv_product = None
@@ -417,7 +440,7 @@ def add_to_cart(request, pk):
             messages.error(request, f"Cannot add {quantity} more. Insufficient stock available.")
             return redirect(request.META.get('HTTP_REFERER', reverse('products')))
             
-        cart[product_key]["quantity"] = min(new_qty, 99)
+        cart[product_key]["quantity"] = min(new_qty, 9999)
         cart[product_key]["name"] = product_name
         cart[product_key]["price"] = str(product_price)
         cart[product_key]["image"] = product_image
@@ -486,12 +509,13 @@ def update_cart(request):
                             else:
                                 inv_product = product.inventory_product
                                 
-                            min_qty = getattr(product, 'min_order_qty', 1)
+                            min_qty = getattr(product, 'min_order_qty', 1) or 1
                             if quantity < min_qty:
-                                quantity = min_qty
-                                messages.warning(request, f"Increased '{cart[product_id]['name']}' to minimum order quantity of {min_qty}.")
-
-                            if inv_product and quantity > inv_product.available_stock:
+                                messages.error(
+                                    request,
+                                    f"Quantity for '{cart[product_id]['name']}' cannot be below the minimum order quantity of {min_qty}."
+                                )
+                            elif inv_product and quantity > inv_product.available_stock:
                                 messages.warning(request, f"Reduced '{cart[product_id]['name']}' due to insufficient stock.")
                                 cart[product_id]["quantity"] = int(inv_product.available_stock)
                             else:
@@ -502,14 +526,35 @@ def update_cart(request):
                         del cart[product_id]
 
         save_cart(request, cart)
-        messages.success(request, "Cart updated.")
+        # Only show generic success if there were no error-level messages queued
+        from django.contrib.messages import get_messages
+        storage = get_messages(request)
+        stored = list(storage)  # consume so they aren't lost
+        has_errors = any(m.level_tag in ('error', 'warning') for m in stored)
+        for m in stored:
+            messages.add_message(request, m.level, str(m))
+        if not has_errors:
+            messages.success(request, "Cart updated successfully.")
 
     return redirect(request.META.get('HTTP_REFERER', 'home'))
 
 def remove_from_cart(request, pk):
+    """Remove item from cart. pk may be the numeric website product ID or the full cart key."""
     cart = get_cart(request)
-    product_key = str(pk)
-    if product_key in cart:
+    # Cart keys are in format "{website_product_id}_{inventory_product_id}"
+    # Try to find an exact match first, then search by prefix
+    product_key = None
+    pk_str = str(pk)
+    if pk_str in cart:
+        product_key = pk_str
+    else:
+        # Search for a key starting with this pk
+        for key in list(cart.keys()):
+            if key.startswith(pk_str + '_') or key == pk_str:
+                product_key = key
+                break
+
+    if product_key:
         name = cart[product_key].get("name", "Product")
         del cart[product_key]
         save_cart(request, cart)
@@ -564,7 +609,7 @@ def checkout(request):
         for item in items:
             product = get_object_or_404(WebsiteProduct.objects.select_related('inventory_product'), pk=item["website_product_id"])
             if product.inventory_product and item["quantity"] > product.inventory_product.available_stock:
-                msg = f"Checkout failed: Not enough stock for {product.get_display_name()}. Available: {product.inventory_product.available_stock}"
+                msg = f"Sorry, {product.get_display_name()} does not have sufficient stock for your requested quantity. Please update your cart."
                 if request.headers.get('x-requested-with') == 'XMLHttpRequest':
                     return JsonResponse({"success": False, "message": msg})
                 messages.error(request, msg)

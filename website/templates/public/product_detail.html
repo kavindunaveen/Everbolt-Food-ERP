@@ -359,9 +359,10 @@
     window.adjustQty = function (btn, delta) {
         var input = btn.closest('.pd-qty').querySelector('.pd-qty-input');
         if (!input) return;
-        var maxVal = parseInt(input.max, 10);
+        var minVal = parseInt(input.min, 10) || 1;
+        var maxVal = parseInt(input.max, 10) || 9999;
         var val = parseInt(input.value, 10) + delta;
-        if (val >= 1 && val <= maxVal) input.value = val;
+        if (val >= minVal && val <= maxVal) input.value = val;
     };
 
     /* Tab switcher */
@@ -408,9 +409,10 @@
                 
                 var qtyInput = document.querySelector('.pd-qty-input');
                 if (qtyInput) {
+                    var minQty = parseInt(qtyInput.min, 10) || 1;
                     qtyInput.max = selectedVariant.stock;
                     if (parseInt(qtyInput.value) > selectedVariant.stock) {
-                        qtyInput.value = selectedVariant.stock > 0 ? selectedVariant.stock : 1;
+                        qtyInput.value = Math.max(minQty, selectedVariant.stock > 0 ? Math.min(parseInt(qtyInput.value), selectedVariant.stock) : minQty);
                     }
                 }
                 
