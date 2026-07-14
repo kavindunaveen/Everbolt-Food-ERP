@@ -11,6 +11,7 @@
     showExportModal: false,
     exportDateFrom: '{{ request.GET.date_from|default:"" }}',
     exportDateTo: '{{ request.GET.date_to|default:"" }}',
+    exportDashboardMode: false,
     exportCols: {
         invoice_number: true,
         invoice_date: true,
@@ -19,6 +20,8 @@
         salesperson: true,
         status: true,
         delivery_date: true,
+        subtotal: true,
+        tax_amount: true,
         gross_amount: true,
         credit_note: true,
         net_amount: true
@@ -47,6 +50,7 @@
         let params = new URLSearchParams();
         if (this.exportDateFrom) params.set('date_from', this.exportDateFrom);
         if (this.exportDateTo) params.set('date_to', this.exportDateTo);
+        if (this.exportDashboardMode) params.set('dashboard_mode', 'true');
         let cols = Object.keys(this.exportCols).filter(k => this.exportCols[k]);
         cols.forEach(c => params.append('cols', c));
         window.location.href = '{% url "invoice_export" %}?' + params.toString();
@@ -261,20 +265,25 @@
                         </button>
                     </div>
 
-                    <!-- Date Range -->
                     <div class="mb-6">
-                        <label class="block text-xs font-black text-gray-500 uppercase tracking-widest mb-3">Date Range (Invoice Date)</label>
-                        <div class="grid grid-cols-2 gap-3">
+                        <label class="block text-xs font-black text-gray-500 uppercase tracking-widest mb-3">Export Filters</label>
+                        <div class="grid grid-cols-2 gap-3 mb-3">
                             <div>
-                                <label class="block text-xs text-gray-500 mb-1">From</label>
+                                <label class="block text-xs text-gray-500 mb-1">From (Invoice Date)</label>
                                 <input type="date" x-model="exportDateFrom" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500">
                             </div>
                             <div>
-                                <label class="block text-xs text-gray-500 mb-1">To</label>
+                                <label class="block text-xs text-gray-500 mb-1">To (Invoice Date)</label>
                                 <input type="date" x-model="exportDateTo" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500">
                             </div>
                         </div>
-                        <p class="text-xs text-gray-400 mt-2">Leave blank to export all records.</p>
+                        <label class="flex items-center gap-2 p-3 bg-emerald-50 border border-emerald-100 rounded-lg cursor-pointer">
+                            <input type="checkbox" x-model="exportDashboardMode" class="w-4 h-4 text-emerald-600 rounded">
+                            <div>
+                                <span class="block text-sm font-bold text-emerald-900">Dashboard Match Mode</span>
+                                <span class="block text-xs text-emerald-700">Excludes DRAFT and CANCELLED invoices to match Dashboard totals.</span>
+                            </div>
+                        </label>
                     </div>
 
                     <!-- Column Selection -->
@@ -298,7 +307,7 @@
                             <label class="flex items-center gap-2 p-2.5 rounded-lg border border-gray-100 hover:bg-gray-50 cursor-pointer">
                                 <input type="checkbox" x-model="exportCols.invoice_type" class="w-4 h-4 text-emerald-600 rounded">
                                 <span class="text-sm font-medium text-gray-700">Type</span>
-</label>
+                            </label>
                             <label class="flex items-center gap-2 p-2.5 rounded-lg border border-gray-100 hover:bg-gray-50 cursor-pointer">
                                 <input type="checkbox" x-model="exportCols.customer" class="w-4 h-4 text-emerald-600 rounded">
                                 <span class="text-sm font-medium text-gray-700">Customer</span>
@@ -316,16 +325,24 @@
                                 <span class="text-sm font-medium text-gray-700">Delivery Date</span>
                             </label>
                             <label class="flex items-center gap-2 p-2.5 rounded-lg border border-gray-100 hover:bg-gray-50 cursor-pointer">
+                                <input type="checkbox" x-model="exportCols.subtotal" class="w-4 h-4 text-emerald-600 rounded">
+                                <span class="text-sm font-medium text-gray-700">Sub Total (Ex-VAT)</span>
+                            </label>
+                            <label class="flex items-center gap-2 p-2.5 rounded-lg border border-gray-100 hover:bg-gray-50 cursor-pointer">
+                                <input type="checkbox" x-model="exportCols.tax_amount" class="w-4 h-4 text-emerald-600 rounded">
+                                <span class="text-sm font-medium text-gray-700">VAT Amount</span>
+                            </label>
+                            <label class="flex items-center gap-2 p-2.5 rounded-lg border border-gray-100 hover:bg-gray-50 cursor-pointer">
                                 <input type="checkbox" x-model="exportCols.gross_amount" class="w-4 h-4 text-emerald-600 rounded">
                                 <span class="text-sm font-medium text-gray-700">Gross Amount</span>
                             </label>
                             <label class="flex items-center gap-2 p-2.5 rounded-lg border border-gray-100 hover:bg-gray-50 cursor-pointer">
                                 <input type="checkbox" x-model="exportCols.credit_note" class="w-4 h-4 text-emerald-600 rounded">
-                                <span class="text-sm font-medium text-gray-700">Credit Note</span>
+                                <span class="text-sm font-medium text-gray-700">Credit Note Value</span>
                             </label>
-                            <label class="flex items-center gap-2 p-2.5 rounded-lg border border-gray-100 hover:bg-gray-50 cursor-pointer">
+                            <label class="flex items-center gap-2 p-2.5 rounded-lg border border-gray-100 hover:bg-gray-50 cursor-pointer border-emerald-200 bg-emerald-50">
                                 <input type="checkbox" x-model="exportCols.net_amount" class="w-4 h-4 text-emerald-600 rounded">
-                                <span class="text-sm font-medium text-gray-700">Net Amount</span>
+                                <span class="text-sm font-bold text-emerald-900">Net Amount</span>
                             </label>
                         </div>
                     </div>

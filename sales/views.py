@@ -926,6 +926,8 @@ class InvoiceExportView(LoginRequiredMixin, ERPPermissionRequiredMixin, View):
         'salesperson':    'Salesperson',
         'status':         'Status',
         'delivery_date':  'Delivery Date',
+        'subtotal':       'Sub Total (Ex-VAT)',
+        'tax_amount':     'VAT Amount',
         'gross_amount':   'Gross Amount',
         'credit_note':    'Credit Note Value',
         'net_amount':     'Net Amount',
@@ -950,8 +952,9 @@ class InvoiceExportView(LoginRequiredMixin, ERPPermissionRequiredMixin, View):
         salesperson_id = request.GET.get('salesperson')
         status        = request.GET.get('status')
         is_returned   = request.GET.get('is_returned')
+        dashboard_mode = request.GET.get('dashboard_mode')
 
-        from django.db.models import Q, Sum
+        from django.db.models import Q, Sum, F
         if q:
             invoices = invoices.filter(
                 Q(invoice_number__icontains=q) |
@@ -967,12 +970,19 @@ class InvoiceExportView(LoginRequiredMixin, ERPPermissionRequiredMixin, View):
             invoices = invoices.filter(status=status)
         if is_returned == 'true':
             invoices = invoices.filter(status__in=['CANCELLED', 'CANCEL_PENDING'], cancellation_reason__icontains='Customer Return')
+        
+        # Dashboard Match Mode filters out drafts and cancelled invoices
+        if dashboard_mode == 'true':
+            invoices = invoices.filter(status__in=[Invoice.Status.ISSUED, Invoice.Status.PAID])
 
         invoices = invoices.annotate(total_cn_value=Sum('credit_notes__items__credit_amount'))
 
         for inv in invoices:
             cn_value   = inv.total_cn_value or 0
             net_amount = inv.total_amount - cn_value
+            # For accurate Ex-VAT Sub Total
+            sub_total = inv.total_amount - inv.tax_amount
+
             row_map = {
                 'invoice_number': inv.invoice_number,
                 'invoice_date':   inv.creation_date.strftime('%Y-%m-%d') if inv.creation_date else '',
@@ -981,6 +991,8 @@ class InvoiceExportView(LoginRequiredMixin, ERPPermissionRequiredMixin, View):
                 'salesperson':    inv.salesperson.get_full_name() or inv.salesperson.username if inv.salesperson else 'N/A',
                 'status':         inv.get_status_display(),
                 'delivery_date':  inv.delivery_date or '',
+                'subtotal':       sub_total,
+                'tax_amount':     inv.tax_amount,
                 'gross_amount':   inv.total_amount,
                 'credit_note':    cn_value,
                 'net_amount':     net_amount,
