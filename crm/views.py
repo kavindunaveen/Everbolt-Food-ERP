@@ -178,10 +178,15 @@ class CustomerExportView(LoginRequiredMixin, ERPPermissionRequiredMixin, View):
             'Order Type', 'Payment Terms', 'Payment Method', 'Credit Limit', 
             'Special Price Customer', 'Customer Status',
             'Assigned Sales Officer', 'VAT Enabled', 'VAT Number', 'TIN Number', 'NIC',
-            'Billing Address', 'Delivery Address', 'Registration Date'
+            'Billing Address', 'Delivery Address', 'Registration Date',
+            'Total Invoices', 'Total Sales Value'
         ])
         
-        qs = Customer.objects.all().order_by('-registration_date')
+        from django.db.models import Count, Sum
+        qs = Customer.objects.annotate(
+            invoice_count=Count('invoice'),
+            total_sales=Sum('invoice__total_amount')
+        ).order_by('-registration_date')
         
         has_sales = request.GET.get('has_sales')
         if has_sales == 'true':
@@ -221,7 +226,9 @@ class CustomerExportView(LoginRequiredMixin, ERPPermissionRequiredMixin, View):
                 c.nic or 'N/A',
                 c.billing_address.replace('\n', ', ') if c.billing_address else 'N/A',
                 c.delivery_address.replace('\n', ', ') if c.delivery_address else 'N/A',
-                c.registration_date
+                c.registration_date,
+                c.invoice_count,
+                c.total_sales or 0.00
             ])
             
         return response
