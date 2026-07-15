@@ -80,6 +80,24 @@
             </div>
         </a>
 
+        <!-- ISO Checklist -->
+        {% if perms.iso.view_isocriteria %}
+        <a href="{% url 'iso_criteria_list' %}" class="block group">
+            <div class="card-premium p-6 h-full">
+                <div
+                    class="w-12 h-12 bg-red-100 text-red-600 rounded-lg flex items-center justify-center mb-4 group-hover:bg-red-600 group-hover:text-white transition-colors">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                        xmlns="http://www.w3.org/2000/svg">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                </div>
+                <h3 class="text-xl font-bold text-gray-900 mb-1">ISO Checklists</h3>
+                <p class="text-sm text-gray-500">Manage daily compliance and ISO criteria tasks.</p>
+            </div>
+        </a>
+        {% endif %}
+
         <!-- Products Map -->
         {% if perms.inventory.view_product %}
         <a href="{% url 'product_list' %}" class="block group">

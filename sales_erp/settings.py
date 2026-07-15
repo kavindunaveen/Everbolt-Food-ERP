@@ -56,7 +56,9 @@ INSTALLED_APPS = [
     'website.apps.WebsiteConfig',
     'visits.apps.VisitsConfig',
     'finance',
+    'iso.apps.IsoConfig',
     'axes',
+    'widget_tweaks',
 ]
 
 MIDDLEWARE = [

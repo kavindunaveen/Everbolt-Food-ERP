@@ -34,6 +34,7 @@ urlpatterns = [
     path('website/', include('website.urls')),
     path('visits/', include('visits.urls')),
     path('finance/', include('finance.urls')),
+    path('iso/', include('iso.urls')),
 ]
 
 if settings.DEBUG:

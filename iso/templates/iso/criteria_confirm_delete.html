@@ -1,0 +1,32 @@
+{% extends 'layouts/base.html' %}
+
+{% block title %}Delete Criteria: {{ object.name }}{% endblock %}
+
+{% block content %}
+<div class="px-4 sm:px-6 lg:px-8 py-8 w-full max-w-lg mx-auto mt-10">
+    <div class="card-premium overflow-hidden">
+        <div class="px-6 py-8">
+            <div class="flex items-center justify-center w-16 h-16 bg-red-100 rounded-full mb-6 mx-auto">
+                <svg class="w-8 h-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+            </div>
+            
+            <h1 class="text-2xl font-bold text-gray-900 text-center mb-4">Delete Criteria</h1>
+            <p class="text-center text-gray-600 mb-8">
+                Are you sure you want to delete the criteria <strong>"{{ object.name }}"</strong>? <br>
+                This action will also delete all associated daily checklists and history permanently.
+            </p>
+            
+            <form method="post" class="flex flex-col sm:flex-row gap-4 justify-center">
+                {% csrf_token %}
+                <a href="{% url 'iso_criteria_list' %}" class="btn-premium btn-secondary flex-1 justify-center">
+                    Cancel
+                </a>
+                <button type="submit" class="btn-premium bg-red-600 hover:bg-red-700 text-white font-bold py-2.5 px-6 rounded-xl flex items-center justify-center transition-colors shadow-sm shadow-red-200 border border-red-600 hover:border-red-700 flex-1">
+                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                    Yes, Delete
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

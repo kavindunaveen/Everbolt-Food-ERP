@@ -1,0 +1,65 @@
+{% extends 'layouts/base.html' %}
+
+{% block title %}ISO Checklist Criteria{% endblock %}
+
+{% block content %}
+<div class="px-4 sm:px-6 lg:px-8 py-8 w-full max-w-9xl mx-auto">
+    <div class="sm:flex sm:items-center sm:justify-between mb-8">
+        <div>
+            <h1 class="text-3xl font-extrabold text-gray-900 tracking-tight">ISO Checklists</h1>
+            <p class="mt-2 text-sm text-gray-600">Manage your ISO criteria and submit daily plans.</p>
+        </div>
+        <div class="mt-4 sm:mt-0">
+            <a href="{% url 'iso_criteria_create' %}" class="btn-premium btn-primary">
+                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/></svg>
+                New Criteria
+            </a>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {% for criteria in criteria_list %}
+        <div class="card-premium overflow-hidden flex flex-col h-full group relative">
+            <div class="absolute top-4 right-4 flex gap-1.5 z-10">
+                {% if perms.iso.change_isocriteria %}
+                <a href="{% url 'iso_criteria_update' criteria.id %}" class="p-1.5 bg-white/50 hover:bg-white text-gray-400 hover:text-blue-600 rounded-lg backdrop-blur-sm transition-all shadow-sm border border-gray-100" title="Edit Criteria">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                </a>
+                {% endif %}
+                {% if perms.iso.delete_isocriteria %}
+                <a href="{% url 'iso_criteria_delete' criteria.id %}" class="p-1.5 bg-white/50 hover:bg-white text-gray-400 hover:text-red-600 rounded-lg backdrop-blur-sm transition-all shadow-sm border border-gray-100" title="Delete Criteria">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                </a>
+                {% endif %}
+            </div>
+            
+            <a href="{% url 'iso_plan_list' criteria.id %}" class="p-5 flex-grow block">
+                <div class="flex justify-between items-start mb-4 pr-16">
+                    <div class="flex flex-wrap gap-2">
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-blue-100 text-blue-800">
+                            {{ criteria.category.name }}
+                        </span>
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-gray-100 text-gray-800">
+                            {{ criteria.get_duration_type_display }}
+                        </span>
+                    </div>
+                </div>
+                <h3 class="text-xl font-bold text-gray-900 mb-4 group-hover:text-red-600 transition-colors">{{ criteria.name }}</h3>
+            </a>
+        </div>
+        {% empty %}
+        <div class="col-span-full py-12 text-center bg-white rounded-2xl border border-dashed border-gray-300">
+            <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"/></svg>
+            <h3 class="mt-2 text-sm font-bold text-gray-900">No Criteria Defined</h3>
+            <p class="mt-1 text-sm text-gray-500">Get started by creating a new ISO Checklist Criteria.</p>
+            <div class="mt-6">
+                <a href="{% url 'iso_criteria_create' %}" class="btn-premium btn-primary inline-flex items-center">
+                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                    New Criteria
+                </a>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}
