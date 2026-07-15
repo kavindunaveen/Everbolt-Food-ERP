@@ -88,6 +88,26 @@ class DailyPlanCreateView(LoginRequiredMixin, ERPPermissionRequiredMixin, Create
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['criteria'] = self.criteria
+        
+        import json
+        initial_tasks = []
+        latest_plan = ISODailyPlan.objects.filter(criteria=self.criteria).order_by('-date', '-submitted_at').first()
+        
+        if latest_plan:
+            for task in latest_plan.tasks.all():
+                initial_tasks.append({
+                    'description': task.task_description,
+                    'status': 'pending',
+                    'remark': ''
+                })
+        else:
+            initial_tasks.append({
+                'description': '',
+                'status': 'pending',
+                'remark': ''
+            })
+            
+        context['initial_tasks_json'] = json.dumps(initial_tasks)
         return context
 
     def form_valid(self, form):
@@ -106,39 +126,25 @@ class DailyPlanCreateView(LoginRequiredMixin, ERPPermissionRequiredMixin, Create
             plan.save()
 
             # The frontend will send lists of arrays like:
-            # task_descriptions[], is_checked[], remarks[]
+            # task_descriptions[]
             task_descriptions = self.request.POST.getlist('task_descriptions[]')
-            remarks = self.request.POST.getlist('remarks[]')
             
             tasks_to_create = []
             for i, desc in enumerate(task_descriptions):
                 if not desc.strip():
                     continue
-                is_checked_str = self.request.POST.get(f'is_checked_{i}', 'false')
-                is_checked = (is_checked_str == 'true')
                 
                 tasks_to_create.append(ISODailyTask(
                     plan=plan,
                     task_description=desc,
-                    is_checked=is_checked,
-                    remark=remarks[i] if i < len(remarks) else ''
+                    status='pending',
+                    remark=''
                 ))
             
             if tasks_to_create:
                 ISODailyTask.objects.bulk_create(tasks_to_create)
             
-            # Trigger Admin Notifications
-            admins = User.objects.filter(role=User.Role.ADMIN, is_active=True)
-            for admin in admins:
-                Notification.objects.create(
-                    user=admin,
-                    title=f"ISO Checklist Submitted: {self.criteria.name}",
-                    message=f"{self.request.user.get_full_name()} submitted the daily ISO Checklist for {date}.",
-                    notification_type='system_alert',
-                    related_url=reverse('iso_plan_list', args=[self.criteria.id])
-                )
-
-        messages.success(self.request, "Daily ISO Checklist submitted successfully.")
+        messages.success(self.request, "ISO Checklist Plan saved successfully. You can execute it from the list.")
         return redirect('iso_plan_list', criteria_id=self.criteria.id)
 
 class DailyPlanDetailView(LoginRequiredMixin, ERPPermissionRequiredMixin, DetailView):
@@ -146,4 +152,73 @@ class DailyPlanDetailView(LoginRequiredMixin, ERPPermissionRequiredMixin, Detail
     template_name = 'iso/daily_plan_detail.html'
     context_object_name = 'plan'
     permission_required = 'iso.view_isodailyplan'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        plan = self.get_object()
+        
+        import json
+        initial_tasks = []
+        for task in plan.tasks.all():
+            initial_tasks.append({
+                'id': task.id,
+                'description': task.task_description,
+                'status': task.status,
+                'remark': task.remark
+            })
+            
+        context['initial_tasks_json'] = json.dumps(initial_tasks)
+        return context
+
+    def post(self, request, *args, **kwargs):
+        if not request.user.has_perm('iso.change_isodailyplan'):
+            messages.error(request, "You do not have permission to update this plan.")
+            return redirect('iso_plan_list', criteria_id=self.get_object().criteria.id)
+            
+        plan = self.get_object()
+        
+        with transaction.atomic():
+            task_descriptions = request.POST.getlist('task_descriptions[]')
+            remarks = request.POST.getlist('remarks[]')
+            
+            # Delete old tasks and recreate them to handle additions/deletions easily
+            plan.tasks.all().delete()
+            
+            tasks_to_create = []
+            for i, desc in enumerate(task_descriptions):
+                if not desc.strip():
+                    continue
+                status_val = request.POST.get(f'status_{i}', 'pending')
+                
+                tasks_to_create.append(ISODailyTask(
+                    plan=plan,
+                    task_description=desc,
+                    status=status_val,
+                    remark=remarks[i] if i < len(remarks) else ''
+                ))
+            
+            if tasks_to_create:
+                ISODailyTask.objects.bulk_create(tasks_to_create)
+                
+            # If submit button was clicked
+            if 'submit_plan' in request.POST:
+                plan.is_submitted = True
+                plan.save()
+                
+                # Trigger Admin Notifications
+                admins = User.objects.filter(role__name='Administrator', is_active=True)
+                for admin in admins:
+                    from users.models import Notification
+                    Notification.objects.create(
+                        recipient=admin,
+                        title=f"ISO Checklist Submitted: {plan.criteria.name}",
+                        message=f"{request.user.get_full_name()} submitted the daily ISO Checklist for {plan.date}.",
+                        notification_type='info',
+                        link=reverse('iso_plan_list', args=[plan.criteria.id])
+                    )
+                messages.success(request, "Checklist submitted and admins notified.")
+                return redirect('iso_plan_list', criteria_id=plan.criteria.id)
+            else:
+                messages.success(request, "Checklist saved successfully.")
+                return redirect('iso_plan_detail', plan_id=plan.id)
     pk_url_kwarg = 'plan_id'

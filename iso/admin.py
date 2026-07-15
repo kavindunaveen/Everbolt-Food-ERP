@@ -15,7 +15,7 @@ class ISOCriteriaAdmin(admin.ModelAdmin):
 class ISODailyTaskInline(admin.TabularInline):
     model = ISODailyTask
     extra = 0
-    readonly_fields = ('task_description', 'is_checked', 'remark')
+    readonly_fields = ('task_description', 'status', 'remark')
     can_delete = False
 
 @admin.register(ISODailyPlan)

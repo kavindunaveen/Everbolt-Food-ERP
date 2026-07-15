@@ -16,7 +16,7 @@
         <div class="mt-4 sm:mt-0">
             <a href="{% url 'iso_plan_create' criteria.id %}" class="btn-premium btn-primary">
                 <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/></svg>
-                Submit New Plan
+                Add New Plan
             </a>
         </div>
     </div>
@@ -37,39 +37,24 @@
                         </p>
                     </div>
                 </div>
-                <div class="text-right">
+                <div class="text-right flex flex-col items-end gap-1.5">
+                    {% if plan.is_submitted %}
+                    <span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-700 uppercase tracking-wider">
+                        Submitted
+                    </span>
+                    {% else %}
+                    <span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-orange-100 text-orange-700 uppercase tracking-wider">
+                        Draft
+                    </span>
+                    {% endif %}
+                    
                     <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-blue-100 text-blue-800">
                         {{ plan.tasks.count }} Tasks
                     </span>
-                    <p class="text-[10px] text-gray-400 font-bold uppercase tracking-wider mt-1">{{ plan.submitted_at|date:"h:i A" }}</p>
+                    <a href="{% url 'iso_plan_detail' plan.id %}" class="mt-2 text-xs font-bold text-accent hover:text-blue-800 hover:underline">
+                        {% if plan.is_submitted %}View Details{% else %}Execute Plan{% endif %} &rarr;
+                    </a>
                 </div>
-            </div>
-            
-            <div class="divide-y divide-gray-50">
-                {% for task in plan.tasks.all %}
-                <div class="p-4 sm:px-6 hover:bg-gray-50/50 transition-colors">
-                    <div class="flex flex-col sm:flex-row gap-4">
-                        <div class="flex items-start gap-3 sm:w-1/2">
-                            <div class="mt-0.5 flex-shrink-0 w-5 h-5 rounded border-2 flex items-center justify-center {% if task.is_checked %}bg-emerald-500 border-emerald-500 text-white{% else %}bg-white border-gray-300{% endif %}">
-                                {% if task.is_checked %}
-                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg>
-                                {% endif %}
-                            </div>
-                            <p class="text-sm font-semibold text-gray-900 {% if task.is_checked %}text-gray-500 line-through{% endif %}">{{ task.task_description }}</p>
-                        </div>
-                        
-                        {% if task.remark %}
-                        <div class="sm:w-1/2 bg-gray-50 rounded-lg p-3 border border-gray-100">
-                            <p class="text-xs text-gray-600"><span class="font-bold text-gray-900">Remark:</span> {{ task.remark }}</p>
-                        </div>
-                        {% endif %}
-                    </div>
-                </div>
-                {% empty %}
-                <div class="p-6 text-center text-gray-500 text-sm">
-                    No tasks were recorded for this day.
-                </div>
-                {% endfor %}
             </div>
         </div>
         {% empty %}

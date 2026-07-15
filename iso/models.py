@@ -1,5 +1,6 @@
 from django.db import models
 from django.contrib.auth import get_user_model
+from django.utils import timezone
 
 User = get_user_model()
 
@@ -40,10 +41,11 @@ class ISOCriteria(models.Model):
         return self.name
 
 class ISODailyPlan(models.Model):
-    criteria = models.ForeignKey(ISOCriteria, on_delete=models.CASCADE, related_name='plans')
-    date = models.DateField()
+    criteria = models.ForeignKey(ISOCriteria, on_delete=models.CASCADE, related_name='daily_plans')
+    date = models.DateField(default=timezone.now)
     submitted_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='iso_plans')
     submitted_at = models.DateTimeField(auto_now_add=True)
+    is_submitted = models.BooleanField(default=False)
 
     class Meta:
         verbose_name = "ISO Daily Plan"
