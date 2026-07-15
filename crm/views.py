@@ -167,12 +167,18 @@ class CustomerExportView(LoginRequiredMixin, ERPPermissionRequiredMixin, View):
     def get(self, request, *args, **kwargs):
         response = HttpResponse(content_type='text/csv')
         response['Content-Disposition'] = 'attachment; filename="customers.csv"'
+        response['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+        response['Pragma'] = 'no-cache'
+        response['Expires'] = '0'
         
         writer = csv.writer(response)
         writer.writerow([
             'Customer Code', 'Customer Name', 'Company Name', 'Contact Person', 
-            'Phone', 'Email', 'Customer Type', 'Payment Terms', 'Credit Limit', 
-            'Assigned Sales Officer', 'VAT Enabled', 'Registration Date'
+            'Phone', 'Secondary Phone', 'Email', 'Customer Type', 'Custom Customer Type',
+            'Order Type', 'Payment Terms', 'Payment Method', 'Credit Limit', 
+            'Special Price Customer', 'Customer Status',
+            'Assigned Sales Officer', 'VAT Enabled', 'VAT Number', 'TIN Number', 'NIC',
+            'Billing Address', 'Delivery Address', 'Registration Date'
         ])
         
         qs = Customer.objects.all().order_by('-registration_date')
@@ -198,12 +204,23 @@ class CustomerExportView(LoginRequiredMixin, ERPPermissionRequiredMixin, View):
                 c.company_name or 'N/A',
                 c.contact_person,
                 c.phone,
+                c.phone_secondary or 'N/A',
                 c.email or 'N/A',
                 c.get_customer_type_display(),
+                c.custom_customer_type or 'N/A',
+                c.get_order_type_display() if c.order_type else 'N/A',
                 c.get_payment_terms_display(),
+                c.get_payment_method_display(),
                 c.credit_limit,
+                'Yes' if c.special_price_customer else 'No',
+                c.get_customer_status_display(),
                 c.assigned_sales_officer.get_full_name() if c.assigned_sales_officer else 'N/A',
                 'Yes' if c.vat_enabled else 'No',
+                c.vat_number or 'N/A',
+                c.tin_number or 'N/A',
+                c.nic or 'N/A',
+                c.billing_address.replace('\n', ', ') if c.billing_address else 'N/A',
+                c.delivery_address.replace('\n', ', ') if c.delivery_address else 'N/A',
                 c.registration_date
             ])
             
