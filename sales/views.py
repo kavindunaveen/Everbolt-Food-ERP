@@ -321,7 +321,8 @@ class QuotationListView(LoginRequiredMixin, ERPPermissionRequiredMixin, ListView
         if q:
             qs = qs.filter(
                 Q(quotation_number__icontains=q) |
-                Q(customer__customer_name__icontains=q)
+                Q(customer__customer_name__icontains=q) |
+                Q(customer__customer_code__icontains=q)
             )
 
         salesperson_id = self.request.GET.get('salesperson')
@@ -370,7 +371,8 @@ class InvoiceListView(LoginRequiredMixin, ERPPermissionRequiredMixin, ListView):
         if q:
             qs = qs.filter(
                 Q(invoice_number__icontains=q) |
-                Q(customer__customer_name__icontains=q)
+                Q(customer__customer_name__icontains=q) |
+                Q(customer__customer_code__icontains=q)
             )
 
         salesperson_id = self.request.GET.get('salesperson')
