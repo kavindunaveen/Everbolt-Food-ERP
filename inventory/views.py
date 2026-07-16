@@ -10,8 +10,9 @@ from django.http import JsonResponse, HttpResponse
 import csv
 import io
 from decimal import Decimal
-from .models import Product, StockAdjustment, StockLedger
+from .models import Product, StockAdjustment, StockLedger, PerpetualCount, PerpetualCountItem
 from .forms import ProductForm, StockAdjustmentForm
+import json
 from .services import confirm_stock_adjustment, cancel_stock_adjustment
 
 class ProductDetailAPIView(LoginRequiredMixin, View):
@@ -64,6 +65,120 @@ class ProductListView(LoginRequiredMixin, ERPPermissionRequiredMixin, ListView):
         except ImportError:
             context['saved_filters'] = []
         return context
+
+class PerpetualCountListView(LoginRequiredMixin, ERPPermissionRequiredMixin, ListView):
+    model = PerpetualCount
+    template_name = 'inventory/perpetual_counts/count_list.html'
+    context_object_name = 'counts'
+    paginate_by = 20
+    permission_required = 'inventory.view_perpetualcount'
+
+    def get_queryset(self):
+        qs = super().get_queryset().order_by('-created_at')
+        return qs
+
+class PerpetualCountCreateView(LoginRequiredMixin, ERPPermissionRequiredMixin, View):
+    permission_required = 'inventory.add_perpetualcount'
+    
+    def get(self, request):
+        from users.models import User
+        products = list(Product.objects.filter(status=True, track_stock=True).values('id', 'name', 'product_id', 'current_stock', 'stock_unit'))
+        approvers = User.objects.filter(role__name='Administrator', is_active=True)
+        return render(request, 'inventory/perpetual_counts/count_form.html', {
+            'products_json': json.dumps(products, default=str),
+            'approvers': approvers
+        })
+        
+    def post(self, request):
+        data = json.loads(request.body)
+        items = data.get('items', [])
+        approver_id = data.get('approver_id')
+        remarks = data.get('remarks', '')
+        
+        if not items:
+            return JsonResponse({'success': False, 'message': 'No items selected.'})
+            
+        count_obj = PerpetualCount.objects.create(
+            status=PerpetualCount.StatusChoices.PENDING,
+            created_by=request.user,
+            approved_by_id=approver_id,
+            remarks=remarks
+        )
+        
+        for item in items:
+            PerpetualCountItem.objects.create(
+                perpetual_count=count_obj,
+                product_id=item['product_id'],
+                system_count=item['system_count'],
+                physical_count=item['physical_count'],
+                remarks=item.get('remarks', '')
+            )
+            
+        return JsonResponse({'success': True, 'redirect_url': reverse_lazy('perpetual_count_list')})
+
+class PerpetualCountDetailView(LoginRequiredMixin, ERPPermissionRequiredMixin, DetailView):
+    model = PerpetualCount
+    template_name = 'inventory/perpetual_counts/count_detail.html'
+    context_object_name = 'count'
+    permission_required = 'inventory.view_perpetualcount'
+    
+    def post(self, request, *args, **kwargs):
+        count = self.get_object()
+        
+        if not request.user.has_perm('inventory.can_approve_perpetual_count'):
+            messages.error(request, "You do not have permission to approve counts.")
+            return redirect('perpetual_count_detail', pk=count.pk)
+            
+        action = request.POST.get('action')
+        
+        if count.status != PerpetualCount.StatusChoices.PENDING:
+            messages.error(request, "This count has already been processed.")
+            return redirect('perpetual_count_detail', pk=count.pk)
+            
+        if action == 'approve':
+            count.status = PerpetualCount.StatusChoices.APPROVED
+            count.save()
+            
+            # Generate adjustments
+            for item in count.items.all():
+                diff = item.difference
+                if diff != 0:
+                    adj_type = StockAdjustment.AdjustmentTypes.POSITIVE if diff > 0 else StockAdjustment.AdjustmentTypes.NEGATIVE
+                    adj = StockAdjustment.objects.create(
+                        date=count.date,
+                        product=item.product,
+                        adjustment_type=adj_type,
+                        quantity=abs(diff),
+                        reason='Perpetual Count Adjustment',
+                        remarks=f'From {count.reference_number}',
+                        status=StockAdjustment.StatusChoices.CONFIRMED,
+                        created_by=request.user
+                    )
+                    # Create ledger entry
+                    StockLedger.objects.create(
+                        product=item.product,
+                        tx_type=StockLedger.TransactionTypes.ADJ_POS if diff > 0 else StockLedger.TransactionTypes.ADJ_NEG,
+                        qty_in=abs(diff) if diff > 0 else 0,
+                        qty_out=abs(diff) if diff < 0 else 0,
+                        reference_type='SYS',
+                        reference_id=adj.id,
+                        reference_number=adj.adjustment_number,
+                        remarks=f"Perpetual Count {count.reference_number}",
+                        user=request.user
+                    )
+                    
+                    # Update cache
+                    item.product.current_stock += diff
+                    item.product.save(update_fields=['current_stock'])
+            
+            messages.success(request, f"Count {count.reference_number} approved and stock adjusted successfully.")
+            
+        elif action == 'reject':
+            count.status = PerpetualCount.StatusChoices.REJECTED
+            count.save()
+            messages.warning(request, f"Count {count.reference_number} was rejected.")
+            
+        return redirect('perpetual_count_list')
 
 class ProductCreateView(LoginRequiredMixin, ERPPermissionRequiredMixin, CreateView):
     model = Product

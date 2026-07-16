@@ -1,0 +1,137 @@
+{% extends 'layouts/base.html' %}
+
+{% block title %}Perpetual Count Details | ERP System{% endblock %}
+
+{% block content %}
+<div class="px-4 py-6 sm:px-0 max-w-5xl mx-auto">
+    <div class="flex justify-between items-center mb-6">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-900 inline-block">
+                Perpetual Count: {{ count.reference_number }}
+            </h1>
+            <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold ml-4 
+                {% if count.status == 'APPROVED' %}bg-green-100 text-green-800
+                {% elif count.status == 'REJECTED' %}bg-red-100 text-red-800
+                {% elif count.status == 'PENDING' %}bg-yellow-100 text-yellow-800
+                {% else %}bg-gray-100 text-gray-800{% endif %}">
+                {{ count.get_status_display }}
+            </span>
+        </div>
+        <a href="{% url 'perpetual_count_list' %}" class="text-gray-600 hover:text-gray-900 font-medium">
+            &larr; Back to List
+        </a>
+    </div>
+
+    <!-- Metadata Card -->
+    <div class="bg-white shadow-sm rounded-lg border border-gray-200 overflow-hidden mb-6">
+        <div class="p-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <h3 class="text-sm font-medium text-gray-500 mb-1">Created By</h3>
+                    <p class="text-base text-gray-900">{{ count.created_by.get_full_name|default:count.created_by.username }}</p>
+                </div>
+                <div>
+                    <h3 class="text-sm font-medium text-gray-500 mb-1">Creation Date</h3>
+                    <p class="text-base text-gray-900">{{ count.created_at|date:"M d, Y h:i A" }}</p>
+                </div>
+                <div>
+                    <h3 class="text-sm font-medium text-gray-500 mb-1">Assigned Approver</h3>
+                    <p class="text-base text-gray-900">{{ count.approved_by.get_full_name|default:count.approved_by.username }}</p>
+                </div>
+                <div>
+                    <h3 class="text-sm font-medium text-gray-500 mb-1">Remarks</h3>
+                    <p class="text-base text-gray-900">{{ count.remarks|default:"No remarks provided." }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Items List -->
+    <div class="bg-white shadow-sm rounded-lg border border-gray-200 overflow-hidden mb-6">
+        <div class="px-6 py-4 border-b border-gray-200 bg-gray-50">
+            <h2 class="text-lg font-bold text-gray-800">Count Items</h2>
+        </div>
+        
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead>
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Product</th>
+                        <th class="px-6 py-3 text-right text-xs font-bold text-gray-500 uppercase tracking-wider">System Count</th>
+                        <th class="px-6 py-3 text-right text-xs font-bold text-gray-500 uppercase tracking-wider">Physical Count</th>
+                        <th class="px-6 py-3 text-right text-xs font-bold text-gray-500 uppercase tracking-wider">Difference</th>
+                        <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Remarks</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-200">
+                    {% for item in count.items.all %}
+                    <tr class="hover:bg-gray-50">
+                        <td class="px-6 py-4">
+                            <div class="text-sm font-medium text-gray-900">{{ item.product.name }}</div>
+                            <div class="text-xs text-gray-500">{{ item.product.product_id }}</div>
+                        </td>
+                        <td class="px-6 py-4 text-right">
+                            <span class="text-sm text-gray-900">{{ item.system_count }}</span>
+                            <span class="text-xs text-gray-500 ml-1">{{ item.product.stock_unit }}</span>
+                        </td>
+                        <td class="px-6 py-4 text-right">
+                            <span class="text-sm font-bold text-gray-900">{{ item.physical_count }}</span>
+                            <span class="text-xs text-gray-500 ml-1">{{ item.product.stock_unit }}</span>
+                        </td>
+                        <td class="px-6 py-4 text-right">
+                            {% if item.difference > 0 %}
+                                <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">
+                                    +{{ item.difference }}
+                                </span>
+                            {% elif item.difference < 0 %}
+                                <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800">
+                                    {{ item.difference }}
+                                </span>
+                            {% else %}
+                                <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800">
+                                    Match
+                                </span>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4 text-sm text-gray-500">
+                            {{ item.remarks|default:"-" }}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Actions -->
+    {% if count.status == 'PENDING' %}
+        {% if perms.inventory.can_approve_perpetual_count %}
+        <div class="bg-white shadow-sm rounded-lg border border-gray-200 overflow-hidden mb-6 p-6">
+            <h3 class="text-lg font-bold text-gray-900 mb-4">Approval Actions</h3>
+            <p class="text-sm text-gray-500 mb-6">Approving this count will automatically create Stock Adjustments for any items with differences, correcting the current system stock.</p>
+            
+            <form method="POST" class="flex gap-4">
+                {% csrf_token %}
+                <button type="submit" name="action" value="approve" class="bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-6 rounded shadow transition duration-150">
+                    Approve & Adjust Stock
+                </button>
+                <button type="submit" name="action" value="reject" class="bg-red-600 hover:bg-red-700 text-white font-medium py-2 px-6 rounded shadow transition duration-150" onclick="return confirm('Are you sure you want to reject this count?');">
+                    Reject Count
+                </button>
+            </form>
+        </div>
+        {% else %}
+        <div class="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-6">
+            <div class="flex">
+                <div class="flex-shrink-0">
+                    <svg class="h-5 w-5 text-yellow-400" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path></svg>
+                </div>
+                <div class="ml-3">
+                    <p class="text-sm text-yellow-700 font-medium">This count is awaiting approval. You do not have permission to approve it.</p>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    {% endif %}
+</div>
+{% endblock %}

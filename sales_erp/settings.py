@@ -58,7 +58,6 @@ INSTALLED_APPS = [
     'finance',
     'iso.apps.IsoConfig',
     'axes',
-    'widget_tweaks',
 ]
 
 MIDDLEWARE = [

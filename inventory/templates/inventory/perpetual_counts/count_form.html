@@ -1,0 +1,242 @@
+{% extends 'layouts/base.html' %}
+
+{% block title %}New Perpetual Count | ERP System{% endblock %}
+
+{% block content %}
+<div class="px-4 py-6 sm:px-0 max-w-5xl mx-auto" x-data="perpetualCountForm()">
+    <div class="flex justify-between items-center mb-6">
+        <h1 class="text-2xl font-bold text-gray-900 border-b-4 border-purple-500 inline-block pb-1">New Perpetual Count</h1>
+        <a href="{% url 'perpetual_count_list' %}" class="text-gray-600 hover:text-gray-900 font-medium">
+            &larr; Back to List
+        </a>
+    </div>
+
+    <div class="bg-white shadow-sm rounded-lg border border-gray-200 overflow-hidden mb-6">
+        <div class="px-6 py-4 border-b border-gray-200 bg-gray-50 flex justify-between items-center">
+            <h2 class="text-lg font-bold text-gray-800">Count Details</h2>
+            <button @click="addItem()" class="bg-blue-50 text-blue-600 hover:bg-blue-100 px-3 py-1.5 rounded text-sm font-medium border border-blue-200 transition-colors">
+                + Add Product
+            </button>
+        </div>
+        
+        <div class="p-6">
+            <template x-if="error">
+                <div class="mb-4 bg-red-50 border-l-4 border-red-400 p-4">
+                    <p class="text-sm text-red-700" x-text="error"></p>
+                </div>
+            </template>
+            
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200 mb-6">
+                    <thead>
+                        <tr>
+                            <th class="px-3 py-2 text-left text-xs font-bold text-gray-500 uppercase tracking-wider w-1/3">Product</th>
+                            <th class="px-3 py-2 text-right text-xs font-bold text-gray-500 uppercase tracking-wider">System Count</th>
+                            <th class="px-3 py-2 text-right text-xs font-bold text-gray-500 uppercase tracking-wider">Physical Count</th>
+                            <th class="px-3 py-2 text-right text-xs font-bold text-gray-500 uppercase tracking-wider">Difference</th>
+                            <th class="px-3 py-2 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Remarks</th>
+                            <th class="px-3 py-2 text-center text-xs font-bold text-gray-500 uppercase tracking-wider">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-100">
+                        <template x-for="(item, index) in items" :key="index">
+                            <tr class="hover:bg-gray-50">
+                                <td class="px-3 py-3">
+                                    <select x-model="item.product_id" @change="productChanged(index)" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-purple-500 focus:border-purple-500 sm:text-sm rounded-md shadow-sm">
+                                        <option value="">-- Select Product --</option>
+                                        <template x-for="p in availableProducts" :key="p.id">
+                                            <option :value="p.id" x-text="'[' + p.product_id + '] ' + p.name"></option>
+                                        </template>
+                                    </select>
+                                </td>
+                                <td class="px-3 py-3 text-right">
+                                    <div class="text-sm font-medium text-gray-900 mt-2">
+                                        <span x-text="item.system_count !== null ? parseFloat(item.system_count).toFixed(2) : '-'"></span>
+                                        <span class="text-xs text-gray-500 ml-1" x-text="item.stock_unit"></span>
+                                    </div>
+                                </td>
+                                <td class="px-3 py-3">
+                                    <input type="number" step="0.001" x-model.number="item.physical_count" class="mt-1 focus:ring-purple-500 focus:border-purple-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md text-right" placeholder="0.000">
+                                </td>
+                                <td class="px-3 py-3 text-right">
+                                    <div class="mt-2 text-sm font-bold" 
+                                         :class="{'text-red-600': difference(index) < 0, 'text-green-600': difference(index) > 0, 'text-gray-500': difference(index) === 0}">
+                                        <span x-text="difference(index) !== null ? (difference(index) > 0 ? '+' : '') + difference(index).toFixed(2) : '-'"></span>
+                                    </div>
+                                </td>
+                                <td class="px-3 py-3">
+                                    <input type="text" x-model="item.remarks" class="mt-1 focus:ring-purple-500 focus:border-purple-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md" placeholder="Optional notes">
+                                </td>
+                                <td class="px-3 py-3 text-center">
+                                    <button @click="removeItem(index)" class="text-red-500 hover:text-red-700 mt-2" title="Remove row">
+                                        <svg class="h-5 w-5 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                                    </button>
+                                </td>
+                            </tr>
+                        </template>
+                        <tr x-show="items.length === 0">
+                            <td colspan="6" class="px-3 py-8 text-center text-gray-500 text-sm">
+                                No products added. Click "Add Product" to begin.
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            
+            <div class="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">General Remarks</label>
+                    <textarea x-model="remarks" rows="3" class="shadow-sm focus:ring-purple-500 focus:border-purple-500 block w-full sm:text-sm border-gray-300 rounded-md mt-1"></textarea>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Send for Approval To <span class="text-red-500">*</span></label>
+                    <select x-model="approver_id" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-purple-500 focus:border-purple-500 sm:text-sm rounded-md shadow-sm">
+                        <option value="">-- Select Approver --</option>
+                        {% for user in approvers %}
+                            <option value="{{ user.id }}">{{ user.get_full_name|default:user.username }} ({{ user.role.name }})</option>
+                        {% endfor %}
+                    </select>
+                    <p class="mt-2 text-sm text-gray-500">Only Administrators can approve perpetual counts.</p>
+                </div>
+            </div>
+        </div>
+        <div class="px-6 py-4 bg-gray-50 border-t border-gray-200 flex justify-end">
+            <button @click="submitForm()" :disabled="isSubmitting" class="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-6 rounded shadow transition-colors disabled:opacity-50 flex items-center">
+                <span x-show="!isSubmitting">Submit for Approval</span>
+                <span x-show="isSubmitting">Submitting...</span>
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+function perpetualCountForm() {
+    return {
+        productsData: {{ products_json|safe }},
+        items: [],
+        approver_id: '',
+        remarks: '',
+        error: '',
+        isSubmitting: false,
+        
+        get availableProducts() {
+            return this.productsData;
+        },
+        
+        addItem() {
+            this.items.push({
+                product_id: '',
+                system_count: null,
+                physical_count: null,
+                stock_unit: '',
+                remarks: ''
+            });
+        },
+        
+        removeItem(index) {
+            this.items.splice(index, 1);
+        },
+        
+        productChanged(index) {
+            const item = this.items[index];
+            if (!item.product_id) {
+                item.system_count = null;
+                item.stock_unit = '';
+                return;
+            }
+            
+            // Find product data
+            const product = this.productsData.find(p => p.id == item.product_id);
+            if (product) {
+                item.system_count = parseFloat(product.current_stock);
+                item.stock_unit = product.stock_unit;
+            }
+        },
+        
+        difference(index) {
+            const item = this.items[index];
+            if (item.system_count === null || item.physical_count === null || item.physical_count === '') return null;
+            return parseFloat(item.physical_count) - parseFloat(item.system_count);
+        },
+        
+        async submitForm() {
+            this.error = '';
+            
+            if (this.items.length === 0) {
+                this.error = 'Please add at least one product.';
+                return;
+            }
+            
+            if (!this.approver_id) {
+                this.error = 'Please select an approver.';
+                return;
+            }
+            
+            // Validate items
+            for (let i = 0; i < this.items.length; i++) {
+                if (!this.items[i].product_id) {
+                    this.error = `Row ${i+1}: Please select a product.`;
+                    return;
+                }
+                if (this.items[i].physical_count === null || this.items[i].physical_count === '') {
+                    this.error = `Row ${i+1}: Please enter a physical count.`;
+                    return;
+                }
+            }
+            
+            // Ensure no duplicate products in the list
+            const pIds = this.items.map(i => i.product_id);
+            if (new Set(pIds).size !== pIds.length) {
+                this.error = 'You have selected the same product multiple times. Please consolidate them into one row.';
+                return;
+            }
+            
+            this.isSubmitting = true;
+            
+            try {
+                // Get CSRF from cookie
+                function getCookie(name) {
+                    let cookieValue = null;
+                    if (document.cookie && document.cookie !== '') {
+                        const cookies = document.cookie.split(';');
+                        for (let i = 0; i < cookies.length; i++) {
+                            const cookie = cookies[i].trim();
+                            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                                break;
+                            }
+                        }
+                    }
+                    return cookieValue;
+                }
+                const csrftoken = getCookie('csrftoken');
+
+                const response = await fetch('{% url "perpetual_count_create" %}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': csrftoken
+                    },
+                    body: JSON.stringify({
+                        items: this.items,
+                        approver_id: this.approver_id,
+                        remarks: this.remarks
+                    })
+                });
+                
+                const result = await response.json();
+                if (result.success) {
+                    window.location.href = result.redirect_url;
+                } else {
+                    this.error = result.message || 'An error occurred during submission.';
+                    this.isSubmitting = false;
+                }
+            } catch (err) {
+                this.error = 'Network error. Please try again.';
+                this.isSubmitting = false;
+            }
+        }
+    }
+}
+</script>
+{% endblock %}

@@ -25,4 +25,9 @@ urlpatterns = [
     # Reports
     path('stock-summary/', views.StockSummaryView.as_view(), name='stock_summary'),
     path('stock-ledger/', views.StockLedgerView.as_view(), name='stock_ledger'),
+    
+    # Perpetual Count
+    path('perpetual-counts/', views.PerpetualCountListView.as_view(), name='perpetual_count_list'),
+    path('perpetual-counts/new/', views.PerpetualCountCreateView.as_view(), name='perpetual_count_create'),
+    path('perpetual-counts/<int:pk>/', views.PerpetualCountDetailView.as_view(), name='perpetual_count_detail'),
 ]

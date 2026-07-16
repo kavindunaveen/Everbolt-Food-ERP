@@ -158,6 +158,60 @@ class ProductPriceTier(models.Model):
     def __str__(self):
         return f"{self.product.name} (>= {self.min_quantity}): Rs {self.price}"
 
+class PerpetualCount(models.Model):
+    class StatusChoices(models.TextChoices):
+        DRAFT = 'DRAFT', 'Draft'
+        PENDING = 'PENDING', 'Pending Approval'
+        APPROVED = 'APPROVED', 'Approved'
+        REJECTED = 'REJECTED', 'Rejected'
+
+    reference_number = models.CharField(max_length=50, unique=True, blank=True)
+    date = models.DateField(auto_now_add=True)
+    status = models.CharField(max_length=20, choices=StatusChoices.choices, default=StatusChoices.DRAFT)
+    
+    created_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name='created_counts')
+    approved_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name='approved_counts', null=True, blank=True)
+    
+    remarks = models.TextField(blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        permissions = [
+            ("can_approve_perpetual_count", "Can approve perpetual counts"),
+        ]
+
+    def save(self, *args, **kwargs):
+        if not self.reference_number:
+            last = PerpetualCount.objects.order_by('-id').first()
+            if last and last.reference_number.startswith('PC-'):
+                try:
+                    seq = int(last.reference_number.split('-')[-1]) + 1
+                except ValueError:
+                    seq = 1
+            else:
+                seq = 1
+            self.reference_number = f"PC-{seq:04d}"
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return self.reference_number
+
+class PerpetualCountItem(models.Model):
+    perpetual_count = models.ForeignKey(PerpetualCount, on_delete=models.CASCADE, related_name='items')
+    product = models.ForeignKey('Product', on_delete=models.PROTECT)
+    
+    system_count = models.DecimalField(max_digits=12, decimal_places=3, help_text="Stock at the time of count creation")
+    physical_count = models.DecimalField(max_digits=12, decimal_places=3)
+    remarks = models.CharField(max_length=255, blank=True, null=True)
+
+    @property
+    def difference(self):
+        return self.physical_count - self.system_count
+
+    def __str__(self):
+        return f"{self.perpetual_count.reference_number} - {self.product.name}"
+
 class StockLedger(models.Model):
     class TransactionTypes(models.TextChoices):
         OPENING = 'OPENING', 'Opening Stock'
