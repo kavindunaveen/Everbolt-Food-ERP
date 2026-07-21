@@ -923,6 +923,7 @@ class InvoiceExportView(LoginRequiredMixin, ERPPermissionRequiredMixin, View):
     COL_LABELS = {
         'invoice_number': 'Invoice Number',
         'invoice_date':   'Invoice Date',
+        'due_date':       'Due Date',
         'invoice_type':   'Type',
         'customer':       'Customer',
         'salesperson':    'Salesperson',
@@ -988,6 +989,7 @@ class InvoiceExportView(LoginRequiredMixin, ERPPermissionRequiredMixin, View):
             row_map = {
                 'invoice_number': inv.invoice_number,
                 'invoice_date':   inv.creation_date.strftime('%Y-%m-%d') if inv.creation_date else '',
+                'due_date':       inv.due_date.strftime('%Y-%m-%d') if inv.due_date else '',
                 'invoice_type':   inv.get_invoice_type_display(),
                 'customer':       inv.customer.customer_name,
                 'salesperson':    inv.salesperson.get_full_name() or inv.salesperson.username if inv.salesperson else 'N/A',

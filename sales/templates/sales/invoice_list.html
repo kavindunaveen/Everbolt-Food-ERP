@@ -15,6 +15,7 @@
     exportCols: {
         invoice_number: true,
         invoice_date: true,
+        due_date: true,
         invoice_type: true,
         customer: true,
         salesperson: true,
@@ -303,6 +304,10 @@
                             <label class="flex items-center gap-2 p-2.5 rounded-lg border border-gray-100 hover:bg-gray-50 cursor-pointer">
                                 <input type="checkbox" x-model="exportCols.invoice_date" class="w-4 h-4 text-emerald-600 rounded">
                                 <span class="text-sm font-medium text-gray-700">Invoice Date</span>
+                            </label>
+                            <label class="flex items-center gap-2 p-2.5 rounded-lg border border-gray-100 hover:bg-gray-50 cursor-pointer">
+                                <input type="checkbox" x-model="exportCols.due_date" class="w-4 h-4 text-emerald-600 rounded">
+                                <span class="text-sm font-medium text-gray-700">Due Date</span>
                             </label>
                             <label class="flex items-center gap-2 p-2.5 rounded-lg border border-gray-100 hover:bg-gray-50 cursor-pointer">
                                 <input type="checkbox" x-model="exportCols.invoice_type" class="w-4 h-4 text-emerald-600 rounded">
