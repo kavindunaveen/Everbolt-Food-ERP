@@ -137,6 +137,9 @@
                                     {% if p.reference_number %}
                                     <span class="text-gray-500">Ref: <span class="font-semibold text-gray-800">{{ p.reference_number }}</span></span>
                                     {% endif %}
+                                    {% if p.notes %}
+                                    <span class="text-[10px] text-gray-400 italic bg-gray-50 px-2 py-0.5 rounded border border-gray-100 max-w-xs truncate" title="{{ p.notes }}">📝 {{ p.notes }}</span>
+                                    {% endif %}
                                     {% if p.slip_attachment %}
                                     <a href="{{ p.slip_attachment.url }}" target="_blank" class="font-bold text-blue-600 hover:underline" onclick="event.stopPropagation()">📎 View Slip</a>
                                     {% endif %}
