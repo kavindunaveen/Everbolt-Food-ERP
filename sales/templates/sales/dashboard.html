@@ -65,13 +65,26 @@
 
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4 mb-8">
         <!-- Stats Card 1: Total Invoices -->
-        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5 flex items-center group hover:shadow-md hover:border-blue-200 transition-all duration-300">
-            <div class="p-2.5 rounded-lg bg-blue-50 text-blue-600 mr-4 group-hover:bg-blue-600 group-hover:text-white transition-colors duration-300">
-                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4 flex flex-col justify-center group hover:shadow-md hover:border-blue-200 transition-all duration-300">
+            <div class="flex items-center mb-2">
+                <div class="p-2 rounded-lg bg-blue-50 text-blue-600 mr-3 group-hover:bg-blue-600 group-hover:text-white transition-colors duration-300">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                </div>
+                <div>
+                    <div class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-0.5">Active Invoices</div>
+                    <div class="text-base xl:text-lg font-black text-gray-900 truncate" title="{{ total_invoice_count|intcomma }}">{{ total_invoice_count|intcomma }}</div>
+                </div>
             </div>
-            <div>
-                <div class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-0.5">Total Invoices</div>
-                <div class="text-base xl:text-lg font-black text-gray-900 truncate" title="{{ total_invoice_count|intcomma }}">{{ total_invoice_count|intcomma }}</div>
+            <div class="flex items-center gap-1.5 mt-1 border-t border-gray-50 pt-2">
+                <a href="{% url 'invoice_list' %}?status=DRAFT" class="text-[9px] font-bold px-1.5 py-0.5 rounded bg-gray-100 text-gray-500 hover:bg-gray-200 transition-colors" title="Draft Invoices">
+                    {{ draft_invoice_count|default:"0" }} DRAFT
+                </a>
+                <a href="{% url 'invoice_list' %}?status=APPROVAL_PENDING" class="text-[9px] font-bold px-1.5 py-0.5 rounded bg-yellow-50 text-yellow-600 hover:bg-yellow-100 transition-colors" title="Pending Approval">
+                    {{ approval_pending_invoice_count|default:"0" }} PEND
+                </a>
+                <a href="{% url 'invoice_list' %}?status=CANCELLED" class="text-[9px] font-bold px-1.5 py-0.5 rounded bg-red-50 text-red-600 hover:bg-red-100 transition-colors" title="Cancelled Invoices">
+                    {{ cancelled_invoice_count|default:"0" }} CANC
+                </a>
             </div>
         </div>
 

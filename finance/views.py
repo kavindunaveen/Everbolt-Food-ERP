@@ -115,7 +115,7 @@ class PendingPaymentsView(LoginRequiredMixin, PermissionRequiredMixin, View):
             for inv in pending_qs:
                 ws.append([
                     inv.invoice_number,
-                    inv.get_invoice_type_display(),
+                    inv.effective_payment_term_display,
                     inv.customer.customer_name if inv.customer else "-",
                     inv.salesperson.get_full_name() if inv.salesperson else "-",
                     inv.creation_date.strftime('%Y-%m-%d') if inv.creation_date else "-",
@@ -267,7 +267,7 @@ class PartialPaymentsView(LoginRequiredMixin, PermissionRequiredMixin, View):
             for inv in pending_qs:
                 ws.append([
                     inv.invoice_number,
-                    inv.get_invoice_type_display(),
+                    inv.effective_payment_term_display,
                     inv.customer.customer_name if inv.customer else "-",
                     inv.salesperson.get_full_name() if inv.salesperson else "-",
                     inv.creation_date.strftime('%Y-%m-%d') if inv.creation_date else "-",
@@ -416,7 +416,7 @@ class CompletedPaymentsView(LoginRequiredMixin, PermissionRequiredMixin, View):
             for inv in completed_qs:
                 ws.append([
                     inv.invoice_number,
-                    inv.get_invoice_type_display(),
+                    inv.effective_payment_term_display,
                     inv.customer.customer_name if inv.customer else "-",
                     inv.salesperson.get_full_name() if inv.salesperson else "-",
                     inv.creation_date.strftime('%Y-%m-%d') if inv.creation_date else "-",

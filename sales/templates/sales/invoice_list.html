@@ -108,7 +108,7 @@
                         </td>
                         <td :class="compactMode ? 'px-6 py-2' : 'px-6 py-4'" class="whitespace-nowrap">
                             <div class="text-sm font-semibold text-gray-800">{{ inv.customer.customer_name }}</div>
-                            <div x-show="!compactMode" class="text-[11px] text-gray-500 font-medium">{{ inv.get_invoice_type_display }}</div>
+                            <div x-show="!compactMode" class="text-[11px] text-gray-500 font-medium">{{ inv.effective_payment_term_display }}</div>
                         </td>
                         <td :class="compactMode ? 'px-6 py-2' : 'px-6 py-4'" class="whitespace-nowrap text-sm text-gray-600 font-medium">
                             {{ inv.salesperson.get_full_name|default:inv.salesperson.username|title }}

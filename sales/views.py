@@ -132,6 +132,11 @@ class SalesDashboardView(LoginRequiredMixin, ERPPermissionRequiredMixin, Templat
         active_invoices = invoices.filter(status__in=['ISSUED', 'PAID'])
         context['total_invoice_count'] = active_invoices.count()
         
+        # Add counts for other statuses for UI transparency
+        context['draft_invoice_count'] = invoices.filter(status='DRAFT').count()
+        context['approval_pending_invoice_count'] = invoices.filter(status='APPROVAL_PENDING').count()
+        context['cancelled_invoice_count'] = invoices.filter(status__in=['CANCELLED', 'CANCEL_PENDING']).count()
+        
         # Calculate gross revenue - use total_amount - tax_amount to correctly include converted quotation invoices
         revenue_with_vat = active_invoices.aggregate(Sum('total_amount'))['total_amount__sum'] or Decimal('0.00')
         revenue_ex_vat = sum(
@@ -379,6 +384,10 @@ class InvoiceListView(LoginRequiredMixin, ERPPermissionRequiredMixin, ListView):
         if salesperson_id:
             qs = qs.filter(salesperson_id=salesperson_id)
 
+        customer_id = self.request.GET.get('customer')
+        if customer_id:
+            qs = qs.filter(customer_id=customer_id)
+
         is_returned = self.request.GET.get('is_returned')
         if is_returned == 'true':
             qs = qs.filter(status__in=['CANCELLED', 'CANCEL_PENDING'], cancellation_reason__icontains='Customer Return')
@@ -588,9 +597,15 @@ class InvoiceCreateView(LoginRequiredMixin, ERPPermissionRequiredMixin, CreateVi
             data['items'] = InvoiceItemFormSet()
             
         from users.models import User
+        import json
+        from dashboard.models import PaymentTermRule
         # Retrieve all active users who legitimately have permission to approve invoices.
         approving_users = [u for u in User.objects.filter(is_active=True) if u.has_perm('sales.approve_invoice') and u != self.request.user]
         data['approvers'] = approving_users
+        # Pass term rules as JSON so JS calculateDueDate() uses DB values, not hardcoded numbers
+        data['payment_term_rules_json'] = json.dumps(
+            {r.term_code: r.due_days for r in PaymentTermRule.objects.filter(is_active=True)}
+        )
         return data
 
     def form_valid(self, form):
@@ -733,9 +748,15 @@ class InvoiceUpdateView(LoginRequiredMixin, ERPPermissionRequiredMixin, UpdateVi
             data['items'] = InvoiceItemFormSet(instance=self.object)
             
         from users.models import User
+        import json
+        from dashboard.models import PaymentTermRule
         approving_users = [u for u in User.objects.filter(is_active=True) if u.has_perm('sales.approve_invoice') and u != self.request.user]
         data['approvers'] = approving_users
-        
+        # Pass term rules as JSON so JS calculateDueDate() uses DB values, not hardcoded numbers
+        data['payment_term_rules_json'] = json.dumps(
+            {r.term_code: r.due_days for r in PaymentTermRule.objects.filter(is_active=True)}
+        )
+
         from .models import SalesAuditLog
         from django.contrib.contenttypes.models import ContentType
         ct = ContentType.objects.get_for_model(Invoice)
@@ -990,7 +1011,7 @@ class InvoiceExportView(LoginRequiredMixin, ERPPermissionRequiredMixin, View):
                 'invoice_number': inv.invoice_number,
                 'invoice_date':   inv.creation_date.strftime('%Y-%m-%d') if inv.creation_date else '',
                 'due_date':       inv.due_date.strftime('%Y-%m-%d') if inv.due_date else '',
-                'invoice_type':   inv.get_invoice_type_display(),
+                'invoice_type':   inv.effective_payment_term_display,
                 'customer':       inv.customer.customer_name,
                 'salesperson':    inv.salesperson.get_full_name() or inv.salesperson.username if inv.salesperson else 'N/A',
                 'status':         inv.get_status_display(),

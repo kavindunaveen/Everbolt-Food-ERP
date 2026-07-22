@@ -1,0 +1,201 @@
+{% extends 'layouts/base.html' %}
+{% block title %}Payment Terms Settings | ERP System{% endblock %}
+
+{% block content %}
+<div class="px-4 py-6 sm:px-0 max-w-4xl mx-auto">
+    <div class="mb-6">
+        <div class="flex items-center justify-between">
+            <div>
+                <h1 class="text-3xl font-extrabold tracking-tight text-gray-900">Payment Terms Settings</h1>
+                <p class="mt-1 text-sm text-gray-500">Manage how many days after the invoice date each payment term is due. Changes apply immediately to all new invoices.</p>
+            </div>
+            <a href="{% url 'company_settings' %}" class="text-sm text-gray-500 hover:text-gray-700 font-medium">&larr; Company Settings</a>
+        </div>
+    </div>
+
+    {% if messages %}
+    <div class="mb-6 space-y-2">
+        {% for msg in messages %}
+        <div class="px-4 py-3 rounded-lg text-sm font-medium {% if msg.tags == 'error' %}bg-red-50 text-red-700 border border-red-200{% else %}bg-emerald-50 text-emerald-700 border border-emerald-200{% endif %}">
+            {{ msg }}
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
+        <div class="flex items-start gap-3">
+            <svg class="w-5 h-5 text-yellow-500 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            <div class="text-sm text-yellow-800">
+                <strong>Important:</strong> Changing due days here affects <strong>new invoices only</strong>. Existing invoices keep their original due dates unless the system administrator runs the historical fix command.
+                All due dates are calculated from the <strong>invoice creation date</strong> (= issued date).
+            </div>
+        </div>
+    </div>
+
+    <!-- Current Term Rules Table -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden mb-8">
+        <div class="px-6 py-4 bg-gray-50 border-b border-gray-200">
+            <h2 class="text-sm font-bold text-gray-800 uppercase tracking-wider">Current Payment Term Rules</h2>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Term Code</th>
+                        <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Label</th>
+                        <th class="px-6 py-3 text-center text-xs font-bold text-gray-500 uppercase tracking-wider">Due Days (from invoice date)</th>
+                        <th class="px-6 py-3 text-center text-xs font-bold text-gray-500 uppercase tracking-wider">Status</th>
+                        <th class="px-6 py-3 text-right text-xs font-bold text-gray-500 uppercase tracking-wider">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-200 bg-white">
+                    {% for rule in rules %}
+                    <tr class="hover:bg-gray-50 {% if not rule.is_active %}opacity-50{% endif %}">
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <code class="text-sm font-mono bg-gray-100 px-2 py-0.5 rounded text-gray-700">{{ rule.term_code }}</code>
+                        </td>
+                        <td class="px-6 py-4 text-sm font-medium text-gray-900">{{ rule.label }}</td>
+                        <td class="px-6 py-4 text-center">
+                            <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-bold 
+                                {% if rule.due_days == 0 %}bg-gray-100 text-gray-700
+                                {% elif rule.due_days <= 15 %}bg-amber-100 text-amber-800
+                                {% else %}bg-blue-100 text-blue-800{% endif %}">
+                                {{ rule.due_days }} day{{ rule.due_days|pluralize }}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 text-center">
+                            {% if rule.is_active %}
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800">Active</span>
+                            {% else %}
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-gray-100 text-gray-600">Inactive</span>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4 text-right whitespace-nowrap space-x-3">
+                            <button onclick="openEditModal('{{ rule.id }}', '{{ rule.term_code }}', '{{ rule.label }}', {{ rule.due_days }}, {{ rule.is_active|yesno:'true,false' }})"
+                                class="text-blue-600 hover:text-blue-800 text-sm font-medium">Edit</button>
+                            <form method="post" class="inline">
+                                {% csrf_token %}
+                                <input type="hidden" name="action" value="toggle_active">
+                                <input type="hidden" name="rule_id" value="{{ rule.id }}">
+                                <button type="submit" class="text-sm font-medium {% if rule.is_active %}text-amber-600 hover:text-amber-800{% else %}text-emerald-600 hover:text-emerald-800{% endif %}">
+                                    {% if rule.is_active %}Deactivate{% else %}Activate{% endif %}
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="5" class="px-6 py-10 text-center text-gray-500">
+                            No payment terms configured. Add one below.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Add New Term -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+        <div class="px-6 py-4 bg-gray-50 border-b border-gray-200">
+            <h2 class="text-sm font-bold text-gray-800 uppercase tracking-wider">Add New Payment Term</h2>
+        </div>
+        <form method="post" class="p-6">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="save_rule">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-1">Term Code <span class="text-red-500">*</span></label>
+                    <input type="text" name="term_code" placeholder="e.g. CREDIT_90" required
+                        class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm font-mono focus:ring-emerald-500 focus:border-emerald-500">
+                    <p class="mt-1 text-xs text-gray-500">Unique key. Use uppercase letters and underscores only.</p>
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-1">Label <span class="text-red-500">*</span></label>
+                    <input type="text" name="label" placeholder="e.g. Credit - 90 days" required
+                        class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-emerald-500 focus:border-emerald-500">
+                    <p class="mt-1 text-xs text-gray-500">Shown in dropdowns to users.</p>
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-1">Due Days <span class="text-red-500">*</span></label>
+                    <input type="number" name="due_days" min="0" placeholder="0" required
+                        class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-emerald-500 focus:border-emerald-500">
+                    <p class="mt-1 text-xs text-gray-500">Days from invoice creation date. 0 = same day.</p>
+                </div>
+            </div>
+            <div class="mt-4 flex items-center gap-3">
+                <label class="flex items-center gap-2 text-sm text-gray-700 font-medium cursor-pointer">
+                    <input type="checkbox" name="is_active" checked class="rounded text-emerald-600">
+                    Active (appears in customer form dropdown)
+                </label>
+            </div>
+            <div class="mt-5">
+                <button type="submit" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2 px-6 rounded-lg shadow text-sm transition-colors">
+                    Add Payment Term
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Edit Modal -->
+<div id="edit-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/40">
+    <div class="bg-white rounded-xl shadow-2xl w-full max-w-md mx-4 p-6">
+        <h3 class="text-lg font-bold text-gray-900 mb-4">Edit Payment Term</h3>
+        <form method="post" id="edit-form">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="save_rule">
+            <input type="hidden" name="rule_id" id="edit-rule-id">
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-1">Term Code</label>
+                    <input type="text" id="edit-term-code" name="term_code" readonly
+                        class="w-full px-3 py-2 border border-gray-200 rounded-md text-sm font-mono bg-gray-50 text-gray-500 cursor-not-allowed">
+                    <p class="mt-1 text-xs text-gray-400">Term code cannot be changed after creation.</p>
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-1">Label <span class="text-red-500">*</span></label>
+                    <input type="text" id="edit-label" name="label" required
+                        class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-emerald-500 focus:border-emerald-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-1">Due Days <span class="text-red-500">*</span></label>
+                    <input type="number" id="edit-due-days" name="due_days" min="0" required
+                        class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-emerald-500 focus:border-emerald-500">
+                    <p class="mt-1 text-xs text-gray-500">Days from invoice creation date. 0 = same day.</p>
+                </div>
+                <div>
+                    <label class="flex items-center gap-2 text-sm font-medium text-gray-700 cursor-pointer">
+                        <input type="checkbox" id="edit-is-active" name="is_active" class="rounded text-emerald-600">
+                        Active
+                    </label>
+                </div>
+            </div>
+            <div class="mt-6 flex justify-end gap-3">
+                <button type="button" onclick="closeEditModal()" class="px-4 py-2 text-sm font-medium text-gray-600 bg-white border border-gray-300 rounded-lg hover:bg-gray-50">Cancel</button>
+                <button type="submit" class="px-5 py-2 text-sm font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg shadow transition-colors">Save Changes</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+function openEditModal(id, termCode, label, dueDays, isActive) {
+    document.getElementById('edit-rule-id').value = id;
+    document.getElementById('edit-term-code').value = termCode;
+    document.getElementById('edit-label').value = label;
+    document.getElementById('edit-due-days').value = dueDays;
+    document.getElementById('edit-is-active').checked = isActive;
+    document.getElementById('edit-modal').classList.remove('hidden');
+    document.getElementById('edit-modal').classList.add('flex');
+}
+function closeEditModal() {
+    document.getElementById('edit-modal').classList.add('hidden');
+    document.getElementById('edit-modal').classList.remove('flex');
+}
+document.getElementById('edit-modal').addEventListener('click', function(e) {
+    if (e.target === this) closeEditModal();
+});
+</script>
+{% endblock %}

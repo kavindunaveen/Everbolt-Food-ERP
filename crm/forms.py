@@ -22,6 +22,21 @@ class CustomerForm(forms.ModelForm):
                 is_active=True
             )
             self.fields['assigned_sales_officer'].empty_label = "--- Select Sales Officer ---"
+
+        # Dynamic payment terms choices from PaymentTermRule (admin-configurable)
+        if 'payment_terms' in self.fields:
+            try:
+                from dashboard.models import PaymentTermRule
+                choices = [('', '--- Select Payment Terms ---')] + [
+                    (r.term_code, r.label)
+                    for r in PaymentTermRule.objects.filter(is_active=True).order_by('sort_order', 'term_code')
+                ]
+                self.fields['payment_terms'].widget = forms.Select(
+                    attrs={'class': 'w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm'}
+                )
+                self.fields['payment_terms'].choices = choices
+            except Exception:
+                pass  # Fall back to model choices if table not yet created
         
         # Enforce exact numeric entry on the frontend for Phone
         for field_name in ['phone', 'phone_secondary']:

@@ -131,3 +131,29 @@ class CompanySettings(models.Model):
 
     def __str__(self):
         return self.company_name
+
+
+class PaymentTermRule(models.Model):
+    """
+    Single source of truth for all payment term due-day calculations.
+    Replaces hardcoded if/elif logic in Invoice.save() and invoice_form.html JS.
+    Admins can edit due_days or add new terms from the Payment Terms Settings page.
+    """
+    term_code  = models.CharField(max_length=50, unique=True,
+                                   help_text="Machine key, e.g. CASH, COD, CREDIT_30")
+    label      = models.CharField(max_length=100,
+                                   help_text="Human-readable name shown in dropdowns")
+    due_days   = models.IntegerField(default=0,
+                                     help_text="Days from invoice creation date until payment is due. 0 = same day.")
+    is_active  = models.BooleanField(default=True,
+                                      help_text="Inactive terms won't appear in the Customer payment terms dropdown.")
+    sort_order = models.IntegerField(default=0,
+                                     help_text="Controls display order in dropdowns and the settings page.")
+
+    class Meta:
+        ordering = ['sort_order', 'term_code']
+        verbose_name = "Payment Term Rule"
+        verbose_name_plural = "Payment Term Rules"
+
+    def __str__(self):
+        return f"{self.label} ({self.due_days}d)"

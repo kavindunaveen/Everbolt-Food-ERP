@@ -139,33 +139,30 @@ class Invoice(models.Model):
     cancellation_reason = models.TextField(blank=True, null=True)
 
     def save(self, *args, **kwargs):
-        from datetime import timedelta
-
         # Only calculate due_date on first creation (when it has never been set).
         # Subsequent saves (status changes, edits, approvals) must NEVER overwrite it
         # so the original accounting due date is preserved.
         if not self.due_date:
-            days = 0
-            if self.invoice_type == 'COD':
-                days = 0
-            elif self.invoice_type == 'CASH':
-                days = 0  # Due immediately on cash sales
-            elif self.invoice_type == 'CREDIT':
-                terms = self.customer.payment_terms
-                if terms == 'COD':
-                    days = 0
-                elif terms and terms.startswith('CREDIT_'):
-                    try:
-                        days = int(terms.split('_')[1])
-                    except (IndexError, ValueError):
-                        days = 30
-                elif terms == 'CASH':
-                    days = 0
-                else:
-                    days = 30
+            from datetime import timedelta
+            from dashboard.models import PaymentTermRule
 
-            base_date = timezone.now().date()
-            self.due_date = base_date + timedelta(days=days)
+            # Determine the correct term code to look up
+            if self.invoice_type == 'CASH':
+                term_code = 'CASH'
+            elif self.invoice_type == 'COD':
+                term_code = 'COD'
+            elif self.invoice_type == 'CREDIT':
+                # Use the customer's configured payment terms (e.g. CREDIT_30)
+                term_code = self.customer.payment_terms if self.customer_id else 'CASH'
+            else:
+                term_code = 'CASH'
+
+            # Look up due days from database — never hardcoded
+            rule = PaymentTermRule.objects.filter(term_code=term_code).first()
+            days = rule.due_days if rule else 0
+
+            # Due date is always calculated from the invoice creation date (= issued date)
+            self.due_date = timezone.now().date() + timedelta(days=days)
 
         if not self.invoice_number:
             # Keep original monthly prefix format e.g. "26MAY_EBFR_"
@@ -189,10 +186,30 @@ class Invoice(models.Model):
         return f"{self.invoice_number} ({self.get_invoice_type_display()})"
 
     @property
+    def effective_payment_term_display(self):
+        """
+        Returns the human-readable label of the payment term actually applied to this invoice.
+        This fixes the issue where a CASH invoice for a CREDIT customer would wrongly print "Credit - 15 days".
+        """
+        from dashboard.models import PaymentTermRule
+        if self.invoice_type == 'CASH':
+            term_code = 'CASH'
+        elif self.invoice_type == 'COD':
+            term_code = 'COD'
+        elif self.invoice_type == 'CREDIT':
+            term_code = self.customer.payment_terms if self.customer_id else 'CASH'
+        else:
+            term_code = 'CASH'
+            
+        rule = PaymentTermRule.objects.filter(term_code=term_code).first()
+        return rule.label if rule else term_code
+
+    @property
     def is_overdue(self):
-        # CASH and COD are typically completed on the same day, so they shouldn't show as overdue
-        if self.invoice_type in ['CASH', 'COD']:
+        # CASH invoices are settled on the same day — never overdue
+        if self.invoice_type == 'CASH':
             return False
+        # COD and CREDIT invoices can become overdue after their due date
         if self.status == 'ISSUED' and self.due_date and self.due_date < timezone.now().date():
             return True
         return False

@@ -685,6 +685,10 @@
 }
 </script>
 
+<script id="payment-term-rules-data" type="application/json">
+{{ payment_term_rules_json|safe }}
+</script>
+
 <script id="customer-status-data" type="application/json">
 {
 {% for customer in form.fields.customer.queryset %}
@@ -771,13 +775,21 @@
         $('#id_customer').trigger('change');
         {% endif %}
 
-        // Due Date logic
+        // Due Date logic — rules loaded from the database via server context (never hardcoded)
         var customerTerms = {};
         try {
             var rawData = document.getElementById('customer-terms-data').textContent.trim();
             customerTerms = JSON.parse(rawData);
         } catch(e) {
             console.error("Error parsing customer terms", e);
+        }
+
+        var termRules = {};
+        try {
+            var rawRules = document.getElementById('payment-term-rules-data').textContent.trim();
+            termRules = JSON.parse(rawRules);
+        } catch(e) {
+            console.error("Error parsing term rules", e);
         }
         
         function calculateDueDate() {
@@ -801,23 +813,20 @@
                 $('#customer-sales-officer').val('-');
             }
             
-            var days = 0;
-            
-            if(invoiceType === 'CASH') {
-                days = 0; // Due immediately
-            } else if(invoiceType === 'COD') {
-                days = 14;
+            // Determine the term code to look up in the rules table
+            var termCode;
+            if (invoiceType === 'CASH') {
+                termCode = 'CASH';
+            } else if (invoiceType === 'COD') {
+                termCode = 'COD';
             } else if (invoiceType === 'CREDIT') {
-                if (terms === 'COD') {
-                    days = 14;
-                } else if (terms && terms.indexOf('CREDIT_') === 0) {
-                    days = parseInt(terms.split('_')[1]) || 30;
-                } else if (terms === 'CASH') {
-                    days = 0;
-                } else {
-                    days = 30; // default for credit
-                }
+                termCode = terms || 'CASH';
+            } else {
+                termCode = 'CASH';
             }
+
+            // Look up due days from server-supplied rules (never hardcoded)
+            var days = termRules.hasOwnProperty(termCode) ? termRules[termCode] : 0;
             
             var date = new Date();
             date.setDate(date.getDate() + days);

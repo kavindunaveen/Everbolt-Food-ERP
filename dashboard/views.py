@@ -1436,6 +1436,89 @@ class CompanySettingsView(LoginRequiredMixin, View):
         return render(request, 'dashboard/settings.html', {'form': form, 'settings': settings_obj})
 
 from sales.models import Quotation
+from .models import PaymentTermRule
+from django.http import JsonResponse
+import json as _json
+
+class PaymentTermSettingsView(LoginRequiredMixin, View):
+    """Admin-only page to manage PaymentTermRule records (add, edit, toggle active)."""
+
+    def _check_admin(self, request):
+        if not request.user.is_superuser:
+            messages.error(request, "Only administrators can manage payment term settings.")
+            return False
+        return True
+
+    def get(self, request):
+        if not self._check_admin(request):
+            return redirect('analytics_dashboard')
+        rules = PaymentTermRule.objects.all().order_by('sort_order', 'term_code')
+        return render(request, 'dashboard/payment_terms_settings.html', {'rules': rules})
+
+    def post(self, request):
+        if not self._check_admin(request):
+            return redirect('analytics_dashboard')
+
+        action = request.POST.get('action')
+
+        if action == 'save_rule':
+            rule_id = request.POST.get('rule_id')
+            term_code = request.POST.get('term_code', '').strip().upper()
+            label = request.POST.get('label', '').strip()
+            due_days_str = request.POST.get('due_days', '0').strip()
+            is_active = request.POST.get('is_active') == 'on'
+
+            if not term_code or not label:
+                messages.error(request, "Term code and label are required.")
+                return redirect('payment_term_settings')
+
+            try:
+                due_days = int(due_days_str)
+                if due_days < 0:
+                    raise ValueError
+            except ValueError:
+                messages.error(request, "Due days must be a whole number of 0 or more.")
+                return redirect('payment_term_settings')
+
+            if rule_id:
+                # Edit existing
+                try:
+                    rule = PaymentTermRule.objects.get(pk=rule_id)
+                    rule.label = label
+                    rule.due_days = due_days
+                    rule.is_active = is_active
+                    rule.save()
+                    messages.success(request, f"Payment term '{rule.label}' updated successfully.")
+                except PaymentTermRule.DoesNotExist:
+                    messages.error(request, "Payment term not found.")
+            else:
+                # Create new
+                if PaymentTermRule.objects.filter(term_code=term_code).exists():
+                    messages.error(request, f"A payment term with code '{term_code}' already exists.")
+                    return redirect('payment_term_settings')
+                # Sort order: after all existing
+                max_order = PaymentTermRule.objects.aggregate(m=models.Max('sort_order'))['m'] or 0
+                PaymentTermRule.objects.create(
+                    term_code=term_code,
+                    label=label,
+                    due_days=due_days,
+                    is_active=is_active,
+                    sort_order=max_order + 1,
+                )
+                messages.success(request, f"New payment term '{label}' added successfully.")
+
+        elif action == 'toggle_active':
+            rule_id = request.POST.get('rule_id')
+            try:
+                rule = PaymentTermRule.objects.get(pk=rule_id)
+                rule.is_active = not rule.is_active
+                rule.save()
+                state = "activated" if rule.is_active else "deactivated"
+                messages.success(request, f"Payment term '{rule.label}' {state}.")
+            except PaymentTermRule.DoesNotExist:
+                messages.error(request, "Payment term not found.")
+
+        return redirect('payment_term_settings')
 
 class SalespersonDashboardView(LoginRequiredMixin, TemplateView):
     template_name = 'dashboard/salesperson_analytics.html'

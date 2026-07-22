@@ -9,9 +9,17 @@
 
 {% block content %}
 <div class="px-4 py-6 sm:px-0 max-w-5xl mx-auto">
-    <div class="mb-6">
-        <h1 class="text-3xl font-extrabold tracking-tight text-gray-900">Company Settings</h1>
-        <p class="mt-1 text-sm text-gray-500">Manage your company profile, banking details, and document terms — these appear on all printed invoices and quotations.</p>
+    <div class="mb-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div>
+            <h1 class="text-3xl font-extrabold tracking-tight text-gray-900">Company Settings</h1>
+            <p class="mt-1 text-sm text-gray-500">Manage your company profile, banking details, and document terms — these appear on all printed invoices and quotations.</p>
+        </div>
+        <div>
+            <a href="{% url 'payment_term_settings' %}" class="inline-flex items-center gap-2 bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100 font-bold py-2.5 px-4 rounded-xl text-sm transition-colors shadow-sm">
+                <svg class="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                Payment Terms Settings
+            </a>
+        </div>
     </div>
 
     {% if messages %}
