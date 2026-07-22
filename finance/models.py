@@ -114,6 +114,28 @@ class CustomerCredit(models.Model):
     def __str__(self):
         return f"Credit for {self.customer.customer_name} - Rs {self.remaining_amount}"
 
+    @property
+    def related_invoice(self):
+        if self.notes and self.notes.startswith("Overpayment on Invoice "):
+            import re
+            match = re.search(r"Invoice ([\w_]+)", self.notes)
+            if match:
+                inv_num = match.group(1)
+                from sales.models import Invoice
+                return Invoice.objects.filter(invoice_number=inv_num).first()
+        return None
+
+    @property
+    def overpayment_details(self):
+        invoice = self.related_invoice
+        if invoice:
+            return {
+                'invoice_total': invoice.total_amount,
+                'total_paid': invoice.total_amount + self.original_amount,
+                'overpayment': self.original_amount
+            }
+        return None
+
     class Meta:
         ordering = ['-created_at']
 
