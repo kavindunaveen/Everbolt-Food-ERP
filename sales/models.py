@@ -465,6 +465,10 @@ class DeliveryNote(models.Model):
             return self.delivered_by.get_full_name() or self.delivered_by.username
         return "N/A"
 
+    @property
+    def total_quantity(self):
+        return sum(item.quantity for item in self.items.all())
+
     def __str__(self):
         return self.dn_number
 
