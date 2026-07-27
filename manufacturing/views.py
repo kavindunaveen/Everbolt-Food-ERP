@@ -2,7 +2,7 @@ from users.mixins import ERPPermissionRequiredMixin
 from django.shortcuts import render, redirect, get_object_or_404
 from django.urls import reverse_lazy, reverse
 from django.contrib import messages
-from django.views.generic import ListView, CreateView, UpdateView, DeleteView, DetailView, View
+from django.views.generic import ListView, CreateView, UpdateView, DeleteView, DetailView, View, TemplateView
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.decorators import login_required
 from django.db import transaction
@@ -16,6 +16,10 @@ from .forms import (
     ProductionForm, ProductionMaterialFormSet, ProductionOutputFormSet
 )
 from .services import confirm_production, cancel_production
+
+# --- Dashboard ---
+class ManufacturingDashboardView(LoginRequiredMixin, TemplateView):
+    template_name = 'manufacturing/dashboard.html'
 
 # --- BOM Views ---
 

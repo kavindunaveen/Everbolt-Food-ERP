@@ -1,0 +1,102 @@
+{% extends 'layouts/base.html' %}
+
+{% block title %}Manufacturing Hub | ERP System{% endblock %}
+
+{% block content %}
+<div class="px-4 py-6 sm:px-0">
+    <div class="mb-8 flex flex-col md:flex-row md:items-end md:justify-between gap-4">
+        <div>
+            <h1 class="text-4xl font-extrabold text-gray-900 tracking-tight">
+                Manufacturing & Compliance
+            </h1>
+            <p class="mt-2 text-lg text-gray-600 font-medium">
+                Manage production plans, BOMs, perpetual counts, and ISO standards.
+            </p>
+        </div>
+        <div class="flex space-x-3">
+            <a href="{% url 'main_dashboard' %}" class="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 transition-colors">
+                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
+                Back to Main
+            </a>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+
+        <!-- ISO Checklist -->
+        {% if perms.iso.view_isocriteria %}
+        <a href="{% url 'iso_criteria_list' %}" class="block group">
+            <div class="card-premium p-6 h-full">
+                <div
+                    class="w-12 h-12 bg-red-100 text-red-600 rounded-lg flex items-center justify-center mb-4 group-hover:bg-red-600 group-hover:text-white transition-colors">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                        xmlns="http://www.w3.org/2000/svg">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                </div>
+                <h3 class="text-xl font-bold text-gray-900 mb-1">ISO Checklists</h3>
+                <p class="text-sm text-gray-500">Manage daily compliance and ISO criteria tasks.</p>
+            </div>
+        </a>
+        {% endif %}
+
+        <!-- Perpetual Counts Map -->
+        {% if perms.inventory.view_perpetualcount %}
+        <a href="{% url 'perpetual_count_list' %}" class="block group">
+            <div class="card-premium p-6 h-full">
+                <div
+                    class="w-12 h-12 bg-blue-100 text-blue-600 rounded-lg flex items-center justify-center mb-4 group-hover:bg-blue-600 group-hover:text-white transition-colors">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                        xmlns="http://www.w3.org/2000/svg">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path>
+                    </svg>
+                </div>
+                <h3 class="text-xl font-bold text-gray-900 mb-1">Perpetual Counts</h3>
+                <p class="text-sm text-gray-500">Perform periodic physical stock verifications.</p>
+            </div>
+        </a>
+        {% endif %}
+
+        <!-- Manufacturing Map -->
+        {% if perms.manufacturing.view_bom or perms.manufacturing.view_production %}
+        <a href="{% url 'production_list' %}" class="block group">
+            <div class="card-premium p-6 h-full">
+                <div
+                    class="w-12 h-12 bg-amber-50 text-amber-600 rounded-lg flex items-center justify-center mb-4 group-hover:bg-amber-600 group-hover:text-white transition-colors">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                        xmlns="http://www.w3.org/2000/svg">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4">
+                        </path>
+                    </svg>
+                </div>
+                <h3 class="text-xl font-bold text-gray-900 mb-1">Manufacturing</h3>
+                <p class="text-sm text-gray-500">BOM management and Production order tracking.</p>
+            </div>
+        </a>
+        {% endif %}
+
+        <!-- Production Planning Map -->
+        {% if perms.manufacturing.manage_production_plans %}
+        <a href="{% url 'production_plan_list' %}" class="block group">
+            <div class="card-premium p-6 h-full border-2 border-transparent hover:border-amber-500/20">
+                <div
+                    class="w-12 h-12 bg-amber-100 text-amber-700 rounded-lg flex items-center justify-center mb-4 group-hover:bg-amber-700 group-hover:text-white transition-all duration-500 shadow-sm">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                    </svg>
+                </div>
+                <div class="flex justify-between items-start">
+                    <div>
+                        <h3 class="text-xl font-bold text-gray-900 mb-1">Production Planning</h3>
+                        <p class="text-sm text-gray-500">Daily planning and variance charts.</p>
+                    </div>
+                </div>
+            </div>
+        </a>
+        {% endif %}
+
+    </div>
+</div>
+{% endblock %}

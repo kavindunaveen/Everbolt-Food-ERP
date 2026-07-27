@@ -2,6 +2,9 @@ from django.urls import path
 from . import views
 
 urlpatterns = [
+    # Dashboard
+    path('', views.ManufacturingDashboardView.as_view(), name='manufacturing_dashboard'),
+    
     # BOM
     path('bom/', views.BOMListView.as_view(), name='bom_list'),
     path('bom/new/', views.BOMCreateView.as_view(), name='bom_create'),
