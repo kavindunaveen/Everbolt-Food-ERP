@@ -2227,7 +2227,7 @@ class OrderGeneratorView(LoginRequiredMixin, ERPPermissionRequiredMixin, Templat
         from inventory.models import Product
         from crm.models import Customer
         
-        products = Product.objects.filter(status=True).order_by('category', 'tea_type', 'name')
+        products = Product.objects.filter(status=True).exclude(inventory_class='RAW').order_by('category', 'tea_type', 'name')
         customers = Customer.objects.filter(customer_status='ACTIVE').order_by('customer_name')
         
         categories = []
