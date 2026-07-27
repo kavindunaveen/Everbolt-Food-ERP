@@ -234,7 +234,7 @@ class PurchaseOrderListView(LoginRequiredMixin, ERPPermissionRequiredMixin, List
             from django.db.models import Q
             qs = qs.filter(
                 Q(po_number__icontains=q) |
-                Q(supplier__name__icontains=q) |
+                Q(supplier__supplier_name__icontains=q) |
                 Q(remarks__icontains=q)
             )
         return qs
