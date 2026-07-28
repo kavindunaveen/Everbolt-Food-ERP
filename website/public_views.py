@@ -1024,6 +1024,29 @@ def register_view(request):
         if request.POST.get("website_url"):
             messages.success(request, "Account created successfully!")
             return redirect("public_login")
+            
+        # reCAPTCHA Validation
+        recaptcha_response = request.POST.get('g-recaptcha-response')
+        recaptcha_secret_key = getattr(settings, 'RECAPTCHA_PRIVATE_KEY', None)
+        
+        if recaptcha_secret_key:
+            if not recaptcha_response:
+                messages.error(request, "Please tick the reCAPTCHA box to prove you are human.")
+                return redirect("public_register")
+            
+            data = {
+                'secret': recaptcha_secret_key,
+                'response': recaptcha_response
+            }
+            try:
+                r = requests.post('https://www.google.com/recaptcha/api/siteverify', data=data)
+                result = r.json()
+                if not result.get('success'):
+                    messages.error(request, "reCAPTCHA validation failed. Please try again.")
+                    return redirect("public_register")
+            except Exception as e:
+                messages.error(request, "Error connecting to reCAPTCHA service. Please try again.")
+                return redirect("public_register")
 
         first_name = request.POST.get('first_name', '').strip()
         last_name = request.POST.get('last_name', '').strip()
@@ -1054,7 +1077,10 @@ def register_view(request):
         except Exception as e:
             messages.error(request, f"Registration failed: {str(e)}")
 
-    return render(request, "public/register.html", {"settings": settings_data})
+    return render(request, "public/register.html", {
+        "settings": settings_data,
+        "recaptcha_site_key": getattr(settings, 'RECAPTCHA_PUBLIC_KEY', None),
+    })
 
 def login_view(request):
     settings_data = WebsiteSettings.get_settings()

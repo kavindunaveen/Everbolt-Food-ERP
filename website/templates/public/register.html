@@ -62,6 +62,12 @@
                     placeholder="Create a secure password">
             </div>
 
+            {% if recaptcha_site_key %}
+            <div style="margin-bottom: 24px;">
+                <div class="g-recaptcha" data-sitekey="{{ recaptcha_site_key }}"></div>
+            </div>
+            {% endif %}
+
             <button type="submit" class="btn btn-primary"
                 style="width: 100%; padding: 14px; font-size: 16px;">Register</button>
         </form>
@@ -73,4 +79,22 @@
         </p>
     </div>
 </section>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://www.google.com/recaptcha/api.js" async defer></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        var form = document.querySelector('form');
+        if (form && document.querySelector('.g-recaptcha')) {
+            form.addEventListener('submit', function(e) {
+                var recaptchaResponse = document.querySelector('.g-recaptcha-response');
+                if (recaptchaResponse && recaptchaResponse.value === "") {
+                    e.preventDefault();
+                    alert("Please tick the 'I am not a robot' box before registering.");
+                }
+            });
+        }
+    });
+</script>
 {% endblock %}
