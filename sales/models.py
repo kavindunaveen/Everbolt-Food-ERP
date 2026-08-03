@@ -165,21 +165,54 @@ class Invoice(models.Model):
             self.due_date = timezone.now().date() + timedelta(days=days)
 
         if not self.invoice_number:
-            # Keep original monthly prefix format e.g. "26MAY_EBFR_"
-            # BUT find the global max sequence across ALL invoices ever
-            # so the number never resets when the month changes.
-            prefix = timezone.now().strftime("%y%b").upper() + "_EBFR_"
+            from dashboard.models import CompanySettings
+            import re
+            
             with transaction.atomic():
-                all_numbers = Invoice.objects.select_for_update().values_list('invoice_number', flat=True)
-                max_seq = 314  # Floor: next will be 315
-                for num in all_numbers:
-                    try:
-                        seq = int(num.split('_')[-1])
-                        if seq > max_seq:
-                            max_seq = seq
-                    except (ValueError, IndexError):
-                        pass
-                self.invoice_number = f"{prefix}{max_seq + 1:05d}"
+                # We need to lock the settings row or a dummy row, but select_for_update on Invoice is tricky.
+                # Locking CompanySettings is safer for sequence generation.
+                settings_obj = CompanySettings.objects.select_for_update().first()
+                if not settings_obj:
+                    settings_obj = CompanySettings.objects.create()
+
+                fmt = settings_obj.invoice_number_format or "{YY}{MMM}_EBFR_{SEQ}"
+                
+                if settings_obj.next_invoice_sequence is not None:
+                    next_seq = settings_obj.next_invoice_sequence
+                else:
+                    # Auto fallback mode
+                    all_numbers = Invoice.objects.values_list('invoice_number', flat=True)
+                    max_seq = 0
+                    for num in all_numbers:
+                        matches = re.findall(r'\d+', num)
+                        if matches:
+                            try:
+                                seq = int(matches[-1])
+                                if seq > max_seq:
+                                    max_seq = seq
+                            except ValueError:
+                                pass
+                    next_seq = max_seq + 1
+
+                # Save the next sequence to avoid scanning next time
+                settings_obj.next_invoice_sequence = next_seq + 1
+                settings_obj.save()
+
+                # Format the number
+                now = timezone.now()
+                yyyy = now.strftime("%Y")
+                yy = now.strftime("%y")
+                mm = now.strftime("%m")
+                mmm = now.strftime("%b").upper()
+                dd = now.strftime("%d")
+                seq_str = f"{next_seq:05d}"
+
+                self.invoice_number = fmt.replace('{YYYY}', yyyy) \
+                                         .replace('{YY}', yy) \
+                                         .replace('{MM}', mm) \
+                                         .replace('{MMM}', mmm) \
+                                         .replace('{DD}', dd) \
+                                         .replace('{SEQ}', seq_str)
         super().save(*args, **kwargs)
 
     def __str__(self):

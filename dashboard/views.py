@@ -1420,7 +1420,28 @@ class CompanySettingsView(LoginRequiredMixin, View):
             
         settings_obj, created = CompanySettings.objects.get_or_create(id=1)
         form = CompanySettingsForm(instance=settings_obj)
-        return render(request, 'dashboard/settings.html', {'form': form, 'settings': settings_obj})
+        
+        # Calculate the next auto sequence for the live preview
+        import re
+        from sales.models import Invoice
+        all_numbers = Invoice.objects.values_list('invoice_number', flat=True)
+        max_seq = 0
+        for num in all_numbers:
+            matches = re.findall(r'\d+', num)
+            if matches:
+                try:
+                    seq = int(matches[-1])
+                    if seq > max_seq:
+                        max_seq = seq
+                except ValueError:
+                    pass
+        next_auto_sequence = f"{max_seq + 1:05d}"
+        
+        return render(request, 'dashboard/settings.html', {
+            'form': form, 
+            'settings': settings_obj,
+            'next_auto_sequence': next_auto_sequence
+        })
 
     def post(self, request):
         if not request.user.is_superuser:
@@ -1429,7 +1450,13 @@ class CompanySettingsView(LoginRequiredMixin, View):
         settings_obj, created = CompanySettings.objects.get_or_create(id=1)
         form = CompanySettingsForm(request.POST, request.FILES, instance=settings_obj)
         if form.is_valid():
-            form.save()
+            instance = form.save(commit=False)
+            seq_mode = form.cleaned_data.get('sequence_behavior')
+            if seq_mode == 'reset':
+                instance.next_invoice_sequence = 1
+            elif seq_mode == 'auto':
+                instance.next_invoice_sequence = None
+            instance.save()
             messages.success(request, "Company settings updated successfully.")
             return redirect('company_settings')
         

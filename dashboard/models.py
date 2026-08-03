@@ -125,6 +125,17 @@ class CompanySettings(models.Model):
         help_text="Custom Terms & Conditions for Quotation printouts. Each line will appear as a separate line."
     )
 
+    # --- Invoice Numbering Settings ---
+    invoice_number_format = models.CharField(
+        max_length=100,
+        default="{YY}{MMM}_EBFR_{SEQ}",
+        help_text="Variables available: {YYYY}, {YY}, {MM}, {MMM}, {DD}, {SEQ}"
+    )
+    next_invoice_sequence = models.IntegerField(
+        null=True, blank=True,
+        help_text="If blank, the system automatically finds the highest number from existing invoices."
+    )
+
     class Meta:
         verbose_name = "Company Settings"
         verbose_name_plural = "Company Settings"
