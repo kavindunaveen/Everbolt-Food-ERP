@@ -2,7 +2,8 @@ from django.urls import path
 from .views import (
     FinanceDashboardView, PendingPaymentsView, PartialPaymentsView, CompletedPaymentsView, RecordPaymentView, AgedReceivablesView,
     ChartOfAccountsView, AccountCreateView, JournalEntryListView, JournalEntryCreateView, GeneralLedgerView,
-    CustomerCreditListView, apply_customer_credit
+    CustomerCreditListView, apply_customer_credit,
+    ReconciliationView, ReconcilePaymentView, BulkReconcileView,
 )
 
 urlpatterns = [
@@ -19,4 +20,8 @@ urlpatterns = [
     path('general-ledger/', GeneralLedgerView.as_view(), name='finance_general_ledger'),
     path('customer-credits/', CustomerCreditListView.as_view(), name='finance_customer_credits'),
     path('api/apply-customer-credit/', apply_customer_credit, name='finance_apply_customer_credit'),
+    # Reconciliation
+    path('reconciliation/', ReconciliationView.as_view(), name='finance_reconciliation'),
+    path('api/reconcile-payment/', ReconcilePaymentView.as_view(), name='finance_reconcile_payment'),
+    path('api/bulk-reconcile/', BulkReconcileView.as_view(), name='finance_bulk_reconcile'),
 ]

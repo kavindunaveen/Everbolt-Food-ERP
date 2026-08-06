@@ -1,0 +1,506 @@
+{% extends 'layouts/base.html' %}
+{% load humanize %}
+
+{% block title %}Payment Reconciliation | Finance{% endblock %}
+
+{% block breadcrumbs %}
+<li class="flex items-center space-x-2 border-l border-gray-100 pl-4 ml-2">
+    <a href="{% url 'finance_dashboard' %}" class="hover:text-blue-600 transition-colors">Finance</a>
+</li>
+<li class="flex items-center space-x-2 border-l border-gray-100 pl-4 ml-2">
+    <span class="text-gray-900 font-semibold">Payment Reconciliation</span>
+</li>
+{% endblock %}
+
+{% block content %}
+<div class="px-4 py-6 sm:px-0">
+
+    <!-- Page Header -->
+    <div class="mb-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div>
+            <h1 class="text-3xl font-extrabold tracking-tight text-gray-900">Payment Reconciliation</h1>
+            <p class="mt-1 text-sm text-gray-500">Review recorded payments and confirm them against your bank records.</p>
+        </div>
+        {% if count > 0 %}
+        <button id="bulk-confirm-btn" disabled
+            class="inline-flex items-center gap-2 bg-emerald-600 text-white font-bold py-2.5 px-5 rounded-xl hover:bg-emerald-700 shadow-md hover:shadow-lg transition-all disabled:opacity-40 disabled:cursor-not-allowed">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            <span id="bulk-btn-label">Confirm Selected</span>
+        </button>
+        {% endif %}
+    </div>
+
+    <!-- Summary Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        <div class="bg-amber-50 border border-amber-200 rounded-xl p-5">
+            <div class="text-xs font-bold text-amber-600 uppercase tracking-wider mb-1">Pending Reconciliation</div>
+            <div class="text-3xl font-black text-amber-800">{{ count }}</div>
+            <div class="text-xs text-amber-600 mt-1">payments awaiting confirmation</div>
+        </div>
+        <div class="bg-amber-50 border border-amber-200 rounded-xl p-5">
+            <div class="text-xs font-bold text-amber-600 uppercase tracking-wider mb-1">Total Pending Amount</div>
+            <div class="text-3xl font-black text-amber-800">Rs {{ total_amount|floatformat:2|intcomma }}</div>
+            <div class="text-xs text-amber-600 mt-1">to be verified against bank</div>
+        </div>
+        <div class="bg-emerald-50 border border-emerald-200 rounded-xl p-5">
+            <div class="text-xs font-bold text-emerald-600 uppercase tracking-wider mb-1">Recently Reconciled</div>
+            <div class="text-3xl font-black text-emerald-800">{{ reconciled_payments|length }}</div>
+            <div class="text-xs text-emerald-600 mt-1">last 50 confirmed payments</div>
+        </div>
+    </div>
+
+    <!-- Tabs -->
+    <div class="mb-0">
+        <div class="border-b border-gray-200">
+            <nav class="-mb-px flex space-x-6" aria-label="Tabs">
+                <button id="tab-pending" onclick="switchTab('pending')"
+                    class="tab-btn border-emerald-500 text-emerald-600 whitespace-nowrap py-3 px-1 border-b-2 font-semibold text-sm">
+                    Pending ({{ count }})
+                </button>
+                <button id="tab-history" onclick="switchTab('history')"
+                    class="tab-btn border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 whitespace-nowrap py-3 px-1 border-b-2 font-semibold text-sm">
+                    Reconciled History
+                </button>
+            </nav>
+        </div>
+    </div>
+
+    <!-- ── PENDING TAB ────────────────────────────────────────────────────── -->
+    <div id="panel-pending">
+
+        <!-- Filters -->
+        <form method="get" class="bg-white rounded-xl shadow-sm border border-gray-100 p-4 mt-4 mb-4">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+                <div>
+                    <label class="block text-xs font-semibold text-gray-600 mb-1">Search</label>
+                    <input type="text" name="q" value="{{ filters.q }}" placeholder="Invoice #, Customer, Reference"
+                        class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-emerald-500 focus:border-emerald-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-gray-600 mb-1">From Date</label>
+                    <input type="date" name="date_from" value="{{ filters.date_from }}"
+                        class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-emerald-500 focus:border-emerald-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-gray-600 mb-1">To Date</label>
+                    <input type="date" name="date_to" value="{{ filters.date_to }}"
+                        class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-emerald-500 focus:border-emerald-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-gray-600 mb-1">Payment Method</label>
+                    <select name="method" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-emerald-500 focus:border-emerald-500">
+                        <option value="">All Methods</option>
+                        {% for val, label in payment_methods %}
+                        <option value="{{ val }}" {% if filters.method == val %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+            <div class="mt-3 flex gap-2">
+                <button type="submit" class="px-4 py-2 bg-gray-800 text-white text-sm font-semibold rounded-lg hover:bg-gray-900 transition-colors">Apply Filters</button>
+                <a href="{% url 'finance_reconciliation' %}" class="px-4 py-2 bg-gray-100 text-gray-700 text-sm font-semibold rounded-lg hover:bg-gray-200 transition-colors">Clear</a>
+            </div>
+        </form>
+
+        {% if payments %}
+        <!-- Select All Bar -->
+        <div id="selection-bar" class="hidden bg-emerald-50 border border-emerald-200 rounded-lg px-4 py-2 mb-3 flex items-center justify-between">
+            <span class="text-sm font-semibold text-emerald-800"><span id="selection-count">0</span> payment(s) selected</span>
+            <button onclick="openBulkModal()" class="text-sm text-emerald-700 font-bold hover:underline">Confirm All Selected →</button>
+        </div>
+
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+            <table class="w-full text-sm">
+                <thead>
+                    <tr class="bg-gray-50 border-b border-gray-100">
+                        <th class="px-4 py-3 text-left">
+                            <input type="checkbox" id="select-all" class="h-4 w-4 rounded text-emerald-600 cursor-pointer">
+                        </th>
+                        <th class="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Date</th>
+                        <th class="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Customer</th>
+                        <th class="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Invoice #</th>
+                        <th class="px-4 py-3 text-right text-xs font-bold text-gray-500 uppercase tracking-wider">Amount (Rs)</th>
+                        <th class="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Method</th>
+                        <th class="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Reference</th>
+                        <th class="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Slip</th>
+                        <th class="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Recorded By</th>
+                        <th class="px-4 py-3 text-center text-xs font-bold text-gray-500 uppercase tracking-wider">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-50" id="payments-tbody">
+                    {% for payment in payments %}
+                    <tr class="hover:bg-gray-50 transition-colors payment-row" id="row-{{ payment.id }}" data-payment-id="{{ payment.id }}">
+                        <td class="px-4 py-3">
+                            <input type="checkbox" class="payment-checkbox h-4 w-4 rounded text-emerald-600 cursor-pointer" value="{{ payment.id }}">
+                        </td>
+                        <td class="px-4 py-3 text-gray-700 whitespace-nowrap">{{ payment.payment_date|date:"d M Y" }}</td>
+                        <td class="px-4 py-3 font-medium text-gray-900">{{ payment.invoice.customer.customer_name }}</td>
+                        <td class="px-4 py-3">
+                            <a href="{% url 'invoice_edit' payment.invoice.pk %}" class="text-emerald-600 hover:underline font-mono text-xs">
+                                {{ payment.invoice.invoice_number }}
+                            </a>
+                        </td>
+                        <td class="px-4 py-3 text-right font-bold text-gray-900">{{ payment.amount|floatformat:2|intcomma }}</td>
+                        <td class="px-4 py-3">
+                            <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold
+                                {% if payment.payment_method == 'CASH' %}bg-green-100 text-green-700
+                                {% elif payment.payment_method == 'BANK_TRANSFER' %}bg-blue-100 text-blue-700
+                                {% elif payment.payment_method == 'CHEQUE' %}bg-purple-100 text-purple-700
+                                {% elif payment.payment_method == 'CARD' %}bg-orange-100 text-orange-700
+                                {% else %}bg-gray-100 text-gray-700{% endif %}">
+                                {{ payment.get_payment_method_display }}
+                            </span>
+                        </td>
+                        <td class="px-4 py-3 text-gray-600 text-xs font-mono">{{ payment.reference_number|default:"—" }}</td>
+                        <td class="px-4 py-3">
+                            {% if payment.slip_attachment %}
+                            <a href="{{ payment.slip_attachment.url }}" target="_blank"
+                                class="inline-flex items-center gap-1 text-xs text-blue-600 hover:underline">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"/></svg>
+                                View
+                            </a>
+                            {% else %}
+                            <span class="text-xs text-gray-400">—</span>
+                            {% endif %}
+                        </td>
+                        <td class="px-4 py-3 text-xs text-gray-500">{{ payment.recorded_by.get_full_name|default:payment.recorded_by.username|default:"—" }}</td>
+                        <td class="px-4 py-3">
+                            <div class="flex items-center justify-center gap-1.5">
+                                <button onclick="openConfirmModal({{ payment.id }}, '{{ payment.invoice.customer.customer_name|escapejs }}', '{{ payment.amount }}')"
+                                    class="inline-flex items-center gap-1 px-3 py-1.5 bg-emerald-600 text-white text-xs font-bold rounded-lg hover:bg-emerald-700 transition-colors shadow-sm">
+                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                                    Confirm
+                                </button>
+                                <button onclick="openDisputeModal({{ payment.id }}, '{{ payment.invoice.customer.customer_name|escapejs }}')"
+                                    class="inline-flex items-center gap-1 px-3 py-1.5 bg-red-50 text-red-600 text-xs font-bold rounded-lg hover:bg-red-100 transition-colors border border-red-200">
+                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                                    Dispute
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-16 text-center mt-4">
+            <div class="w-16 h-16 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <svg class="w-8 h-8 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            </div>
+            <h3 class="text-lg font-bold text-gray-800">All payments reconciled!</h3>
+            <p class="text-sm text-gray-500 mt-1">There are no payments pending reconciliation.</p>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- ── HISTORY TAB ─────────────────────────────────────────────────────── -->
+    <div id="panel-history" class="hidden mt-4">
+        {% if reconciled_payments %}
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+            <table class="w-full text-sm">
+                <thead>
+                    <tr class="bg-gray-50 border-b border-gray-100">
+                        <th class="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Payment Date</th>
+                        <th class="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Customer</th>
+                        <th class="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Invoice #</th>
+                        <th class="px-4 py-3 text-right text-xs font-bold text-gray-500 uppercase tracking-wider">Amount (Rs)</th>
+                        <th class="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Method</th>
+                        <th class="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Reference</th>
+                        <th class="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Reconciled By</th>
+                        <th class="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Reconciled At</th>
+                        <th class="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Note</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-50">
+                    {% for payment in reconciled_payments %}
+                    <tr class="hover:bg-gray-50 transition-colors">
+                        <td class="px-4 py-3 text-gray-700 whitespace-nowrap">{{ payment.payment_date|date:"d M Y" }}</td>
+                        <td class="px-4 py-3 font-medium text-gray-900">{{ payment.invoice.customer.customer_name }}</td>
+                        <td class="px-4 py-3 font-mono text-xs text-emerald-700">{{ payment.invoice.invoice_number }}</td>
+                        <td class="px-4 py-3 text-right font-bold text-gray-900">{{ payment.amount|floatformat:2|intcomma }}</td>
+                        <td class="px-4 py-3 text-xs text-gray-600">{{ payment.get_payment_method_display }}</td>
+                        <td class="px-4 py-3 font-mono text-xs text-gray-500">{{ payment.reference_number|default:"—" }}</td>
+                        <td class="px-4 py-3 text-xs text-gray-600">{{ payment.reconciled_by.get_full_name|default:payment.reconciled_by.username|default:"—" }}</td>
+                        <td class="px-4 py-3 text-xs text-gray-500 whitespace-nowrap">{{ payment.reconciled_at|date:"d M Y, H:i" }}</td>
+                        <td class="px-4 py-3 text-xs text-gray-500 max-w-xs truncate" title="{{ payment.reconciliation_note }}">{{ payment.reconciliation_note|default:"—" }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-12 text-center">
+            <p class="text-sm text-gray-500">No reconciled payments yet.</p>
+        </div>
+        {% endif %}
+    </div>
+
+</div>
+
+<!-- ── CONFIRM MODAL ──────────────────────────────────────────────────────── -->
+<div id="confirm-modal" class="fixed inset-0 z-50 hidden">
+    <div class="fixed inset-0 bg-black bg-opacity-40" onclick="closeModals()"></div>
+    <div class="fixed inset-0 flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md relative z-10 p-6">
+            <div class="flex items-center gap-3 mb-4">
+                <div class="w-10 h-10 bg-emerald-100 rounded-full flex items-center justify-center">
+                    <svg class="w-5 h-5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                </div>
+                <div>
+                    <h3 class="text-lg font-bold text-gray-900">Confirm Payment</h3>
+                    <p class="text-sm text-gray-500" id="confirm-modal-subtitle">Mark this payment as reconciled</p>
+                </div>
+            </div>
+            <div class="mb-4">
+                <label class="block text-sm font-semibold text-gray-700 mb-1">Note <span class="font-normal text-gray-400">(optional)</span></label>
+                <textarea id="confirm-note" rows="2" placeholder="e.g. Verified against bank statement dated 5 Aug 2026"
+                    class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-emerald-500 focus:border-emerald-500 resize-none"></textarea>
+            </div>
+            <div class="flex gap-3">
+                <button onclick="submitReconcile('RECONCILED')"
+                    class="flex-1 bg-emerald-600 text-white font-bold py-2.5 rounded-xl hover:bg-emerald-700 transition-colors">
+                    ✓ Confirm Reconciled
+                </button>
+                <button onclick="closeModals()"
+                    class="px-5 py-2.5 text-gray-600 font-semibold rounded-xl hover:bg-gray-100 transition-colors border border-gray-200">
+                    Cancel
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ── DISPUTE MODAL ──────────────────────────────────────────────────────── -->
+<div id="dispute-modal" class="fixed inset-0 z-50 hidden">
+    <div class="fixed inset-0 bg-black bg-opacity-40" onclick="closeModals()"></div>
+    <div class="fixed inset-0 flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md relative z-10 p-6">
+            <div class="flex items-center gap-3 mb-4">
+                <div class="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
+                    <svg class="w-5 h-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                </div>
+                <div>
+                    <h3 class="text-lg font-bold text-gray-900">Flag as Disputed</h3>
+                    <p class="text-sm text-gray-500" id="dispute-modal-subtitle">Mark this payment as disputed</p>
+                </div>
+            </div>
+            <div class="mb-4">
+                <label class="block text-sm font-semibold text-gray-700 mb-1">Reason <span class="text-red-500">*</span></label>
+                <textarea id="dispute-note" rows="2" placeholder="e.g. Amount on bank statement does not match recorded amount"
+                    class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-red-400 focus:border-red-400 resize-none"></textarea>
+            </div>
+            <div class="flex gap-3">
+                <button onclick="submitReconcile('DISPUTED')"
+                    class="flex-1 bg-red-600 text-white font-bold py-2.5 rounded-xl hover:bg-red-700 transition-colors">
+                    Flag as Disputed
+                </button>
+                <button onclick="closeModals()"
+                    class="px-5 py-2.5 text-gray-600 font-semibold rounded-xl hover:bg-gray-100 transition-colors border border-gray-200">
+                    Cancel
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ── BULK MODAL ─────────────────────────────────────────────────────────── -->
+<div id="bulk-modal" class="fixed inset-0 z-50 hidden">
+    <div class="fixed inset-0 bg-black bg-opacity-40" onclick="closeModals()"></div>
+    <div class="fixed inset-0 flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md relative z-10 p-6">
+            <div class="flex items-center gap-3 mb-4">
+                <div class="w-10 h-10 bg-emerald-100 rounded-full flex items-center justify-center">
+                    <svg class="w-5 h-5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
+                </div>
+                <div>
+                    <h3 class="text-lg font-bold text-gray-900">Bulk Confirm</h3>
+                    <p class="text-sm text-gray-500" id="bulk-modal-subtitle">Reconcile all selected payments</p>
+                </div>
+            </div>
+            <div class="mb-4">
+                <label class="block text-sm font-semibold text-gray-700 mb-1">Note <span class="font-normal text-gray-400">(optional, applied to all)</span></label>
+                <textarea id="bulk-note" rows="2" placeholder="e.g. Batch verified against Aug 2026 bank statement"
+                    class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-emerald-500 focus:border-emerald-500 resize-none"></textarea>
+            </div>
+            <div class="flex gap-3">
+                <button onclick="submitBulkReconcile()"
+                    class="flex-1 bg-emerald-600 text-white font-bold py-2.5 rounded-xl hover:bg-emerald-700 transition-colors">
+                    Confirm All Selected
+                </button>
+                <button onclick="closeModals()"
+                    class="px-5 py-2.5 text-gray-600 font-semibold rounded-xl hover:bg-gray-100 transition-colors border border-gray-200">
+                    Cancel
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Toast -->
+<div id="toast" class="fixed bottom-6 right-6 z-50 hidden">
+    <div id="toast-inner" class="px-5 py-3 rounded-xl shadow-xl text-sm font-semibold flex items-center gap-2 max-w-xs"></div>
+</div>
+
+<script>
+    const RECONCILE_URL = "{% url 'finance_reconcile_payment' %}";
+    const BULK_URL = "{% url 'finance_bulk_reconcile' %}";
+    const CSRF_TOKEN = "{{ csrf_token }}";
+
+    let currentPaymentId = null;
+    let currentAction = null;
+
+    // ── Tab switching ──────────────────────────────────────────────────────
+    function switchTab(tab) {
+        document.getElementById('panel-pending').classList.toggle('hidden', tab !== 'pending');
+        document.getElementById('panel-history').classList.toggle('hidden', tab !== 'history');
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.classList.remove('border-emerald-500', 'text-emerald-600');
+            btn.classList.add('border-transparent', 'text-gray-500');
+        });
+        const activeBtn = document.getElementById('tab-' + tab);
+        activeBtn.classList.add('border-emerald-500', 'text-emerald-600');
+        activeBtn.classList.remove('border-transparent', 'text-gray-500');
+    }
+
+    // ── Checkbox logic ─────────────────────────────────────────────────────
+    const selectAll = document.getElementById('select-all');
+    const bulkBtn = document.getElementById('bulk-confirm-btn');
+    const selectionBar = document.getElementById('selection-bar');
+    const selectionCount = document.getElementById('selection-count');
+    const bulkBtnLabel = document.getElementById('bulk-btn-label');
+
+    function getChecked() {
+        return [...document.querySelectorAll('.payment-checkbox:checked')].map(cb => parseInt(cb.value));
+    }
+
+    function updateBulkUI() {
+        const checked = getChecked();
+        const n = checked.length;
+        if (selectionBar) selectionBar.classList.toggle('hidden', n === 0);
+        if (selectionCount) selectionCount.textContent = n;
+        if (bulkBtn) {
+            bulkBtn.disabled = n === 0;
+            if (bulkBtnLabel) bulkBtnLabel.textContent = n > 0 ? `Confirm Selected (${n})` : 'Confirm Selected';
+        }
+    }
+
+    if (selectAll) {
+        selectAll.addEventListener('change', function () {
+            document.querySelectorAll('.payment-checkbox').forEach(cb => cb.checked = this.checked);
+            updateBulkUI();
+        });
+    }
+
+    document.querySelectorAll('.payment-checkbox').forEach(cb => {
+        cb.addEventListener('change', updateBulkUI);
+    });
+
+    // ── Modals ─────────────────────────────────────────────────────────────
+    function openConfirmModal(paymentId, customer, amount) {
+        currentPaymentId = paymentId;
+        currentAction = 'RECONCILED';
+        document.getElementById('confirm-modal-subtitle').textContent = `${customer} — Rs ${parseFloat(amount).toLocaleString('en-LK', {minimumFractionDigits: 2})}`;
+        document.getElementById('confirm-note').value = '';
+        document.getElementById('confirm-modal').classList.remove('hidden');
+    }
+
+    function openDisputeModal(paymentId, customer) {
+        currentPaymentId = paymentId;
+        currentAction = 'DISPUTED';
+        document.getElementById('dispute-modal-subtitle').textContent = customer;
+        document.getElementById('dispute-note').value = '';
+        document.getElementById('dispute-modal').classList.remove('hidden');
+    }
+
+    function openBulkModal() {
+        const n = getChecked().length;
+        document.getElementById('bulk-modal-subtitle').textContent = `${n} payment(s) will be marked as reconciled`;
+        document.getElementById('bulk-note').value = '';
+        document.getElementById('bulk-modal').classList.remove('hidden');
+    }
+
+    function closeModals() {
+        document.getElementById('confirm-modal').classList.add('hidden');
+        document.getElementById('dispute-modal').classList.add('hidden');
+        document.getElementById('bulk-modal').classList.add('hidden');
+    }
+
+    // ── Submit single reconciliation ───────────────────────────────────────
+    function submitReconcile(action) {
+        const note = action === 'RECONCILED'
+            ? document.getElementById('confirm-note').value.trim()
+            : document.getElementById('dispute-note').value.trim();
+
+        if (action === 'DISPUTED' && !note) {
+            showToast('Please provide a reason for disputing.', false);
+            return;
+        }
+
+        fetch(RECONCILE_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF_TOKEN },
+            body: JSON.stringify({ payment_id: currentPaymentId, action: action, note: note }),
+        })
+        .then(r => r.json())
+        .then(data => {
+            closeModals();
+            if (data.status === 'ok') {
+                const row = document.getElementById('row-' + currentPaymentId);
+                if (row) {
+                    row.style.transition = 'opacity 0.4s';
+                    row.style.opacity = '0';
+                    setTimeout(() => row.remove(), 400);
+                }
+                showToast(data.message, true);
+                // Update counts
+                setTimeout(() => window.location.reload(), 1200);
+            } else {
+                showToast(data.message || 'An error occurred.', false);
+            }
+        })
+        .catch(() => showToast('Network error. Please try again.', false));
+    }
+
+    // ── Submit bulk reconciliation ─────────────────────────────────────────
+    function submitBulkReconcile() {
+        const ids = getChecked();
+        const note = document.getElementById('bulk-note').value.trim();
+        if (ids.length === 0) return;
+
+        fetch(BULK_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF_TOKEN },
+            body: JSON.stringify({ payment_ids: ids, note: note }),
+        })
+        .then(r => r.json())
+        .then(data => {
+            closeModals();
+            if (data.status === 'ok') {
+                showToast(data.message, true);
+                setTimeout(() => window.location.reload(), 1200);
+            } else {
+                showToast(data.message || 'An error occurred.', false);
+            }
+        })
+        .catch(() => showToast('Network error. Please try again.', false));
+    }
+
+    // ── Toast helper ───────────────────────────────────────────────────────
+    function showToast(message, success) {
+        const toast = document.getElementById('toast');
+        const inner = document.getElementById('toast-inner');
+        inner.className = 'px-5 py-3 rounded-xl shadow-xl text-sm font-semibold flex items-center gap-2 max-w-xs';
+        inner.classList.add(success ? 'bg-emerald-600' : 'bg-red-600');
+        inner.classList.add('text-white');
+        inner.innerHTML = (success ? '✓ ' : '✕ ') + message;
+        toast.classList.remove('hidden');
+        setTimeout(() => toast.classList.add('hidden'), 3500);
+    }
+
+    // Handle bulk button click
+    if (bulkBtn) {
+        bulkBtn.addEventListener('click', openBulkModal);
+    }
+</script>
+{% endblock %}

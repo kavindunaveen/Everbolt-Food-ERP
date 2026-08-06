@@ -30,6 +30,10 @@ class FinanceDashboardView(LoginRequiredMixin, PermissionRequiredMixin, View):
         
         from .models import CustomerCredit
         total_credits = CustomerCredit.objects.filter(remaining_amount__gt=0, is_active=True).aggregate(t=Sum('remaining_amount'))['t'] or 0
+
+        pending_reconciliation_count = Payment.objects.filter(
+            reconciliation_status=Payment.ReconciliationStatus.UNRECONCILED
+        ).count()
         
         context = {
             'total_invoices_all': stats['total_invoices_all'],
@@ -40,6 +44,7 @@ class FinanceDashboardView(LoginRequiredMixin, PermissionRequiredMixin, View):
             'pending_total': pending_total,
             'partial_count': stats['partial_count'],
             'total_credits': total_credits,
+            'pending_reconciliation_count': pending_reconciliation_count,
         }
         return render(request, self.template_name, context)
 
@@ -1111,3 +1116,134 @@ def apply_customer_credit(request):
             return JsonResponse({'status': 'error', 'message': str(e)}, status=400)
     
     return JsonResponse({'status': 'error', 'message': 'Invalid request method.'}, status=405)
+
+
+# ─── Payment Reconciliation Views ────────────────────────────────────────────
+
+class ReconciliationView(LoginRequiredMixin, PermissionRequiredMixin, View):
+    """Displays all unreconciled payments for review and confirmation."""
+    permission_required = 'finance.manage_finance'
+    template_name = 'finance/reconciliation.html'
+
+    def get(self, request):
+        from decimal import Decimal
+
+        qs = Payment.objects.select_related(
+            'invoice', 'invoice__customer', 'recorded_by'
+        ).filter(
+            reconciliation_status=Payment.ReconciliationStatus.UNRECONCILED
+        ).order_by('-payment_date', '-created_at')
+
+        # Filters
+        date_from = request.GET.get('date_from')
+        if date_from:
+            qs = qs.filter(payment_date__gte=date_from)
+
+        date_to = request.GET.get('date_to')
+        if date_to:
+            qs = qs.filter(payment_date__lte=date_to)
+
+        q = request.GET.get('q', '').strip()
+        if q:
+            qs = qs.filter(
+                Q(invoice__invoice_number__icontains=q) |
+                Q(invoice__customer__customer_name__icontains=q) |
+                Q(reference_number__icontains=q)
+            )
+
+        method = request.GET.get('method')
+        if method:
+            qs = qs.filter(payment_method=method)
+
+        total_amount = qs.aggregate(t=Sum('amount'))['t'] or Decimal('0.00')
+        count = qs.count()
+
+        # Reconciled payments for the history tab
+        reconciled_qs = Payment.objects.select_related(
+            'invoice', 'invoice__customer', 'reconciled_by'
+        ).filter(
+            reconciliation_status=Payment.ReconciliationStatus.RECONCILED
+        ).order_by('-reconciled_at')[:50]
+
+        context = {
+            'payments': qs,
+            'reconciled_payments': reconciled_qs,
+            'total_amount': total_amount,
+            'count': count,
+            'payment_methods': Payment.PaymentMethod.choices,
+            'filters': {
+                'date_from': date_from or '',
+                'date_to': date_to or '',
+                'q': q,
+                'method': method or '',
+            }
+        }
+        return render(request, self.template_name, context)
+
+
+class ReconcilePaymentView(LoginRequiredMixin, PermissionRequiredMixin, View):
+    """API: Reconcile a single payment."""
+    permission_required = 'finance.manage_finance'
+
+    def post(self, request):
+        try:
+            data = json.loads(request.body)
+            payment_id = data.get('payment_id')
+            note = data.get('note', '').strip()
+            action = data.get('action', 'RECONCILED')  # RECONCILED or DISPUTED
+
+            payment = get_object_or_404(Payment, id=payment_id)
+
+            if action not in [Payment.ReconciliationStatus.RECONCILED, Payment.ReconciliationStatus.DISPUTED]:
+                return JsonResponse({'status': 'error', 'message': 'Invalid action.'}, status=400)
+
+            payment.reconciliation_status = action
+            payment.reconciled_by = request.user
+            payment.reconciled_at = timezone.now()
+            if note:
+                payment.reconciliation_note = note
+            payment.save(update_fields=['reconciliation_status', 'reconciled_by', 'reconciled_at', 'reconciliation_note'])
+
+            return JsonResponse({
+                'status': 'ok',
+                'message': f'Payment marked as {action.lower()}.',
+                'payment_id': payment.id,
+                'new_status': action,
+            })
+
+        except Exception as e:
+            return JsonResponse({'status': 'error', 'message': str(e)}, status=400)
+
+
+class BulkReconcileView(LoginRequiredMixin, PermissionRequiredMixin, View):
+    """API: Reconcile multiple payments at once."""
+    permission_required = 'finance.manage_finance'
+
+    def post(self, request):
+        try:
+            data = json.loads(request.body)
+            payment_ids = data.get('payment_ids', [])
+            note = data.get('note', '').strip()
+
+            if not payment_ids:
+                return JsonResponse({'status': 'error', 'message': 'No payments selected.'}, status=400)
+
+            now = timezone.now()
+            updated = Payment.objects.filter(
+                id__in=payment_ids,
+                reconciliation_status=Payment.ReconciliationStatus.UNRECONCILED
+            ).update(
+                reconciliation_status=Payment.ReconciliationStatus.RECONCILED,
+                reconciled_by=request.user,
+                reconciled_at=now,
+                reconciliation_note=note or None,
+            )
+
+            return JsonResponse({
+                'status': 'ok',
+                'message': f'{updated} payment(s) reconciled successfully.',
+                'reconciled_count': updated,
+            })
+
+        except Exception as e:
+            return JsonResponse({'status': 'error', 'message': str(e)}, status=400)

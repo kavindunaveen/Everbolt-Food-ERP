@@ -21,6 +21,24 @@ class Payment(models.Model):
     recorded_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, related_name='recorded_payments')
     created_at = models.DateTimeField(auto_now_add=True)
 
+    class ReconciliationStatus(models.TextChoices):
+        UNRECONCILED = 'UNRECONCILED', 'Unreconciled'
+        RECONCILED = 'RECONCILED', 'Reconciled'
+        DISPUTED = 'DISPUTED', 'Disputed'
+
+    reconciliation_status = models.CharField(
+        max_length=20,
+        choices=ReconciliationStatus.choices,
+        default=ReconciliationStatus.UNRECONCILED,
+        db_index=True
+    )
+    reconciled_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
+        null=True, blank=True, related_name='reconciled_payments'
+    )
+    reconciled_at = models.DateTimeField(null=True, blank=True)
+    reconciliation_note = models.TextField(blank=True, null=True)
+
     def save(self, *args, **kwargs):
         with transaction.atomic():
             super().save(*args, **kwargs)
