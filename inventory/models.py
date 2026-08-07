@@ -94,7 +94,7 @@ class Product(models.Model):
     @property
     def display_stock(self):
         """Returns stock formatted based on its unit"""
-        int_units = ['pcs', 'packets', 'bottles', 'schachets/sticks', 'box']
+        int_units = ['pcs', 'packets', 'pack', 'bottles', 'schachets/sticks', 'box']
         if self.stock_unit and self.stock_unit.lower().strip() in int_units:
             return int(self.current_stock)
             
