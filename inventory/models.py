@@ -212,6 +212,17 @@ class PerpetualCountItem(models.Model):
     def __str__(self):
         return f"{self.perpetual_count.reference_number} - {self.product.name}"
 
+def validate_whole_unit(product, qty, field_name=None):
+    from django.core.exceptions import ValidationError
+    int_units = ['pcs', 'packets', 'pack', 'bottles', 'schachets/sticks', 'box']
+    if product and product.stock_unit and product.stock_unit.lower().strip() in int_units:
+        if qty is not None and qty % 1 != 0:
+            msg = f"Finished goods ({product.stock_unit}) cannot be entered in decimals."
+            if field_name:
+                raise ValidationError({field_name: msg})
+            else:
+                raise ValidationError(msg)
+
 class StockLedger(models.Model):
     class TransactionTypes(models.TextChoices):
         OPENING = 'OPENING', 'Opening Stock'
@@ -237,11 +248,8 @@ class StockLedger(models.Model):
 
     def clean(self):
         super().clean()
-        from django.core.exceptions import ValidationError
-        discrete_uoms = ['pcs', 'box', 'pack']
-        if self.product and self.product.selling_unit in discrete_uoms:
-            if self.qty_in % 1 != 0 or self.qty_out % 1 != 0:
-                raise ValidationError(f"{self.product.name} is measured in {self.product.selling_unit}. Fractional quantities are not allowed.")
+        validate_whole_unit(self.product, self.qty_in)
+        validate_whole_unit(self.product, self.qty_out)
 
     def save(self, *args, **kwargs):
         self.clean()
@@ -272,7 +280,12 @@ class StockAdjustment(models.Model):
     created_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
+    def clean(self):
+        super().clean()
+        validate_whole_unit(self.product, self.quantity, 'quantity')
+
     def save(self, *args, **kwargs):
+        self.clean()
         if not self.adjustment_number:
             last_adj = StockAdjustment.objects.order_by('-id').first()
             if last_adj and last_adj.adjustment_number.startswith('ADJ-'):

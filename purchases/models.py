@@ -63,6 +63,15 @@ class GRNItem(models.Model):
     batch = models.CharField(max_length=50, blank=True, null=True)
     expiry = models.DateField(blank=True, null=True)
 
+    def clean(self):
+        super().clean()
+        from inventory.models import validate_whole_unit
+        validate_whole_unit(self.product, self.qty, 'qty')
+
+    def save(self, *args, **kwargs):
+        self.clean()
+        super().save(*args, **kwargs)
+
     def __str__(self):
         return f"{self.grn.grn_number} - {self.product.name} ({self.qty})"
 
@@ -156,7 +165,13 @@ class PurchaseOrderItem(models.Model):
     def remaining_qty(self):
         return self.qty - self.received_qty
 
+    def clean(self):
+        super().clean()
+        from inventory.models import validate_whole_unit
+        validate_whole_unit(self.product, self.qty, 'qty')
+
     def save(self, *args, **kwargs):
+        self.clean()
         # Auto-generate material code for PM if not provided
         if self.po.po_type == POType.PACKING_MATERIAL and (not self.material_code or self.material_code == 'Auto-generated'):
             prefix = "PM-"

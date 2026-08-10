@@ -29,6 +29,15 @@ class BOMItem(models.Model):
     component_product = models.ForeignKey(Product, on_delete=models.PROTECT, related_name='used_in_boms')
     qty_required = models.DecimalField(max_digits=12, decimal_places=3)
     
+    def clean(self):
+        super().clean()
+        from inventory.models import validate_whole_unit
+        validate_whole_unit(self.component_product, self.qty_required, 'qty_required')
+
+    def save(self, *args, **kwargs):
+        self.clean()
+        super().save(*args, **kwargs)
+
     def __str__(self):
         return f"{self.bom.bom_code} -> {self.component_product.name} ({self.qty_required})"
 
@@ -76,6 +85,16 @@ class ProductionMaterial(models.Model):
     actual_used_qty = models.DecimalField(max_digits=12, decimal_places=3)
     wastage_qty = models.DecimalField(max_digits=12, decimal_places=3, default=0.000)
 
+    def clean(self):
+        super().clean()
+        from inventory.models import validate_whole_unit
+        validate_whole_unit(self.component_product, self.actual_used_qty, 'actual_used_qty')
+        validate_whole_unit(self.component_product, self.wastage_qty, 'wastage_qty')
+
+    def save(self, *args, **kwargs):
+        self.clean()
+        super().save(*args, **kwargs)
+
     def __str__(self):
         return f"{self.production.production_number} - Material: {self.component_product.name}"
 
@@ -83,6 +102,15 @@ class ProductionOutput(models.Model):
     production = models.ForeignKey(Production, on_delete=models.CASCADE, related_name='outputs')
     output_product = models.ForeignKey(Product, on_delete=models.PROTECT)
     produced_qty = models.DecimalField(max_digits=12, decimal_places=3)
+
+    def clean(self):
+        super().clean()
+        from inventory.models import validate_whole_unit
+        validate_whole_unit(self.output_product, self.produced_qty, 'produced_qty')
+
+    def save(self, *args, **kwargs):
+        self.clean()
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return f"{self.production.production_number} - Output: {self.output_product.name}"
