@@ -214,14 +214,20 @@ class PerpetualCountItem(models.Model):
 
 def validate_whole_unit(product, qty, field_name=None):
     from django.core.exceptions import ValidationError
+    from decimal import Decimal, InvalidOperation
     int_units = ['pcs', 'packets', 'pack', 'bottles', 'schachets/sticks', 'box']
     if product and product.stock_unit and product.stock_unit.lower().strip() in int_units:
-        if qty is not None and qty % 1 != 0:
-            msg = f"Finished goods ({product.stock_unit}) cannot be entered in decimals."
-            if field_name:
-                raise ValidationError({field_name: msg})
-            else:
-                raise ValidationError(msg)
+        if qty is not None:
+            try:
+                qty_val = Decimal(str(qty))
+                if qty_val % 1 != 0:
+                    msg = f"Finished goods ({product.stock_unit}) cannot be entered in decimals."
+                    if field_name:
+                        raise ValidationError({field_name: msg})
+                    else:
+                        raise ValidationError(msg)
+            except (ValueError, TypeError, InvalidOperation):
+                pass
 
 class StockLedger(models.Model):
     class TransactionTypes(models.TextChoices):
