@@ -4,13 +4,15 @@ from .views import (
     ChartOfAccountsView, AccountCreateView, JournalEntryListView, JournalEntryCreateView, GeneralLedgerView,
     CustomerCreditListView, apply_customer_credit,
     ReconciliationView, ReconcilePaymentView, BulkReconcileView,
-    BankAccountListView, BankAccountCreateView,
+    BankAccountListView, BankAccountCreateView, BankAccountUpdateView, BankAccountDeleteView,
 )
 
 urlpatterns = [
     path('', FinanceDashboardView.as_view(), name='finance_dashboard'),
     path('bank-accounts/', BankAccountListView.as_view(), name='finance_bank_accounts'),
     path('bank-accounts/add/', BankAccountCreateView.as_view(), name='finance_bank_account_create'),
+    path('bank-accounts/<int:pk>/edit/', BankAccountUpdateView.as_view(), name='finance_bank_account_edit'),
+    path('bank-accounts/<int:pk>/delete/', BankAccountDeleteView.as_view(), name='finance_bank_account_delete'),
     path('pending-payments/', PendingPaymentsView.as_view(), name='finance_pending_payments'),
     path('partial-payments/', PartialPaymentsView.as_view(), name='finance_partial_payments'),
     path('completed-payments/', CompletedPaymentsView.as_view(), name='finance_completed_payments'),

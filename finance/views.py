@@ -813,7 +813,7 @@ class AgedReceivablesView(LoginRequiredMixin, PermissionRequiredMixin, View):
         return render(request, self.template_name, context)
 
 from django.urls import reverse_lazy
-from django.views.generic import ListView, CreateView, DetailView
+from django.views.generic import View, TemplateView, ListView, CreateView, UpdateView, DeleteView, DetailView
 from .models import Account, AccountType, JournalEntry, JournalEntryLine
 from .forms import AccountForm, JournalEntryForm
 
@@ -1308,3 +1308,21 @@ class BankAccountCreateView(LoginRequiredMixin, PermissionRequiredMixin, CreateV
     template_name = 'finance/bank_account_form.html'
     form_class = BankAccountForm
     success_url = reverse_lazy('finance_bank_accounts')
+
+class BankAccountUpdateView(LoginRequiredMixin, PermissionRequiredMixin, UpdateView):
+    permission_required = 'finance.manage_finance'
+    model = BankAccount
+    template_name = 'finance/bank_account_form.html'
+    form_class = BankAccountForm
+    success_url = reverse_lazy('finance_bank_accounts')
+
+class BankAccountDeleteView(LoginRequiredMixin, UserPassesTestMixin, DeleteView):
+    model = BankAccount
+    success_url = reverse_lazy('finance_bank_accounts')
+    
+    def test_func(self):
+        return self.request.user.is_superuser
+    
+    def delete(self, request, *args, **kwargs):
+        messages.success(request, "Bank account deleted successfully.")
+        return super().delete(request, *args, **kwargs)
