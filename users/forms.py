@@ -18,7 +18,7 @@ class MatrixPermissionMixin:
             elif hasattr(self.instance, 'permissions'):
                 user_perms_ids = list(self.instance.permissions.values_list('pk', flat=True))
 
-        target_apps = ['crm', 'suppliers', 'sales', 'inventory', 'manufacturing', 'purchases', 'users', 'dashboard', 'website', 'visits', 'finance']
+        target_apps = ['crm', 'suppliers', 'sales', 'inventory', 'manufacturing', 'purchases', 'users', 'dashboard', 'website', 'visits', 'finance', 'iso']
         from django.contrib.contenttypes.models import ContentType
         from django.contrib.auth.models import Permission
 
