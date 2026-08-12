@@ -182,6 +182,7 @@ class PendingPaymentsView(LoginRequiredMixin, PermissionRequiredMixin, View):
             'paginator': paginator,
             'is_paginated': paginator.num_pages > 1,
             'payment_methods': Payment.PaymentMethod.choices,
+            'bank_accounts': BankAccount.objects.filter(is_active=True),
             'sales_officers': sales_officers,
             'total_invoices_all': stats['total_invoices_all'],
             'total_invoices_month': stats['total_invoices_month'],
@@ -336,6 +337,7 @@ class PartialPaymentsView(LoginRequiredMixin, PermissionRequiredMixin, View):
             'paginator': paginator,
             'is_paginated': paginator.num_pages > 1,
             'payment_methods': Payment.PaymentMethod.choices,
+            'bank_accounts': BankAccount.objects.filter(is_active=True),
             'sales_officers': sales_officers,
             'total_invoices_all': stats['total_invoices_all'],
             'total_invoices_month': stats['total_invoices_month'],
@@ -503,12 +505,20 @@ class RecordPaymentView(LoginRequiredMixin, PermissionRequiredMixin, View):
             amount_str = data.get('amount')
             payment_date_str = data.get('payment_date')
             payment_method = data.get('payment_method')
+            bank_account_id = data.get('bank_account_id')
             reference = data.get('reference', '').strip()
             notes = data.get('notes', '').strip()
             slip = request.FILES.get('slip_attachment')
 
             if not amount_str:
                 raise ValueError("Payment amount is required.")
+                
+            bank_account = None
+            if payment_method in ['BANK_TRANSFER', 'CHEQUE', 'CARD']:
+                if not bank_account_id:
+                    raise ValueError("You must select a bank account for this payment method.")
+                from .models import BankAccount
+                bank_account = get_object_or_404(BankAccount, id=bank_account_id)
 
             invoice = get_object_or_404(Invoice, id=invoice_id)
             from decimal import Decimal
@@ -542,6 +552,7 @@ class RecordPaymentView(LoginRequiredMixin, PermissionRequiredMixin, View):
                         amount=payment_amount_to_invoice,
                         payment_date=payment_date,
                         payment_method=payment_method,
+                        bank_account=bank_account,
                         reference_number=reference,
                         slip_attachment=slip,
                         notes=notes,
@@ -559,8 +570,38 @@ class RecordPaymentView(LoginRequiredMixin, PermissionRequiredMixin, View):
                         notes=f"Overpayment on Invoice {invoice.invoice_number} (Ref: {reference})"
                     )
                 
-                # The Payment model's save() method already handles the status update.
-                # No need to do it here — single source of truth in the model.
+                # Create Journal Entry for the Payment
+                from .models import JournalEntry, JournalEntryLine, Account
+                je = JournalEntry.objects.create(
+                    date=payment_date,
+                    reference=f"Payment for {invoice.invoice_number} (Ref: {reference})",
+                    created_by=request.user,
+                    status=JournalEntry.Status.POSTED
+                )
+                
+                # Debit Account
+                if bank_account:
+                    debit_account = bank_account.ledger_account
+                else:
+                    debit_account = Account.objects.get(code='1000') # Cash
+                    
+                JournalEntryLine.objects.create(
+                    journal_entry=je,
+                    account=debit_account,
+                    description=f"Received payment for {invoice.invoice_number}",
+                    debit=amount,
+                    credit=0
+                )
+                
+                # Credit Accounts Receivable
+                ar_account = Account.objects.get(code='1200')
+                JournalEntryLine.objects.create(
+                    journal_entry=je,
+                    account=ar_account,
+                    description=f"Payment applied to {invoice.invoice_number}",
+                    debit=0,
+                    credit=amount
+                )
 
             return JsonResponse({'status': 'ok', 'message': 'Payment recorded successfully.'})
 
@@ -1154,6 +1195,10 @@ class ReconciliationView(LoginRequiredMixin, PermissionRequiredMixin, View):
         method = request.GET.get('method')
         if method:
             qs = qs.filter(payment_method=method)
+            
+        bank_id = request.GET.get('bank_account_id')
+        if bank_id:
+            qs = qs.filter(bank_account_id=bank_id)
 
         total_amount = qs.aggregate(t=Sum('amount'))['t'] or Decimal('0.00')
         count = qs.count()
@@ -1171,6 +1216,7 @@ class ReconciliationView(LoginRequiredMixin, PermissionRequiredMixin, View):
             'total_amount': total_amount,
             'count': count,
             'payment_methods': Payment.PaymentMethod.choices,
+            'bank_accounts': BankAccount.objects.filter(is_active=True),
             'filters': {
                 'date_from': date_from or '',
                 'date_to': date_to or '',
@@ -1247,3 +1293,18 @@ class BulkReconcileView(LoginRequiredMixin, PermissionRequiredMixin, View):
 
         except Exception as e:
             return JsonResponse({'status': 'error', 'message': str(e)}, status=400)
+
+from .models import BankAccount
+from .forms import BankAccountForm
+
+class BankAccountListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
+    permission_required = 'finance.manage_finance'
+    template_name = 'finance/bank_account_list.html'
+    model = BankAccount
+    context_object_name = 'bank_accounts'
+
+class BankAccountCreateView(LoginRequiredMixin, PermissionRequiredMixin, CreateView):
+    permission_required = 'finance.manage_finance'
+    template_name = 'finance/bank_account_form.html'
+    form_class = BankAccountForm
+    success_url = reverse_lazy('finance_bank_accounts')

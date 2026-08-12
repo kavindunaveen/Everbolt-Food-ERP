@@ -164,9 +164,19 @@
             
             <div class="mb-5">
                 <label>Payment Method</label>
-                <select id="payment_method" required>
+                <select id="payment_method" required onchange="toggleBankDropdown()">
                     {% for val, label in payment_methods %}
                     <option value="{{ val }}">{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <div class="mb-5" id="bank_account_container" style="display: none;">
+                <label>Deposit To Bank</label>
+                <select id="bank_account_id">
+                    <option value="">-- Select Bank Account --</option>
+                    {% for bank in bank_accounts %}
+                    <option value="{{ bank.id }}">{{ bank.bank_name }} - {{ bank.account_number }}</option>
                     {% endfor %}
                 </select>
             </div>
@@ -221,8 +231,23 @@
     const modal = document.getElementById('paymentModal');
     const modalContent = document.getElementById('paymentModalContent');
     const methodSelect = document.getElementById('payment_method');
+    const bankContainer = document.getElementById('bank_account_container');
+    const bankSelect = document.getElementById('bank_account_id');
     const refInput = document.getElementById('reference');
     const slipInput = document.getElementById('slip_attachment');
+    
+    function toggleBankDropdown() {
+        if (['BANK_TRANSFER', 'CHEQUE', 'CARD'].includes(methodSelect.value)) {
+            bankContainer.style.display = 'block';
+            bankSelect.required = true;
+        } else {
+            bankContainer.style.display = 'none';
+            bankSelect.required = false;
+        }
+    }
+    
+    // Call once on load to set initial state
+    toggleBankDropdown();
     
     function updateRefValidation() {
         // No longer strictly required if they upload a slip, validation happens on submit
@@ -344,7 +369,10 @@
         formData.append('invoice_id', document.getElementById('invoice_id').value);
         formData.append('amount', document.getElementById('payment_amount').value);
         formData.append('payment_date', document.getElementById('payment_date').value);
-        formData.append('payment_method', document.getElementById('payment_method').value);
+        formData.append('payment_method', methodSelect.value);
+        if (bankSelect.value) {
+            formData.append('bank_account_id', bankSelect.value);
+        }
         formData.append('reference', document.getElementById('reference').value);
         formData.append('notes', document.getElementById('notes').value);
         
