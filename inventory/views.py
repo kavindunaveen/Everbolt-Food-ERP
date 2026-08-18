@@ -1,5 +1,5 @@
 from django.shortcuts import render, redirect, get_object_or_404
-from django.db.models import Q
+from django.db.models import Q, Sum
 from django.urls import reverse_lazy
 from django.contrib import messages
 from django.views.generic import ListView, CreateView, UpdateView, DeleteView, DetailView, View
@@ -403,6 +403,9 @@ class ProductImportView(LoginRequiredMixin, ERPPermissionRequiredMixin, View):
             created_count = 0
             updated_count = 0
             deleted_count = 0
+            stock_adjusted_count = 0
+            stock_errors = []   # Collect per-row stock errors to show the user
+            not_found_ids = []  # Track IDs not found in DB
             
             headers = []
             rows = []
@@ -493,28 +496,44 @@ class ProductImportView(LoginRequiredMixin, ERPPermissionRequiredMixin, View):
                     product = Product.objects.filter(id=sys_id).first()
                 if not product and prod_id:
                     product = Product.objects.filter(product_id=prod_id).first()
+
+                if not product and (sys_id or prod_id):
+                    # Product referenced by ID/Product ID but not found in DB — track it
+                    not_found_ids.append(f"{name} (ID: {sys_id or prod_id})")
                     
                 if product:
+                    # Snapshot current_stock BEFORE the full product.save() so the
+                    # stock-diff comparison below uses the DB value, not a stale cache.
+                    stock_before_save = product.current_stock
                     for k, v in defaults.items():
                         setattr(product, k, v)
                     product.save()
                     updated_count += 1
                 else:
+                    if not_found_ids and not_found_ids[-1].startswith(name):
+                        # Already tracked as not-found above, skip creating a duplicate
+                        continue
                     product = Product.objects.create(**defaults)
                     created_count += 1
                     is_new = True
+                    stock_before_save = product.current_stock
                 
-                # Handle Stock Field
+                # Handle Stock Field — Excel qty IS the physical count (the truth).
+                # Logic: adjustment = Excel qty − current stock. Tally and move on.
                 current_stock_val = row.get('Current Stock')
                 if current_stock_val and current_stock_val.strip() and product.track_stock:
                     try:
                         qty = Decimal(current_stock_val.replace(',', ''))
-                        if product.current_stock != qty:
-                            diff = qty - product.current_stock
-                            tx_type = StockLedger.TransactionTypes.OPENING if (is_new or product.current_stock == 0) else (StockLedger.TransactionTypes.ADJ_POS if diff > 0 else StockLedger.TransactionTypes.ADJ_NEG)
+                        # stock_before_save = the cached value BEFORE product.save() above
+                        # (product.save() doesn't touch current_stock since it's not in defaults)
+                        if stock_before_save != qty:
+                            diff = qty - stock_before_save
+                            tx_type = StockLedger.TransactionTypes.OPENING if (is_new or stock_before_save == 0) else (
+                                StockLedger.TransactionTypes.ADJ_POS if diff > 0 else StockLedger.TransactionTypes.ADJ_NEG
+                            )
                             qty_in = diff if diff > 0 else Decimal('0.0')
                             qty_out = -diff if diff < 0 else Decimal('0.0')
-                            
+
                             StockLedger.objects.create(
                                 product=product,
                                 tx_type=tx_type,
@@ -525,13 +544,31 @@ class ProductImportView(LoginRequiredMixin, ERPPermissionRequiredMixin, View):
                                 remarks='Import stock update',
                                 user=request.user
                             )
-                            # Update Cache
-                            product.current_stock = qty
-                            product.save(update_fields=['current_stock'])
+                            stock_adjusted_count += 1
+
+                        # Always set cache to Excel value — this IS the new stock count
+                        product.current_stock = qty
+                        product.save(update_fields=['current_stock'])
                     except Exception as ex:
-                        pass # Ignore invalid stock values
+                        # Capture the error with product context so the user knows what failed
+                        stock_errors.append(f"{name}: {str(ex)}")
                         
-            messages.success(request, f"Import successful: {created_count} created, {updated_count} updated, {deleted_count} deleted.")
+            summary = f"Import successful: {created_count} created, {updated_count} updated, {deleted_count} deleted, {stock_adjusted_count} stock adjustments made."
+            messages.success(request, summary)
+
+            if not_found_ids:
+                messages.warning(
+                    request,
+                    f"{len(not_found_ids)} product(s) in the file were not found in the database and were skipped: "
+                    + ", ".join(not_found_ids)
+                )
+
+            if stock_errors:
+                messages.warning(
+                    request,
+                    f"{len(stock_errors)} stock adjustment(s) failed: " + "; ".join(stock_errors)
+                )
+
             return redirect('product_list')
         except Exception as e:
             messages.error(request, f"Error processing file: {str(e)}")

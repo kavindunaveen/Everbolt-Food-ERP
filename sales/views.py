@@ -1795,8 +1795,16 @@ class DeliveryNoteCreateView(LoginRequiredMixin, ERPPermissionRequiredMixin, Cre
                     invoiced_quantity=item.quantity,  # hard cap — never exceed this
                 )
 
-            # Deduct stock instantly upon DN creation
-            deduct_dn_stock(self.object, self.request.user)
+            # Deduct stock — if insufficient, show a friendly error back on the form
+            try:
+                deduct_dn_stock(self.object, self.request.user)
+            except ValueError as e:
+                # Roll back the DN that was just saved so it doesn't leave a ghost record
+                self.object.delete()
+                # Add the stock error as a non-field error so it renders on the form
+                from django.core.exceptions import ValidationError
+                form.add_error(None, str(e))
+                return self.form_invalid(form)
 
             messages.success(self.request, f"Delivery Note {self.object.dn_number} created successfully. Stock has been deducted.")
 
@@ -1930,6 +1938,10 @@ def update_dn_status(request, pk):
             )
             
             messages.success(request, f"Status of {dn.dn_number} updated to {dn.get_status_display()}.")
+    next_url = request.POST.get('next') or request.GET.get('next')
+    # Only allow redirecting to safe internal paths (no open-redirect)
+    if next_url and next_url.startswith('/'):
+        return redirect(next_url)
     return redirect('delivery_note_list')
 
 
