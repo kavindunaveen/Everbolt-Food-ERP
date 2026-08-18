@@ -1,63 +1,240 @@
 {% extends 'layouts/base.html' %}
+{% load humanize %}
 
 {% block title %}Stock Ledger | ERP System{% endblock %}
 
 {% block content %}
 <div class="px-4 py-6 sm:px-0">
-    <div class="flex justify-between items-center mb-6">
-        <h1 class="text-2xl font-bold text-gray-900 border-b-4 border-blue-500 inline-block pb-1">Stock Ledger (Transaction History)</h1>
-        <div class="flex space-x-2">
-             <a href="{% url 'stock_summary' %}" class="bg-gray-100 hover:bg-gray-200 border border-gray-300 rounded-md px-4 py-2 text-gray-700 text-sm font-medium">Back to Summary</a>
-        </div>
-    </div>
 
-    <!-- Filter (Simulated) -->
-    <div class="bg-gray-50 p-4 rounded-lg mb-4 border border-gray-200">
-        <form method="get" class="flex gap-4 items-end">
-            <div class="flex-grow">
-                <label class="block text-xs font-semibold text-gray-500 uppercase mb-1">Filter by Product ID</label>
-                <input type="text" name="product" value="{{ request.GET.product }}" placeholder="e.g. EFPR-0001" class="w-full px-3 py-2 border border-gray-300 rounded focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
-            </div>
-            <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded text-sm font-medium">Filter</button>
-            <a href="{% url 'stock_ledger' %}" class="px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-900">Clear</a>
-        </form>
+  <!-- Header -->
+  <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+    <div>
+      <h1 class="text-3xl font-extrabold text-gray-900 tracking-tight">Stock Ledger</h1>
+      <p class="text-sm text-gray-500 mt-1">Full transaction history for all inventory movements.</p>
     </div>
+    <div class="flex items-center gap-3 flex-wrap">
+      <a href="{% url 'stock_summary' %}" class="inline-flex items-center px-4 py-2 border border-gray-200 text-sm font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50 hover:text-indigo-600 hover:border-indigo-200 transition-all shadow-sm">
+        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+        Stock Summary
+      </a>
+      <a href="{% url 'stock_ledger_export' %}?{{ request.GET.urlencode }}" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-lg text-white bg-emerald-600 hover:bg-emerald-700 transition-all shadow-md">
+        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+        Export Excel
+      </a>
+    </div>
+  </div>
 
-    <div class="bg-white shadow-sm rounded-lg border border-gray-200 overflow-hidden">
-        <div class="overflow-x-auto">
-            <table class="min-w-full divide-y divide-gray-200">
-                <thead class="bg-gray-50">
-                    <tr>
-                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date / Time</th>
-                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Product</th>
-                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Reference</th>
-                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tx Type</th>
-                        <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider text-green-600">IN (+)</th>
-                        <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider text-red-600">OUT (-)</th>
-                    </tr>
-                </thead>
-                <tbody class="bg-white divide-y divide-gray-200">
-                    {% for entry in entries %}
-                    <tr class="hover:bg-gray-50 transition-colors">
-                        <td class="px-6 py-4 whitespace-nowrap text-xs text-gray-500">{{ entry.date|date:"Y-m-d H:i" }}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{{ entry.product.name }}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-blue-600">
-                            <span class="font-bold">[{{ entry.reference_type }}]</span> {{ entry.reference_number }}
-                            {% if entry.remarks %}<div class="text-[10px] text-gray-400 mt-1">{{ entry.remarks }}</div>{% endif %}
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-xs text-gray-500">{{ entry.get_tx_type_display }}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-green-600 text-right font-bold">{% if entry.qty_in > 0 %}+{{ entry.qty_in }}{% else %}-{% endif %}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-red-600 text-right font-bold">{% if entry.qty_out > 0 %}-{{ entry.qty_out }}{% else %}-{% endif %}</td>
-                    </tr>
-                    {% empty %}
-                    <tr>
-                        <td colspan="6" class="px-6 py-10 text-center text-gray-500">No ledger entries found.</td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-        {% include 'partials/pagination.html' %}
+  <!-- KPI Cards -->
+  <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+    <div class="bg-white rounded-2xl border border-emerald-100 shadow-sm p-5">
+      <p class="text-[10px] font-bold text-emerald-500 uppercase tracking-widest mb-1">Total IN</p>
+      <p class="text-2xl font-extrabold text-emerald-600">+{{ kpi_in|floatformat:"0"|intcomma }}</p>
+      <p class="text-[10px] text-gray-400 mt-1">Units received / produced</p>
     </div>
+    <div class="bg-white rounded-2xl border border-red-100 shadow-sm p-5">
+      <p class="text-[10px] font-bold text-red-400 uppercase tracking-widest mb-1">Total OUT</p>
+      <p class="text-2xl font-extrabold text-red-500">-{{ kpi_out|floatformat:"0"|intcomma }}</p>
+      <p class="text-[10px] text-gray-400 mt-1">Units dispatched / consumed</p>
+    </div>
+    <div class="bg-white rounded-2xl border border-indigo-100 shadow-sm p-5">
+      <p class="text-[10px] font-bold text-indigo-500 uppercase tracking-widest mb-1">Net Movement</p>
+      <p class="text-2xl font-extrabold {% if kpi_net >= 0 %}text-indigo-600{% else %}text-red-600{% endif %}">
+        {% if kpi_net >= 0 %}+{% endif %}{{ kpi_net|floatformat:"0"|intcomma }}
+      </p>
+      <p class="text-[10px] text-gray-400 mt-1">IN minus OUT</p>
+    </div>
+    <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+      <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Entries</p>
+      <p class="text-2xl font-extrabold text-gray-900">{{ kpi_count|intcomma }}</p>
+      <p class="text-[10px] text-gray-400 mt-1">Matching current filters</p>
+    </div>
+  </div>
+
+  <!-- Filters -->
+  <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 mb-5">
+    <form method="get" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 items-end">
+      <div class="lg:col-span-2 relative">
+        <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Search Product / Reference</label>
+        <input type="text" name="q" id="searchInput" value="{{ request.GET.q }}" autocomplete="off" placeholder="Product name, ID, or reference #..." class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-indigo-500 focus:border-indigo-500">
+        <div id="searchResults" class="absolute z-10 w-full bg-white border border-gray-100 rounded-lg shadow-xl mt-1 hidden max-h-60 overflow-y-auto divide-y divide-gray-50"></div>
+      </div>
+      <div>
+        <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Transaction Type</label>
+        <select name="tx_type" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-indigo-500 focus:border-indigo-500">
+          <option value="">All Types</option>
+          {% for val, label in tx_type_choices %}
+          <option value="{{ val }}" {% if request.GET.tx_type == val %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div>
+        <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Date From</label>
+        <input type="date" name="date_from" value="{{ request.GET.date_from }}" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-indigo-500 focus:border-indigo-500">
+      </div>
+      <div>
+        <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Date To</label>
+        <input type="date" name="date_to" value="{{ request.GET.date_to }}" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-indigo-500 focus:border-indigo-500">
+      </div>
+      <div class="flex gap-2 lg:col-span-5">
+        <button type="submit" class="px-5 py-2 bg-indigo-600 text-white text-sm font-bold rounded-lg hover:bg-indigo-700 transition-all">Apply Filters</button>
+        <a href="{% url 'stock_ledger' %}" class="px-5 py-2 bg-gray-100 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-200 transition-all">Clear</a>
+      </div>
+    </form>
+  </div>
+
+  <!-- Table -->
+  <div class="bg-white shadow-sm rounded-2xl border border-gray-100 overflow-hidden">
+    <div class="overflow-x-auto overflow-y-auto max-h-[65vh]">
+      <table class="min-w-full divide-y divide-gray-100">
+        <thead class="bg-gray-50/60">
+          <tr>
+            <th class="px-5 py-3 text-left text-[11px] font-bold text-gray-400 uppercase tracking-widest">Date / Time</th>
+            <th class="px-5 py-3 text-left text-[11px] font-bold text-gray-400 uppercase tracking-widest">Product</th>
+            <th class="px-5 py-3 text-left text-[11px] font-bold text-gray-400 uppercase tracking-widest">Tx Type</th>
+            <th class="px-5 py-3 text-left text-[11px] font-bold text-gray-400 uppercase tracking-widest">Reference</th>
+            <th class="px-5 py-3 text-right text-[11px] font-bold text-emerald-500 uppercase tracking-widest">IN (+)</th>
+            <th class="px-5 py-3 text-right text-[11px] font-bold text-red-400 uppercase tracking-widest">OUT (−)</th>
+            <th class="px-5 py-3 text-left text-[11px] font-bold text-gray-400 uppercase tracking-widest">By</th>
+          </tr>
+        </thead>
+        <tbody class="bg-white divide-y divide-gray-50">
+          {% for entry in entries %}
+          <tr class="hover:bg-gray-50 transition-colors">
+            <td class="px-5 py-3 whitespace-nowrap">
+              <div class="text-xs font-bold text-gray-700">{{ entry.date|date:"d M Y" }}</div>
+              <div class="text-[11px] text-gray-400">{{ entry.date|date:"H:i:s" }}</div>
+            </td>
+            <td class="px-5 py-3 whitespace-nowrap">
+              <div class="text-sm font-semibold text-gray-900">{{ entry.product.name|truncatechars:40 }}</div>
+              <div class="text-[11px] text-gray-400 font-mono">{{ entry.product.product_id }}</div>
+            </td>
+            <td class="px-5 py-3 whitespace-nowrap">
+              <span class="px-2 py-1 text-[10px] font-extrabold rounded-md uppercase tracking-wider
+                {% if entry.tx_type == 'SALES_ISS' %}bg-red-100 text-red-700
+                {% elif entry.tx_type == 'SALES_RET' %}bg-emerald-100 text-emerald-700
+                {% elif entry.tx_type == 'PROD_OUT' %}bg-emerald-100 text-emerald-700
+                {% elif entry.tx_type == 'PROD_CONS' %}bg-amber-100 text-amber-700
+                {% elif entry.tx_type == 'GRN' %}bg-blue-100 text-blue-700
+                {% elif entry.tx_type == 'ADJ_POS' %}bg-indigo-100 text-indigo-700
+                {% elif entry.tx_type == 'ADJ_NEG' %}bg-orange-100 text-orange-700
+                {% elif entry.tx_type == 'OPENING' %}bg-purple-100 text-purple-700
+                {% else %}bg-gray-100 text-gray-600{% endif %}">
+                {{ entry.get_tx_type_display }}
+              </span>
+            </td>
+            <td class="px-5 py-3 whitespace-nowrap">
+              <div class="text-xs font-bold text-indigo-600">{{ entry.reference_number }}</div>
+              <div class="text-[11px] text-gray-400">{{ entry.reference_type }}</div>
+              {% if entry.remarks %}<div class="text-[10px] text-gray-400 mt-0.5 max-w-xs truncate" title="{{ entry.remarks }}">{{ entry.remarks }}</div>{% endif %}
+            </td>
+            <td class="px-5 py-3 whitespace-nowrap text-right">
+              {% if entry.qty_in > 0 %}
+              <span class="text-sm font-extrabold text-emerald-600">+{{ entry.qty_in|floatformat:"-3"|intcomma }}</span>
+              {% else %}
+              <span class="text-gray-300">—</span>
+              {% endif %}
+            </td>
+            <td class="px-5 py-3 whitespace-nowrap text-right">
+              {% if entry.qty_out > 0 %}
+              <span class="text-sm font-extrabold text-red-500">-{{ entry.qty_out|floatformat:"-3"|intcomma }}</span>
+              {% else %}
+              <span class="text-gray-300">—</span>
+              {% endif %}
+            </td>
+            <td class="px-5 py-3 whitespace-nowrap">
+              {% if entry.user %}
+              <span class="text-xs text-gray-500" title="{{ entry.user.get_full_name }}">{{ entry.user.get_full_name|truncatechars:15 }}</span>
+              {% else %}
+              <span class="text-gray-300 text-xs">System</span>
+              {% endif %}
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="7" class="px-6 py-16 text-center">
+              <p class="text-gray-400 font-medium">No ledger entries match your filters.</p>
+              <a href="{% url 'stock_ledger' %}" class="text-indigo-600 text-sm font-bold mt-2 inline-block">Clear filters</a>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% if is_paginated %}
+    <div class="px-6 py-4 bg-gray-50/50 border-t border-gray-100">
+      {% include 'partials/pagination.html' %}
+    </div>
+    {% endif %}
+  </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const searchInput = document.getElementById('searchInput');
+    const searchResults = document.getElementById('searchResults');
+    let searchTimeout;
+
+    if (!searchInput) return;
+
+    searchInput.addEventListener('input', (e) => {
+        clearTimeout(searchTimeout);
+        const q = e.target.value.trim();
+        
+        if (q.length < 2) {
+            searchResults.style.display = 'none';
+            return;
+        }
+
+        searchTimeout = setTimeout(async () => {
+            try {
+                const response = await fetch(`/dashboard/api/product-search/?all=true&q=${encodeURIComponent(q)}`);
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.results && data.results.length > 0) {
+                        let html = '';
+                        data.results.forEach(p => {
+                            html += `
+                                <div class="px-4 py-2 hover:bg-indigo-50 cursor-pointer transition-colors" onclick="selectProduct('${escapeHtml(p.product_id)}')">
+                                    <div class="text-sm font-bold text-gray-800">${escapeHtml(p.name)}</div>
+                                    <div class="text-[10px] text-gray-400 font-mono">${escapeHtml(p.product_id)} &bull; ${escapeHtml(p.category)}</div>
+                                </div>
+                            `;
+                        });
+                        searchResults.innerHTML = html;
+                        searchResults.style.display = 'block';
+                    } else {
+                        searchResults.innerHTML = '<div class="px-4 py-3 text-sm text-gray-500 text-center">No products found</div>';
+                        searchResults.style.display = 'block';
+                    }
+                }
+            } catch (err) {
+                console.error('Search failed', err);
+            }
+        }, 300);
+    });
+
+    document.addEventListener('click', (e) => {
+        if (searchResults && !searchInput.contains(e.target) && !searchResults.contains(e.target)) {
+            searchResults.style.display = 'none';
+        }
+    });
+});
+
+function escapeHtml(text) {
+    if (!text) return '';
+    return text.toString()
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+}
+
+function selectProduct(productId) {
+    const searchInput = document.getElementById('searchInput');
+    searchInput.value = productId;
+    document.getElementById('searchResults').style.display = 'none';
+    searchInput.closest('form').submit();
+}
+</script>
 {% endblock %}

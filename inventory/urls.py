@@ -24,7 +24,9 @@ urlpatterns = [
     
     # Reports
     path('stock-summary/', views.StockSummaryView.as_view(), name='stock_summary'),
+    path('stock-summary/export/', views.StockSummaryExportView.as_view(), name='stock_summary_export'),
     path('stock-ledger/', views.StockLedgerView.as_view(), name='stock_ledger'),
+    path('stock-ledger/export/', views.StockLedgerExportView.as_view(), name='stock_ledger_export'),
     
     # Perpetual Count
     path('perpetual-counts/', views.PerpetualCountListView.as_view(), name='perpetual_count_list'),

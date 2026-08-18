@@ -235,8 +235,8 @@ and trusted globally.{% endblock %}
         justify-content: center;
         padding: 0 20px;
         transition: all 0.3s ease;
-        opacity: 0.5;
-        filter: grayscale(100%);
+        opacity: 1;
+        filter: none;
         flex-shrink: 0;
     }
 
@@ -247,8 +247,6 @@ and trusted globally.{% endblock %}
     }
 
     .marquee-logo:hover {
-        opacity: 1;
-        filter: grayscale(0%);
         transform: scale(1.05);
     }
 
@@ -1523,14 +1521,15 @@ and trusted globally.{% endblock %}
 
 <!-- TRUSTED BY CAROUSEL -->
 <div class="trusted-by">
-    <h4>Trusted By Sri Lanka's Finest Hotels</h4>
+    <h4>Trusted By Sri Lanka's Finest Hotels and Corporates</h4>
     <div class="marquee-container">
         <div class="marquee-content">
             <!-- First set of logos -->
+            <div class="marquee-logo"><img src="{% static 'images/clients/cargills.png' %}" alt="Cargills"></div>
             <div class="marquee-logo"><img src="{% static 'images/clients/barn_house.jpg' %}"
                     alt="The Barn House Studio"></div>
             <div class="marquee-logo"><img src="{% static 'images/clients/cafe_keku.jpg' %}" alt="Cafe Keku"></div>
-            <div class="marquee-logo"><img src="{% static 'images/clients/grindlays.jpg' %}" alt="Grindlays Regency">
+            <div class="marquee-logo"><img src="{% static 'images/clients/grindlays.png' %}" alt="Grindlays Regency">
             </div>
             <div class="marquee-logo"><img src="{% static 'images/clients/chola.jpg' %}" alt="Chola Restaurants"></div>
             <div class="marquee-logo"><img src="{% static 'images/clients/avenue.png' %}" alt="The Avenue Colombo">
@@ -1542,10 +1541,11 @@ and trusted globally.{% endblock %}
                     alt="The Ocean Colombo"></div>
 
             <!-- Duplicate for seamless loop -->
+            <div class="marquee-logo"><img src="{% static 'images/clients/cargills.png' %}" alt="Cargills"></div>
             <div class="marquee-logo"><img src="{% static 'images/clients/barn_house.jpg' %}"
                     alt="The Barn House Studio"></div>
             <div class="marquee-logo"><img src="{% static 'images/clients/cafe_keku.jpg' %}" alt="Cafe Keku"></div>
-            <div class="marquee-logo"><img src="{% static 'images/clients/grindlays.jpg' %}" alt="Grindlays Regency">
+            <div class="marquee-logo"><img src="{% static 'images/clients/grindlays.png' %}" alt="Grindlays Regency">
             </div>
             <div class="marquee-logo"><img src="{% static 'images/clients/chola.jpg' %}" alt="Chola Restaurants"></div>
             <div class="marquee-logo"><img src="{% static 'images/clients/avenue.png' %}" alt="The Avenue Colombo">

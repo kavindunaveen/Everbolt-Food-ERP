@@ -1,5 +1,5 @@
 from django.shortcuts import render, redirect, get_object_or_404
-from django.db.models import Q, Sum
+from django.db.models import Q, Sum, F, ExpressionWrapper, DecimalField, Value, Case, When
 from django.urls import reverse_lazy
 from django.contrib import messages
 from django.views.generic import ListView, CreateView, UpdateView, DeleteView, DetailView, View
@@ -14,6 +14,13 @@ from .models import Product, StockAdjustment, StockLedger, PerpetualCount, Perpe
 from .forms import ProductForm, StockAdjustmentForm
 import json
 from .services import confirm_stock_adjustment, cancel_stock_adjustment
+try:
+    import openpyxl
+    from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
+    from openpyxl.utils import get_column_letter
+    OPENPYXL_AVAILABLE = True
+except ImportError:
+    OPENPYXL_AVAILABLE = False
 
 class ProductDetailAPIView(LoginRequiredMixin, View):
     def get(self, request, pk, *args, **kwargs):
@@ -636,30 +643,311 @@ def cancel_adjustment_view(request, pk):
     return redirect('adjustment_list')
 
 # Inventory Reports/Views
+# ─────────────────────────────────────────────────────────────────────────────
+# STOCK SUMMARY
+# ─────────────────────────────────────────────────────────────────────────────
+
+def _apply_stock_summary_filters(qs, request):
+    """Shared filter logic for StockSummaryView and StockSummaryExportView."""
+    q = request.GET.get('q', '').strip()
+    if q:
+        qs = qs.filter(Q(name__icontains=q) | Q(product_id__icontains=q))
+
+    category = request.GET.get('category', '').strip()
+    if category:
+        qs = qs.filter(category=category)
+
+    inv_class = request.GET.get('inv_class', '').strip()
+    if inv_class:
+        qs = qs.filter(inventory_class=inv_class)
+
+    stock_status = request.GET.get('stock_status', '').strip()
+    if stock_status == 'out':
+        qs = qs.filter(current_stock__lte=0)
+    elif stock_status == 'low':
+        qs = qs.filter(current_stock__gt=0, current_stock__lte=F('reorder_level'))
+    elif stock_status == 'ok':
+        qs = qs.filter(current_stock__gt=F('reorder_level'))
+
+    return qs
+
+
 class StockSummaryView(LoginRequiredMixin, ERPPermissionRequiredMixin, ListView):
     model = Product
     template_name = 'inventory/stock_summary.html'
     context_object_name = 'products'
-    paginate_by = 20
+    paginate_by = 25
     permission_required = 'inventory.view_product'
 
     def get_queryset(self):
-        return Product.objects.filter(track_stock=True, status=True)
+        qs = Product.objects.filter(track_stock=True).select_related().order_by('category', 'name')
+        return _apply_stock_summary_filters(qs, self.request)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        # KPI aggregates over the FULL filtered set (not just current page)
+        full_qs = self.get_queryset()
+        total = full_qs.count()
+        out_of_stock = full_qs.filter(current_stock__lte=0).count()
+        low_stock = full_qs.filter(current_stock__gt=0, current_stock__lte=F('reorder_level')).count()
+        stock_value = full_qs.aggregate(
+            val=Sum(ExpressionWrapper(F('current_stock') * F('selling_price'), output_field=DecimalField()))
+        )['val'] or Decimal('0.00')
+        context['kpi_total'] = total
+        context['kpi_out'] = out_of_stock
+        context['kpi_low'] = low_stock
+        context['kpi_ok'] = total - out_of_stock - low_stock
+        context['kpi_value'] = stock_value
+        context['categories'] = Product.CategoryChoices.choices
+        context['inv_classes'] = Product.InventoryClasses.choices
+        return context
+
+
+class StockSummaryExportView(LoginRequiredMixin, ERPPermissionRequiredMixin, View):
+    permission_required = 'inventory.view_product'
+
+    def get(self, request, *args, **kwargs):
+        qs = Product.objects.filter(track_stock=True).select_related().order_by('category', 'name')
+        qs = _apply_stock_summary_filters(qs, request)
+
+        wb = openpyxl.Workbook()
+        ws = wb.active
+        ws.title = 'Stock Summary'
+
+        # Styles
+        header_fill = PatternFill('solid', fgColor='1E3A5F')
+        header_font = Font(color='FFFFFF', bold=True, size=10)
+        border = Border(
+            left=Side(style='thin', color='D0D7DE'),
+            right=Side(style='thin', color='D0D7DE'),
+            top=Side(style='thin', color='D0D7DE'),
+            bottom=Side(style='thin', color='D0D7DE'),
+        )
+        red_fill = PatternFill('solid', fgColor='FEE2E2')
+        orange_fill = PatternFill('solid', fgColor='FEF3C7')
+        green_fill = PatternFill('solid', fgColor='D1FAE5')
+
+        headers = [
+            'Product ID', 'Product Name', 'Category', 'Brand',
+            'Inventory Class', 'Production Type', 'Stock Unit',
+            'Current Stock', 'Reorder Level', 'Min Stock',
+            'Selling Price (Ex-VAT)', 'Stock Value (Ex-VAT)', 'Status'
+        ]
+        ws.append(headers)
+        for col_idx, _ in enumerate(headers, 1):
+            cell = ws.cell(row=1, column=col_idx)
+            cell.fill = header_fill
+            cell.font = header_font
+            cell.alignment = Alignment(horizontal='center', vertical='center')
+            cell.border = border
+        ws.row_dimensions[1].height = 20
+
+        for row_num, p in enumerate(qs, 2):
+            if p.current_stock <= 0:
+                status = 'Out of Stock'
+                row_fill = red_fill
+            elif p.current_stock <= p.reorder_level:
+                status = 'Low Stock'
+                row_fill = orange_fill
+            else:
+                status = 'In Stock'
+                row_fill = green_fill
+
+            stock_value = (p.current_stock * p.selling_price).quantize(Decimal('0.01'))
+
+            row_data = [
+                p.product_id, p.name, p.get_category_display(), p.get_brand_display(),
+                p.get_inventory_class_display(), p.get_product_type_display(),
+                p.get_stock_unit_display(),
+                float(p.current_stock), float(p.reorder_level), float(p.minimum_stock),
+                float(p.selling_price), float(stock_value), status
+            ]
+            ws.append(row_data)
+            for col_idx in range(1, len(headers) + 1):
+                cell = ws.cell(row=row_num, column=col_idx)
+                cell.border = border
+                cell.alignment = Alignment(vertical='center')
+                if col_idx in (8, 9, 10, 11, 12):
+                    cell.alignment = Alignment(horizontal='right', vertical='center')
+                    cell.number_format = '#,##0.000'
+                if col_idx in (11, 12):
+                    cell.number_format = '#,##0.00'
+                if col_idx == 13:
+                    cell.fill = row_fill
+                    cell.font = Font(bold=True)
+
+        # Column widths
+        col_widths = [14, 45, 18, 12, 18, 22, 12, 16, 14, 12, 20, 20, 14]
+        for i, w in enumerate(col_widths, 1):
+            ws.column_dimensions[get_column_letter(i)].width = w
+
+        # Freeze header
+        ws.freeze_panes = 'A2'
+
+        buf = io.BytesIO()
+        wb.save(buf)
+        buf.seek(0)
+        response = HttpResponse(
+            buf.read(),
+            content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        )
+        from django.utils import timezone
+        ts = timezone.now().strftime('%Y%m%d_%H%M')
+        response['Content-Disposition'] = f'attachment; filename="stock_summary_{ts}.xlsx"'
+        return response
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# STOCK LEDGER
+# ─────────────────────────────────────────────────────────────────────────────
+
+def _apply_ledger_filters(qs, request):
+    """Shared filter logic for StockLedgerView and StockLedgerExportView."""
+    q = request.GET.get('q', '').strip()
+    if q:
+        qs = qs.filter(
+            Q(product__product_id__icontains=q) |
+            Q(product__name__icontains=q) |
+            Q(reference_number__icontains=q)
+        )
+
+    tx_type = request.GET.get('tx_type', '').strip()
+    if tx_type:
+        qs = qs.filter(tx_type=tx_type)
+
+    date_from = request.GET.get('date_from', '').strip()
+    if date_from:
+        qs = qs.filter(date__date__gte=date_from)
+
+    date_to = request.GET.get('date_to', '').strip()
+    if date_to:
+        qs = qs.filter(date__date__lte=date_to)
+
+    return qs
+
 
 class StockLedgerView(LoginRequiredMixin, ERPPermissionRequiredMixin, ListView):
     model = StockLedger
     template_name = 'inventory/stock_ledger.html'
     context_object_name = 'entries'
-    paginate_by = 20
+    paginate_by = 30
     ordering = ['-date']
     permission_required = 'inventory.view_product'
 
     def get_queryset(self):
-        qs = super().get_queryset()
-        query = self.request.GET.get('product')
-        if query:
-            qs = qs.filter(
-                Q(product__product_id__icontains=query) | 
-                Q(product__name__icontains=query)
-            )
-        return qs
+        qs = super().get_queryset().select_related('product', 'user')
+        return _apply_ledger_filters(qs, self.request)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        full_qs = self.get_queryset()
+        agg = full_qs.aggregate(
+            total_in=Sum('qty_in'),
+            total_out=Sum('qty_out'),
+            count=Sum(Value(1))
+        )
+        total_in = agg['total_in'] or Decimal('0')
+        total_out = agg['total_out'] or Decimal('0')
+        context['kpi_in'] = total_in
+        context['kpi_out'] = total_out
+        context['kpi_net'] = total_in - total_out
+        context['kpi_count'] = full_qs.count()
+        context['tx_type_choices'] = StockLedger.TransactionTypes.choices
+        return context
+
+
+class StockLedgerExportView(LoginRequiredMixin, ERPPermissionRequiredMixin, View):
+    permission_required = 'inventory.view_product'
+
+    def get(self, request, *args, **kwargs):
+        qs = StockLedger.objects.select_related('product', 'user').order_by('-date')
+        qs = _apply_ledger_filters(qs, request)
+
+        # Limit to 10,000 rows for safety
+        qs = qs[:10000]
+
+        wb = openpyxl.Workbook()
+        ws = wb.active
+        ws.title = 'Stock Ledger'
+
+        header_fill = PatternFill('solid', fgColor='1E3A5F')
+        header_font = Font(color='FFFFFF', bold=True, size=10)
+        border = Border(
+            left=Side(style='thin', color='D0D7DE'),
+            right=Side(style='thin', color='D0D7DE'),
+            top=Side(style='thin', color='D0D7DE'),
+            bottom=Side(style='thin', color='D0D7DE'),
+        )
+
+        TX_COLORS = {
+            'OPENING':  'EDE9FE',
+            'GRN':      'D1FAE5',
+            'PROD_CONS':'FEF3C7',
+            'PROD_OUT': 'D1FAE5',
+            'SALES_ISS':'FEE2E2',
+            'SALES_RET':'D1FAE5',
+            'PURC_RET': 'D1FAE5',
+            'ADJ_POS':  'DBEAFE',
+            'ADJ_NEG':  'FEE2E2',
+        }
+
+        headers = [
+            'Date', 'Time', 'Product ID', 'Product Name',
+            'Transaction Type', 'Reference Type', 'Reference Number',
+            'IN (+)', 'OUT (-)', 'Remarks', 'User'
+        ]
+        ws.append(headers)
+        for col_idx, _ in enumerate(headers, 1):
+            cell = ws.cell(row=1, column=col_idx)
+            cell.fill = header_fill
+            cell.font = header_font
+            cell.alignment = Alignment(horizontal='center', vertical='center')
+            cell.border = border
+        ws.row_dimensions[1].height = 20
+
+        for row_num, e in enumerate(qs, 2):
+            row_fill = PatternFill('solid', fgColor=TX_COLORS.get(e.tx_type, 'FFFFFF'))
+            row_data = [
+                e.date.strftime('%Y-%m-%d'),
+                e.date.strftime('%H:%M:%S'),
+                e.product.product_id,
+                e.product.name,
+                e.get_tx_type_display(),
+                e.reference_type,
+                e.reference_number,
+                float(e.qty_in) if e.qty_in else 0,
+                float(e.qty_out) if e.qty_out else 0,
+                e.remarks or '',
+                e.user.get_full_name() if e.user else ''
+            ]
+            ws.append(row_data)
+            for col_idx in range(1, len(headers) + 1):
+                cell = ws.cell(row=row_num, column=col_idx)
+                cell.border = border
+                cell.fill = row_fill
+                cell.alignment = Alignment(vertical='center')
+                if col_idx in (8, 9):
+                    cell.alignment = Alignment(horizontal='right', vertical='center')
+                    cell.number_format = '#,##0.000'
+                    if col_idx == 8 and float(e.qty_in or 0) > 0:
+                        cell.font = Font(color='15803D', bold=True)
+                    elif col_idx == 9 and float(e.qty_out or 0) > 0:
+                        cell.font = Font(color='B91C1C', bold=True)
+
+        col_widths = [12, 10, 16, 45, 26, 16, 24, 14, 14, 40, 20]
+        for i, w in enumerate(col_widths, 1):
+            ws.column_dimensions[get_column_letter(i)].width = w
+
+        ws.freeze_panes = 'A2'
+
+        buf = io.BytesIO()
+        wb.save(buf)
+        buf.seek(0)
+        response = HttpResponse(
+            buf.read(),
+            content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        )
+        from django.utils import timezone
+        ts = timezone.now().strftime('%Y%m%d_%H%M')
+        response['Content-Disposition'] = f'attachment; filename="stock_ledger_{ts}.xlsx"'
+        return response
