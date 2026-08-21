@@ -27,6 +27,11 @@ class QuotationItemForm(forms.ModelForm):
             'discount': forms.NumberInput(attrs={'class': 'w-full px-2 py-2 border border-gray-300 rounded-md text-right font-bold text-sm hide-arrows', 'step': '0.01'}),
         }
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if 'product' in self.fields:
+            self.fields['product'].queryset = self.fields['product'].queryset.filter(status=True)
+
     def clean(self):
         cleaned_data = super().clean()
         product = cleaned_data.get('product')
@@ -68,6 +73,11 @@ class InvoiceItemForm(forms.ModelForm):
             'discount_type': forms.HiddenInput(),
             'discount': forms.NumberInput(attrs={'class': 'w-full px-2 py-2 border border-gray-300 rounded-md text-right font-bold text-sm hide-arrows', 'step': '0.01'}),
         }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if 'product' in self.fields:
+            self.fields['product'].queryset = self.fields['product'].queryset.filter(status=True)
 
     def clean(self):
         cleaned_data = super().clean()
@@ -146,6 +156,11 @@ class ReturnItemForm(forms.ModelForm):
             'condition': forms.Select(attrs={'class': 'w-full px-2 py-2 border border-gray-300 rounded-md text-sm'}),
         }
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if 'product' in self.fields:
+            self.fields['product'].queryset = self.fields['product'].queryset.filter(status=True)
+
 ReturnItemFormSet = inlineformset_factory(
     Return, ReturnItem, form=ReturnItemForm,
     extra=1, can_delete=True
@@ -171,6 +186,11 @@ class CreditNoteItemForm(forms.ModelForm):
             'unit_price': forms.NumberInput(attrs={'class': 'w-full px-2 py-2 border rounded-md text-sm', 'step': '0.01'}),
             'credit_amount': forms.NumberInput(attrs={'class': 'w-full px-2 py-2 border rounded-md text-sm', 'step': '0.01'}),
         }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if 'product' in self.fields:
+            self.fields['product'].queryset = self.fields['product'].queryset.filter(status=True)
 
 CreditNoteItemFormSet = inlineformset_factory(
     CreditNote, CreditNoteItem, form=CreditNoteItemForm,

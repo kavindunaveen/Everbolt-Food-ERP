@@ -34,6 +34,11 @@ class GRNItemForm(forms.ModelForm):
             'expiry': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
         }
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if 'product' in self.fields:
+            self.fields['product'].queryset = self.fields['product'].queryset.filter(status=True)
+
 GRNItemFormSet = inlineformset_factory(
     GRN, GRNItem, form=GRNItemForm,
     extra=1, can_delete=True
