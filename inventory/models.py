@@ -109,6 +109,12 @@ class Product(models.Model):
         if not self.product_id or self.product_id.startswith('PRD_'):
             if self.inventory_class == self.InventoryClasses.RAW:
                 prefix = 'RAW'
+            elif self.inventory_class == self.InventoryClasses.PACKAGING:
+                prefix = 'PKG'
+            elif self.inventory_class == self.InventoryClasses.CONSUMABLE:
+                prefix = 'CON'
+            elif self.inventory_class == self.InventoryClasses.SEMI_FINISHED:
+                prefix = 'SFP'
             else:
                 prefix = 'EF'
                 if self.category:
