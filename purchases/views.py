@@ -325,7 +325,7 @@ def purchase_order_create(request, po_type='raw'):
             'products': list(sup.products.values_list('id', flat=True))
         })
         
-    all_products = list(Product.objects.all().values('id', 'product_id', 'name', 'stock_unit', 'inventory_class'))
+    all_products = list(Product.objects.filter(status=True).values('id', 'product_id', 'name', 'stock_unit', 'inventory_class'))
 
     return render(request, 'purchases/po_form.html', {
         'po_type': actual_type,
@@ -421,7 +421,7 @@ def purchase_order_edit(request, pk):
             'products': list(sup.products.values_list('id', flat=True))
         })
         
-    all_products = list(Product.objects.all().values('id', 'product_id', 'name', 'stock_unit', 'inventory_class'))
+    all_products = list(Product.objects.filter(status=True).values('id', 'product_id', 'name', 'stock_unit', 'inventory_class'))
 
     context = {
         'po': po,

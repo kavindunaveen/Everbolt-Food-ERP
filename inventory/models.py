@@ -107,18 +107,21 @@ class Product(models.Model):
         
         # Generate Product ID if not exists or if it's a temporary one
         if not self.product_id or self.product_id.startswith('PRD_'):
-            prefix = 'EF'
-            if self.category:
-                cat_name = self.category.upper()
-                CATEGORY_PREFIX_MAP = {
-                    'SPICES': 'EFSP',
-                    'TEA': 'EFTE',
-                    'KITHUL': 'EFKT',
-                    'CONFECTIONERY': 'EFCN',
-                    'DRIED FRUITS': 'EFDF',
-                    'DRIED VEGETABLES': 'EFDV',
-                }
-                prefix = CATEGORY_PREFIX_MAP.get(cat_name, f"EF{cat_name[:2].upper()}")
+            if self.inventory_class == self.InventoryClasses.RAW:
+                prefix = 'RAW'
+            else:
+                prefix = 'EF'
+                if self.category:
+                    cat_name = self.category.upper()
+                    CATEGORY_PREFIX_MAP = {
+                        'SPICES': 'EFSP',
+                        'TEA': 'EFTE',
+                        'KITHUL': 'EFKT',
+                        'CONFECTIONERY': 'EFCN',
+                        'DRIED FRUITS': 'EFDF',
+                        'DRIED VEGETABLES': 'EFDV',
+                    }
+                    prefix = CATEGORY_PREFIX_MAP.get(cat_name, f"EF{cat_name[:2].upper()}")
             
             # Find the last sequence for this prefix
             last_product = Product.objects.filter(product_id__startswith=f"{prefix}-").order_by('-product_id').first()

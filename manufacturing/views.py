@@ -112,7 +112,7 @@ class ProductionCreateView(LoginRequiredMixin, ERPPermissionRequiredMixin, Creat
         else:
             data['materials'] = ProductionMaterialFormSet(prefix='materials')
             data['outputs'] = ProductionOutputFormSet(prefix='outputs')
-        data['all_products'] = Product.objects.all()
+        data['all_products'] = Product.objects.filter(status=True)
         return data
 
     def form_valid(self, form):
@@ -149,7 +149,7 @@ class ProductionUpdateView(LoginRequiredMixin, ERPPermissionRequiredMixin, Updat
         else:
             data['materials'] = ProductionMaterialFormSet(instance=self.object, prefix='materials')
             data['outputs'] = ProductionOutputFormSet(instance=self.object, prefix='outputs')
-        data['all_products'] = Product.objects.all()
+        data['all_products'] = Product.objects.filter(status=True)
         return data
 
     def form_valid(self, form):

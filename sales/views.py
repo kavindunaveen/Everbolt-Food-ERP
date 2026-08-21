@@ -1620,7 +1620,7 @@ def customer_search_ajax(request):
 def product_search_ajax(request):
     """API endpoint for Select2 AJAX product search."""
     q = request.GET.get('q', '')
-    products = Product.objects.filter(
+    products = Product.objects.filter(status=True).filter(
         Q(name__icontains=q) | 
         Q(product_id__icontains=q)
     )[:20]

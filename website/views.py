@@ -41,7 +41,7 @@ def website_dashboard(request):
 
     # Products not yet listed on the website
     listed_ids = WebsiteProduct.objects.values_list('inventory_product_id', flat=True)
-    unlisted_count = Product.objects.exclude(pk__in=listed_ids).count()
+    unlisted_count = Product.objects.filter(status=True).exclude(pk__in=listed_ids).count()
 
     context = {
         'total_products': total_products,
@@ -117,7 +117,7 @@ class WebsiteProductCreateView(LoginRequiredMixin, CreateView):
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
         listed_ids = WebsiteProduct.objects.values_list('inventory_product_id', flat=True)
-        ctx['unlisted_products'] = Product.objects.exclude(pk__in=listed_ids).order_by('category', 'name')
+        ctx['unlisted_products'] = Product.objects.filter(status=True).exclude(pk__in=listed_ids).order_by('category', 'name')
         if self.request.POST:
             ctx['variant_formset'] = VariantFormSet(self.request.POST)
         else:

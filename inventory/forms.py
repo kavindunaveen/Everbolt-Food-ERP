@@ -53,7 +53,7 @@ class StockAdjustmentForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         if 'product' in self.fields:
-            self.fields['product'].queryset = Product.objects.filter(track_stock=True)
+            self.fields['product'].queryset = Product.objects.filter(track_stock=True, status=True)
             
         for field_name, field in self.fields.items():
             if not getattr(field.widget, 'input_type', '') == 'checkbox':

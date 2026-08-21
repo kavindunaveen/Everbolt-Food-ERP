@@ -351,7 +351,7 @@ def generate_products_excel(products=None, is_template=False):
 
 @login_required
 def export_all_products(request):
-    products = Product.objects.all()
+    products = Product.objects.filter(status=True)
     q = request.GET.get('q')
     category = request.GET.get('category')
     if q:
@@ -680,7 +680,7 @@ class StockSummaryView(LoginRequiredMixin, ERPPermissionRequiredMixin, ListView)
     permission_required = 'inventory.view_product'
 
     def get_queryset(self):
-        qs = Product.objects.filter(track_stock=True).select_related().order_by('category', 'name')
+        qs = Product.objects.filter(track_stock=True, status=True).select_related().order_by('category', 'name')
         return _apply_stock_summary_filters(qs, self.request)
 
     def get_context_data(self, **kwargs):
@@ -707,7 +707,7 @@ class StockSummaryExportView(LoginRequiredMixin, ERPPermissionRequiredMixin, Vie
     permission_required = 'inventory.view_product'
 
     def get(self, request, *args, **kwargs):
-        qs = Product.objects.filter(track_stock=True).select_related().order_by('category', 'name')
+        qs = Product.objects.filter(track_stock=True, status=True).select_related().order_by('category', 'name')
         qs = _apply_stock_summary_filters(qs, request)
 
         wb = openpyxl.Workbook()

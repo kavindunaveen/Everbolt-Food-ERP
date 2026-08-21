@@ -76,9 +76,9 @@ class WebsiteProductForm(forms.ModelForm):
         # For edit forms, show all products; for create, show only unlisted
         if not self.instance.pk:
             listed_ids = WebsiteProduct.objects.values_list('inventory_product_id', flat=True)
-            self.fields['inventory_product'].queryset = Product.objects.exclude(pk__in=listed_ids).order_by('category', 'name')
+            self.fields['inventory_product'].queryset = Product.objects.filter(status=True).exclude(pk__in=listed_ids).order_by('category', 'name')
         else:
-            self.fields['inventory_product'].queryset = Product.objects.order_by('category', 'name')
+            self.fields['inventory_product'].queryset = Product.objects.filter(status=True).order_by('category', 'name')
 
 
 class WebsitePageForm(forms.ModelForm):
