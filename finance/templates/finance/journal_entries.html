@@ -37,7 +37,7 @@
             </thead>
             <tbody class="bg-white divide-y divide-gray-200">
                 {% for entry in entries %}
-                <tr class="hover:bg-gray-50 cursor-pointer" onclick="alert('View entry logic here')">
+                <tr class="hover:bg-gray-50">
                     <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-indigo-600">JE-{{ entry.id }}</td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ entry.date|date:"Y-m-d" }}</td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ entry.reference|default:"-" }}</td>
