@@ -481,7 +481,7 @@ def approve_credit_note(credit_note, user):
             CustomerCredit.objects.create(
                 customer=credit_note.customer,
                 original_amount=remaining_credit,
-                current_balance=remaining_credit,
+                remaining_amount=remaining_credit,
                 notes=f"Overpayment/Credit from Credit Note {credit_note.credit_note_number}"
             )
             
