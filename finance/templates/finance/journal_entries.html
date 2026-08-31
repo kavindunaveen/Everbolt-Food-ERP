@@ -39,7 +39,7 @@
             </thead>
             <tbody class="bg-white divide-y divide-gray-200">
                 {% for entry in entries %}
-                <tr class="hover:bg-gray-50 cursor-pointer" onclick="window.location.href='{% url \'finance_journal_entry_detail\' entry.id %}'">
+                <tr class="hover:bg-gray-50 cursor-pointer" onclick="window.location.href='{% url 'finance_journal_entry_detail' entry.id %}'">
                     <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-indigo-600">JE-{{ entry.id }}</td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ entry.date|date:"Y-m-d" }}</td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ entry.reference|default:"-" }}</td>
