@@ -885,6 +885,12 @@ class JournalEntryListView(LoginRequiredMixin, PermissionRequiredMixin, ListView
     context_object_name = 'entries'
     paginate_by = 50
     
+    def get_queryset(self):
+        from django.db.models import Sum
+        return super().get_queryset().annotate(
+            total_amount=Sum('lines__debit')
+        )
+    
     def get(self, request, *args, **kwargs):
         if request.GET.get('export') == 'xlsx':
             import openpyxl
@@ -929,6 +935,17 @@ class JournalEntryListView(LoginRequiredMixin, PermissionRequiredMixin, ListView
             
         return super().get(request, *args, **kwargs)
 
+class JournalEntryDetailView(LoginRequiredMixin, PermissionRequiredMixin, DetailView):
+    permission_required = 'finance.manage_finance'
+    template_name = 'finance/journal_entry_detail.html'
+    model = JournalEntry
+    context_object_name = 'entry'
+
+    def get_queryset(self):
+        from django.db.models import Sum
+        return super().get_queryset().prefetch_related('lines__account').annotate(
+            total_amount=Sum('lines__debit')
+        )
 class JournalEntryCreateView(LoginRequiredMixin, PermissionRequiredMixin, View):
     permission_required = 'finance.manage_finance'
     template_name = 'finance/journal_entry_form.html'
