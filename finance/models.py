@@ -19,6 +19,7 @@ class Payment(models.Model):
         BANK_TRANSFER = 'BANK_TRANSFER', 'Bank Transfer'
         CHEQUE = 'CHEQUE', 'Cheque'
         CARD = 'CARD', 'Credit/Debit Card'
+        CREDIT_NOTE = 'CREDIT_NOTE', 'Credit Note'
         OTHER = 'OTHER', 'Other'
 
     invoice = models.ForeignKey(Invoice, on_delete=models.CASCADE, related_name='payments')

@@ -384,10 +384,20 @@ class ReturnItem(models.Model):
 
 
 class CreditNote(models.Model):
+    class Status(models.TextChoices):
+        DRAFT = 'DRAFT', 'Draft'
+        PENDING_APPROVAL = 'PENDING_APPROVAL', 'Pending Approval'
+        APPROVED = 'APPROVED', 'Approved'
+        REJECTED = 'REJECTED', 'Rejected'
+
     credit_note_number = models.CharField(max_length=50, unique=True, blank=True)
     return_record = models.OneToOneField(Return, on_delete=models.PROTECT, related_name='credit_note')
     original_invoice = models.ForeignKey(Invoice, on_delete=models.PROTECT, related_name='credit_notes')
     customer = models.ForeignKey('crm.Customer', on_delete=models.PROTECT)
+
+    status = models.CharField(max_length=20, choices=Status.choices, default=Status.DRAFT)
+    designated_approver = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name='credit_notes_to_approve')
+    rejection_reason = models.TextField(blank=True, null=True)
 
     issued_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True)
     issued_date = models.DateTimeField(auto_now_add=True)
@@ -401,8 +411,9 @@ class CreditNote(models.Model):
     def total_credit_with_tax(self):
         from decimal import Decimal
         total = self.total_credit_amount
-        if self.original_invoice and self.original_invoice.tax_amount > 0:
-            return total + (total * Decimal('0.18'))
+        if self.original_invoice and self.original_invoice.tax_amount > 0 and self.original_invoice.subtotal_amount > 0:
+            tax_rate = self.original_invoice.tax_amount / self.original_invoice.subtotal_amount
+            return total + (total * tax_rate)
         return total
 
     def save(self, *args, **kwargs):

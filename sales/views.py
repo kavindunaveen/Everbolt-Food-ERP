@@ -11,10 +11,11 @@ from django.db import transaction
 from django.utils import timezone
 from django.db.models import Sum, F
 from decimal import Decimal, ROUND_UP, ROUND_HALF_UP
-from .models import Quotation, Invoice, DeliveryNote, DeliveryNoteItem, SalesAuditLog, Return, CreditNote
+from .models import Quotation, Invoice, DeliveryNote, DeliveryNoteItem, SalesAuditLog, Return, CreditNote, CreditNoteItem
 from .forms import QuotationForm, QuotationItemFormSet, InvoiceForm, InvoiceItemFormSet, DeliveryNoteForm
 from .services import (
     issue_invoice, cancel_invoice, send_invoice_approval_email, process_return,
+    submit_credit_note_for_approval, approve_credit_note, reject_credit_note,
     deduct_dn_stock, restore_dn_stock, log_sales_event, update_stock_reserves
 )
 from users.models import SavedFilter
@@ -2048,14 +2049,13 @@ def return_create_view(request, invoice_pk):
                         formset.instance = ret
                         formset.save()
 
-                        # Immediately process: restore stock + generate credit note
-                        credit_note = process_return(ret, request.user)
+                        # Immediately process: restore stock only (no credit note)
+                        process_return(ret, request.user)
                         messages.success(
                             request,
-                            f"Return {ret.return_number} processed. Stock restored. "
-                            f"Credit Note {credit_note.credit_note_number} issued (Rs {credit_note.total_credit_amount})."
+                            f"Return {ret.return_number} processed. Stock restored."
                         )
-                        return redirect('credit_note_list')
+                        return redirect('return_list')
                     except Exception as e:
                         messages.error(request, f"Error processing return: {e}")
                         # If error occurs, we should technically delete the Return we just saved, but atomic tx in process_return will handle partials. If it failed before process_return, we might have an orphaned Return.
@@ -2365,3 +2365,97 @@ class DeliveryNoteExportView(LoginRequiredMixin, ERPPermissionRequiredMixin, Vie
         response['Content-Disposition'] = 'attachment; filename="delivery_notes.xlsx"'
         wb.save(response)
         return response
+
+@login_required
+@permission_required('sales.add_creditnote', raise_exception=True)
+def credit_note_create_view(request, return_pk):
+    return_obj = get_object_or_404(Return, pk=return_pk)
+    
+    if hasattr(return_obj, 'credit_note'):
+        messages.error(request, "A Credit Note already exists for this Return.")
+        return redirect('return_list')
+        
+    if not return_obj.stock_updated:
+        messages.error(request, "This return has not been processed yet.")
+        return redirect('return_list')
+
+    if request.method == 'POST':
+        form = CreditNoteForm(request.POST)
+        if form.is_valid():
+            try:
+                with transaction.atomic():
+                    cn = form.save(commit=False)
+                    cn.return_record = return_obj
+                    cn.original_invoice = return_obj.original_invoice
+                    cn.customer = return_obj.original_invoice.customer
+                    cn.issued_by = request.user
+                    cn.save()
+
+                    # Copy items
+                    for return_item in return_obj.items.all():
+                        CreditNoteItem.objects.create(
+                            credit_note=cn,
+                            product=return_item.product,
+                            quantity=return_item.quantity,
+                            unit_price=return_item.unit_price,
+                            credit_amount=return_item.credit_value
+                        )
+
+                    submit_credit_note_for_approval(cn, request)
+                    messages.success(request, f"Credit Note {cn.credit_note_number} created and submitted for approval.")
+                    return redirect('credit_note_list')
+            except Exception as e:
+                import traceback
+                traceback.print_exc()
+                import logging
+                logging.error(f"EXCEPTION ENCOUNTERED in credit_note_create_view: {e}")
+                messages.error(request, f"Error creating credit note: {e}")
+        else:
+            import logging
+            logging.error(f"FORM INVALID in credit_note_create_view: {form.errors}")
+            messages.error(request, f"Form validation failed. Please check the fields below. Errors: {form.errors}")
+    else:
+        form = CreditNoteForm()
+        
+    return render(request, 'sales/credit_note_create.html', {
+        'form': form,
+        'return_obj': return_obj
+    })
+
+@login_required
+def credit_note_approve_view(request, pk):
+    cn = get_object_or_404(CreditNote, pk=pk)
+    if request.user != cn.designated_approver and not request.user.is_superuser and not (hasattr(request.user, 'role') and request.user.role and request.user.role.name == 'Administrator'):
+        messages.error(request, "You are not authorized to approve this Credit Note.")
+        return redirect('credit_note_list')
+        
+    if request.method == 'POST':
+        try:
+            approve_credit_note(cn, request.user)
+            messages.success(request, f"Credit Note {cn.credit_note_number} has been approved.")
+        except Exception as e:
+            messages.error(request, f"Error approving Credit Note: {e}")
+        return redirect('credit_note_list')
+    return redirect('credit_note_list')
+
+@login_required
+def credit_note_reject_view(request, pk):
+    cn = get_object_or_404(CreditNote, pk=pk)
+    if request.user != cn.designated_approver and not request.user.is_superuser and not (hasattr(request.user, 'role') and request.user.role and request.user.role.name == 'Administrator'):
+        messages.error(request, "You are not authorized to reject this Credit Note.")
+        return redirect('credit_note_list')
+        
+    if request.method == 'POST':
+        from .forms import CreditNoteRejectForm
+        form = CreditNoteRejectForm(request.POST, instance=cn)
+        if form.is_valid():
+            try:
+                reason = form.cleaned_data.get('rejection_reason')
+                reject_credit_note(cn, request.user, reason)
+                messages.success(request, f"Credit Note {cn.credit_note_number} has been rejected.")
+            except Exception as e:
+                messages.error(request, f"Error rejecting Credit Note: {e}")
+        else:
+            messages.error(request, "Rejection reason is required.")
+        return redirect('credit_note_list')
+    return redirect('credit_note_list')

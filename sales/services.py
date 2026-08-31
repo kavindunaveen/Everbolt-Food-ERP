@@ -300,28 +300,15 @@ def process_return(return_obj, user):
       1. Restores stock to inventory via StockLedger (SALES_RET) for all items.
       2. Updates Product.current_stock cache.
       3. Marks Return.stock_updated = True.
-      4. Generates a CreditNote and CreditNoteItems automatically.
-      5. Marks Return.credit_note_issued = True.
     """
     if return_obj.stock_updated:
         raise ValueError(f"Return {return_obj.return_number} has already been processed.")
 
-    from .models import CreditNoteItem
-
     with transaction.atomic():
-        # 1. Create Credit Note header
-        credit_note = CreditNote.objects.create(
-            return_record=return_obj,
-            original_invoice=return_obj.original_invoice,
-            customer=return_obj.original_invoice.customer,
-            issued_by=user,
-            notes=f"Auto-generated for return {return_obj.return_number}."
-        )
-
         total_credit_value = 0
         items_summary = []
 
-        # 2. Loop through ReturnItems
+        # Loop through ReturnItems
         for return_item in return_obj.items.all():
             product = Product.objects.select_for_update().get(pk=return_item.product.pk)
             qty = return_item.quantity
@@ -372,23 +359,13 @@ def process_return(return_obj, user):
                 from inventory.services import check_and_notify_stock_levels
                 check_and_notify_stock_levels(product)
 
-            # Generate Credit Note Item
-            CreditNoteItem.objects.create(
-                credit_note=credit_note,
-                product=product,
-                quantity=qty,
-                unit_price=return_item.unit_price,
-                credit_amount=credit_amount
-            )
-
-        # 3. Mark return as processed
+        # Mark return as processed
         return_obj.stock_updated = True
-        return_obj.credit_note_issued = True
-        return_obj.save(update_fields=['stock_updated', 'credit_note_issued'])
+        return_obj.save(update_fields=['stock_updated'])
 
         items_str = ", ".join(items_summary)
         
-        # 4. Audit log
+        # Audit log
         log_sales_event(
             obj=return_obj.original_invoice,
             user=user,
@@ -396,9 +373,173 @@ def process_return(return_obj, user):
             new_value=return_obj.return_number,
             notes=(
                 f"Returned items: {items_str}. "
-                f"Stock restored. Credit Note {credit_note.credit_note_number} issued. "
-                f"Total Credit Value: Rs {total_credit_value}."
+                f"Stock restored. Credit Note is pending creation. "
+                f"Total Return Value: Rs {total_credit_value}."
             ),
         )
 
-    return credit_note
+    return return_obj
+
+def submit_credit_note_for_approval(credit_note, request):
+    """
+    Submits a credit note for approval, notifying the designated approver.
+    """
+    from users.models import Notification
+    from django.core.mail import send_mail
+    from django.conf import settings
+    
+    credit_note.status = 'PENDING_APPROVAL'
+    credit_note.save(update_fields=['status'])
+    
+    if credit_note.designated_approver:
+        # Create In-App Notification
+        Notification.objects.create(
+            recipient=credit_note.designated_approver,
+            notification_type='approval_required',
+            title=f"Credit Note Approval: {credit_note.credit_note_number}",
+            message=f"Credit Note {credit_note.credit_note_number} for {credit_note.customer.customer_name} (Rs {credit_note.total_credit_with_tax}) needs approval.",
+            link="/sales/credit-notes/",
+        )
+        
+        # Email
+        if credit_note.designated_approver.email:
+            subject = f"Credit Note Approval Required: {credit_note.credit_note_number}"
+            url = request.build_absolute_uri(f"/sales/credit-notes/")
+            message = (
+                f"Hello,\n\n"
+                f"A new credit note ({credit_note.credit_note_number}) has been drafted by {credit_note.issued_by.get_full_name() or credit_note.issued_by.username} "
+                f"for customer '{credit_note.customer.customer_name}' and requires your approval.\n\n"
+                f"Credit Note Total (with tax): Rs {credit_note.total_credit_with_tax}\n\n"
+                f"Please log in to the system to approve or reject this credit note:\n{url}\n\n"
+                f"Thank you,\nEverbolt ERP System"
+            )
+            try:
+                send_mail(
+                    subject=subject,
+                    message=message,
+                    from_email=settings.DEFAULT_FROM_EMAIL if hasattr(settings, 'DEFAULT_FROM_EMAIL') else 'noreply@everbolt.com',
+                    recipient_list=[credit_note.designated_approver.email],
+                    fail_silently=True,
+                )
+            except Exception as e:
+                print(f"Failed to send email notification: {str(e)}")
+
+def approve_credit_note(credit_note, user):
+    """
+    Approves a credit note.
+    Applies the credit amount as a payment to the original invoice if it has an unpaid balance.
+    Any remaining credit (or the full amount if invoice is paid) is saved as CustomerCredit.
+    """
+    from finance.models import Payment, CustomerCredit
+    from decimal import Decimal
+    from django.utils import timezone
+    
+    if credit_note.status != 'PENDING_APPROVAL':
+        raise ValueError("Only Pending credit notes can be approved.")
+
+    with transaction.atomic():
+        credit_note.status = 'APPROVED'
+        credit_note.save(update_fields=['status'])
+        
+        invoice = credit_note.original_invoice
+        total_credit = credit_note.total_credit_with_tax
+        
+        # Calculate unpaid invoice balance
+        from django.db.models import Sum
+        from django.db.models.functions import Coalesce
+        total_paid = invoice.payments.aggregate(
+            t=Coalesce(Sum('amount'), Decimal('0.00'))
+        )['t']
+        
+        unpaid_balance = invoice.total_amount - total_paid
+        if unpaid_balance < Decimal('0.00'):
+            unpaid_balance = Decimal('0.00')
+            
+        applied_to_invoice = Decimal('0.00')
+        remaining_credit = total_credit
+        
+        if unpaid_balance > Decimal('0.00'):
+            applied_to_invoice = min(unpaid_balance, total_credit)
+            remaining_credit = total_credit - applied_to_invoice
+            
+            # Create a Payment to offset the invoice balance
+            Payment.objects.create(
+                invoice=invoice,
+                amount=applied_to_invoice,
+                payment_date=timezone.now().date(),
+                payment_method='CREDIT_NOTE',
+                reference_number=credit_note.credit_note_number,
+                notes=f"Auto-applied from Credit Note {credit_note.credit_note_number}",
+                recorded_by=user,
+                reconciliation_status='RECONCILED',
+                reconciled_by=user,
+                reconciled_at=timezone.now()
+            )
+            
+        if remaining_credit > Decimal('0.00'):
+            # Create CustomerCredit for the remainder
+            CustomerCredit.objects.create(
+                customer=credit_note.customer,
+                original_amount=remaining_credit,
+                current_balance=remaining_credit,
+                notes=f"Overpayment/Credit from Credit Note {credit_note.credit_note_number}"
+            )
+            
+        # Update return status
+        credit_note.return_record.credit_note_issued = True
+        credit_note.return_record.save(update_fields=['credit_note_issued'])
+        
+        log_sales_event(
+            obj=credit_note.original_invoice,
+            user=user,
+            action="Credit Note Approved",
+            new_value=credit_note.credit_note_number,
+            notes=(
+                f"Credit Note {credit_note.credit_note_number} approved. "
+                f"Total: Rs {total_credit}. "
+                f"Applied to Invoice: Rs {applied_to_invoice}. "
+                f"Customer Credit: Rs {remaining_credit}."
+            ),
+        )
+        
+        # Notify creator
+        if credit_note.issued_by:
+            from users.models import Notification
+            Notification.objects.create(
+                recipient=credit_note.issued_by,
+                notification_type='approval_required',
+                title=f"Credit Note Approved: {credit_note.credit_note_number}",
+                message=f"Your Credit Note {credit_note.credit_note_number} was approved by {user.username}.",
+                link="/sales/credit-notes/",
+            )
+
+def reject_credit_note(credit_note, user, reason):
+    """
+    Rejects a credit note.
+    """
+    if credit_note.status != 'PENDING_APPROVAL':
+        raise ValueError("Only Pending credit notes can be rejected.")
+        
+    with transaction.atomic():
+        credit_note.status = 'REJECTED'
+        credit_note.rejection_reason = reason
+        credit_note.save(update_fields=['status', 'rejection_reason'])
+        
+        log_sales_event(
+            obj=credit_note.original_invoice,
+            user=user,
+            action="Credit Note Rejected",
+            new_value=credit_note.credit_note_number,
+            notes=f"Credit Note {credit_note.credit_note_number} rejected. Reason: {reason}",
+        )
+        
+        # Notify creator
+        if credit_note.issued_by:
+            from users.models import Notification
+            Notification.objects.create(
+                recipient=credit_note.issued_by,
+                notification_type='approval_required',
+                title=f"Credit Note Rejected: {credit_note.credit_note_number}",
+                message=f"Your Credit Note {credit_note.credit_note_number} was rejected by {user.username}. Reason: {reason}",
+                link="/sales/credit-notes/",
+            )

@@ -107,7 +107,7 @@
                 <strong>&#9432; What happens on submit:</strong>
                 <ul class="list-disc ml-5 mt-1 space-y-1">
                     <li>Stock is immediately restored to inventory for all listed products.</li>
-                    <li>A single Credit Note is automatically generated encompassing all returned items.</li>
+                    <li>The return is logged as Processed, allowing Accounts to issue a Credit Note against it later.</li>
                     <li>The audit log on the original invoice is updated.</li>
                 </ul>
             </div>
@@ -115,7 +115,7 @@
             <div class="flex justify-end gap-3">
                 <a href="{% url 'invoice_list' %}" class="px-5 py-2 text-sm font-semibold text-gray-600 bg-white border border-gray-300 rounded-lg hover:bg-gray-50">Cancel</a>
                 <button type="submit" class="px-6 py-2 text-sm font-bold text-white bg-emerald-600 rounded-lg hover:bg-emerald-700 shadow-md">
-                    Process Return &amp; Issue Credit Note
+                    Process Return
                 </button>
             </div>
         </form>

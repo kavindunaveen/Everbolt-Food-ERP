@@ -47,8 +47,11 @@ urlpatterns = [
     # Returns & Credit Notes
     path('sales/returns/', views.ReturnListView.as_view(), name='return_list'),
     path('sales/invoices/<int:invoice_pk>/return/', views.return_create_view, name='return_create'),
+    path('sales/returns/<int:return_pk>/credit-note/create/', views.credit_note_create_view, name='credit_note_create'),
     path('sales/credit-notes/', views.CreditNoteListView.as_view(), name='credit_note_list'),
     path('sales/credit-notes/<int:pk>/edit/', views.CreditNoteUpdateView.as_view(), name='credit_note_edit'),
+    path('sales/credit-notes/<int:pk>/approve/', views.credit_note_approve_view, name='credit_note_approve'),
+    path('sales/credit-notes/<int:pk>/reject/', views.credit_note_reject_view, name='credit_note_reject'),
     path('sales/credit-notes/<int:pk>/print/', views.credit_note_print_view, name='credit_note_print'),
 
     # Tools

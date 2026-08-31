@@ -72,10 +72,22 @@
                         <td class="px-6 py-4 text-sm text-gray-500">{{ ret.created_date|date:"M d, Y" }}</td>
                         <td class="px-6 py-4 text-center">
                             {% if ret.credit_note_issued %}
-                            <a href="{% url 'credit_note_print' ret.credit_note.pk %}" target="_blank"
-                               class="text-xs font-bold text-blue-600 hover:underline">{{ ret.credit_note.credit_note_number }}</a>
+                                {% if ret.credit_note %}
+                                <a href="{% url 'credit_note_print' ret.credit_note.pk %}" target="_blank"
+                                   class="text-xs font-bold text-blue-600 hover:underline">{{ ret.credit_note.credit_note_number }}</a>
+                                {% else %}
+                                <span class="text-xs text-gray-400">Issued</span>
+                                {% endif %}
+                            {% elif ret.stock_updated %}
+                                {% if perms.sales.add_creditnote %}
+                                <a href="{% url 'credit_note_create' ret.pk %}" class="inline-flex items-center px-2 py-1 bg-emerald-600 text-white text-[10px] font-bold rounded hover:bg-emerald-700 transition-colors">
+                                    Create CN
+                                </a>
+                                {% else %}
+                                <span class="text-xs text-gray-400">Pending CN</span>
+                                {% endif %}
                             {% else %}
-                            <span class="text-xs text-gray-400">—</span>
+                                <span class="text-xs text-gray-400">—</span>
                             {% endif %}
                         </td>
                     </tr>

@@ -171,9 +171,31 @@ from .models import CreditNote, CreditNoteItem
 class CreditNoteForm(forms.ModelForm):
     class Meta:
         model = CreditNote
-        fields = ['notes']
+        fields = ['notes', 'designated_approver']
         widgets = {
             'notes': forms.Textarea(attrs={'class': 'w-full px-3 py-2 border rounded-md', 'rows': 3}),
+            'designated_approver': forms.Select(attrs={'class': 'w-full px-3 py-2 border rounded-md select2'}),
+        }
+        
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        from django.contrib.auth import get_user_model
+        from django.db.models import Q
+        User = get_user_model()
+        # Limit approvers to admins/managers or people with approve_creditnote permission
+        # Using same logic as invoice approver
+        self.fields['designated_approver'].queryset = User.objects.filter(
+            Q(is_superuser=True) | 
+            Q(role__name='Administrator') | 
+            Q(user_permissions__codename='approve_invoice') # Re-using invoice approve permission or we could check for 'approve_creditnote' if it existed, we'll just check for admins for now
+        ).filter(is_active=True).distinct()
+
+class CreditNoteRejectForm(forms.ModelForm):
+    class Meta:
+        model = CreditNote
+        fields = ['rejection_reason']
+        widgets = {
+            'rejection_reason': forms.Textarea(attrs={'class': 'w-full px-3 py-2 border rounded-md', 'rows': 3, 'required': True}),
         }
 
 class CreditNoteItemForm(forms.ModelForm):
