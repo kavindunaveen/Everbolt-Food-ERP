@@ -36,11 +36,11 @@ class MatrixPermissionMixin:
             action_map[p.pk] = action
 
         base_actions = ['view', 'add', 'change', 'delete']
-        other_actions = list(set(action_map.values()) - set(base_actions))
-        other_actions.sort()
-        all_actions = base_actions + other_actions
 
-        rows = []
+        apps_dict = {}
+        for app in target_apps:
+            apps_dict[app] = []
+
         for ct in content_types:
             ct_perms = [p for p in all_perms if p.content_type == ct]
             if not ct_perms:
@@ -49,29 +49,49 @@ class MatrixPermissionMixin:
             display_name = ct.name.title()
             row = {
                 'model': display_name,
-                'cols': []
+                'base_perms': [],
+                'custom_perms': []
             }
             
-            for action in all_actions:
+            for action in base_actions:
                 matching_perms = [p for p in ct_perms if action_map[p.pk] == action]
                 if matching_perms:
                     perm = matching_perms[0]
                     checked = perm.pk in user_perms_ids
                     if hasattr(self.instance, 'is_admin') and getattr(self.instance, 'pk', None) and self.instance.is_admin():
                         checked = True
-                    row['cols'].append({
+                    row['base_perms'].append({
                         'pk': perm.pk,
                         'name': perm.name,
                         'checked': checked
                     })
                 else:
-                    row['cols'].append(None)
+                    row['base_perms'].append(None)
                     
-            rows.append(row)
+            # Custom permissions
+            custom_perms = [p for p in ct_perms if action_map[p.pk] not in base_actions]
+            for perm in custom_perms:
+                checked = perm.pk in user_perms_ids
+                if hasattr(self.instance, 'is_admin') and getattr(self.instance, 'pk', None) and self.instance.is_admin():
+                    checked = True
+                row['custom_perms'].append({
+                    'pk': perm.pk,
+                    'name': perm.name,
+                    'action': action_map[perm.pk].replace('_', ' ').title(),
+                    'checked': checked
+                })
+                
+            app_label = ct.app_label
+            if app_label not in apps_dict:
+                apps_dict[app_label] = []
+            apps_dict[app_label].append(row)
             
+        # Clean up empty apps
+        grouped_apps = [{'name': k.title(), 'rows': v} for k, v in apps_dict.items() if v]
+
         return {
-            'headers': [a.replace('_', ' ').title() for a in all_actions],
-            'rows': rows
+            'headers': [a.title() for a in base_actions],
+            'apps': grouped_apps
         }
 
 

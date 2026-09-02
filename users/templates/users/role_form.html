@@ -95,16 +95,27 @@
                             {% for header in form.get_permission_matrix.headers %}
                             <th scope="col" class="px-6 py-4 text-center text-xs font-black text-gray-500 uppercase tracking-wider whitespace-nowrap">{{ header }}</th>
                             {% endfor %}
+                            <th scope="col" class="px-6 py-4 text-left text-xs font-black text-gray-500 uppercase tracking-wider min-w-[250px]">Advanced Access</th>
                         </tr>
                     </thead>
                     <tbody class="bg-white divide-y divide-gray-100">
-                        {% for row in form.get_permission_matrix.rows %}
+                        {% for app in form.get_permission_matrix.apps %}
+                        <!-- App Group Header -->
+                        <tr class="bg-gray-100/50">
+                            <td colspan="6" class="px-6 py-3 text-sm font-black text-gray-800 uppercase tracking-wider border-y border-gray-200">
+                                <div class="flex items-center gap-2">
+                                    <svg class="w-4 h-4 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 002-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
+                                    {{ app.name }} Module
+                                </div>
+                            </td>
+                        </tr>
+                        {% for row in app.rows %}
                         <tr class="hover:bg-gray-50 transition-colors group">
                             <td class="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-900 sticky left-0 bg-white group-hover:bg-gray-50 z-10 shadow-[1px_0_0_0_#f3f4f6] transition-colors flex items-center gap-3">
                                 <input type="checkbox" title="Select all in row" class="w-4 h-4 text-gray-400 bg-gray-100 border-gray-300 rounded focus:ring-0 cursor-pointer" onchange="const row = this.closest('tr'); row.querySelectorAll('.perm-checkbox').forEach(cb => cb.checked = this.checked);">
                                 {{ row.model }}
                             </td>
-                            {% for col in row.cols %}
+                            {% for col in row.base_perms %}
                             <td class="px-6 py-4 whitespace-nowrap text-center">
                                 {% if col %}
                                 <label class="inline-flex items-center cursor-pointer" title="{{ col.name }}">
@@ -115,7 +126,22 @@
                                 {% endif %}
                             </td>
                             {% endfor %}
+                            <td class="px-6 py-4">
+                                {% if row.custom_perms %}
+                                <div class="flex flex-wrap gap-3">
+                                    {% for custom in row.custom_perms %}
+                                    <label class="inline-flex items-center gap-2 cursor-pointer bg-gray-50 hover:bg-gray-100 px-3 py-1.5 rounded-lg border border-gray-200 transition-colors" title="{{ custom.name }}">
+                                        <input type="checkbox" name="permissions" value="{{ custom.pk }}" class="perm-checkbox w-4 h-4 text-red-600 bg-white border-gray-300 rounded focus:ring-red-500 focus:ring-2 cursor-pointer" {% if custom.checked %}checked{% endif %}>
+                                        <span class="text-xs font-bold text-gray-700 whitespace-nowrap">{{ custom.action }}</span>
+                                    </label>
+                                    {% endfor %}
+                                </div>
+                                {% else %}
+                                <span class="text-xs font-medium text-gray-400 italic">No advanced settings</span>
+                                {% endif %}
+                            </td>
                         </tr>
+                        {% endfor %}
                         {% endfor %}
                     </tbody>
                 </table>
