@@ -62,6 +62,12 @@ class InvoiceForm(forms.ModelForm):
             'notes': forms.Textarea(attrs={'class': 'w-full px-3 py-2 border border-gray-300 rounded-md', 'rows': 3}),
         }
 
+    def __init__(self, *args, **kwargs):
+        self.user = kwargs.pop('user', None)
+        super().__init__(*args, **kwargs)
+        if self.user and not self.user.has_perm('sales.edit_discount_invoice'):
+            self.fields['custom_discount_value'].widget.attrs['readonly'] = 'readonly'
+
 class InvoiceItemForm(forms.ModelForm):
     class Meta:
         model = InvoiceItem
@@ -75,9 +81,16 @@ class InvoiceItemForm(forms.ModelForm):
         }
 
     def __init__(self, *args, **kwargs):
+        self.user = kwargs.pop('user', None)
         super().__init__(*args, **kwargs)
         if 'product' in self.fields:
             self.fields['product'].queryset = self.fields['product'].queryset.filter(status=True)
+            
+        if self.user:
+            if not self.user.has_perm('sales.edit_discount_invoice'):
+                self.fields['discount'].widget.attrs['readonly'] = 'readonly'
+            if not self.user.has_perm('sales.edit_price_invoice'):
+                self.fields['unit_price'].widget.attrs['readonly'] = 'readonly'
 
     def clean(self):
         cleaned_data = super().clean()
@@ -187,7 +200,8 @@ class CreditNoteForm(forms.ModelForm):
         self.fields['designated_approver'].queryset = User.objects.filter(
             Q(is_superuser=True) | 
             Q(role__name='Administrator') | 
-            Q(user_permissions__codename='approve_invoice') # Re-using invoice approve permission or we could check for 'approve_creditnote' if it existed, we'll just check for admins for now
+            Q(user_permissions__codename='approve_creditnote') |
+            Q(role__permissions__codename='approve_creditnote')
         ).filter(is_active=True).distinct()
 
 class CreditNoteRejectForm(forms.ModelForm):

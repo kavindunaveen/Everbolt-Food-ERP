@@ -590,12 +590,17 @@ class InvoiceCreateView(LoginRequiredMixin, ERPPermissionRequiredMixin, CreateVi
     success_url = reverse_lazy('invoice_list')
     permission_required = 'sales.add_invoice'
 
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs['user'] = self.request.user
+        return kwargs
+
     def get_context_data(self, **kwargs):
         data = super().get_context_data(**kwargs)
         if self.request.POST:
-            data['items'] = InvoiceItemFormSet(self.request.POST)
+            data['items'] = InvoiceItemFormSet(self.request.POST, form_kwargs={'user': self.request.user})
         else:
-            data['items'] = InvoiceItemFormSet()
+            data['items'] = InvoiceItemFormSet(form_kwargs={'user': self.request.user})
             
         from users.models import User
         import json
@@ -741,12 +746,17 @@ class InvoiceUpdateView(LoginRequiredMixin, ERPPermissionRequiredMixin, UpdateVi
     success_url = reverse_lazy('invoice_list')
     permission_required = 'sales.change_invoice'
 
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs['user'] = self.request.user
+        return kwargs
+
     def get_context_data(self, **kwargs):
         data = super().get_context_data(**kwargs)
         if self.request.POST:
-            data['items'] = InvoiceItemFormSet(self.request.POST, instance=self.object)
+            data['items'] = InvoiceItemFormSet(self.request.POST, instance=self.object, form_kwargs={'user': self.request.user})
         else:
-            data['items'] = InvoiceItemFormSet(instance=self.object)
+            data['items'] = InvoiceItemFormSet(instance=self.object, form_kwargs={'user': self.request.user})
             
         from users.models import User
         import json

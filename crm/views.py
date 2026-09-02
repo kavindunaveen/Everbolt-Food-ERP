@@ -54,6 +54,11 @@ class CustomerCreateView(LoginRequiredMixin, ERPPermissionRequiredMixin, CreateV
     success_url = reverse_lazy('customer_list')
     permission_required = 'crm.add_customer'
 
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs['user'] = self.request.user
+        return kwargs
+
     def form_valid(self, form):
         response = super().form_valid(form)
         CustomerChangeLog.objects.create(
@@ -69,6 +74,11 @@ class CustomerUpdateView(LoginRequiredMixin, ERPPermissionRequiredMixin, UpdateV
     template_name = 'crm/customer_form.html'
     success_url = reverse_lazy('customer_list')
     permission_required = 'crm.change_customer'
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs['user'] = self.request.user
+        return kwargs
 
     def form_valid(self, form):
         if form.has_changed():

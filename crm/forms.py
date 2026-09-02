@@ -9,6 +9,7 @@ class CustomerForm(forms.ModelForm):
         exclude = ['customer_code']
 
     def __init__(self, *args, **kwargs):
+        self.user = kwargs.pop('user', None)
         super().__init__(*args, **kwargs)
         for field_name, field in self.fields.items():
             if not getattr(field.widget, 'input_type', '') == 'checkbox':
@@ -38,7 +39,6 @@ class CustomerForm(forms.ModelForm):
             except Exception:
                 pass  # Fall back to model choices if table not yet created
         
-        # Enforce exact numeric entry on the frontend for Phone
         for field_name in ['phone', 'phone_secondary']:
             if field_name in self.fields:
                 self.fields[field_name].widget.attrs.update({
@@ -46,6 +46,14 @@ class CustomerForm(forms.ModelForm):
                     'title': '10 digit numeric phone number',
                     'oninput': "this.value = this.value.replace(/[^0-9]/g, '').slice(0, 10);"
                 })
+                
+        if self.user:
+            if not self.user.has_perm('crm.edit_credit_limit_customer') and 'credit_limit' in self.fields:
+                self.fields['credit_limit'].widget.attrs['readonly'] = 'readonly'
+            if not self.user.has_perm('crm.edit_payment_terms_customer') and 'payment_terms' in self.fields:
+                # For select widgets, readonly doesn't prevent selection, so we use pointer-events-none or disable
+                self.fields['payment_terms'].widget.attrs['class'] += ' bg-gray-100 pointer-events-none'
+                self.fields['payment_terms'].widget.attrs['readonly'] = 'readonly'
 
     def _clean_phone_field(self, field_name):
         phone = self.cleaned_data.get(field_name, '')

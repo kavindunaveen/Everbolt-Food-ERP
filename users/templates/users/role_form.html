@@ -76,10 +76,14 @@
 
         <!-- Tab: Permissions Matrix -->
         <div x-show="activeTab === 'permissions'" x-cloak class="p-8">
-            <div class="mb-6 flex justify-between items-center">
+            <div class="mb-6 flex justify-between items-center flex-wrap gap-4">
                 <div>
                     <h3 class="text-lg font-bold text-gray-900">Module Access Configuration</h3>
                     <p class="text-sm text-gray-500 font-medium mt-1">Configure which modules this role can access.</p>
+                </div>
+                <div class="flex gap-2">
+                    <button type="button" @click="document.querySelectorAll('.perm-checkbox').forEach(cb => cb.checked = true)" class="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-bold rounded-md transition-colors">Select All</button>
+                    <button type="button" @click="document.querySelectorAll('.perm-checkbox').forEach(cb => cb.checked = false)" class="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-bold rounded-md transition-colors">Clear All</button>
                 </div>
             </div>
             
@@ -96,7 +100,8 @@
                     <tbody class="bg-white divide-y divide-gray-100">
                         {% for row in form.get_permission_matrix.rows %}
                         <tr class="hover:bg-gray-50 transition-colors group">
-                            <td class="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-900 sticky left-0 bg-white group-hover:bg-gray-50 z-10 shadow-[1px_0_0_0_#f3f4f6] transition-colors">
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-900 sticky left-0 bg-white group-hover:bg-gray-50 z-10 shadow-[1px_0_0_0_#f3f4f6] transition-colors flex items-center gap-3">
+                                <input type="checkbox" title="Select all in row" class="w-4 h-4 text-gray-400 bg-gray-100 border-gray-300 rounded focus:ring-0 cursor-pointer" onchange="const row = this.closest('tr'); row.querySelectorAll('.perm-checkbox').forEach(cb => cb.checked = this.checked);">
                                 {{ row.model }}
                             </td>
                             {% for col in row.cols %}

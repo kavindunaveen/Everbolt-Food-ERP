@@ -156,7 +156,9 @@
                 <button type="button" @click="openModal('Reject Edit', '{% url 'invoice_reject' form.instance.pk %}', '{{ form.instance.invoice_number }}', '{{ form.instance.cancellation_reason|escapejs }}')" class="px-4 py-2 bg-white border border-gray-300 text-gray-700 text-sm font-bold rounded-sm hover:bg-gray-50 transition-colors shadow-sm">Reject Edit</button>
             {% elif form.instance.status == 'ISSUED' %}
                 <button type="button" @click="showEditModal = true" class="px-4 py-2 bg-white border border-gray-300 text-gray-700 text-sm font-bold rounded-sm hover:bg-gray-50 transition-colors shadow-sm">Request Edit</button>
+                {% if perms.sales.cancel_invoice %}
                 <button type="button" @click="showCancelModal = true" class="px-4 py-2 bg-white border border-gray-300 text-gray-700 text-sm font-bold rounded-sm hover:bg-gray-50 transition-colors shadow-sm">Request Cancellation</button>
+                {% endif %}
             {% endif %}
             {% if form.instance.pk %}
                 <a href="{% url 'invoice_print' form.instance.pk %}?download=1" target="_blank" class="px-4 py-2 bg-[#714B67] border border-[#5C3A53] text-white text-sm font-bold rounded-sm hover:bg-[#5C3A53] transition-colors shadow-sm flex items-center gap-2">

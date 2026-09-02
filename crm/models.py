@@ -92,6 +92,12 @@ class Customer(models.Model):
     tin_number = models.CharField(max_length=50, blank=True, null=True)
     nic = models.CharField(max_length=20, blank=True, null=True)
 
+    class Meta:
+        permissions = [
+            ("edit_credit_limit_customer", "Can edit customer credit limits"),
+            ("edit_payment_terms_customer", "Can edit customer payment terms"),
+        ]
+
     @property
     def billing_address(self):
         parts = []

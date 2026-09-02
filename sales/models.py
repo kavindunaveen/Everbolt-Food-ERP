@@ -138,6 +138,13 @@ class Invoice(models.Model):
     reviewer_notes = models.TextField(blank=True, null=True, help_text="Notes from the approver/manager")
     cancellation_reason = models.TextField(blank=True, null=True)
 
+    class Meta:
+        permissions = [
+            ("cancel_invoice", "Can cancel invoice"),
+            ("edit_discount_invoice", "Can edit sales discount"),
+            ("edit_price_invoice", "Can edit sales unit price"),
+        ]
+
     def save(self, *args, **kwargs):
         # Only calculate due_date on first creation (when it has never been set).
         # Subsequent saves (status changes, edits, approvals) must NEVER overwrite it
@@ -402,6 +409,11 @@ class CreditNote(models.Model):
     issued_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True)
     issued_date = models.DateTimeField(auto_now_add=True)
     notes = models.TextField(blank=True, null=True)
+
+    class Meta:
+        permissions = [
+            ("approve_creditnote", "Can approve credit notes"),
+        ]
 
     @property
     def total_credit_amount(self):
