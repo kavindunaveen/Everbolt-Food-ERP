@@ -39,23 +39,23 @@
                 <tbody class="bg-white divide-y divide-gray-100">
                     {% for cn in credit_notes %}
                     <tr class="hover:bg-gray-50 transition-colors group">
-                        <td class="px-6 py-4 text-sm font-bold text-blue-600 cursor-pointer group-hover:underline" onclick="window.open('{% url 'credit_note_print' cn.pk %}', '_blank')">{{ cn.credit_note_number }}</td>
-                        <td class="px-6 py-4 text-sm text-gray-700">{{ cn.original_invoice.invoice_number }}</td>
-                        <td class="px-6 py-4 text-sm text-gray-700">{{ cn.customer.customer_name }}</td>
+                        <td class="px-6 py-4 text-sm font-bold text-blue-600 cursor-pointer group-hover:underline whitespace-nowrap" onclick="window.open('{% url 'credit_note_print' cn.pk %}', '_blank')">{{ cn.credit_note_number }}</td>
+                        <td class="px-6 py-4 text-sm text-gray-700 whitespace-nowrap">{{ cn.original_invoice.invoice_number }}</td>
+                        <td class="px-6 py-4 text-sm text-gray-700 whitespace-nowrap">{{ cn.customer.customer_name }}</td>
                         <td class="px-6 py-4 text-sm text-gray-700">
                             {% for item in cn.items.all %}
-                                <div class="mb-1">{{ item.product.name }}</div>
+                                <div class="mb-1 whitespace-nowrap">{{ item.product.name }}</div>
                             {% endfor %}
                         </td>
                         <td class="px-6 py-4 text-sm text-gray-700">
                             {% for item in cn.items.all %}
-                                <div class="mb-1">{{ item.quantity }}</div>
+                                <div class="mb-1 whitespace-nowrap">{{ item.quantity }}</div>
                             {% endfor %}
                         </td>
-                        <td class="px-6 py-4 text-left text-sm font-bold text-gray-900">
+                        <td class="px-6 py-4 text-left text-sm font-bold text-gray-900 whitespace-nowrap">
                             Rs {{ cn.total_credit_with_tax|floatformat:2|intcomma }}
                         </td>
-                        <td class="px-6 py-4 text-left text-sm">
+                        <td class="px-6 py-4 text-left text-sm whitespace-nowrap">
                             {% if cn.status == 'DRAFT' %}
                                 <span class="px-2.5 py-1 text-[10px] font-bold rounded-md bg-gray-100 text-gray-700 uppercase">Draft</span>
                             {% elif cn.status == 'PENDING_APPROVAL' %}
@@ -66,17 +66,17 @@
                                 <span class="px-2.5 py-1 text-[10px] font-bold rounded-md bg-red-100 text-red-700 uppercase">Rejected</span>
                             {% endif %}
                         </td>
-                        <td class="px-6 py-4 text-sm text-gray-600">{% if cn.designated_approver %}{{ cn.designated_approver.get_full_name|default:cn.designated_approver.username }}{% else %}-{% endif %}</td>
-                        <td class="px-6 py-4 text-sm text-gray-600">{% if cn.issued_by %}{{ cn.issued_by.get_full_name|default:cn.issued_by.username }}{% else %}-{% endif %}</td>
-                        <td class="px-6 py-4 text-sm text-gray-500">{{ cn.issued_date|date:"M d, Y" }}</td>
-                        <td class="px-6 py-4 text-center space-x-2">
+                        <td class="px-6 py-4 text-sm text-gray-600 whitespace-nowrap">{% if cn.designated_approver %}{{ cn.designated_approver.get_full_name|default:cn.designated_approver.username }}{% else %}-{% endif %}</td>
+                        <td class="px-6 py-4 text-sm text-gray-600 whitespace-nowrap">{% if cn.issued_by %}{{ cn.issued_by.get_full_name|default:cn.issued_by.username }}{% else %}-{% endif %}</td>
+                        <td class="px-6 py-4 text-sm text-gray-500 whitespace-nowrap">{{ cn.issued_date|date:"M d, Y" }}</td>
+                        <td class="px-6 py-4 text-center space-x-2 whitespace-nowrap">
                             <a href="{% url 'credit_note_print' cn.pk %}" target="_blank"
                                class="text-xs font-bold text-blue-600 hover:underline">Print</a>
                             <a href="{% url 'credit_note_print' cn.pk %}?download=true" target="_blank"
                                class="text-xs font-bold text-gray-600 hover:underline">Download</a>
                         </td>
-                        <td class="px-6 py-4 text-center space-x-2">
-                            {% if cn.status == 'PENDING_APPROVAL' and request.user == cn.designated_approver or request.user.is_superuser or request.user.role.name == 'Administrator' %}
+                        <td class="px-6 py-4 text-center space-x-2 whitespace-nowrap">
+                            {% if cn.status == 'PENDING_APPROVAL' and request.user == cn.designated_approver %}
                                 <button type="button" class="inline-flex items-center px-2.5 py-1.5 border border-transparent text-xs font-medium rounded text-emerald-700 bg-emerald-100 hover:bg-emerald-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 shadow-sm" onclick="showApproveModal({{ cn.pk }})">Approve</button>
                                 <button type="button" class="inline-flex items-center px-2.5 py-1.5 border border-transparent text-xs font-medium rounded text-red-700 bg-red-100 hover:bg-red-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 shadow-sm ml-1" onclick="showRejectModal({{ cn.pk }})">Reject</button>
                             {% elif cn.status == 'REJECTED' %}

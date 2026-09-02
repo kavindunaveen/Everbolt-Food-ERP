@@ -37,40 +37,40 @@
                 <tbody class="bg-white divide-y divide-gray-100">
                     {% for ret in returns %}
                     <tr class="hover:bg-gray-50 transition-colors group">
-                        <td class="px-6 py-4 text-sm font-bold text-emerald-600 cursor-pointer group-hover:underline" onclick="window.location.href='{% url 'invoice_edit' ret.original_invoice.pk %}'">{{ ret.return_number }}</td>
-                        <td class="px-6 py-4 text-sm text-gray-700">{{ ret.original_invoice.invoice_number }}</td>
+                        <td class="px-6 py-4 text-sm font-bold text-emerald-600 cursor-pointer group-hover:underline whitespace-nowrap" onclick="window.location.href='{% url 'invoice_edit' ret.original_invoice.pk %}'">{{ ret.return_number }}</td>
+                        <td class="px-6 py-4 text-sm text-gray-700 whitespace-nowrap">{{ ret.original_invoice.invoice_number }}</td>
                         <td class="px-6 py-4 text-sm text-gray-700">
                             {% for item in ret.items.all %}
-                                <div class="mb-1">{{ item.product.name }}</div>
+                                <div class="mb-1 whitespace-nowrap">{{ item.product.name }}</div>
                             {% endfor %}
                         </td>
                         <td class="px-6 py-4 text-sm text-gray-700">
                             {% for item in ret.items.all %}
-                                <div class="mb-1">{{ item.quantity }}</div>
+                                <div class="mb-1 whitespace-nowrap">{{ item.quantity }}</div>
                             {% endfor %}
                         </td>
-                        <td class="px-6 py-4 text-sm font-semibold text-gray-900">
+                        <td class="px-6 py-4 text-sm font-semibold text-gray-900 whitespace-nowrap">
                             Rs {{ ret.total_credit_value|floatformat:2 }}
                         </td>
                         <td class="px-6 py-4 text-sm text-gray-600">
                             {% for item in ret.items.all %}
-                                <div class="mb-1">{{ item.get_reason_display }}</div>
+                                <div class="mb-1 whitespace-nowrap">{{ item.get_reason_display }}</div>
                             {% endfor %}
                         </td>
                         <td class="px-6 py-4 text-sm text-gray-600">
                             {% for item in ret.items.all %}
-                                <div class="mb-1">{{ item.get_condition_display }}</div>
+                                <div class="mb-1 whitespace-nowrap">{{ item.get_condition_display }}</div>
                             {% endfor %}
                         </td>
-                        <td class="px-6 py-4">
+                        <td class="px-6 py-4 whitespace-nowrap">
                             {% if ret.stock_updated %}
                             <span class="px-2.5 py-1 text-[10px] font-bold rounded-md bg-emerald-100 text-emerald-700 uppercase">Processed</span>
                             {% else %}
                             <span class="px-2.5 py-1 text-[10px] font-bold rounded-md bg-amber-100 text-amber-700 uppercase">Pending</span>
                             {% endif %}
                         </td>
-                        <td class="px-6 py-4 text-sm text-gray-500">{{ ret.created_date|date:"M d, Y" }}</td>
-                        <td class="px-6 py-4 text-center">
+                        <td class="px-6 py-4 text-sm text-gray-500 whitespace-nowrap">{{ ret.created_date|date:"M d, Y" }}</td>
+                        <td class="px-6 py-4 text-center whitespace-nowrap">
                             {% if ret.credit_note_issued %}
                                 {% if ret.credit_note %}
                                 <a href="{% url 'credit_note_print' ret.credit_note.pk %}" target="_blank"
