@@ -451,38 +451,28 @@ def approve_credit_note(credit_note, user):
             t=Coalesce(Sum('amount'), Decimal('0.00'))
         )['t']
         
-        unpaid_balance = invoice.total_amount - total_paid
+        # total_credit_with_tax is a property, so we must sum in python
+        approved_cns = invoice.credit_notes.exclude(pk=credit_note.pk).filter(status='APPROVED')
+        total_prev_credits = sum((c.total_credit_with_tax for c in approved_cns), Decimal('0.00'))
+        
+        unpaid_balance = invoice.total_amount - total_paid - total_prev_credits
         if unpaid_balance < Decimal('0.00'):
             unpaid_balance = Decimal('0.00')
             
-        applied_to_invoice = Decimal('0.00')
         remaining_credit = total_credit
+        applied_to_invoice = Decimal('0.00')
         
         if unpaid_balance > Decimal('0.00'):
             applied_to_invoice = min(unpaid_balance, total_credit)
             remaining_credit = total_credit - applied_to_invoice
             
-            # Create a Payment to offset the invoice balance
-            Payment.objects.create(
-                invoice=invoice,
-                amount=applied_to_invoice,
-                payment_date=timezone.now().date(),
-                payment_method='CREDIT_NOTE',
-                reference_number=credit_note.credit_note_number,
-                notes=f"Auto-applied from Credit Note {credit_note.credit_note_number}",
-                recorded_by=user,
-                reconciliation_status='RECONCILED',
-                reconciled_by=user,
-                reconciled_at=timezone.now()
-            )
-            
         if remaining_credit > Decimal('0.00'):
-            # Create CustomerCredit for the remainder
+            # Create CustomerCredit for the remainder (overpayment)
             CustomerCredit.objects.create(
                 customer=credit_note.customer,
                 original_amount=remaining_credit,
                 remaining_amount=remaining_credit,
-                notes=f"Overpayment/Credit from Credit Note {credit_note.credit_note_number}"
+                notes=f"Excess Credit from Credit Note {credit_note.credit_note_number} (Invoice overpaid)"
             )
             
         # Update return status

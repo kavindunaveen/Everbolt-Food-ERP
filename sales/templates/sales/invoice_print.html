@@ -283,6 +283,22 @@
                     <td colspan="6" class="text-right" style="font-weight: bold; font-size: 1.1em;">Total Amount including VAT:</td>
                     <td class="text-right" style="font-weight: bold; font-size: 1.1em;">{{ rounded_total|floatformat:2|intcomma }}</td>
                 </tr>
+                {% if applied_credits %}
+                {% for credit in applied_credits %}
+                <tr>
+                    <td colspan="6" class="text-right" style="color: #d97706; font-style: italic;">
+                        Less: Credit Note {{ credit.credit_note_number }}
+                    </td>
+                    <td class="text-right" style="color: #d97706; font-style: italic;">
+                        -{{ credit.total_credit_with_tax|floatformat:2|intcomma }}
+                    </td>
+                </tr>
+                {% endfor %}
+                <tr>
+                    <td colspan="6" class="text-right" style="font-weight: bold; font-size: 1.2em; color: #b91c1c;">BALANCE DUE:</td>
+                    <td class="text-right" style="font-weight: bold; font-size: 1.2em; color: #b91c1c;">{{ rounded_balance|floatformat:2|intcomma }}</td>
+                </tr>
+                {% endif %}
             </tbody>
         </table>
         </div>

@@ -10,11 +10,21 @@ def get_invoice_stats(today):
     valid_statuses = [Invoice.Status.ISSUED, Invoice.Status.PAID, Invoice.Status.EDIT_PENDING, Invoice.Status.CANCEL_PENDING]
     issued_qs = Invoice.objects.filter(status__in=valid_statuses).annotate(
         total_paid_agg=Coalesce(Sum('payments__amount'), Decimal('0.00'))
-    )
+    ).prefetch_related('credit_notes', 'credit_notes__items')
     
-    completed_count = issued_qs.filter(total_paid_agg__gte=F('total_amount') - Decimal('0.009')).count()
-    pending_count = issued_qs.filter(total_paid_agg__lt=Decimal('0.01')).count()
-    partial_count = issued_qs.filter(total_paid_agg__gte=Decimal('0.01'), total_paid_agg__lt=F('total_amount') - Decimal('0.009')).count()
+    completed_count = 0
+    pending_count = 0
+    partial_count = 0
+    
+    for inv in issued_qs:
+        total_credits = sum((c.total_credit_with_tax for c in inv.credit_notes.all() if c.status == 'APPROVED'), Decimal('0.00'))
+        balance_due = inv.total_amount - inv.total_paid_agg - total_credits
+        if balance_due < Decimal('0.01'):
+            completed_count += 1
+        elif inv.total_paid_agg < Decimal('0.01'):
+            pending_count += 1
+        else:
+            partial_count += 1
     
     return {
         'total_invoices_all': total_invoices_all,

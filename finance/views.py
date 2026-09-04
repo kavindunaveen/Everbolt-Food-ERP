@@ -75,6 +75,10 @@ class PendingPaymentsView(LoginRequiredMixin, PermissionRequiredMixin, View):
             except ValueError:
                 pass
             
+        from decimal import Decimal
+        from django.db.models import Sum, F, Q
+        from django.db.models.functions import Coalesce
+        
         q = request.GET.get('q')
         if q:
             pending_qs = pending_qs.filter(
@@ -85,16 +89,21 @@ class PendingPaymentsView(LoginRequiredMixin, PermissionRequiredMixin, View):
         salesperson_id = request.GET.get('salesperson')
         if salesperson_id:
             pending_qs = pending_qs.filter(salesperson_id=salesperson_id)
-
-        from decimal import Decimal
-        from django.db.models import Sum
-        from django.db.models.functions import Coalesce
-        
-        # Annotate total paid at DB level, then filter — so pagination works correctly
+            
+        # Annotate total paid at DB level, then prefetch for python processing
         pending_qs = pending_qs.annotate(
             total_paid_sum=Coalesce(Sum('payments__amount'), Decimal('0.00'))
-        ).filter(total_paid_sum__lt=Decimal('0.01'))  # treat < 0.01 as zero (tolerance)
-
+        ).select_related('customer', 'salesperson').prefetch_related('credit_notes', 'credit_notes__items', 'payments').filter(total_paid_sum__lt=F('total_amount'))
+        
+        filtered_invoices = []
+        for inv in pending_qs:
+            total_credits_sum = sum((c.total_credit_with_tax for c in inv.credit_notes.all() if c.status == 'APPROVED'), Decimal('0.00'))
+            inv.total_credits_sum = total_credits_sum
+            balance_due = inv.total_amount - inv.total_paid_sum - total_credits_sum
+            if balance_due >= Decimal('0.01') and inv.total_paid_sum < Decimal('0.01'):
+                filtered_invoices.append(inv)
+                
+        pending_qs = filtered_invoices
         if request.GET.get('export') == 'xlsx':
             import openpyxl
             from openpyxl.styles import Font, PatternFill
@@ -107,7 +116,7 @@ class PendingPaymentsView(LoginRequiredMixin, PermissionRequiredMixin, View):
             ws.append([f"Pending Payments Report (Generated {timezone.now().strftime('%Y-%m-%d %H:%M')})"])
             ws.append([])
             
-            headers = ["Invoice #", "Type", "Customer", "Salesperson", "Creation Date", "Due Date", "Total (Rs)", "Total Paid (Rs)", "Balance (Rs)"]
+            headers = ["Invoice #", "Type", "Customer", "Salesperson", "Creation Date", "Due Date", "Total (Rs)", "Total Paid (Rs)", "Credit (Rs)", "Balance (Rs)"]
             ws.append(headers)
             
             header_font = Font(bold=True)
@@ -127,7 +136,8 @@ class PendingPaymentsView(LoginRequiredMixin, PermissionRequiredMixin, View):
                     inv.due_date.strftime('%Y-%m-%d') if inv.due_date else "-",
                     float(inv.total_amount),
                     float(inv.total_paid_sum),
-                    float(inv.total_amount - inv.total_paid_sum)
+                    float(getattr(inv, 'total_credits_sum', 0)),
+                    float(inv.total_amount - inv.total_paid_sum - getattr(inv, 'total_credits_sum', 0))
                 ])
                 
             response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
@@ -227,6 +237,10 @@ class PartialPaymentsView(LoginRequiredMixin, PermissionRequiredMixin, View):
             except ValueError:
                 pass
             
+        from decimal import Decimal
+        from django.db.models import Sum, F, Q
+        from django.db.models.functions import Coalesce
+        
         q = request.GET.get('q')
         if q:
             pending_qs = pending_qs.filter(
@@ -238,15 +252,20 @@ class PartialPaymentsView(LoginRequiredMixin, PermissionRequiredMixin, View):
         if salesperson_id:
             pending_qs = pending_qs.filter(salesperson_id=salesperson_id)
 
-        from decimal import Decimal
-        from django.db.models import Sum, F
-        from django.db.models.functions import Coalesce
-
-        # Annotate total paid at DB level, then filter — so pagination works correctly
-        # Use a 0.01 tolerance to match the same rounding used when recording payments
+        # Annotate total paid at DB level, then prefetch for python processing
         pending_qs = pending_qs.annotate(
             total_paid_sum=Coalesce(Sum('payments__amount'), Decimal('0.00'))
-        ).filter(total_paid_sum__gte=Decimal('0.01'), total_paid_sum__lt=F('total_amount') - Decimal('0.009'))
+        ).select_related('customer', 'salesperson').prefetch_related('credit_notes', 'credit_notes__items', 'payments').filter(total_paid_sum__lt=F('total_amount'))
+        
+        filtered_invoices = []
+        for inv in pending_qs:
+            total_credits_sum = sum((c.total_credit_with_tax for c in inv.credit_notes.all() if c.status == 'APPROVED'), Decimal('0.00'))
+            inv.total_credits_sum = total_credits_sum
+            balance_due = inv.total_amount - inv.total_paid_sum - total_credits_sum
+            if balance_due >= Decimal('0.01') and inv.total_paid_sum >= Decimal('0.01'):
+                filtered_invoices.append(inv)
+                
+        pending_qs = filtered_invoices
 
         if request.GET.get('export') == 'xlsx':
             import openpyxl
@@ -260,7 +279,7 @@ class PartialPaymentsView(LoginRequiredMixin, PermissionRequiredMixin, View):
             ws.append([f"Partial Payments Report (Generated {timezone.now().strftime('%Y-%m-%d %H:%M')})"])
             ws.append([])
             
-            headers = ["Invoice #", "Type", "Customer", "Salesperson", "Creation Date", "Due Date", "Total (Rs)", "Total Paid (Rs)", "Balance (Rs)"]
+            headers = ["Invoice #", "Type", "Customer", "Salesperson", "Creation Date", "Due Date", "Total (Rs)", "Total Paid (Rs)", "Credit (Rs)", "Balance (Rs)"]
             ws.append(headers)
             
             header_font = Font(bold=True)
@@ -280,7 +299,8 @@ class PartialPaymentsView(LoginRequiredMixin, PermissionRequiredMixin, View):
                     inv.due_date.strftime('%Y-%m-%d') if inv.due_date else "-",
                     float(inv.total_amount),
                     float(inv.total_paid_sum),
-                    float(inv.total_amount - inv.total_paid_sum)
+                    float(getattr(inv, 'total_credits_sum', 0)),
+                    float(inv.total_amount - inv.total_paid_sum - getattr(inv, 'total_credits_sum', 0))
                 ])
                 
             response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
@@ -305,9 +325,10 @@ class PartialPaymentsView(LoginRequiredMixin, PermissionRequiredMixin, View):
 
         # Build display list - prefetch payments to avoid N+1
         invoices = []
-        for inv in page_obj.object_list.select_related('customer', 'salesperson').prefetch_related('payments'):
+        for inv in page_obj.object_list:
             total_paid = inv.total_paid_sum
-            balance = inv.total_amount - total_paid
+            total_credits = getattr(inv, 'total_credits_sum', Decimal('0.00'))
+            balance = inv.total_amount - total_paid - total_credits
             payments = list(inv.payments.all().order_by('payment_date'))
             avail_credit = credit_map.get(inv.customer.id if inv.customer else 0, Decimal('0.00'))
             
@@ -320,6 +341,7 @@ class PartialPaymentsView(LoginRequiredMixin, PermissionRequiredMixin, View):
                     'due_date': inv.due_date,
                     'total_amount': inv.total_amount,
                     'total_paid': total_paid,
+                    'total_credits': total_credits,
                     'balance': balance,
                     'days_overdue': (today - inv.due_date).days if inv.due_date else 0,
                     'payment_history': payments,

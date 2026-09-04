@@ -1061,8 +1061,20 @@ class InvoicePrintView(LoginRequiredMixin, ERPPermissionRequiredMixin, DetailVie
         context['total_amount'] = self.object.total_amount
         
         from decimal import Decimal, ROUND_HALF_UP
+        
+        applied_credits = self.object.credit_notes.filter(status='APPROVED')
+        total_credits = sum(c.total_credit_with_tax for c in applied_credits)
+        
+        balance_due = self.object.total_amount - total_credits
+        
         rounded_total = self.object.total_amount.quantize(Decimal('1.'), rounding=ROUND_HALF_UP)
+        rounded_balance = balance_due.quantize(Decimal('1.'), rounding=ROUND_HALF_UP)
+        
         context['rounded_total'] = rounded_total
+        context['applied_credits'] = applied_credits
+        context['total_credits'] = total_credits
+        context['balance_due'] = balance_due
+        context['rounded_balance'] = rounded_balance
         
         try:
             context['amount_in_words'] = num2words(int(rounded_total), lang='en').title() + " Rupees Only"

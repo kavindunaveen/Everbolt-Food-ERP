@@ -1,5 +1,8 @@
 {% extends 'layouts/base.html' %}
 {% block title %}Returns | Everbolt ERP{% endblock %}
+{% block nav_container_class %}w-full mx-auto max-w-[1600px]{% endblock %}
+{% block main_container_class %}w-full mx-auto max-w-[1600px]{% endblock %}
+{% block footer_container_class %}w-full mx-auto max-w-[1600px]{% endblock %}
 {% block content %}
 <div class="px-4 py-6 sm:px-0">
     <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
@@ -41,7 +44,7 @@
                         <td class="px-6 py-4 text-sm text-gray-700 whitespace-nowrap">{{ ret.original_invoice.invoice_number }}</td>
                         <td class="px-6 py-4 text-sm text-gray-700">
                             {% for item in ret.items.all %}
-                                <div class="mb-1 whitespace-nowrap">{{ item.product.name }}</div>
+                                <div class="mb-1">{{ item.product.name }}</div>
                             {% endfor %}
                         </td>
                         <td class="px-6 py-4 text-sm text-gray-700">
@@ -54,12 +57,12 @@
                         </td>
                         <td class="px-6 py-4 text-sm text-gray-600">
                             {% for item in ret.items.all %}
-                                <div class="mb-1 whitespace-nowrap">{{ item.get_reason_display }}</div>
+                                <div class="mb-1">{{ item.get_reason_display }}</div>
                             {% endfor %}
                         </td>
                         <td class="px-6 py-4 text-sm text-gray-600">
                             {% for item in ret.items.all %}
-                                <div class="mb-1 whitespace-nowrap">{{ item.get_condition_display }}</div>
+                                <div class="mb-1">{{ item.get_condition_display }}</div>
                             {% endfor %}
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap">

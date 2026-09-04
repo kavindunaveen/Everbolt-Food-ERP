@@ -63,6 +63,7 @@
                         <th class="px-6 py-4 text-center text-xs font-bold text-gray-500 uppercase tracking-wider">Due Date</th>
                         <th class="px-6 py-4 text-right text-xs font-bold text-gray-500 uppercase tracking-wider">Total (Rs)</th>
                         <th class="px-6 py-4 text-right text-xs font-bold text-gray-500 uppercase tracking-wider">Paid So Far (Rs)</th>
+                        <th class="px-6 py-4 text-right text-xs font-bold text-gray-500 uppercase tracking-wider">Credit (Rs)</th>
                         <th class="px-6 py-4 text-right text-xs font-bold text-gray-500 uppercase tracking-wider">Balance (Rs)</th>
                         <th class="px-6 py-4 text-center text-xs font-bold text-gray-500 uppercase tracking-wider">Action</th>
                     </tr>
@@ -103,6 +104,9 @@
                             <span class="text-sm font-bold text-blue-600">{{ inv.total_paid|floatformat:"2"|intcomma }}</span>
                             <div class="text-[10px] text-gray-400 mt-0.5">{{ inv.payment_history|length }} payment{{ inv.payment_history|length|pluralize }}</div>
                         </td>
+                        <td class="px-6 py-4 text-right whitespace-nowrap text-sm text-green-600 font-medium">
+                            {{ inv.total_credits|floatformat:"2"|intcomma }}
+                        </td>
                         <td class="px-6 py-4 text-right whitespace-nowrap">
                             <span class="text-sm font-bold text-red-600">{{ inv.balance|floatformat:"2"|intcomma }}</span>
                         </td>
@@ -119,7 +123,7 @@
                     </tr>
                     <!-- Collapsible payment history row -->
                     <tr id="hist-{{ inv.id }}" class="hidden bg-blue-50/40">
-                        <td colspan="8" class="px-8 py-3">
+                        <td colspan="9" class="px-8 py-3">
                             <div class="text-xs font-bold text-blue-700 uppercase tracking-wider mb-2">Payment History</div>
                             <div class="space-y-1">
                                 {% for p in inv.payment_history %}
@@ -147,7 +151,7 @@
                     </tr>
                     {% empty %}
                     <tr>
-                        <td colspan="8" class="px-6 py-12 text-center text-gray-500">
+                        <td colspan="9" class="px-6 py-12 text-center text-gray-500">
                             <div class="flex flex-col items-center">
                                 <!-- Half-circle icon: represents partial/in-progress -->
                                 <svg class="w-12 h-12 text-gray-300 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
